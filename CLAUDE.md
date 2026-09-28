@@ -41,9 +41,8 @@ Kyoshi is a plain static website on **GitHub Pages' free plan**, built to keep w
 - Every change also gets a new **build stamp**: every file link in `index.html` ends in the same `?v=YYYYMMDD-HHMM` (UTC). Replace them all at once — `sed -i "s/?v=[0-9][0-9-]*/?v=$(date -u +%Y%m%d-%H%M)/g" index.html` — so browsers load the new files instead of old copies GitHub Pages let them keep (up to 10 minutes).
 
 ## Git Workflow
-- Make a new branch with the feature and then give me instructions on how to test and accept the changes.
-- **Testing a branch:** GitHub Pages only shows `main`. On GitHub, pick the branch → **Code → Download ZIP** → unzip → open `index.html`. That copy keeps its own data, apart from the live site; to try it with real data, Import JSON a backup. Don't connect it to the real sync folder.
-- **Accepting:** merge the branch into `main` (a pull request on GitHub). The live site updates within a minute or two — reload it.
+- **Push finished changes straight to `main`**, after checking them yourself (see *Checking a change*). The live site updates within a minute or two. No test branch or test instructions needed.
+- **Use a branch only when there's a reason to** (a risky change to stored data or sync, a big redesign, or something I should see before it goes live), and say why. To try a branch: on GitHub pick it → **Code → Download ZIP** → unzip → open `index.html` (that copy keeps its own data, apart from the live site; don't connect it to the real sync folder). To accept it: merge it into `main`.
 
 ## Linked Repositories
 - When other GitHub repositories are linked to the session (e.g. Bosco, Momo — the standalone originals), they are **read-only** references. Never edit, commit to, or push to them. Only edit the repository the change is for.
