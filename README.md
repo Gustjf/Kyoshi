@@ -1,7 +1,8 @@
 # Kyoshi
 
 A quiet home for small, private apps that run entirely in your browser — currently **Bosco** (weight
-tracker with projections) and **Momo** (weekly time budget). You only see the app you're using; switch
+tracker with projections), **Momo** (weekly time budget) and **Wan Shi Tong** (media recommendations:
+what's in progress, what's up next, and the rest). You only see the app you're using; switch
 apps from the icon button beside **Theme**. No accounts, no servers, no CDN: plain HTML, CSS and
 JavaScript, built to keep working for years.
 

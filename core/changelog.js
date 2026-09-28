@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "1.200", date: "2026-09-28", changes: [
+      "Added Wan Shi Tong, a media tracker for recommendations: switch to it from the button beside Theme."
+    ] },
     { version: "1.100", date: "2026-09-28", changes: [
       "Your data now lives in the browser's large storage, with room for far more apps and years; what Kyoshi had saved moves over by itself.",
       "Developer Mode shows how much storage Kyoshi uses; Kyoshi asks the browser to protect it, and warns if it's out of reach or nearly full.",
