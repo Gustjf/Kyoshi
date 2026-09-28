@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
-  const { HAVE, MAX_NAME, MAX_INFO, MAX_WHY, MAX_COST, DATA_SCHEMA_VERSION } = A;
+  const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_COST, DATA_SCHEMA_VERSION } = A;
 
   const persist = () => {
     A.store.set("items", JSON.stringify(S.items));
@@ -19,7 +19,7 @@
     A.changed();
   }
 
-  // Which magazine groups are folded away on this device.
+  // Which backlog groups are folded away on this device.
   const storeFolded = () => A.store.set("folded", JSON.stringify(S.folded));
 
   // Text as it's kept: trimmed, and cut to max characters without splitting an emoji. A line
@@ -53,9 +53,10 @@
     }).filter(i => (i.name || i.deleted) && !ids.has(i.id) && ids.add(i.id));
   }
 
-  // In progress and Up next from storage or a backup: { id, u } each.
+  // In progress's spots and Up next from storage or a backup: { id, u } each. Data from before
+  // 2.000 has only now and next, so the other spots start out free.
   const cleanSlot = s => ({ id: isObj(s) && typeof s.id === "string" ? s.id.slice(0, 40) : "", u: isObj(s) && isPos(s.u) ? s.u : 0 });
-  const cleanSlots = s => ({ now: cleanSlot(isObj(s) && s.now), next: cleanSlot(isObj(s) && s.next) });
+  const cleanSlots = s => Object.fromEntries(SLOTS.map(k => [k, cleanSlot(isObj(s) && s[k])]));
 
   // Reads everything from storage (at start, and when another tab saved).
   function load() {
@@ -100,7 +101,7 @@
   // spot, the later change winning. The same on every device, so two combining at once agree.
   const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
-  const dataKey = d => JSON.stringify([inOrder(d.items), d.slots.now, d.slots.next]);
+  const dataKey = d => JSON.stringify([inOrder(d.items), SLOTS.map(k => d.slots[k])]);
   function combine(raw, { replace, plain }) {
     const their = { items: cleanItems(raw.items), slots: cleanSlots(raw.slots) };
     if (plain && !their.items.length) return null;
@@ -109,7 +110,7 @@
       const byId = new Map(S.items.map(i => [i.id, i]));
       their.items.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
       const slot = k => (newer(their.slots[k], S.slots[k]) ? their.slots[k] : S.slots[k]);
-      next = { items: inOrder([...byId.values()]), slots: { now: slot("now"), next: slot("next") } };
+      next = { items: inOrder([...byId.values()]), slots: Object.fromEntries(SLOTS.map(k => [k, slot(k)])) };
     }
     return {
       same: dataKey(next) === dataKey(their),

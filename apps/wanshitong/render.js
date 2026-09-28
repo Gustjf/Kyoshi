@@ -1,10 +1,10 @@
-/* Wan Shi Tong · render.js — draws the page from A.S: In progress and Up next, the magazine
- * (a fold-away group per category, newest first) and the Finished list. */
+/* Wan Shi Tong · render.js — draws the page from A.S: In progress (up to three) and Up next,
+ * the backlog (a fold-away group per category, newest first) and the Finished list. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, SEP, todayStr } = K.util;
-  const { CATS, OTHER, catOf, groupOf, haveLabel, fmtCost, fmtDay, searchUrl } = A;
+  const { CATS, OTHER, NOW_SPOTS, catOf, groupOf, haveLabel, fmtCost, fmtDay, searchUrl } = A;
 
   // The "search" icon from Lucide (lucide.dev) — ISC License, Copyright (c) Lucide Icons and Contributors.
   const SEARCH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>';
@@ -30,45 +30,46 @@
     return `<div class="spot-cat">${esc(catOf(i.cat).label)}</div>${nameLine(i, "spot-name")}${metaLine(i, dates)}${whyLine(i)}` +
       `<div class="spot-actions">${actions}</div>`;
   }
+  const backBtn = i => `<button class="secondary" data-act="unload" data-id="${esc(i.id)}" title="Put it back in the backlog for later">Back to backlog</button>`;
 
+  // In progress: what's going, in the order it went in, then how many spots are free and what could fill them.
   function renderSpots() {
-    const now = A.nowItem(), next = A.nextItem(), loaded = A.magazine().length > 0;
-    $("nowBody").innerHTML = now
-      ? spotCard(now, [["Started", now.started]],
-        `<button data-act="done" data-id="${esc(now.id)}">Done</button>` +
-        `<button class="secondary" data-act="unload" data-slot="now" title="Put it back in the magazine for later">Back to magazine</button>`)
-      : `<div class="empty-msg">${next ? "Nothing in progress. Start your Up next when you're ready."
-        : loaded ? "Nothing in progress. Start something from the magazine below." : "Nothing in progress yet."}</div>`;
+    const now = A.nowItems(), next = A.nextItem(), waiting = A.backlog().length > 0, free = NOW_SPOTS.length - now.length;
+    const fill = next ? (waiting ? "Start your Up next, or something from your backlog below." : "Start your Up next when you're ready.")
+      : waiting ? "Start something from your backlog below." : "";
+    const freeMsg = now.length ? `${free} free spot${free === 1 ? "" : "s"}.` : fill ? "Nothing in progress." : "Nothing in progress yet.";
+    $("nowCount").textContent = now.length ? `${now.length} of ${NOW_SPOTS.length}` : "";
+    $("nowBody").innerHTML = now.map(i => `<div class="now-item">${spotCard(i, [["Started", i.started]],
+      `<button data-act="done" data-id="${esc(i.id)}">Done</button>${backBtn(i)}`)}</div>`).join("") +
+      (free ? `<div class="free-spots">${esc(`${freeMsg} ${fill}`.trim())}</div>` : "");
     $("nextBody").innerHTML = next
-      ? spotCard(next, [["Added", next.added]],
-        (now ? "" : `<button data-act="start" data-id="${esc(next.id)}">Start now</button>`) +
-        `<button class="secondary" data-act="unload" data-slot="next" title="Put it back in the magazine for later">Back to magazine</button>`)
-      : `<div class="empty-msg">${loaded ? "Nothing up next. Load something from the magazine below with its Up next button." : "Nothing up next yet."}</div>`;
+      ? spotCard(next, [["Added", next.added]], `<button data-act="start" data-id="${esc(next.id)}">Start now</button>${backBtn(next)}`)
+      : `<div class="empty-msg">${waiting ? "Nothing up next. Pick something from your backlog below with its Up next button." : "Nothing up next yet."}</div>`;
   }
 
-  // --- The magazine: one fold-away group per category, made once (buildGroups, at start) so each
+  // --- The backlog: one fold-away group per category, made once (buildGroups, at start) so each
   // stays open or folded as the list is redrawn. Other holds any category from a newer version. ---
   function buildGroups() {
-    $("magazineGroups").innerHTML = CATS.concat(OTHER).map(c => `<details class="group" data-cat="${c.id}">` +
+    $("backlogGroups").innerHTML = CATS.concat(OTHER).map(c => `<details class="group" data-cat="${c.id}">` +
       `<summary><span class="group-title">${esc(c.group)}</span><span class="count"></span></summary><ul class="items"></ul></details>`).join("");
   }
 
   const itemRow = i => `<li class="item">
     <div class="item-main">${nameLine(i, "item-name")}${metaLine(i, [["Added", i.added]])}${whyLine(i)}</div>
     <div class="item-actions">
-      <button class="secondary small" data-act="next" data-id="${esc(i.id)}" title="Load it into Up next">Up next</button>
+      <button class="secondary small" data-act="next" data-id="${esc(i.id)}" title="Line it up next">Up next</button>
       <button class="secondary small" data-act="start" data-id="${esc(i.id)}" title="Start it now (In progress)">Start</button>
     </div>
   </li>`;
 
-  function renderMagazine() {
-    const items = A.magazine().sort(A.byNewest), any = A.live().length > 0;
-    $("magazineCount").textContent = items.length || "";
-    $("magazineEmpty").hidden = items.length > 0;
-    $("magazineEmpty").textContent = any ? "Everything here is loaded above or finished. Add the next recommendation you hear about."
-      : "Empty for now. Add the recommendations you've been keeping in browser tabs: books, films, shows and courses.";
-    $("magazineHint").hidden = !items.length;
-    A.root.querySelectorAll("#magazineGroups .group").forEach(g => {
+  function renderBacklog() {
+    const items = A.backlog().sort(A.byNewest), any = A.live().length > 0;
+    $("backlogCount").textContent = items.length || "";
+    $("backlogEmpty").hidden = items.length > 0;
+    $("backlogEmpty").textContent = any ? "Everything here is in progress, up next or finished. Add the next recommendation you hear about."
+      : "Empty for now. Add the recommendations you've been keeping in browser tabs: books, films, shows, games and courses.";
+    $("backlogHint").hidden = !items.length;
+    A.root.querySelectorAll("#backlogGroups .group").forEach(g => {
       const mine = items.filter(i => groupOf(i.cat) === g.dataset.cat);
       g.hidden = !mine.length;
       g.open = !S.folded.includes(g.dataset.cat);
@@ -84,14 +85,14 @@
     $("finishedCount").textContent = items.length;
     $("finishedList").innerHTML = items.map(i => `<li class="item">
       <div class="item-main">${nameLine(i, "item-name")}${metaLine(i, [["Finished", i.done]], `<span class="badge cat">${esc(catOf(i.cat).label)}</span>`)}</div>
-      <div class="item-actions"><button class="secondary small" data-act="putback" data-id="${esc(i.id)}" title="Back to the magazine">Put back</button></div>
+      <div class="item-actions"><button class="secondary small" data-act="putback" data-id="${esc(i.id)}" title="Back to the backlog">Put back</button></div>
     </li>`).join("");
   }
 
   function renderAll() {
     S.knownToday = todayStr();
     renderSpots();
-    renderMagazine();
+    renderBacklog();
     renderFinished();
   }
 

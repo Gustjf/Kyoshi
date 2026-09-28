@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.000", date: "2026-09-28", changes: [
+      "Up to three things can be in progress at once, of any kind, and finishing one moves Up next into its spot.",
+      "Starting a fourth asks which one goes back to make room.",
+      "The magazine is now called the backlog.",
+      "Added Games, with the platform as its details."
+    ] },
     { version: "1.000", date: "2026-09-28", changes: [
       "Initial release: keep every recommendation (novels, textbooks, movies, TV/anime and courses) in one place, with what's in progress and up next on top and the rest waiting in the magazine.",
       "Finishing something moves Up next into In progress, and keeps it in a Finished list."

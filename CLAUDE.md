@@ -68,7 +68,7 @@ core/                 the shared DNA — K = window.Kyoshi
 apps/<id>/            one folder per app — see apps/<id>/CLAUDE.md for its file map and data model
   bosco/              weight tracker with projections & GLP-1 dosing
   momo/               weekly time budget (YNAB for hours)
-  wanshitong/         media tracker for recommendations (In progress, Up next, the magazine)
+  wanshitong/         media tracker for recommendations (In progress, Up next, the backlog)
   _template/          starter files for a new app (not loaded)
 ```
 

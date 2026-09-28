@@ -74,10 +74,10 @@
 
   // Where a recommendation already on the list is, for the "already there" question.
   function whereIs(i) {
-    if (i === A.nowItem()) return "in progress";
+    if (A.spotOf(i)) return "in progress";
     if (i === A.nextItem()) return "up next";
     if (i.done) return `finished ${fmtDay(i.done)}`;
-    return `in the magazine${i.added ? `, added ${fmtDay(i.added)}` : ""}`;
+    return `in the backlog${i.added ? `, added ${fmtDay(i.added)}` : ""}`;
   }
 
   // Adds or saves what's in the pop-up. close false (Add another) clears it for the next one instead.
@@ -128,7 +128,7 @@
     if (!i || !confirm(`Delete “${i.name}”? This can't be undone.`)) return;
     // Kept as a marker, so another device's older copy can't bring it back.
     Object.assign(i, { name: "", info: "", have: "", cost: null, why: "", started: "", done: "", deleted: true, u: Date.now() });
-    ["now", "next"].forEach(slot => { if (S.slots[slot].id === i.id) A.setSlot(slot, ""); });
+    A.unslot(i.id);
     closeEditor();
     A.save();
     A.renderAll();

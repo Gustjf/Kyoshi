@@ -1,12 +1,12 @@
-/* Wan Shi Tong · markup.js — the page (A.markup): In progress and Up next, the magazine (a
- * fold-away group per category, filled in by render.js), the Finished list, Backup & sync, and
- * the add / edit pop-up. The shell supplies the header, footer, Developer Mode and bug reports;
- * core/backup.js fills [data-kyoshi="backup"]. Ids only need to be unique within the app
- * (look them up with A.$). */
+/* Wan Shi Tong · markup.js — the page (A.markup): In progress and Up next, the backlog (a
+ * fold-away group per category, filled in by render.js), the Finished list, Backup & sync, the
+ * add / edit pop-up, and the one asking what makes room when In progress is full. The shell
+ * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills
+ * [data-kyoshi="backup"]. Ids only need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.wanshitong.markup = `
   <div class="spots">
     <section class="spot now">
-      <h2>In progress</h2>
+      <h2>In progress <span class="count" id="nowCount"></span></h2>
       <div class="spot-body" id="nowBody"></div>
     </section>
     <section class="spot next">
@@ -17,12 +17,12 @@ Kyoshi.apps.wanshitong.markup = `
 
   <section>
     <div class="section-header">
-      <h2>Magazine <span class="count" id="magazineCount"></span></h2>
+      <h2>Backlog <span class="count" id="backlogCount"></span></h2>
       <button id="addBtn">+ Add</button>
     </div>
-    <div id="magazineEmpty" class="empty-msg"></div>
-    <div id="magazineGroups"></div>
-    <div class="footnote" id="magazineHint">Up next and Start load a recommendation into the spots above. Click a name to edit or delete it, or the magnifier to look it up on Google.</div>
+    <div id="backlogEmpty" class="empty-msg"></div>
+    <div id="backlogGroups"></div>
+    <div class="footnote" id="backlogHint">Start puts a recommendation in progress (up to three at once), and Up next lines one up to take the place of the next you finish. Click a name to edit or delete it, or the magnifier to look it up on Google.</div>
   </section>
 
   <section id="finishedSection" hidden>
@@ -80,6 +80,18 @@ Kyoshi.apps.wanshitong.markup = `
         <button class="danger" id="itemDeleteBtn">Delete</button>
       </div>
       <div class="modal-status" id="itemStatus"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="swapOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="swapTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="swapTitle">In progress is full</h3>
+      <p class="modal-hint" id="swapText"></p>
+      <div class="swap-list" id="swapList"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="swapCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 `;
