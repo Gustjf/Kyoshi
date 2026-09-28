@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kyoshi</title>
+<!-- Kyoshi · index.html — the shell's markup and every file, in load order. Rules and the
+     map of where things are: CLAUDE.md. The tab's title and icon become the app on screen's. -->
+<link rel="icon" id="kFavicon" href="data:,">
+<link rel="stylesheet" href="core/kyoshi.css">
+<!-- Apps' own styles (each under .app-<id>). -->
+<link rel="stylesheet" href="apps/bosco/bosco.css">
+<link rel="stylesheet" href="apps/momo/momo.css">
+</head>
+<body>
+<div class="shell">
+  <header class="header">
+    <div>
+      <h1 id="kAppName"></h1>
+      <div class="subtitle" id="kAppSubtitle"></div>
+    </div>
+    <div class="header-actions">
+      <!-- The app switcher: the app on screen's icon; a dot when another app is waiting for you. -->
+      <div class="switcher" id="kSwitcher">
+        <button type="button" class="switch-btn" id="kSwitchBtn" aria-haspopup="true" aria-expanded="false" aria-controls="kSwitchMenu" title="Switch app">
+          <span class="app-icon" id="kSwitchIcon"></span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          <span class="attn-dot" id="kSwitchDot" hidden></span>
+        </button>
+        <div class="switch-menu" id="kSwitchMenu" role="menu" aria-label="Apps" hidden></div>
+      </div>
+      <button class="theme-toggle" id="kThemeToggle">🌓 Theme</button>
+    </div>
+  </header>
+
+  <section id="kSyncBanner" class="banner" hidden>
+    <span id="kSyncBannerText"></span>
+    <button id="kSyncBannerBtn">Reconnect</button>
+  </section>
+  <section id="kTestBanner" class="banner" hidden>
+    <span id="kTestBannerText"></span>
+    <button id="kTestBannerBtn">Reload</button>
+  </section>
+
+  <!-- The app on screen goes here (core/shell.js). -->
+  <main id="kMount"></main>
+
+  <footer>
+    <span id="kFooterName"></span><span class="sep">|</span>Offline HTML5 app<span class="sep">|</span><a href="#" id="kReportBug">Report a bug</a>
+  </footer>
+</div>
+
+<div class="corner-tag">
+  <div class="app-version-tag" id="kVersionTag"></div>
+  <div class="dev-badge" id="kDevBadge" role="button" aria-pressed="false" title="Developer mode (Ctrl+9)">DEV</div>
+</div>
+<div class="dev-panel" id="kDevPanel">
+  <button class="modal-close" id="kDevClose" aria-label="Close">&times;</button>
+  <h3>Developer Mode</h3>
+  <div class="dev-version" id="kDevVersion"></div>
+  <!-- The app on screen's own tools (A.renderDev). -->
+  <div id="kDevAppTools"></div>
+  <div class="dev-block">
+    <div class="dev-block-head">Time travel (testing): today is <strong id="kDevToday"></strong></div>
+    <div class="dev-actions">
+      <button class="secondary small" id="kDevPlusDay">+1 day</button>
+      <button class="secondary small" id="kDevPlusWeek">+1 week</button>
+    </div>
+    <div class="dev-hint">Switches to test mode: nothing is saved or synced until you reload.</div>
+  </div>
+  <div class="dev-block">
+    <div class="dev-block-head">Every app in one file</div>
+    <div class="dev-actions">
+      <button class="secondary small" id="kDevExportAll">Export all</button>
+      <button class="secondary small" id="kDevImportAll">Import all</button>
+      <input type="file" id="kDevImportFile" accept=".json,application/json" hidden>
+    </div>
+  </div>
+  <div class="dev-block">
+    <div class="dev-block-head">Bug reports: <strong id="kDevBugCount">0</strong></div>
+    <div class="dev-actions">
+      <button class="secondary small" id="kDevCopyBugs">Copy all</button>
+      <button class="secondary small" id="kDevDownloadBugs">Download .md</button>
+      <button class="danger" id="kDevClearBugs">Clear</button>
+    </div>
+  </div>
+  <div class="dev-block">
+    <div class="window-pills" id="kDevLogPills"></div>
+    <div id="kDevChangelog"></div>
+  </div>
+</div>
+
+<div class="overlay" id="kBugOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="kBugTitle">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <h3 id="kBugTitle">Report a Bug</h3>
+    <p class="modal-hint">Describe what happened and what you expected, then Submit. That saves the report locally (with environment, app state, and recent console activity &mdash; no personal data) and copies it to your clipboard. Saved reports are managed from Developer Mode.</p>
+    <textarea id="kBugText" rows="5" maxlength="4000" placeholder="What went wrong? What did you expect to happen?"></textarea>
+    <div class="modal-actions"><button id="kBugSubmit">Submit Report</button></div>
+    <div class="modal-status" id="kBugStatus"></div>
+  </div>
+</div>
+
+<!-- Core, in order: base.js first (it catches errors while the rest loads). -->
+<script src="core/base.js"></script>
+<script src="core/changelog.js"></script>
+<script src="core/util.js"></script>
+<script src="core/seasons.js"></script>
+<script src="core/storage.js"></script>
+<script src="core/modal.js"></script>
+<script src="core/sync.js"></script>
+<script src="core/backup.js"></script>
+<script src="core/bugs.js"></script>
+<script src="core/dev.js"></script>
+<script src="core/shell.js"></script>
+
+<!-- Apps, in switcher order. Each app: app.js first, events.js last. -->
+<script src="apps/bosco/app.js"></script>
+<script src="apps/bosco/markup.js"></script>
+<script src="apps/bosco/changelog.js"></script>
+<script src="apps/bosco/data.js"></script>
+<script src="apps/bosco/trend.js"></script>
+<script src="apps/bosco/render.js"></script>
+<script src="apps/bosco/setup.js"></script>
+<script src="apps/bosco/doses.js"></script>
+<script src="apps/bosco/image.js"></script>
+<script src="apps/bosco/events.js"></script>
+
+<script src="apps/momo/app.js"></script>
+<script src="apps/momo/markup.js"></script>
+<script src="apps/momo/changelog.js"></script>
+<script src="apps/momo/model.js"></script>
+<script src="apps/momo/times.js"></script>
+<script src="apps/momo/colors.js"></script>
+<script src="apps/momo/data.js"></script>
+<script src="apps/momo/render.js"></script>
+<script src="apps/momo/drag.js"></script>
+<script src="apps/momo/drop.js"></script>
+<script src="apps/momo/clipboard.js"></script>
+<script src="apps/momo/card-editor.js"></script>
+<script src="apps/momo/goal-editor.js"></script>
+<script src="apps/momo/baseline.js"></script>
+<script src="apps/momo/closeout.js"></script>
+<script src="apps/momo/events.js"></script>
+
+<script>Kyoshi.start();</script>
+</body>
+</html>

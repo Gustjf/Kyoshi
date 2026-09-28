@@ -1,0 +1,90 @@
+/* Kyoshi · core/dev.js — the one Developer Mode for every app, as K.dev.
+ * Ctrl+9 or the DEV badge (bottom-right, for phones) opens #kDevPanel: versions, the app on
+ * screen's own tools (A.renderDev(box)), time travel (test mode), Export/Import all apps,
+ * bug reports, and a changelog for the app or Kyoshi. The test banner lives here too. */
+(function (K) {
+  "use strict";
+  const { fmtDate, todayStr, readFile } = K.util;
+  const $ = id => document.getElementById(id);
+  let on = false;
+  let logFor = "app"; // the changelog shown: "app" (the one on screen) or "kyoshi"
+
+  function toggle() {
+    on = !on;
+    document.body.classList.toggle("dev-mode", on);
+    $("kDevBadge").setAttribute("aria-pressed", on);
+    refresh();
+  }
+
+  // Redraws the panel for the app on screen, while it's open.
+  function refresh() {
+    $("kDevBugCount").textContent = K.bugs.count();
+    const A = K.active();
+    if (!on || !A) return;
+    $("kDevVersion").textContent = `${A.meta.name} ${A.VERSION} | Kyoshi ${K.VERSION}`;
+    $("kDevToday").textContent = fmtDate(todayStr(), { weekday: "short", month: "short", day: "numeric" });
+    refreshTools(A);
+    const log = logFor === "kyoshi" ? K.CHANGELOG : A.CHANGELOG || [];
+    $("kDevLogPills").innerHTML = [["app", A.meta.name], ["kyoshi", "Kyoshi"]].map(([v, label]) =>
+      `<button type="button" class="pill${v === logFor ? " active" : ""}" data-log="${v}">${label}</button>`).join("");
+    $("kDevChangelog").innerHTML = log.map(c => `<div class="changelog-entry">
+      <span class="changelog-version">v${c.version}</span><span class="changelog-date">${c.date}</span>
+      <ul>${c.changes.map(x => `<li>${x}</li>`).join("")}</ul>
+    </div>`).join("");
+  }
+
+  // Redraws just the app's own tools (A.refreshDev() calls this after the app changes).
+  function refreshTools(A) {
+    if (!on || A !== K.active()) return;
+    const box = $("kDevAppTools");
+    box.innerHTML = "";
+    if (!A.started || !A.renderDev) return;
+    try { A.renderDev(box); } catch (err) { console.error(`${A.meta.name}'s developer tools failed to draw.`, err); }
+  }
+
+  // Moves "today" forward to rehearse rollovers, reminders and close-outs. The first
+  // jump switches to test mode, where nothing is saved or synced until a reload.
+  function travel(days) {
+    if (!K.testMode) {
+      if (!confirm("Time travel is for testing. Kyoshi switches to test mode: nothing is saved or synced until you reload the page. Continue?")) return;
+      K.testMode = true;
+      K.storage.startTest();
+      K.sync.stopTimers();
+    }
+    K.dayOffset += days;
+    renderTestBanner();
+    K.tick(); // every app catches up with the new day
+    refresh();
+  }
+
+  function renderTestBanner() {
+    $("kTestBanner").hidden = !K.testMode;
+    if (K.testMode) $("kTestBannerText").textContent = `Test mode: Kyoshi thinks today is ${fmtDate(todayStr(), { weekday: "long", month: "short", day: "numeric", year: "numeric" })}. Nothing is being saved or synced — reload to go back.`;
+  }
+
+  function init() {
+    $("kDevBadge").addEventListener("click", toggle);
+    $("kDevClose").addEventListener("click", toggle);
+    $("kDevPlusDay").addEventListener("click", () => travel(1));
+    $("kDevPlusWeek").addEventListener("click", () => travel(7));
+    $("kDevExportAll").addEventListener("click", K.backup.exportAll);
+    $("kDevImportAll").addEventListener("click", () => $("kDevImportFile").click());
+    $("kDevImportFile").addEventListener("change", async e => {
+      const f = e.target.files[0];
+      e.target.value = ""; // so picking the same file again still triggers an import
+      const text = f ? await readFile(f) : null;
+      if (typeof text === "string") K.backup.importAllText(text);
+    });
+    $("kDevCopyBugs").addEventListener("click", K.bugs.copyAll);
+    $("kDevDownloadBugs").addEventListener("click", K.bugs.download);
+    $("kDevClearBugs").addEventListener("click", K.bugs.clear);
+    $("kDevLogPills").addEventListener("click", e => {
+      const btn = e.target.closest("button[data-log]");
+      if (btn) { logFor = btn.dataset.log; refresh(); }
+    });
+    $("kTestBannerBtn").addEventListener("click", () => location.reload());
+    refresh();
+  }
+
+  K.dev = { init, toggle, isOn: () => on, refresh, refreshTools, travel };
+})(Kyoshi);

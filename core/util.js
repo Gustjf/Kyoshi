@@ -1,0 +1,105 @@
+/* Kyoshi · core/util.js — small helpers every app shares, as K.util.
+ * Numbers & text, dates (with time travel), formatting, files & clipboard.
+ * In an app file: const { isNum, fmtDate, todayStr } = Kyoshi.util;
+ * (An app's own $ is A.$ — it only looks inside that app, see core/shell.js.) */
+(function (K) {
+  "use strict";
+
+  // --- Numbers & text ---
+  const isNum = v => typeof v === "number" && isFinite(v);
+  const isPos = v => isNum(v) && v > 0;
+  const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
+  const sum = arr => arr.reduce((s, v) => s + v, 0);
+  const mean = arr => sum(arr) / arr.length;
+  const extent = arr => [arr.reduce((a, b) => Math.min(a, b)), arr.reduce((a, b) => Math.max(a, b))];
+  const newId = () => Math.random().toString(36).slice(2, 10).padEnd(8, "0");
+  const esc = s => String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch]);
+  const pad2 = n => String(n).padStart(2, "0");
+  // Rounded for display, without trailing zeros: fmtNum(5.8333) -> "5.83", fmtNum(20.0, 1) -> "20".
+  const fmtNum = (v, places = 2) => String(+v.toFixed(places));
+  // A change with its sign, none when it rounds to zero: -0.52, +1.0, 0.0.
+  const fmtSigned = (v, places) => { const s = Math.abs(v).toFixed(places); return `${+s ? (v < 0 ? "-" : "+") : ""}${s}`; };
+  const SEP = '<span class="sep">|</span>'; // between values on one line: a dot could pass for a decimal point
+
+  // A number field's value: null when empty, NaN when the browser couldn't parse it.
+  function readNumber(el) {
+    if (el.validity.badInput) return NaN;
+    if (el.value === "") return null;
+    const v = parseFloat(el.value);
+    return isFinite(v) ? v : NaN;
+  }
+
+  // --- Dates ---
+  // Dates are "YYYY-MM-DD" calendar days. Date math runs in UTC so timezones and
+  // daylight saving can't shift a day; only "today" reads the local clock.
+  const DAY_MS = 86400000;
+  const dateMs = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+  const msDate = ms => new Date(ms).toISOString().slice(0, 10);
+  const isDate = d => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && msDate(dateMs(d)) === d;
+  const daysBetween = (a, b) => Math.round((dateMs(b) - dateMs(a)) / DAY_MS);
+  const addDays = (d, n) => msDate(dateMs(d) + n * DAY_MS);
+  const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate(); // m is 1–12
+  const localDate = t => msDate(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate())); // a moment's day on this device
+  // Today and now, moved by any developer time travel (K.dayOffset, see core/dev.js).
+  const todayStr = () => addDays(localDate(new Date()), K.dayOffset);
+  const now = () => Date.now() + K.dayOffset * DAY_MS;
+  const fmtDate = (d, opts = { year: "numeric", month: "short", day: "numeric" }) =>
+    new Date(dateMs(d)).toLocaleDateString(undefined, { ...opts, timeZone: "UTC" });
+  const fmtShort = d => fmtDate(d, { month: "short", day: "numeric" });
+  const fmtWeekday = d => fmtDate(d, { weekday: "long" });
+  // Times of day as "HH:MM", 24-hour.
+  const isTime = t => typeof t === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+  const fmtTime = t => new Date(2000, 0, 1, +t.slice(0, 2), +t.slice(3)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const clockTime = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); // now, e.g. "3:04 PM"
+
+  // --- Files & clipboard ---
+  function downloadBlob(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); // some browsers ignore clicks on detached links
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000); // revoking immediately can cancel the download
+  }
+  const downloadJSON = (obj, filename) => downloadBlob(new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" }), filename);
+
+  // A picked file's text, or null (after saying so) if it can't be read.
+  function readFile(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => { alert("Couldn't read that file."); resolve(null); };
+      reader.readAsText(file);
+    });
+  }
+
+  // Falls back to a hidden textarea + execCommand where the Clipboard API is missing.
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const copied = document.execCommand("copy");
+        ta.remove();
+        return copied;
+      }
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  K.util = {
+    isNum, isPos, isObj, sum, mean, extent, newId, esc, pad2, fmtNum, fmtSigned, SEP, readNumber,
+    DAY_MS, dateMs, msDate, isDate, daysBetween, addDays, daysInMonth, localDate, todayStr, now,
+    fmtDate, fmtShort, fmtWeekday, isTime, fmtTime, clockTime,
+    downloadBlob, downloadJSON, readFile, copyText
+  };
+})(Kyoshi);

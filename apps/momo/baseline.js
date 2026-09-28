@@ -1,0 +1,118 @@
+/* Momo · baseline.js — the bank's quick actions: load (auto-fund) the baseline into a week,
+ * copy the previous week, save a week as the baseline, fill gaps with Free time, clear a
+ * board, and start the baseline from a sample. */
+(function (K, A) {
+  "use strict";
+  const S = A.S;
+  const { isNum, addDays, newId } = K.util;
+  const { DAY_HOURS, DAYS, FREE_TIME, SAMPLE_BASELINE, fmtWeek } = A;
+
+  // Copies of cards with new ids, each inside the copy of the card it was
+  // inside. Goal cards keep their goal only if it still exists.
+  function copyCards(cards, fields = {}) {
+    const ids = new Map(cards.map(c => [c.id, newId()]));
+    return cards.map(c => ({ ...c, id: ids.get(c.id), parentId: ids.get(c.parentId) || null, goalId: A.goalById(c.goalId) ? c.goalId : null, ...fields }));
+  }
+
+  // Auto-funding: the baseline's cards go into each day, pinned ones at their
+  // times, marked as from the baseline. Loading again swaps those for fresh
+  // copies. Your own cards stay (on their own, if they were inside one of the
+  // old copies): a pinned one goes back in at its time, and another before
+  // the first card that starts at or after the time it started.
+  function loadBaseline() {
+    const key = A.viewKey();
+    if (!key || !S.data.baseline.cards.length) return;
+    const week = A.ensureWeek(key), reload = week.cards.some(c => c.base);
+    if (reload && !confirm("Reload the baseline? Its cards already in this week are replaced by fresh copies, including any changes you made to them. Cards you added yourself stay.")) return;
+    const starts = new Map();
+    DAYS.forEach(d => A.startTimes(week, A.daySchedule(week, d).rows).forEach((w, id) => starts.set(id, w.at)));
+    const own = week.cards.filter(c => !c.base), ids = new Set(own.map(c => c.id));
+    own.forEach(c => { if (c.parentId && !ids.has(c.parentId)) c.parentId = null; });
+    week.cards = copyCards(S.data.baseline.cards, { base: true });
+    own.filter(c => !c.parentId).forEach(c => {
+      const at = starts.get(c.id), next = c.day !== null && !A.pinned(c) && isNum(at) && A.daySchedule(week, c.day).rows.find(r => r.start >= at);
+      A.insertCard(week, c, c.day !== null && A.pinned(c) ? A.autoSpot(week, c.day, c) : next ? next.card.id : null);
+    });
+    own.filter(c => c.parentId).forEach(c => A.insertCard(week, c, null));
+    A.tidyNesting(week);
+    A.save();
+    A.renderAll();
+  }
+
+  // Copies the week before's plan into the week on screen, replacing what's
+  // there (after asking). Goal cards keep their goal only if it still exists.
+  function copyPrevWeek() {
+    const key = A.viewKey();
+    if (!key) return;
+    const prev = A.weekOf(addDays(key, -7)), week = A.ensureWeek(key);
+    if (!prev.cards.length || week.closed) return;
+    if (week.cards.length && !confirm(`Replace this week's ${week.cards.length} card${week.cards.length === 1 ? "" : "s"} with a copy of ${fmtWeek(addDays(key, -7))}?`)) return;
+    week.cards = copyCards(prev.cards);
+    A.save();
+    A.renderAll();
+  }
+
+  // Makes the week on screen the new baseline: its cards on days (not parked)
+  // replace the baseline's.
+  function saveAsBaseline() {
+    const key = A.viewKey(), week = key && A.weekOf(key);
+    const cards = week ? week.cards.filter(c => c.day !== null) : [];
+    if (!cards.length) return;
+    if (S.data.baseline.cards.length && !confirm(`Replace your baseline (${S.data.baseline.cards.length} cards) with this week's ${cards.length} cards?`)) return;
+    S.data.baseline.cards = copyCards(cards, { base: false });
+    A.save();
+    A.renderAll();
+  }
+
+  // Gives every counted day's free hours the job "Free time" — the deliberate
+  // buffer you shrink when something unexpected comes up: the free time
+  // before each pinned card, then at the end of the day, as far as the day's
+  // free hours go.
+  function fillGaps() {
+    const key = A.viewKey();
+    if (!key) return;
+    const week = A.ensureWeek(key), b = A.budgetOf(week, key);
+    let added = 0;
+    b.days.forEach(d => {
+      let room = DAY_HOURS - b.totals[d];
+      const { rows, end } = A.daySchedule(week, d);
+      const gaps = rows.filter(r => r.gap > 0).map(r => [r.gap, r.card.id]).concat(end < DAY_HOURS ? [[DAY_HOURS - end, null]] : []);
+      gaps.forEach(([gap, beforeId]) => {
+        const hours = Math.min(gap, room);
+        if (hours <= 0) return;
+        const c = { id: newId(), title: FREE_TIME, hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null };
+        const into = A.mergeTarget(week, c, d, null, "bottom", beforeId);
+        if (into) into.hours += hours;
+        else A.insertCard(week, c, beforeId);
+        room -= hours;
+        added += hours;
+      });
+    });
+    if (!added) return;
+    A.save();
+    A.renderAll();
+  }
+
+  function clearBoard() {
+    const key = A.shownKey(), list = A.readList(key);
+    if (!list.cards.length || A.isLocked()) return;
+    if (!confirm(key === "base" ? "Clear the whole baseline?" : `Remove all ${list.cards.length} cards from this week?`)) return;
+    A.listFor(key).cards = [];
+    A.save();
+    A.renderAll();
+  }
+
+  // The sample's titles take its colours, where no other title has them.
+  function startSampleBaseline() {
+    S.data.baseline.cards = DAYS.flatMap(d => SAMPLE_BASELINE.filter(s => s.days.includes(d))
+      .map(s => ({ id: newId(), title: s.title, hours: s.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null })));
+    SAMPLE_BASELINE.forEach(s => {
+      const key = A.titleKey(s.title);
+      if (!S.data.colors[key] && !Object.values(S.data.colors).some(e => e.c === s.color)) S.data.colors[key] = { c: s.color, u: 0 };
+    });
+    A.save();
+    A.renderAll();
+  }
+
+  Object.assign(A, { copyCards, loadBaseline, copyPrevWeek, saveAsBaseline, fillGaps, clearBoard, startSampleBaseline });
+})(Kyoshi, Kyoshi.apps.momo);

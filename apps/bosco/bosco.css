@@ -1,0 +1,90 @@
+/* Bosco · bosco.css — Bosco's own styles, every selector under .app-bosco.
+ * Shared components (buttons, inputs, sections, stats, tables, pop-ups…) are in core/kyoshi.css.
+ * Sections: Layout · Stats & badges · Goals & projection sliders · Start-up dosing, vial & pace goal · Chart */
+
+/* --- Layout --- */
+.app-bosco.no-med .med { display: none !important; } /* dose tracking off */
+.app-bosco .row > .date-cell { min-width: 140px; } /* room for the whole date beside its calendar icon */
+.app-bosco .mode-toggle { margin-bottom: 10px; }
+
+/* --- Stats & badges --- */
+.app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */
+.app-bosco #statsSection .stat { min-width: 230px; } /* room for a full row of window pills */
+/* Room for "Wednesday", or wider when that's what keeps a dose on one line (fewer to a row). */
+.app-bosco #upcomingDosesGrid .stat { flex: 1 0 140px; min-width: auto; }
+.app-bosco #upcomingDosesGrid .lbl span, .app-bosco #upcomingDosesGrid .dose { white-space: nowrap; } /* a date or dose never splits across lines */
+.app-bosco #upcomingDosesGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
+.app-bosco #upcomingDosesGrid .stat.due button { margin-top: 8px; }
+.app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
+/* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
+.app-bosco .badge.reached { background: #dcfce7; color: #16a34a; }
+.app-bosco .badge.projected { background: #fef3c7; color: #92400e; }
+.app-bosco .badge.flat { background: var(--border); color: var(--muted); }
+.app-bosco .badge.unreachable { background: #fee2e2; color: #dc2626; }
+/* The saved vial's concentration beside doses, to check against the vial in hand
+   (after the heading or amount, or under it when there's no room). */
+.app-bosco .vial-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
+.app-bosco .badge.vial { border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app-bosco .badge.vial span { color: var(--muted); font-weight: 400; }
+
+/* --- Goals & projection sliders --- */
+.app-bosco .proj-box { border-top: 1px dashed var(--border); margin-top: 12px; padding-top: 10px; }
+.app-bosco .proj-box .mode-toggle { margin-bottom: 8px; }
+.app-bosco #customRateWrap { margin-top: 8px; }
+.app-bosco #futureWeightGrid { margin-top: 10px; }
+.app-bosco #futureWeightGrid .stat { text-align: center; }
+.app-bosco #futureWeightGrid .val { font-size: 1em; }
+.app-bosco .goals-table { margin-top: 14px; }
+/* Sliders: the custom weekly rate (-2% to +1%, 0.25% steps) and the vial's
+   BAC water (1 to 3 mL, 0.1 mL steps). Ticks and labels are inset by half
+   the thumb width so they line up with the thumb's center. */
+.app-bosco .rate-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.app-bosco .rate-head label { margin-bottom: 0; }
+.app-bosco .rate-value { flex: 0 0 auto; min-width: 56px; padding: 4px 12px; border-radius: 6px; background: var(--accent); color: #fff; font-size: .9em; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+.app-bosco input[type=range] { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 5px; margin: 0; border-radius: 3px; background: var(--border); outline: none; }
+.app-bosco input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; box-sizing: border-box; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); cursor: pointer; }
+.app-bosco input[type=range]::-moz-range-thumb { box-sizing: border-box; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 1px 2px rgba(0, 0, 0, .3); cursor: pointer; }
+.app-bosco input[type=range]::-moz-range-track { height: 5px; border-radius: 3px; background: var(--border); }
+.app-bosco input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(37, 99, 235, .3); }
+.app-bosco input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(37, 99, 235, .3); }
+.app-bosco .rate-ticks { position: relative; height: 6px; margin: 10px 8.5px 0; background: linear-gradient(90deg, var(--border) 1px, transparent 1px) 0 0 / calc((100% - 1px) / 12) 100% repeat-x; }
+.app-bosco .rate-ticks::after { content: ""; position: absolute; left: calc((100% - 1px) * 2 / 3); top: -1.5px; width: 1px; height: 9px; background: var(--muted); }
+.app-bosco .bac-ticks { background-size: calc((100% - 1px) / 4) 100%; } /* a tick every 0.5 mL */
+.app-bosco .bac-ticks::after { content: none; }
+.app-bosco .rate-labels { position: relative; height: 14px; margin: 4px 8.5px 0; font-size: .72em; color: var(--muted); }
+.app-bosco .rate-labels span { position: absolute; top: 0; white-space: nowrap; }
+.app-bosco .rate-labels .rl-min { left: 0; }
+.app-bosco .rate-labels .rl-zero { left: calc((100% - 1px) * 2 / 3); transform: translateX(-50%); }
+.app-bosco .rate-labels .rl-mid { left: calc((100% - 1px) / 2); transform: translateX(-50%); }
+.app-bosco .rate-labels .rl-max { right: 0; }
+
+/* --- Start-up dosing plan, active vial & pace goal --- */
+.app-bosco .dosing, .app-bosco .pace-goal { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.app-bosco #oneTimeInfoFields:empty { display: none; }
+/* No questions above the dosing, or above the pace goal with no dosing either. */
+.app-bosco #oneTimeInfoFields:empty + .dosing, .app-bosco #oneTimeInfoFields:empty + [hidden] + .pace-goal { margin-top: 8px; padding-top: 0; border-top: none; }
+.app-bosco .dosing .window-pills { margin-top: 0; }
+/* The plan's (and pace goal's) fields: three across, or two per row on phones
+   (the dose time on a row of its own), boxes lined up even when a label wraps. */
+.app-bosco .dose-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; }
+@media (max-width: 600px) { .app-bosco .dose-fields { grid-template-columns: 1fr 1fr; } }
+.app-bosco .vial-head { margin-top: 14px; }
+.app-bosco .summary-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; font-size: .9em; }
+.app-bosco .summary-line .muted { color: var(--muted); }
+.app-bosco .anchor-line, .app-bosco #anchorEditor { margin-top: 10px; }
+.app-bosco .vial-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+.app-bosco .bac-head { margin-top: 12px; }
+
+/* --- Chart --- */
+.app-bosco #chartSvg { display: block; width: 100%; height: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+.app-bosco #chartSvg text { font-size: 9px; fill: var(--muted); }
+.app-bosco #chartSvg .grid { stroke: var(--border); stroke-width: .5; stroke-dasharray: 2 2; }
+.app-bosco #chartSvg .goal { stroke: #e11d48; stroke-width: 2; stroke-dasharray: 4 4; }
+.app-bosco #chartSvg .goal-tag { fill: #e11d48; }
+.app-bosco #chartSvg .goal-label { fill: #fff; font-weight: 700; }
+.app-bosco #chartSvg .line { fill: none; stroke: #2563eb; stroke-width: 2; }
+.app-bosco #chartSvg circle { fill: #2563eb; }
+.app-bosco .legend { display: flex; gap: 16px; font-size: .8em; color: var(--muted); margin-top: 6px; }
+.app-bosco .legend span { display: inline-flex; align-items: center; gap: 5px; }
+.app-bosco .swatch { width: 14px; height: 3px; border-radius: 2px; background: #2563eb; }
+.app-bosco .swatch.goal { height: 0; background: none; border-top: 2px dashed #e11d48; }

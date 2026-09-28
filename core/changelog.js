@@ -1,0 +1,15 @@
+/* Kyoshi · core/changelog.js — Kyoshi's own version and changelog (the shared core).
+ * Newest first; K.VERSION is the top entry. Version X.YYY, bump one tier per
+ * change: +0.001 bug fix, +0.010 tiny tweak, +0.100 small feature, +1 large feature.
+ * Apps keep their own in apps/<id>/changelog.js. Keep entries brief: a sentence per change. */
+(function (K) {
+  "use strict";
+  K.CHANGELOG = [
+    { version: "1.000", date: "2026-09-28", changes: [
+      "Initial release: one home for Bosco and Momo, switched from the button beside Theme.",
+      "Shared look, Developer Mode, bug reports, JSON backups and one sync folder for every app.",
+      "Developer Mode can export or import every app at once, and time travel works across apps."
+    ] }
+  ];
+  K.VERSION = K.CHANGELOG[0].version;
+})(Kyoshi);

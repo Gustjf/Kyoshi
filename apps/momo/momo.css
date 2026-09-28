@@ -1,0 +1,222 @@
+/* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
+ * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
+ * Sections: Tokens · Week tabs · Bank & parking lot · Board & cards · Goals · Pop-up fields · Phones */
+
+/* --- Tokens --- */
+/* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
+   and how much of its colour a card's background takes. */
+:root { --momo-hour: 22px; --momo-slate: #64748b; --momo-tint: 14%; }
+[data-theme="dark"] { --momo-slate: #94a3b8; --momo-tint: 24%; }
+.app-momo { --warn: #d97706; }
+[data-theme="dark"] .app-momo { --warn: #f59e0b; }
+.app-momo .empty-msg { padding: 2px 0; line-height: 1.45; }
+
+/* --- Week tabs --- */
+.app-momo .weekbar { display: flex; align-items: stretch; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.app-momo .views { flex: 1 1 480px; }
+.app-momo .views .mode-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 9px 8px; }
+.app-momo .vb-date, .app-momo .vb-status { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78em; font-weight: 400; color: var(--muted); }
+.app-momo .vb-status.good { color: var(--good); }
+.app-momo .vb-status.bad { color: var(--bad); font-weight: 600; }
+.app-momo .mode-btn.active .vb-date, .app-momo .mode-btn.active .vb-status { color: #fff; opacity: .9; }
+.app-momo #closeOutNowBtn { flex: 0 0 auto; }
+
+/* --- To Be Budgeted bank & parking lot --- */
+.app-momo .bank-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px 16px; flex-wrap: wrap; }
+.app-momo .bank-figure { min-width: 0; flex: 1 1 320px; }
+.app-momo .bank-line { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.app-momo .bank-num { font-size: 1.9em; font-weight: 700; line-height: 1.25; padding: 0 12px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.app-momo .bank.pos .bank-num { background: var(--good-bg); border-color: transparent; color: var(--good); }
+.app-momo .bank-of { color: var(--muted); font-size: .9em; }
+.app-momo .bank-msg { margin-top: 8px; font-size: .88em; color: var(--muted); line-height: 1.4; }
+.app-momo .bank-msg.bad { color: var(--bad); font-weight: 600; }
+.app-momo .bank-msg.good { color: var(--good); }
+.app-momo .bank-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app-momo .parking { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; min-height: 46px; margin-top: 12px; padding: 7px 8px; border: 1px dashed var(--border); border-radius: 8px; transition: border-color .15s, background-color .15s; }
+.app-momo .parking.drop-target { border-color: var(--accent); background: var(--ring); }
+.app-momo .parking-label { font-size: .72em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.app-momo .parking-total { font-size: .8em; color: var(--muted); }
+.app-momo .parking-cards { display: contents; }
+.app-momo .parking-empty { font-size: .8em; color: var(--muted); }
+.app-momo .parking-add { margin-left: auto; }
+
+/* --- Board & cards --- */
+.app-momo .board-wrap { overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
+.app-momo .board { display: grid; grid-template-columns: repeat(7, minmax(128px, 1fr)); gap: 8px; }
+.app-momo .col { display: flex; flex-direction: column; min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; transition: border-color .15s, box-shadow .15s, opacity .15s; }
+.app-momo .col-head { padding: 8px 10px 7px; border-bottom: 1px solid var(--border); border-radius: 7px 7px 0 0; transition: background-color .15s; }
+.app-momo .col-day { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: .8em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.app-momo .col-date { font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.app-momo .col-total { margin-top: 3px; font-size: .78em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app-momo .col.full .col-total::after { content: " ✓"; }
+.app-momo .col.drop-target .col-total::after { content: none; }
+.app-momo .col-bar { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.app-momo .col-bar span { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width .2s; }
+.app-momo .col.full .col-total { color: var(--good); }
+.app-momo .col.full .col-bar span { background: var(--good); }
+.app-momo .col.over { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.app-momo .col.over .col-head { background: var(--bad-bg); }
+.app-momo .col.over .col-total { color: var(--bad); font-weight: 700; }
+.app-momo .col.over .col-bar span { background: var(--bad); }
+.app-momo .col.today { border-color: var(--accent); }
+.app-momo .col.today .col-date { color: var(--accent); font-weight: 600; }
+.app-momo .col.past { opacity: .5; }
+.app-momo .col.drop-target:not(.over) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.app-momo .col-body { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+
+/* Cards: on a day, each is as tall as its time on the board's ruler (set as it's drawn), so cards
+   at the same time line up across the week, and fits two lines: the title across the whole card,
+   then when it starts and its hours. */
+.app-momo .card { position: relative; flex: 0 0 auto; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; justify-content: space-between; gap: 0 6px; padding: 4px 7px 3px; overflow: hidden; border-radius: 5px; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) var(--momo-tint), var(--panel)); font-size: .8em; line-height: 1.25; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; transition: box-shadow .15s, opacity .15s; }
+.app-momo .card:hover { box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
+.app-momo .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* A pinned card that the cards above run into is drawn at its own time, over them, set in far
+   enough to leave their edge to grab. */
+.app-momo .col-body > .card { margin: var(--mt, 0) 0 var(--mb, 0); }
+.app-momo .col-body > .card.clashing { margin-left: 25%; box-shadow: 0 1px 5px rgba(0, 0, 0, .3); }
+.app-momo .card-title { flex: 1 0 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.app-momo .card-hours { flex: 0 0 auto; color: var(--muted); font-size: .92em; font-variant-numeric: tabular-nums; }
+.app-momo .card.is-goal > .card-title::before, .app-momo .card.is-goal > .card-own > .card-title::before { content: ""; display: inline-block; box-sizing: border-box; width: 8px; height: 8px; margin: -2px 5px 0 0; border: 2px solid var(--c); border-radius: 50%; vertical-align: middle; }
+/* When a card starts, on the 24-hour clock (red when the cards above run
+   into it, or past midnight), then its pin: filled in the card's colour
+   while pinned, otherwise only there on hover. A pinned card stays put. */
+.app-momo .card-time { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 1px; color: var(--muted); font-size: .92em; font-variant-numeric: tabular-nums; }
+.app-momo .card-time.clash { color: var(--bad); font-weight: 700; }
+.app-momo .pin { display: inline-flex; margin: -2px 0 -2px 1px; padding: 2px; border-radius: 3px; color: var(--muted); cursor: pointer; visibility: hidden; }
+.app-momo .pin:hover { background: var(--ring); color: var(--text); }
+.app-momo .pin-icon { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.app-momo .pin.on { visibility: visible; color: var(--c); }
+.app-momo .pin.on .pin-icon { fill: currentColor; }
+.app-momo .card:hover > .card-time > .pin, .app-momo .card-own:hover > .card-time > .pin { visibility: visible; }
+@media (hover: none) { .app-momo .pin { visibility: visible; opacity: .4; } .app-momo .pin.on { opacity: 1; } }
+.app-momo .board.locked .pin { cursor: default; }
+.app-momo .board.locked .pin:not(.on) { display: none; }
+.app-momo .card.pinned { cursor: pointer; }
+/* Trying to drag a pinned card wiggles its pin. */
+.app-momo .pin.nudge { animation: momo-nudge .16s ease-in-out 3 alternate; }
+@keyframes momo-nudge { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+.app-momo .card.dragging { opacity: .3; }
+/* A card copied (Ctrl+C) or cut (Ctrl+X) is shaded while it waits to be pasted: blue for a copy, amber for a cut.
+   While Alt is held, the card under the mouse is shaded red, as Alt+click deletes it (a block's own part: the cards inside it stay). */
+.app-momo .card.clip::after, .app-momo.alt-held :is(#board:not(.locked), #parking) :is(.card:not(.has-inner), .card-own):hover::after { content: ""; position: absolute; inset: 0; border-radius: inherit; outline: 2px dashed var(--clip); outline-offset: -2px; background: color-mix(in srgb, var(--clip) 18%, transparent); pointer-events: none; }
+.app-momo .card.clip { --clip: var(--accent); }
+.app-momo .card.clip.cut { --clip: var(--warn); }
+.app-momo.alt-held :is(#board:not(.locked), #parking) :is(.card:not(.has-inner), .card-own):hover { --clip: var(--bad); }
+.app-momo .card.drop-into, .app-momo .card.resizing { box-shadow: 0 0 0 2px var(--accent); }
+.app-momo .grip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; cursor: ns-resize; }
+.app-momo .grip::after { content: ""; position: absolute; left: 50%; bottom: 2px; width: 18px; height: 2px; margin-left: -9px; border-radius: 1px; background: var(--c); opacity: 0; transition: opacity .15s; }
+.app-momo .card:not(.has-inner):hover > .grip::after, .app-momo .card-own:hover > .grip::after { opacity: .8; }
+@media (hover: none) { .app-momo .grip { display: none; } }
+/* A card with others inside it (lunch inside work) is one block: the cards
+   inside go at its top, middle or bottom around its own hours, which split in
+   two around the middle ones. Each part is resized from its own bottom edge. On a day, every part
+   is as tall as its time on the ruler; the cards inside are set in from the top and left. */
+.app-momo .card.has-inner { flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; gap: 0; padding: 0 3px 0 0; }
+.app-momo .card-own { position: relative; flex: none; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; justify-content: space-between; gap: 0 6px; overflow: hidden; padding: 4px 4px 0 7px; }
+.app-momo .card-own:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.app-momo .card-rest { padding: 0; } /* just its resize edge */
+.app-momo .card.inner { margin: 3px 0 0 4px; padding: 2px 6px; border-radius: 4px; }
+.app-momo .card .card { font-size: 1em; }
+/* Parked cards (and their ghost while dragged) are one line, only as wide as they need. */
+.app-momo .parked > .card-rest { display: none; }
+.app-momo .card.parked { flex-wrap: nowrap; height: auto; align-items: center; padding: 5px 8px; }
+.app-momo .card.parked.has-inner { flex-direction: row; align-items: center; gap: 3px; padding: 3px; }
+.app-momo .parked > .card-own { flex-wrap: nowrap; padding: 2px 4px; }
+.app-momo .card.parked.inner { height: auto; margin: 0; padding: 2px 6px; }
+.app-momo .parked .card-title { flex: 0 1 auto; }
+.app-momo .parked .card-hours { font-size: 1em; }
+.app-momo .board.locked .card { cursor: default; }
+.app-momo .card.ghost { position: fixed; left: 0; top: 0; z-index: 10001; margin: 0; pointer-events: none; opacity: .95; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+/* A group drag's ghost is a stack: the same card on several days. */
+.app-momo .card.ghost.group { box-shadow: 4px 4px 0 -1px var(--panel), 4px 4px 0 0 var(--c), 8px 8px 0 -1px var(--panel), 8px 8px 0 0 var(--c), 0 8px 24px rgba(0, 0, 0, .25); }
+.app-momo .drop-line { display: none; position: fixed; z-index: 10000; height: 3px; border-radius: 2px; background: var(--accent); pointer-events: none; }
+/* Page-wide while Momo drags or resizes a card (body classes set by drag.js and drop.js). */
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
+body.is-resizing, body.is-resizing * { cursor: ns-resize !important; }
+body.is-dragging, body.is-resizing { user-select: none; -webkit-user-select: none; }
+/* A day's free time is a dashed block saying how much it is, as tall as its time on the ruler:
+   before a pinned card, and after the last card unless that runs to midnight. It's the one
+   place on a day to add a card: click it. The last one fills the rest of the column. */
+.app-momo .free { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 4px; border: 1px dashed var(--border); border-radius: 5px; background: transparent; color: var(--muted); font-size: .76em; }
+.app-momo .free.end { flex-grow: 1; }
+.app-momo button.free:hover { background: var(--ring); border-color: var(--accent); color: var(--accent); }
+/* How far over a day is, where its free time would be: just a label. */
+.app-momo .free.over { min-height: 24px; border-color: var(--bad); color: var(--bad); font-weight: 600; }
+
+/* --- Goals --- */
+.app-momo .goal { padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+.app-momo .goal:first-child { border-top: none; padding-top: 2px; }
+.app-momo .goal:hover .goal-name, .app-momo .goal:focus-visible .goal-name { color: var(--accent); }
+.app-momo .goal:focus-visible { outline: none; }
+.app-momo .goal-top { display: flex; align-items: center; gap: 8px; }
+.app-momo .goal-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.app-momo .goal-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-momo .goal-nums { font-size: .85em; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app-momo .goal-bar { display: flex; height: 6px; margin: 7px 0 6px 18px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.app-momo .goal-bar .done { background: var(--c); }
+.app-momo .goal-bar .planned { background: color-mix(in srgb, var(--c) 40%, transparent); }
+/* A goal in hours a week: its bar is the week's hours toward them, green once
+   there, yellow while short with enough hours left to budget, red without. */
+.app-momo .goal-bar.weekly { --s: var(--good); background: color-mix(in srgb, var(--s) 25%, var(--border)); }
+.app-momo .goal-bar.weekly.under { --s: var(--warn); }
+.app-momo .goal-bar.weekly.over { --s: var(--bad); }
+.app-momo .goal-bar.weekly .done { background: var(--s); }
+.app-momo .goal-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; margin-left: 18px; }
+.app-momo .goal-meta { font-size: .8em; color: var(--muted); }
+/* A goal this plan can't meet: it needs more than its most hours a week to
+   stay on time, or the week is short of its hours a week with too few left. */
+.app-momo .goal.off-track { margin: 0 -8px; padding: 9px 8px; border-radius: 6px; background: var(--bad-bg); border-top-color: transparent; }
+.app-momo .goal.off-track + .goal { border-top-color: transparent; }
+.app-momo .goal.off-track .goal-name, .app-momo .goal.off-track .goal-nums, .app-momo .goal.off-track .goal-meta { color: var(--bad); }
+.app-momo .goal.off-track .goal-meta { font-weight: 600; }
+.app-momo .badge { font-size: .75em; white-space: nowrap; }
+/* Pills on a fixed light background keep their dark text in both themes. */
+.app-momo .badge.funded, .app-momo .badge.reached { background: #dcfce7; color: #16a34a; }
+.app-momo .badge.under { background: #fef3c7; color: #92400e; }
+.app-momo .badge.over { background: var(--bad); color: #fff; }
+.app-momo .badge.plain { background: var(--border); color: var(--muted); }
+
+/* --- Pop-up fields: steppers, day pills, presets, dates, colours, close-out rows --- */
+.app-momo .stepper { display: flex; }
+.app-momo .stepper input { min-width: 0; text-align: center; border-radius: 0; }
+.app-momo .step-btn { flex: 0 0 34px; padding: 0; border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font-size: 1.1em; line-height: 1; }
+.app-momo .step-btn:first-child { border-radius: 5px 0 0 5px; border-right: none; }
+.app-momo .step-btn:last-child { border-radius: 0 5px 5px 0; border-left: none; }
+.app-momo .step-btn:hover { background: var(--border); }
+.app-momo .day-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.app-momo .day-pill { min-width: 44px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--btn-bg); color: var(--text); font-size: .82em; }
+.app-momo .day-pill:hover:not(.active) { background: var(--border); }
+.app-momo .day-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.app-momo .field-head { display: flex; align-items: center; justify-content: space-between; gap: 4px 10px; flex-wrap: wrap; margin-bottom: 5px; }
+.app-momo .field-head label { margin: 0; }
+.app-momo .presets { display: flex; gap: 5px; margin-left: auto; }
+.app-momo .presets button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.app-momo .presets button.active:hover { background: var(--accent-dark); }
+.app-momo .date-parts { display: flex; gap: 8px; }
+.app-momo .date-parts > * { min-width: 0; }
+.app-momo .date-parts select { flex: 2 1 0; }
+.app-momo .date-parts input { flex: 1 1 0; }
+.app-momo .date-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.app-momo .date-note { font-size: .8em; color: var(--muted); }
+.app-momo .date-note.bad { color: var(--bad); }
+.app-momo .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.app-momo .swatch { width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 2px solid var(--panel); background: var(--c); box-shadow: 0 0 0 1px var(--border); transition: transform .1s; }
+.app-momo .swatch:hover { background: var(--c); transform: scale(1.12); }
+.app-momo .swatch.active { box-shadow: 0 0 0 2px var(--text); }
+.app-momo .swatch.own { margin-right: 6px; } /* its colour now, when that isn't a highlight */
+.app-momo .co-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.app-momo .co-name { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.app-momo .co-detail { margin-top: 3px; font-size: .8em; color: var(--muted); }
+.app-momo .co-done label { margin-bottom: 2px; font-size: .75em; }
+.app-momo .co-done .stepper { width: 128px; }
+.app-momo .co-result { grid-column: 1 / -1; font-size: .82em; color: var(--muted); }
+.app-momo .co-result strong { color: var(--text); }
+
+/* --- Phones --- */
+@media (max-width: 640px) {
+  :root { --momo-hour: 18px; }
+  .app-momo .board { grid-template-columns: repeat(7, 136px); }
+  .app-momo .pin:not(.on) { display: none; } /* room for titles: pin from the baseline's editor instead */
+  .app-momo .views .mode-btn { padding: 8px 4px; font-size: .84em; }
+  .app-momo .bank-num { font-size: 1.6em; }
+}
