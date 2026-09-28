@@ -1,8 +1,8 @@
 /* Kyoshi · core/shell.js — the shell: app registry, header & switcher, theme, start-up.
  * K.register(meta) → A, an app's namespace (the app contract is in CLAUDE.md).
- * K.start() (the last line of index.html) makes each app's root from A.markup, loads and
- * starts every app, shows one (the URL's #id, else the last used), then runs the shared
- * keyboard, minute tick and other-tab reloads.
+ * K.start() (the last line of index.html) opens the store (core/storage.js), makes each app's
+ * root from A.markup, loads and starts every app, shows one (the URL's #id, else the last
+ * used), then runs the shared keyboard, minute tick and other-tab reloads.
  * Only the app on screen is in the page: the others' roots are kept aside (detached) but
  * keep running — so ids only need to be unique within an app, and A.$ looks only inside it. */
 (function (K) {
@@ -32,20 +32,25 @@
   K.active = () => active;
 
   // --- Starting ---
-  K.start = () => {
+  K.start = async () => {
     initTheme();
+    const slow = setTimeout(K.backup.checkStorage, 5000); // says why nothing shows up, if the browser is slow
+    await K.storage.open(); // everything saved, into memory
+    clearTimeout(slow);
     K.backup.init();
     K.bugs.init();
     K.order.forEach(id => startApp(K.apps[id]));
     K.dev.init();
     wireSwitcher();
     wireKeys();
-    window.addEventListener("storage", onStorage);
+    K.storage.onChange(onStoreChange);
+    window.addEventListener("storage", e => { if (e.key === "kyoshi.theme") applyTheme(e.newValue); });
     window.addEventListener("hashchange", () => show(K.apps[location.hash.slice(1)]));
     setInterval(tick, TICK_MS);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
     show(K.apps[location.hash.slice(1)] || K.apps[K.storage.get("kyoshi.lastApp")] || K.apps[K.order[0]]);
     K.sync.init();
+    K.backup.checkStorage();
   };
 
   // Makes the app's root, then loads (A.load), gets its sync identity and starts it (A.init).
@@ -197,19 +202,21 @@
   function tick() {
     K.order.forEach(id => call(K.apps[id], "onTick"));
     renderSwitcher();
+    K.backup.checkStorage();
   }
   K.tick = tick;
 
-  // --- Another tab of Kyoshi saved: the app whose keys changed reloads them (once that
-  // tab's done), so this one never saves over it. Not in test mode, which isn't saving. ---
+  // --- Another tab of Kyoshi saved (keys, or null for everything): the app whose keys changed
+  // reloads them (once that tab's done), so this one never saves over it. Not in test mode,
+  // which isn't saving. ---
   const reloadTimers = {};
-  function onStorage(e) {
+  function onStoreChange(keys) {
     if (K.testMode) return;
-    if (e.key === "kyoshi.theme") return applyTheme(e.newValue);
-    if (e.key === "kyoshi.bugReports") { K.bugs.load(); return K.dev.refresh(); }
+    const touched = prefix => keys === null || keys.some(k => k.startsWith(prefix));
+    if (touched("kyoshi.bugReports")) { K.bugs.load(); K.dev.refresh(); }
     K.order.forEach(id => {
       const A = K.apps[id];
-      if (!A.started || (e.key !== null && !e.key.startsWith(A.store.prefix))) return;
+      if (!A.started || !touched(A.store.prefix)) return;
       clearTimeout(reloadTimers[id]);
       reloadTimers[id] = setTimeout(() => {
         try {

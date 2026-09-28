@@ -24,7 +24,7 @@
   const apps = () => K.order.map(id => K.apps[id]).filter(A => A.started && A._sync);
   const ui = () => K.backup.render();
 
-  // The folder's handle can't go in localStorage, so it's kept in IndexedDB.
+  // The folder's handle isn't text, so it has its own IndexedDB database ("kyoshi"), apart from the data (core/storage.js).
   function folderStore(mode, action) {
     return new Promise((resolve, reject) => {
       const open = indexedDB.open("kyoshi", 1);
@@ -66,8 +66,8 @@
   // --- Each app's sync identity ---
   // This browser's id, shared by every app's save files.
   function deviceId() {
-    let id = K.storage.get("kyoshi.device");
-    if (!/^[a-z0-9]{6}$/.test(id || "")) K.storage.set("kyoshi.device", id = Math.random().toString(36).slice(2, 8).padEnd(6, "0"));
+    let id = K.store.get("device");
+    if (!/^[a-z0-9]{6}$/.test(id || "")) K.store.set("device", id = Math.random().toString(36).slice(2, 8).padEnd(6, "0"));
     return id;
   }
 

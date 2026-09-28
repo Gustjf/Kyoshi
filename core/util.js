@@ -20,6 +20,13 @@
   // A change with its sign, none when it rounds to zero: -0.52, +1.0, 0.0.
   const fmtSigned = (v, places) => { const s = Math.abs(v).toFixed(places); return `${+s ? (v < 0 ? "-" : "+") : ""}${s}`; };
   const SEP = '<span class="sep">|</span>'; // between values on one line: a dot could pass for a decimal point
+  // A size in bytes, for people: "640 bytes", "4.2 KB", "1.7 MB", "120 GB".
+  function fmtBytes(n) {
+    const units = ["bytes", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+    return `${i ? fmtNum(n, n < 10 ? 1 : 0) : Math.round(n)} ${units[i]}`;
+  }
 
   // A number field's value: null when empty, NaN when the browser couldn't parse it.
   function readNumber(el) {
@@ -97,7 +104,7 @@
   }
 
   K.util = {
-    isNum, isPos, isObj, sum, mean, extent, newId, esc, pad2, fmtNum, fmtSigned, SEP, readNumber,
+    isNum, isPos, isObj, sum, mean, extent, newId, esc, pad2, fmtNum, fmtSigned, SEP, fmtBytes, readNumber,
     DAY_MS, dateMs, msDate, isDate, daysBetween, addDays, daysInMonth, localDate, todayStr, now,
     fmtDate, fmtShort, fmtWeekday, isTime, fmtTime, clockTime,
     downloadBlob, downloadJSON, readFile, copyText

@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kyoshi</title>
 <!-- Kyoshi · index.html — the shell's markup and every file, in load order. Rules and the
-     map of where things are: CLAUDE.md. The tab's title and icon become the app on screen's. -->
+     map of where things are: CLAUDE.md. The tab's title and icon become the app on screen's.
+     Every file link ends in the same build stamp (?v=…): change it with every update, so a
+     normal reload loads the new files instead of ones GitHub Pages let the browser keep. -->
 <link rel="icon" id="kFavicon" href="data:,">
-<link rel="stylesheet" href="core/kyoshi.css">
+<link rel="stylesheet" href="core/kyoshi.css?v=20260928-2034">
 <!-- Apps' own styles (each under .app-<id>). -->
-<link rel="stylesheet" href="apps/bosco/bosco.css">
-<link rel="stylesheet" href="apps/momo/momo.css">
+<link rel="stylesheet" href="apps/bosco/bosco.css?v=20260928-2034">
+<link rel="stylesheet" href="apps/momo/momo.css?v=20260928-2034">
 </head>
 <body>
 <div class="shell">
@@ -36,6 +38,9 @@
   <section id="kSyncBanner" class="banner" hidden>
     <span id="kSyncBannerText"></span>
     <button id="kSyncBannerBtn">Reconnect</button>
+  </section>
+  <section id="kStorageBanner" class="banner" hidden>
+    <span id="kStorageBannerText"></span>
   </section>
   <section id="kTestBanner" class="banner" hidden>
     <span id="kTestBannerText"></span>
@@ -77,6 +82,10 @@
     </div>
   </div>
   <div class="dev-block">
+    <div class="dev-block-head">Storage</div>
+    <div class="dev-hint" id="kDevStorage"></div>
+  </div>
+  <div class="dev-block">
     <div class="dev-block-head">Bug reports: <strong id="kDevBugCount">0</strong></div>
     <div class="dev-actions">
       <button class="secondary small" id="kDevCopyBugs">Copy all</button>
@@ -102,46 +111,46 @@
 </div>
 
 <!-- Core, in order: base.js first (it catches errors while the rest loads). -->
-<script src="core/base.js"></script>
-<script src="core/changelog.js"></script>
-<script src="core/util.js"></script>
-<script src="core/seasons.js"></script>
-<script src="core/storage.js"></script>
-<script src="core/modal.js"></script>
-<script src="core/sync.js"></script>
-<script src="core/backup.js"></script>
-<script src="core/bugs.js"></script>
-<script src="core/dev.js"></script>
-<script src="core/shell.js"></script>
+<script src="core/base.js?v=20260928-2034"></script>
+<script src="core/changelog.js?v=20260928-2034"></script>
+<script src="core/util.js?v=20260928-2034"></script>
+<script src="core/seasons.js?v=20260928-2034"></script>
+<script src="core/storage.js?v=20260928-2034"></script>
+<script src="core/modal.js?v=20260928-2034"></script>
+<script src="core/sync.js?v=20260928-2034"></script>
+<script src="core/backup.js?v=20260928-2034"></script>
+<script src="core/bugs.js?v=20260928-2034"></script>
+<script src="core/dev.js?v=20260928-2034"></script>
+<script src="core/shell.js?v=20260928-2034"></script>
 
 <!-- Apps, in switcher order. Each app: app.js first, events.js last. -->
-<script src="apps/bosco/app.js"></script>
-<script src="apps/bosco/markup.js"></script>
-<script src="apps/bosco/changelog.js"></script>
-<script src="apps/bosco/data.js"></script>
-<script src="apps/bosco/trend.js"></script>
-<script src="apps/bosco/render.js"></script>
-<script src="apps/bosco/setup.js"></script>
-<script src="apps/bosco/doses.js"></script>
-<script src="apps/bosco/image.js"></script>
-<script src="apps/bosco/events.js"></script>
+<script src="apps/bosco/app.js?v=20260928-2034"></script>
+<script src="apps/bosco/markup.js?v=20260928-2034"></script>
+<script src="apps/bosco/changelog.js?v=20260928-2034"></script>
+<script src="apps/bosco/data.js?v=20260928-2034"></script>
+<script src="apps/bosco/trend.js?v=20260928-2034"></script>
+<script src="apps/bosco/render.js?v=20260928-2034"></script>
+<script src="apps/bosco/setup.js?v=20260928-2034"></script>
+<script src="apps/bosco/doses.js?v=20260928-2034"></script>
+<script src="apps/bosco/image.js?v=20260928-2034"></script>
+<script src="apps/bosco/events.js?v=20260928-2034"></script>
 
-<script src="apps/momo/app.js"></script>
-<script src="apps/momo/markup.js"></script>
-<script src="apps/momo/changelog.js"></script>
-<script src="apps/momo/model.js"></script>
-<script src="apps/momo/times.js"></script>
-<script src="apps/momo/colors.js"></script>
-<script src="apps/momo/data.js"></script>
-<script src="apps/momo/render.js"></script>
-<script src="apps/momo/drag.js"></script>
-<script src="apps/momo/drop.js"></script>
-<script src="apps/momo/clipboard.js"></script>
-<script src="apps/momo/card-editor.js"></script>
-<script src="apps/momo/goal-editor.js"></script>
-<script src="apps/momo/baseline.js"></script>
-<script src="apps/momo/closeout.js"></script>
-<script src="apps/momo/events.js"></script>
+<script src="apps/momo/app.js?v=20260928-2034"></script>
+<script src="apps/momo/markup.js?v=20260928-2034"></script>
+<script src="apps/momo/changelog.js?v=20260928-2034"></script>
+<script src="apps/momo/model.js?v=20260928-2034"></script>
+<script src="apps/momo/times.js?v=20260928-2034"></script>
+<script src="apps/momo/colors.js?v=20260928-2034"></script>
+<script src="apps/momo/data.js?v=20260928-2034"></script>
+<script src="apps/momo/render.js?v=20260928-2034"></script>
+<script src="apps/momo/drag.js?v=20260928-2034"></script>
+<script src="apps/momo/drop.js?v=20260928-2034"></script>
+<script src="apps/momo/clipboard.js?v=20260928-2034"></script>
+<script src="apps/momo/card-editor.js?v=20260928-2034"></script>
+<script src="apps/momo/goal-editor.js?v=20260928-2034"></script>
+<script src="apps/momo/baseline.js?v=20260928-2034"></script>
+<script src="apps/momo/closeout.js?v=20260928-2034"></script>
+<script src="apps/momo/events.js?v=20260928-2034"></script>
 
 <script>Kyoshi.start();</script>
 </body>

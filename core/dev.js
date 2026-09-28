@@ -1,10 +1,10 @@
 /* Kyoshi · core/dev.js — the one Developer Mode for every app, as K.dev.
  * Ctrl+9 or the DEV badge (bottom-right, for phones) opens #kDevPanel: versions, the app on
  * screen's own tools (A.renderDev(box)), time travel (test mode), Export/Import all apps,
- * bug reports, and a changelog for the app or Kyoshi. The test banner lives here too. */
+ * storage used, bug reports, and a changelog for the app or Kyoshi. The test banner lives here too. */
 (function (K) {
   "use strict";
-  const { fmtDate, todayStr, readFile } = K.util;
+  const { fmtDate, todayStr, readFile, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   let on = false;
   let logFor = "app"; // the changelog shown: "app" (the one on screen) or "kyoshi"
@@ -24,6 +24,7 @@
     $("kDevVersion").textContent = `${A.meta.name} ${A.VERSION} | Kyoshi ${K.VERSION}`;
     $("kDevToday").textContent = fmtDate(todayStr(), { weekday: "short", month: "short", day: "numeric" });
     refreshTools(A);
+    renderStorage();
     const log = logFor === "kyoshi" ? K.CHANGELOG : A.CHANGELOG || [];
     $("kDevLogPills").innerHTML = [["app", A.meta.name], ["kyoshi", "Kyoshi"]].map(([v, label]) =>
       `<button type="button" class="pill${v === logFor ? " active" : ""}" data-log="${v}">${label}</button>`).join("");
@@ -40,6 +41,15 @@
     box.innerHTML = "";
     if (!A.started || !A.renderDev) return;
     try { A.renderDev(box); } catch (err) { console.error(`${A.meta.name}'s developer tools failed to draw.`, err); }
+  }
+
+  // How much Kyoshi keeps, where, and whether the browser has promised to keep it.
+  async function renderStorage() {
+    const u = await K.storage.usage();
+    const where = { indexeddb: "the browser's large store (IndexedDB)", localStorage: "localStorage, the small store (about 5 MB for everything at this address)", memory: "memory only: this browser's storage can't be reached, so changes aren't kept" }[u.backend];
+    $("kDevStorage").textContent = `Kyoshi's data: ${fmtBytes(u.bytes)}, in ${where}.` +
+      (u.backend !== "memory" && u.quota ? ` This site uses ${fmtBytes(u.used)} of the ${fmtBytes(u.quota)} this browser allows it.` : "") +
+      ` Protected from automatic clean-up: ${u.persisted ? "yes" : "no"}.`;
   }
 
   // Moves "today" forward to rehearse rollovers, reminders and close-outs. The first

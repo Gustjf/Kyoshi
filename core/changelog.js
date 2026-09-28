@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "1.100", date: "2026-09-28", changes: [
+      "Your data now lives in the browser's large storage, with room for far more apps and years; what Kyoshi had saved moves over by itself.",
+      "Developer Mode shows how much storage Kyoshi uses; Kyoshi asks the browser to protect it, and warns if it's out of reach or nearly full.",
+      "Updates show up with a normal reload."
+    ] },
     { version: "1.000", date: "2026-09-28", changes: [
       "Initial release: one home for Bosco and Momo, switched from the button beside Theme.",
       "Shared look, Developer Mode, bug reports, JSON backups and one sync folder for every app.",

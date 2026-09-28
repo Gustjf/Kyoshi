@@ -1,6 +1,6 @@
 /* Kyoshi · core/bugs.js — bug reports, as K.bugs.
  * "Report a bug" (footer) opens #kBugOverlay for the app on screen; Submit saves a Markdown
- * report to a local log (kyoshi.bugReports, kept until cleared in Developer Mode) and copies it.
+ * report to a local log (K.store "bugReports", kept until cleared in Developer Mode) and copies it.
  * A report holds the environment, the app's own state lines (A.bugState()), recent console
  * activity and changelogs — never personal data (no names, weights, card titles…). */
 (function (K) {
@@ -11,10 +11,10 @@
   let reports = []; // { id, timestamp, app, description, markdown }
 
   function load() {
-    const r = K.storage.json("kyoshi.bugReports");
+    const r = K.store.json("bugReports");
     reports = Array.isArray(r) ? r.filter(x => x && typeof x.markdown === "string") : [];
   }
-  const store = () => K.storage.set("kyoshi.bugReports", JSON.stringify(reports));
+  const store = () => K.store.set("bugReports", JSON.stringify(reports));
 
   // Markdown meant to be pasted into Claude Code: the description, then what's needed to diagnose it.
   function build(A, description) {
@@ -40,6 +40,7 @@
       ...appLines,
       `- Unsaved changes since last export: ${K.backup.isUnsaved(A)}`,
       `- Folder sync: ${K.sync.supported ? K.sync.state() : "unsupported"}`,
+      `- Storage: ${K.storage.backend()}`,
       `- App date: ${todayStr()}${K.testMode ? ` (time travel +${K.dayOffset} days, test mode)` : ""}`,
       `- Dev mode: ${K.dev.isOn()}`, "",
       "## Recent Console Activity",

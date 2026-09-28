@@ -1,11 +1,12 @@
 /* Kyoshi · core/backup.js — backup & sync UI, as K.backup.
  * Fills each app's <section data-kyoshi="backup"></section> with Export JSON / Import JSON /
- * Sync Folder… and the sync status line; runs the sync banner (#kSyncBanner) above every app;
+ * Sync Folder… and the sync status line; runs the banners above every app for sync
+ * (#kSyncBanner) and storage (#kStorageBanner: slow to open, out of reach, or nearly full);
  * Export all / Import all (Developer Mode, see core/dev.js) put every app in one file.
  * Uses each app's A.data: build() for exports, importBackup(raw, ask) for imports. */
 (function (K) {
   "use strict";
-  const { isObj, todayStr, downloadJSON, readFile } = K.util;
+  const { isObj, todayStr, downloadJSON, readFile, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   const running = () => K.order.map(id => K.apps[id]).filter(A => A.started);
   // "Bosco", "Bosco and Momo", "Bosco, Momo and Appa".
@@ -97,9 +98,21 @@
     $("kSyncBannerBtn").textContent = state === "paused" ? "Reconnect" : "Choose Folder";
   }
 
+  // The storage banner: the browser is slow to open Kyoshi's storage, it's out of reach (changes
+  // aren't kept), or it's 80% full.
+  async function checkStorage() {
+    const u = K.storage.backend() === "opening" ? { backend: "opening" } : await K.storage.usage();
+    const full = u.quota > 0 && u.used / u.quota >= 0.8;
+    const text = u.backend === "opening" ? "Kyoshi is waiting for this browser's storage. If nothing shows up soon, close any other Kyoshi tabs, or restart the browser."
+      : u.backend === "memory" ? "Kyoshi can't reach this browser's storage right now, so changes won't be kept. Reload to try again, and export a backup if it keeps happening."
+      : full ? `Kyoshi's storage in this browser is ${Math.round(u.used / u.quota * 100)}% full (${fmtBytes(u.used)} of ${fmtBytes(u.quota)}). Export all apps from Developer Mode, and free up space on this device.` : "";
+    $("kStorageBanner").hidden = !text;
+    $("kStorageBannerText").textContent = text;
+  }
+
   function init() {
     $("kSyncBannerBtn").addEventListener("click", () => (K.sync.state() === "paused" ? K.sync.reconnect() : K.sync.choose()));
   }
 
-  K.backup = { init, mount, render, setUnsaved, isUnsaved: A => !!A._unsaved, exportApp, importText, exportAll, importAllText, nameList };
+  K.backup = { init, mount, render, checkStorage, setUnsaved, isUnsaved: A => !!A._unsaved, exportApp, importText, exportAll, importAllText, nameList };
 })(Kyoshi);
