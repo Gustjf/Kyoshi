@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "1.300", date: "2026-09-29", changes: [
+      "Apps can now put events at set times on Momo's board, starting with Bosco's doses; future apps add theirs the same way."
+    ] },
     { version: "1.200", date: "2026-09-28", changes: [
       "Added Wan Shi Tong, a media tracker for recommendations: switch to it from the button beside Theme."
     ] },

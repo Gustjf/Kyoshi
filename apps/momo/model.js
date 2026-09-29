@@ -2,7 +2,11 @@
  * weeks, the baseline, goals, budgets, and how cards merge, nest, and move between days.
  * Pure data — nothing here draws or saves (render.js draws, data.js saves).
  *
- * weeks:    { "YYYY-MM-DD" (Monday): { cards, closed, u } }
+ * weeks:    { "YYYY-MM-DD" (Monday): { cards, closed, u, events } }
+ * events:   { "app:id": { day, at, keep } } — only while you've moved or kept any of other
+ *           apps' events that week (see agenda.js): the day (0-6) and time (hours after
+ *           midnight, on the 15-minute grid) you moved it to, each only if moved, and keep
+ *           when a conflict where it is is fine. The events themselves aren't stored.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — a total to reach (target, maybe by a due date), or instead hours

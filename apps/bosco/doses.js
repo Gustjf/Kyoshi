@@ -6,7 +6,7 @@
  * dose spread over the days between doses. None is logged until it's confirmed in
  * the pop-up once due: on its day, or today for a late one taken late (the
  * schedule then counts on from today). A due dose waits to be confirmed until it's
- * three intervals old; after that it counts as missed. */
+ * three intervals old; after that it counts as missed. Momo's board shows the doses (agenda). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -40,6 +40,24 @@
       const date = addDays(next, (missed + i) * every);
       return { date, doseMg: eachDoseMg(plan.weeklyMg, every), weeklyMg: plan.weeklyMg, due: at >= dueAt(date, plan.doseTime), after };
     });
+  }
+
+  // --- Shared with other apps, read-only (Momo's board, through K.agenda): the doses on days from
+  // `from` to `to` (both included) as copies — those logged (done), then every one still to take
+  // by the schedule, each at the usual dose time (any time that day without one) for 15 minutes.
+  // A dose is known by its day, so where Momo moved it sticks. ---
+  function agenda(from, to) {
+    const plan = A.medicationEnabled() ? planFor(A.currentMedication()) : null, time = (plan && plan.doseTime) || null;
+    const item = (date, doseMg, med, done) => ({ id: `dose:${date}`, title: `${medLabel(med)} dose`, date, time, minutes: 15, note: `${doseMg} mg`, done });
+    const out = S.entries.filter(e => hasDose(e) && e.date >= from && e.date <= to).map(e => item(e.date, e.doseMg, e.medication, true));
+    const after = lastDoseDate(), set = setNextDose(plan, after), every = plan && plan.weeklyMg ? plan.intervalDays : 0;
+    if (!every || (!after && !set)) return out;
+    let date = set || addDays(after, every);
+    if (date < from) date = addDays(date, Math.ceil(daysBetween(date, from) / every) * every);
+    for (; date <= to; date = addDays(date, every)) {
+      if (!out.some(d => d.date === date)) out.push(item(date, eachDoseMg(plan.weeklyMg, every), A.currentMedication(), false));
+    }
+    return out;
   }
 
   // The same scheduled dose: its day, amount, and the last dose it follows.
@@ -128,5 +146,5 @@
     closeDoseModal();
   }
 
-  Object.assign(A, { lastDoseDate, setNextDose, doseSchedule, promptDueDose, openDoseModal, closeDoseModal, confirmDose, postponeDose, snoozeDose });
+  Object.assign(A, { lastDoseDate, setNextDose, doseSchedule, agenda, promptDueDose, openDoseModal, closeDoseModal, confirmDose, postponeDose, snoozeDose });
 })(Kyoshi, Kyoshi.apps.bosco);

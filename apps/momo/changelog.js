@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.222", date: "2026-09-29", changes: [
+      "Events from your other apps show on the board at their day and time, starting with your GLP-1 doses from Bosco; they take no hours from the day.",
+      "An event that overlaps another event or a pinned card turns red: click it for a one-click quick fix (the nearest clear time, or the day before or after), pick another day and time that week, or keep it."
+    ] },
     { version: "5.122", date: "2026-09-29", changes: [
       "The parking lot is now Tasks: every long-term goal and everything in progress in Wan Shi Tong waits there, ready to drag onto a day as often as you like (1.5h each time).",
       "Click a task to put it on several days at once; Tasks shows on the baseline too, and a card's Parked option is now No day."

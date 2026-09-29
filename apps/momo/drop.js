@@ -1,8 +1,8 @@
 /* Momo · drop.js — the rest of working the board with a pointer: previewing where a dragged
  * card lands (drop lines, day totals), scrolling near the edges, committing the drop (a card
  * drawn from a task is added there), resizing a card from its bottom edge, and clicks and keys
- * on the board and Tasks (open a card or a task, pin it, add one in free time, Alt+click to
- * delete). drag.js picks cards up. */
+ * on the board and Tasks (open a card, a task or an event, pin a card, add one in free time,
+ * Alt+click to delete). drag.js picks cards up. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -203,14 +203,17 @@
     A.renderAll();
   }
 
-  // A click on a pin pins or unpins its card; on free time it adds a card
-  // there (free time before a pinned card: in it; at the end of a day:
-  // last); on a card it opens it, and on a task a new card like the ones it
-  // draws. With Alt held (Option on a Mac), a click anywhere on a card (its
-  // pin too) deletes it instead, and one on free time or a task does
-  // nothing; Ctrl+Z brings the card back.
+  // A click on another app's event opens its pop-up (triage.js); on a pin it
+  // pins or unpins its card; on free time it adds a card there (free time
+  // before a pinned card: in it; at the end of a day: last); on a card it
+  // opens it, and on a task a new card like the ones it draws. With Alt held
+  // (Option on a Mac), a click anywhere on a card (its pin too) deletes it
+  // instead, and one on free time, a task or an event does nothing; Ctrl+Z
+  // brings the card back.
   function onBoardClick(e) {
     if (S.suppressClick || A.isLocked()) return;
+    const ev = e.target.closest("[data-ev]");
+    if (ev) return e.altKey ? undefined : A.openEvent(ev.dataset.ev);
     if (e.altKey) {
       const cardEl = e.target.closest(".card");
       if (cardEl && !cardEl.dataset.task) A.removeCard(A.shownKey(), cardEl.dataset.id);

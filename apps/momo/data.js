@@ -114,13 +114,27 @@
       u: cleanU(g.u)
     };
   }
+  // Where other apps' events were moved in a week, or kept despite a conflict (see model.js):
+  // null when there's nothing.
+  function cleanEvents(raw) {
+    const out = {};
+    if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
+      const e = raw[k], m = {};
+      if (!/^[\w-]+:./.test(k) || k.length > 120 || !isObj(e)) return;
+      if (Number.isInteger(e.day) && e.day >= 0 && e.day <= 6) m.day = e.day;
+      if (isNum(e.at) && e.at >= 0 && e.at < DAY_HOURS) m.at = Math.min(DAY_HOURS - STEP, snap(e.at));
+      if (e.keep === true) m.keep = true;
+      if (Object.keys(m).length) out[k] = m;
+    });
+    return Object.keys(out).length ? out : null;
+  }
   function normalizeData(raw) {
     const out = A.emptyData();
     if (!isObj(raw)) return out;
     if (isObj(raw.weeks)) {
       Object.keys(raw.weeks).sort().forEach(k => {
-        const w = raw.weeks[k];
-        if (isWeekKey(k) && isObj(w)) out.weeks[k] = { cards: cleanCards(w.cards, true), closed: w.closed === true, u: cleanU(w.u) };
+        const w = raw.weeks[k], events = isObj(w) && cleanEvents(w.events);
+        if (isWeekKey(k) && isObj(w)) out.weeks[k] = { cards: cleanCards(w.cards, true), closed: w.closed === true, u: cleanU(w.u), ...(events ? { events } : {}) };
       });
     }
     if (isObj(raw.baseline)) out.baseline = { cards: cleanCards(raw.baseline.cards, false), u: cleanU(raw.baseline.u) };

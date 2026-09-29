@@ -1,18 +1,21 @@
 /* Momo · events.js — loads last: wires Momo's buttons, board and pop-ups (A.init), and the
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
- * onHide (redraw; drop any drag), onTick (a new day or week; Tasks), onReload (another tab saved),
- * attention (a week to close out), renderDev (Undo in Developer Mode) and bugState. */
+ * onHide (redraw; drop any drag), onTick (a new day or week; Tasks; other apps' events), onReload
+ * (another tab saved), attention (a week to close out, an event's conflict), renderDev (Undo in
+ * Developer Mode) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { isNum, todayStr, fmtDate, fmtNum, pad2 } = K.util;
   const { DAY_HOURS, DAYS, WEEKDAYS, BUTTON_STEP, snap, fmtH, thisWeekKey, nextWeekKey } = A;
 
-  // − / + buttons next to a number field step it by half an hour, within its min and max.
+  // − / + buttons next to a number field step it by half an hour, within its min and max;
+  // next to a time of day (an event's), by 15 minutes.
   function onStepper(e) {
     const btn = e.target.closest(".step-btn");
     if (!btn) return;
     const input = btn.parentElement.querySelector("input");
+    if (input.dataset.clock !== undefined) return A.stepEventTime(+btn.dataset.step);
     const min = parseFloat(input.min), max = parseFloat(input.max);
     const next = snap((parseFloat(input.value) || 0) + BUTTON_STEP * +btn.dataset.step);
     input.value = fmtNum(Math.min(isNum(max) ? max : DAY_HOURS, Math.max(isNum(min) ? min : 0, next)));
@@ -93,6 +96,7 @@
     // Pop-ups: Esc, their × and a click beside them are handled by core/modal.js.
     A.defineCardOverlay();
     A.defineGoalOverlay();
+    A.defineEventOverlay();
     A.defineCloseOutOverlay();
 
     $("cardSaveBtn").addEventListener("click", A.saveCard);
@@ -129,6 +133,17 @@
       const btn = e.target.closest("button[data-season]");
       if (btn) A.pickSeason(+btn.dataset.season);
     });
+
+    $("eventFixList").addEventListener("click", A.onFixClick);
+    $("eventDays").addEventListener("click", A.onEventDay);
+    $("eventTime").addEventListener("input", () => A.onEventTime(false));
+    $("eventTime").addEventListener("change", () => A.onEventTime(true));
+    $("eventMoveBtn").addEventListener("click", A.moveEvent);
+    $("eventCancelBtn").addEventListener("click", () => K.modal.dismiss($("eventOverlay")));
+    $("eventKeepBtn").addEventListener("click", A.keepEvent);
+    $("eventResetBtn").addEventListener("click", A.resetEvent);
+    // Its app's name is a link there: the pop-up closes on the way.
+    $("eventFrom").addEventListener("click", e => { if (e.target.closest("a")) A.closeEvent(); });
 
     $("closeOutConfirmBtn").addEventListener("click", A.confirmCloseOut);
     $("closeOutLaterBtn").addEventListener("click", A.closeOutLaterClick);
@@ -175,6 +190,7 @@
       const top = K.modal.top(A.root);
       if (top === $("cardOverlay")) { e.preventDefault(); A.saveCard(); return true; }
       if (top === $("goalOverlay")) { e.preventDefault(); A.saveGoal(); return true; }
+      if (top === $("eventOverlay")) { e.preventDefault(); A.onEventTime(true); A.moveEvent(); return true; }
     }
     return false;
   };
@@ -192,11 +208,12 @@
     holdAlt(false);
   };
 
-  // Every minute, and whenever the page is back in view: a new day or week, and what's in
-  // progress in Wan Shi Tong, for Tasks.
+  // Every minute, and whenever the page is back in view: a new day or week, what's in
+  // progress in Wan Shi Tong, for Tasks, and other apps' events.
   A.onTick = () => {
     A.checkRollover();
     A.checkTasks();
+    A.checkAgenda();
   };
 
   // Another tab saved: its data is loaded (A.load); undo would step back over it, so it's cleared.
@@ -206,7 +223,7 @@
     A.checkCloseOuts();
   };
 
-  A.attention = () => (A.reviewWeeks().length ? "a week is ready to close out" : "");
+  A.attention = () => (A.reviewWeeks().length ? "a week is ready to close out" : A.conflicts().length ? "an event conflicts with your plans" : "");
 
   A.renderDev = box => {
     const n = S.undoStack.length;
@@ -218,9 +235,10 @@
     box.querySelector("button").addEventListener("click", A.undo);
   };
 
-  // Bug reports leave out every card title and goal name.
+  // Bug reports leave out every card title and goal name, and what events are.
   A.bugState = () => {
     const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), live = A.liveGoals(), tasks = A.tasks();
+    const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat();
     return [
       `- View: ${S.view}`,
       `- Weeks stored: ${Object.keys(data.weeks).length} (${Object.values(data.weeks).filter(w => w.closed).length} closed)`,
@@ -230,6 +248,7 @@
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles and goals on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
       `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId).length} from Wan Shi Tong)`,
+      `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.keep).length} kept)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
       `- Undo steps: ${S.undoStack.length}`
     ];

@@ -63,6 +63,7 @@ core/                 the shared DNA — K = window.Kyoshi
   backup.js           K.backup: each app's "Backup & sync" section, sync banner, Export/Import JSON, Export/Import all
   bugs.js             K.bugs: "Report a bug" pop-up and log
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
+  agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   shell.js            K.register, K.start, switcher menu, theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
 apps/<id>/            one folder per app — see apps/<id>/CLAUDE.md for its file map and data model
@@ -92,6 +93,7 @@ Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title
 | `A.renderDev(box)` | fill `box` with its Developer Mode tools (`.dev-block`s) |
 | `A.bugState()` | lines (`"- Key: value"`) for bug reports — never personal data |
 | `A.data` | backup & sync adapter: `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask), combine(raw, how), afterSync() }` — see `core/sync.js` and `apps/bosco/data.js` |
+| `A.agenda(from, to)` | when Momo draws its board (through `K.agenda`): the app's events at set times on those days, as copies `[{ id, title, date, time, minutes, note, done }]` — see `core/agenda.js`; Bosco's doses are one |
 | `A.CHANGELOG` / `A.VERSION` | changelog.js |
 
 ## Rules for app code
@@ -101,7 +103,7 @@ Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title
 - **Styles**: shared components in `core/kyoshi.css`; everything app-specific in `apps/<id>/<id>.css` under `.app-<id>`. Name page-wide custom properties `--<id>-…`.
 - **Storage**: only via `A.store` (the app's own space; see *Storage*). Reading a *standalone* app's old keys (first-run carry-over) is `K.storage.get`, read-only.
 - **Within an app**: destructure constants/helpers at the top of a file only from `app.js` (loaded first); call functions from other files as `A.name()` (every file is loaded before anything runs). Attach what other files need with `Object.assign(A, { … })`.
-- **Between apps**: never read or write another app's `A.S` or storage. If one app ever needs another's data, give the provider a small read-only function and ask the user first. So far: Momo's Tasks read Wan Shi Tong's `A.inProgress()`.
+- **Between apps**: never read or write another app's `A.S` or storage. If one app ever needs another's data, give the provider a small read-only function and ask the user first. So far: Momo's Tasks read Wan Shi Tong's `A.inProgress()`, and Momo's board shows every app's `A.agenda` (Bosco's doses) — a new app with things at set times adds its own the same way.
 - Time: "today" and "now" for the app's logic come from `K.util.todayStr()` / `K.util.now()`, so Developer Mode's time travel works; `Date.now()` is right only for change stamps (sync's `u`, `savedAt`).
 
 ## Storage

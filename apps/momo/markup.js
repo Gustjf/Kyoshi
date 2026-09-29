@@ -1,5 +1,5 @@
 /* Momo · markup.js — Momo's page (A.markup): the week tabs, the To Be Budgeted bank with
- * Tasks, the board, long-term goals, and its pop-ups (card editor, goal editor, close-out).
+ * Tasks, the board, long-term goals, and its pop-ups (card editor, goal editor, an event, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -198,6 +198,39 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="goalCancelBtn">Cancel</button>
         <span class="spacer"></span>
         <button class="danger" id="goalDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- An event from another app (triage.js): what it conflicts with, quick fixes, or a day and time to move it to. -->
+  <div class="overlay" id="eventOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 class="event-head"><span class="app-icon" id="eventIcon" aria-hidden="true"></span><span id="eventTitle"></span></h3>
+      <p class="modal-hint" id="eventFrom"></p>
+      <div class="event-clash" id="eventClash" hidden>
+        <div id="eventClashText"></div>
+        <div class="event-fixes" id="eventFixes"><span>Quick fixes:</span><span class="event-fix-list" id="eventFixList"></span></div>
+      </div>
+      <div class="field">
+        <label>Day</label>
+        <div class="day-pills" id="eventDays"></div>
+      </div>
+      <div class="field">
+        <label for="eventTime">Time</label>
+        <div class="stepper event-time">
+          <button type="button" class="step-btn" data-step="-1" aria-label="15 minutes earlier">&minus;</button>
+          <input type="text" id="eventTime" data-clock maxlength="5" inputmode="numeric" placeholder="any time" autocomplete="off">
+          <button type="button" class="step-btn" data-step="1" aria-label="15 minutes later">+</button>
+        </div>
+        <div class="note" id="eventNote" hidden></div>
+      </div>
+      <div class="modal-actions">
+        <button id="eventMoveBtn">Move</button>
+        <button class="secondary" id="eventCancelBtn">Cancel</button>
+        <span class="spacer"></span>
+        <button class="secondary small" id="eventKeepBtn">Keep here</button>
+        <button class="secondary small" id="eventResetBtn"></button>
       </div>
     </div>
   </div>

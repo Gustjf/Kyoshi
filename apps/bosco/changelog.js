@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.159", date: "2026-09-29", changes: [
+      "Your doses now show on Momo's board as 15-minute events at their day and dose time, so each one has its place in your week."
+    ] },
     { version: "7.059", date: "2026-09-28", changes: [
       "Bosco now lives in Kyoshi with your other apps: switch between them from the button beside Theme.",
       "Export, Import and folder sync moved to a Backup & sync section at the bottom, and one sync folder now keeps every app's autosaves.",

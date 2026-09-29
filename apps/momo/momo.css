@@ -1,6 +1,6 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Goals · Pop-up fields · Phones */
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Goals · Pop-up fields · Phones */
 
 /* --- Tokens --- */
 /* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
@@ -147,6 +147,32 @@ body.is-dragging, body.is-resizing { user-select: none; -webkit-user-select: non
 /* How far over a day is, where its free time would be: just a label. */
 .app-momo .free.over { min-height: 24px; border-color: var(--bad); color: var(--bad); font-weight: 600; }
 
+/* --- Events: other apps' (agenda.js) --- */
+/* An event (a dose from Bosco, …) sits over its day at its own time, as tall as that on the ruler,
+   on the right so the card under it can still be grabbed: its app's icon and the time, and on hover
+   what it is too. Red while it conflicts with something else at a set time; faded once done. Events
+   that overlap share the width (set as they're drawn). One at any time that day is its icon in the
+   day's heading. */
+.app-momo .col-body { position: relative; }
+.app-momo .event { position: absolute; right: 6px; z-index: 1; display: flex; align-items: center; gap: 4px; min-width: 0; max-width: calc((100% - 12px) * .62); padding: 0 5px 0 4px; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); font-size: .72em; line-height: 1.2; white-space: nowrap; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); transition: border-color .15s; }
+.app-momo button.event:hover { background: var(--panel); border-color: var(--accent); }
+.app-momo .event:hover, .app-momo .event:focus-visible { z-index: 2; max-width: calc(100% - 12px); } /* its whole title */
+.app-momo .event:focus-visible, .app-momo .ev-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.app-momo .event .app-icon svg, .app-momo .ev-mark .app-icon svg { width: 11px; height: 11px; }
+.app-momo .ev-time { flex: 0 0 auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-momo .ev-title { display: none; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.app-momo .event:hover .ev-title, .app-momo .event:focus-visible .ev-title { display: block; }
+.app-momo .event.clash { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--panel)); color: var(--bad); box-shadow: 0 0 0 1px var(--bad), 0 1px 3px rgba(0, 0, 0, .18); }
+.app-momo button.event.clash:hover { background: color-mix(in srgb, var(--bad) 22%, var(--panel)); border-color: var(--bad); }
+.app-momo .event.clash .ev-title { color: inherit; }
+.app-momo .event.done, .app-momo .ev-mark.done { opacity: .55; }
+.app-momo .event.done .ev-time::after { content: " ✓"; }
+.app-momo .col-evs { display: inline-flex; gap: 2px; margin: -3px auto -3px 4px; }
+.app-momo .ev-mark { display: inline-flex; padding: 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; }
+.app-momo button.ev-mark:hover { background: var(--ring); border-color: var(--border); }
+/* While a card is dragged or resized, events let the pointer through to the day under them. */
+body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-events: none; }
+
 /* --- Goals --- */
 .app-momo .goal { padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
 .app-momo .goal:first-child { border-top: none; padding-top: 2px; }
@@ -215,6 +241,16 @@ body.is-dragging, body.is-resizing { user-select: none; -webkit-user-select: non
 .app-momo .co-done .stepper { width: 128px; }
 .app-momo .co-result { grid-column: 1 / -1; font-size: .82em; color: var(--muted); }
 .app-momo .co-result strong { color: var(--text); }
+/* An event's pop-up (triage.js): its app's icon by its name; a conflict in red with quick fixes under it
+   (muted once kept); the time's − / + move it 15 minutes. */
+.app-momo .event-head { display: flex; align-items: center; gap: 8px; }
+.app-momo .modal-hint a { color: inherit; font-weight: 600; }
+.app-momo .event-clash { margin: 0 0 14px; padding: 9px 11px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: .86em; font-weight: 600; line-height: 1.4; }
+.app-momo .event-clash.kept { background: var(--card-bg); border: 1px solid var(--border); color: var(--muted); font-weight: 400; }
+.app-momo .event-fixes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--text); font-weight: 400; }
+.app-momo .event-fix-list { display: contents; }
+.app-momo .event-fixes button { background: var(--panel); font-variant-numeric: tabular-nums; }
+.app-momo .event-time { max-width: 190px; }
 
 /* --- Phones --- */
 @media (max-width: 640px) {

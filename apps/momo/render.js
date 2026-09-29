@@ -1,6 +1,6 @@
 /* Momo · render.js — draws the board on screen from A.S: renderAll, then the week tabs,
  * the To Be Budgeted bank (with Tasks, see tasks.js), the board's days and cards (sized to the
- * ruler, see times.js), and the long-term goals. */
+ * ruler, see times.js; other apps' events over them, see agenda.js), and the long-term goals. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -12,6 +12,8 @@
     S.renderPending = false;
     if (A.ensureColors()) A.save({ undo: false }); // a new week on screen can bring titles without one
     const key = A.shownKey(), list = A.shownList();
+    S.agenda = A.weekAgenda(key, list); // other apps' events on this board (agenda.js)
+    S.agendaKey = A.agendaKey();
     renderTabs();
     renderBank(list, key);
     renderBoard(list, key);
@@ -23,9 +25,10 @@
 
   function renderTabs() {
     [["this", thisWeekKey()], ["next", nextWeekKey()]].forEach(([v, k]) => {
-      const w = A.weekOf(k), b = A.budgetOf(w, k);
+      const w = A.weekOf(k), b = A.budgetOf(w, k), clashes = A.weekAgenda(k, w).filter(ev => ev.flag).length;
       const [text, cls] = w.closed ? ["closed out ✓", "good"]
         : b.over.length ? [`${fmtH(sum(b.over.map(o => o.by)))} over`, "bad"]
+        : clashes ? [`${clashes} conflict${clashes === 1 ? "" : "s"}`, "bad"]
         : !w.cards.length ? ["not planned yet", ""]
         : b.free === 0 ? ["all assigned ✓", "good"]
         : [`${fmtH(b.free)} left`, ""];
@@ -53,7 +56,7 @@
     $("bankOf").textContent = isBase ? `left for everything else · ${fmtPct(sum(b.totals))} of the week fixed`
       : b.first ? `of ${b.pool}h left this week` : `of ${b.pool}h`;
 
-    let msg, cls = "", late;
+    let msg, cls = "", late, clashes;
     if (locked) {
       msg = "This week is closed out ✓ — its goal hours are logged and the rest is let go.";
       cls = "good";
@@ -67,6 +70,9 @@
       msg = late.length === 1
         ? `${DAY_LONG[late[0]]}'s cards don't fit around its pinned times — move one into free time or trim it.`
         : `The cards on ${late.map(d => DAY_NAMES[d]).join(", ")} don't fit around their pinned times — move some into free time or trim them.`;
+    } else if ((clashes = S.agenda.filter(ev => ev.flag)).length) {
+      cls = "bad";
+      msg = A.conflictMsg(clashes);
     } else if (isBase) {
       msg = onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
         : "Your default week: sleep, work, meals — the hours that come around every week. Build it once, then load it into any week with one click.";
@@ -152,7 +158,7 @@
     const today = key === thisWeekKey() ? dayIndex(todayStr()) : -1;
     const { totals } = A.budgetOf(list, key);
     const plans = DAYS.map(d => dayPlan(list, d, locked));
-    S.ruler = A.makeRuler(plans.flatMap(p => p.pieces));
+    S.ruler = A.makeRuler(plans.flatMap(p => p.pieces).concat(A.agendaPieces(S.agenda, plans)));
     $("board").classList.toggle("locked", locked);
     $("board").innerHTML = DAYS.map(d => {
       const total = totals[d];
@@ -160,7 +166,7 @@
       const date = isBase ? "" : d === today ? "Today" : fmtShort(addDays(key, d));
       return `<div class="${cls}" data-day="${d}" data-total="${total}">
         <div class="col-head">
-          <div class="col-day"><span>${DAY_NAMES[d]}</span><span class="col-date">${date}</span></div>
+          <div class="col-day"><span>${DAY_NAMES[d]}</span>${A.headEventsHTML(d, locked)}<span class="col-date">${date}</span></div>
           <div class="col-total">Total: <span class="col-sum">${fmtNum(total)}</span>/24</div>
           <div class="col-bar"><span style="width:${Math.min(100, total / DAY_HOURS * 100)}%"></span></div>
         </div>
@@ -176,11 +182,11 @@
     return { rows, end, times, pieces: A.dayPieces(list, rows, times, end, locked) };
   }
 
-  // A day's cards and free time, sized to the ruler.
+  // A day's cards and free time, sized to the ruler, then other apps' events over them.
   function dayHTML(list, d, { rows, end, times, pieces }, total, locked) {
     const styles = A.pieceStyles(pieces);
     return rows.map(r => (r.gap ? freeHTML(d, r.gap, r.card.id, locked, styles.get(`gap:${r.card.id}`)) : "") + cardHTML(list, r.card, times, styles)).join("") +
-      (locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end")));
+      (locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end"))) + A.dayEventsHTML(d, locked);
   }
 
   function renderGoals(list, key) {

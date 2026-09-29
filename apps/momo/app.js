@@ -97,6 +97,9 @@
     clip: null,            // a card copied or cut for pasting: { key, id, cut, timer }
     mouse: null,           // where the mouse is, for the copy & paste shortcuts: { x, y }
     tasksKey: "",          // the tasks in Tasks as last drawn, to notice Wan Shi Tong's changing (tasks.js)
+    agenda: [],            // other apps' events on the board on screen, as last drawn (agenda.js)
+    agendaKey: "",         // their events this week and next as last drawn, to notice them changing
+    triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
 

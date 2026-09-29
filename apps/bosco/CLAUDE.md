@@ -14,7 +14,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `trend.js` | math: weekly trend, pace goal & status, `model()`, goal status/ETA, dose totals |
 | `render.js` | `renderAll` and each section: history, upcoming doses, stats, goals & season projections, SVG chart |
 | `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, vial calculator, pace goal, `saveOneTimeInfo` |
-| `doses.js` | dose schedule (worked out, never stored) and the confirm / Not yet / postpone pop-up |
+| `doses.js` | dose schedule (worked out, never stored), the confirm / Not yet / postpone pop-up, and `agenda` (the doses, for Momo's board) |
 | `image.js` | the progress image (PNG) |
 | `events.js` | `A.init` wiring, add entry/goal, and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose), `renderDev` ("Edit start-up info"), `bugState` |
 | `bosco.css` | styles under `.app-bosco` |
@@ -29,6 +29,11 @@ Keys: `entries`, `goals`, `profile`, `doseSnooze` (this device's "Not yet"), `sy
 `weightTrackerEntries_v1` / `weightTrackerGoals_v1` / `weightTrackerProfile_v1` (never changes them).
 Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, entries, goals, cumulativeDoseMgByMedication }`.
 Bump `DATA_SCHEMA_VERSION` only when import has to migrate data (see its comment in `app.js`).
+
+## Shared with other apps
+`A.agenda(from, to)` (read-only, through `K.agenda` — see `core/agenda.js`): the doses on those days, logged ones (`done`) and
+the schedule's, each `{ id: "dose:<date>", title: "<Medication> dose", date, time: the usual dose time or null, minutes: 15, note: "<mg> mg" }`.
+Momo's board shows them and remembers moves by `id`, so keep ids as they are.
 
 ## Invariants
 - Dates are calendar-day strings; date math is UTC (`K.util`), and "today" is `K.util.todayStr()` (time-travel aware).
