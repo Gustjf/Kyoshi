@@ -24,7 +24,7 @@ switched from the icon button beside Theme. More apps will be added, each relyin
 - New build stamp on every link in `index.html`: `sed -i "s/?v=[0-9][0-9-]*/?v=$(date -u +%Y%m%d-%H%M)/g" index.html`
 
 ## Git Workflow
-- **Push finished, checked changes straight to `main`** (live in a minute or two).
+- **Push finished, checked changes straight to `main`** (live in a minute or two). **Don't check that the site is live after pushing** — no fetching/polling the Pages URL; just report the push.
 - Use a branch only with a reason (risky stored-data/sync change, big redesign, something I should see first) and say why. I try a branch via GitHub → **Code → Download ZIP** → open `index.html` (separate data; don't connect it to the real sync folder), and accept it by merging into `main`.
 - Other linked repos (e.g. the standalone Bosco, Momo) are **read-only** references.
 
