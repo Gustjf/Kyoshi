@@ -1,6 +1,6 @@
 # Wan Shi Tong — media tracker for recommendations (a Kyoshi app)
-A lightweight place to offload every recommendation (novels, textbooks, movies, TV/anime, games, eLearning
-and in-person courses) instead of keeping them in browser tabs. Its point: open it and see something
+A lightweight place to offload every recommendation (books, movies, TV/anime and games)
+instead of keeping them in browser tabs. Its point: open it and see something
 worthwhile to do instead of mindless consuming. **In progress** (up to three at once, of any kind: a book and
 a game side by side) and **Up next** (one, across all media) sit on top as reference points; everything else
 waits in the **backlog**, grouped by category. Starting a fourth asks which one goes back to make room;
@@ -24,8 +24,8 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## State (`A.S`)
 `items` [{ id, cat, name, info, have, cost, why, added, started, done, deleted, at, u }]:
 `cat` a `CATS` id (an unknown one from a newer version is kept and shown as Other) · `info` just enough to find it
-(author, year…) · `have` "" (not yet) | "downloaded" | "borrowed" | "owned" (courses call it Enrolled) ·
-`cost` dollars, 0 = free, null = unknown (courses only) · `why` optional note · `added` / `started` / `done`
+(author, year…) · `have` "" (not yet) | "downloaded" | "borrowed" | "owned" ·
+`cost` dollars, 0 = free, null = unknown (unused since courses were removed; kept) · `why` optional note · `added` / `started` / `done`
 "YYYY-MM-DD" or "" (`done` set = finished) · deleted ones stay as markers · `at` when added, `u` when last changed.
 `slots` { now, now2, now3, next }: each { id ("" = empty), u } — In progress's spots (`NOW_SPOTS`) and Up next.
 Before 2.000 there was only `now`, so older data and backups fill the first spot. In progress lists its items

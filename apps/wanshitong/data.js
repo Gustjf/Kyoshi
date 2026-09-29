@@ -4,6 +4,8 @@
  * synced or backed up), sync (core's). */
 (function (K, A) {
   "use strict";
+  // Categories that were merged or removed: novels and textbooks are books now; courses (removed) show as Other.
+  const OLD_CATS = { novel: "book", textbook: "book", elearning: "other", inperson: "other" };
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
   const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_COST, DATA_SCHEMA_VERSION } = A;
@@ -37,7 +39,7 @@
       const gone = i.deleted === true; // a marker keeps only what sync needs
       return {
         id: typeof i.id === "string" && i.id ? i.id.slice(0, 40) : newId(),
-        cat: typeof i.cat === "string" && /^[a-z0-9-]{1,20}$/.test(i.cat) ? i.cat : A.OTHER.id,
+        cat: typeof i.cat === "string" && /^[a-z0-9-]{1,20}$/.test(i.cat) ? OLD_CATS[i.cat] || i.cat : A.OTHER.id,
         name: gone ? "" : cleanLine(i.name, MAX_NAME),
         info: gone ? "" : cleanLine(i.info, MAX_INFO),
         have: !gone && Object.hasOwn(HAVE, i.have) ? i.have : "",

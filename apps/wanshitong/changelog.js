@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.100", date: "2026-09-29", changes: [
+      "Novels and textbooks are now one Books category; the course categories are gone (old ones show as Other)."
+    ] },
     { version: "2.000", date: "2026-09-28", changes: [
       "Up to three things can be in progress at once, of any kind, and finishing one moves Up next into its spot.",
       "Starting a fourth asks which one goes back to make room.",

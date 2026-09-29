@@ -24,18 +24,13 @@
   // What a recommendation can be, in the order they're listed. Ids are what backups store; add
   // more here and they show up everywhere. info: what the second field asks for (just enough to
   // find it again); search: added to its Google search, so "Dune" finds the right Dune;
-  // cost: courses keep what they cost; have / haveLabels: the "Have it?" choices it offers
-  // (default: all of HAVE) and any it names its own way.
+  // cost: keeps what it costs; have / haveLabels: the "Have it?" choices it offers
+  // (default: all of HAVE) and any it names its own way. Old ids: see OLD_CATS in data.js.
   const CATS = [
-    { id: "novel", label: "Novel", group: "Novels", info: "Author", nameEg: "Piranesi", infoEg: "Susanna Clarke", search: "novel" },
-    { id: "textbook", label: "Textbook", group: "Textbooks", info: "Author or edition", nameEg: "Calculus", infoEg: "Spivak, 4th edition", search: "textbook" },
+    { id: "book", label: "Book", group: "Books", info: "Author or edition", nameEg: "Piranesi", infoEg: "Susanna Clarke", search: "book" },
     { id: "movie", label: "Movie", group: "Movies", info: "Year or director", nameEg: "Spirited Away", infoEg: "Miyazaki, 2001", search: "movie" },
     { id: "tv", label: "TV/Anime", group: "TV/Anime", info: "Year or where to watch", nameEg: "Frieren", infoEg: "2023, Crunchyroll", search: "series" },
     { id: "game", label: "Game", group: "Games", info: "Platform", nameEg: "Outer Wilds", infoEg: "Switch or PC", search: "video game" },
-    { id: "elearning", label: "eLearning", group: "eLearning courses", info: "Platform or teacher", nameEg: "CS50", infoEg: "Harvard, on edX", search: "online course",
-      cost: true, have: ["downloaded", "owned"], haveLabels: { owned: "Enrolled" } },
-    { id: "inperson", label: "In person", group: "In-person courses", info: "Where, or who teaches it", nameEg: "Intro to pottery", infoEg: "Community center", search: "course",
-      cost: true, have: ["owned"], haveLabels: { owned: "Enrolled" } }
   ];
   // A category from a newer version (kept as it is) shows as Other.
   const OTHER = { id: "other", label: "Other", group: "Other", info: "Details", nameEg: "", infoEg: "", search: "" };

@@ -67,7 +67,7 @@
     $("backlogCount").textContent = items.length || "";
     $("backlogEmpty").hidden = items.length > 0;
     $("backlogEmpty").textContent = any ? "Everything here is in progress, up next or finished. Add the next recommendation you hear about."
-      : "Empty for now. Add the recommendations you've been keeping in browser tabs: books, films, shows, games and courses.";
+      : "Empty for now. Add the recommendations you've been keeping in browser tabs: books, films, shows and games.";
     $("backlogHint").hidden = !items.length;
     A.root.querySelectorAll("#backlogGroups .group").forEach(g => {
       const mine = items.filter(i => groupOf(i.cat) === g.dataset.cat);
