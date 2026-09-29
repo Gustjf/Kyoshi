@@ -33,6 +33,7 @@
     MAX_GOAL_HOURS: 100000,
     GOAL_MAX_WEEK: 10, // a new goal's most hours a week
     DRAW_HOURS: 1.5,   // a card drawn from a task in Tasks (tasks.js)
+    EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.

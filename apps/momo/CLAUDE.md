@@ -31,13 +31,13 @@ Core Application Workflows
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time, other apps' events), goals |
 | `tasks.js` | **Tasks**, the strip under the bank: a task per goal still to reach and per thing in progress in Wan Shi Tong (`tasks`, read through its `inProgress()`), drawing a card from one (`drawCard`, `DRAW_HOURS`), clicking one (`openTask`), the week's cards without a day, and redrawing when Wan Shi Tong's change (`checkTasks`) |
-| `agenda.js` | **Events** from other apps (`K.agenda`: Bosco's doses, …): a week's events where they are, moved or not (`weekAgenda`), the hours they add to their days (`agendaHours`), their conflicts (`obstacles`, `flag`) and same-day `quickFixes`, laying them into a day (`layEvents`: a piece of the day in free time, else drawn over it) and drawing them (`eventHTML`, `overlaysHTML`, `headEventsHTML`), and redrawing when they change (`checkAgenda`) |
+| `agenda.js` | **Events** from other apps (`K.agenda`: Bosco's doses, …): a week's events where they are, moved or not (`weekAgenda`), the hours they add to their days (`agendaHours`), their conflicts (`obstacles`, `flag`), how far one can move (`reach`) and its `quickFix`, laying them into a day (`layEvents`: a piece of the day in free time, else drawn over it) and drawing them (`eventHTML`, `overlaysHTML`, `headEventsHTML`), and redrawing when they change (`checkAgenda`) |
 | `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
 | `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
 | `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
-| `triage.js` | an event's pop-up: its conflict and quick fix (nearest clear time that day), any time that day, back to its app's time (`place` notes it in `week.events`) |
+| `triage.js` | an event's pop-up: while it conflicts, just its quick fix (`quickFix`: the clear time closest to its app's, within `EVENT_WINDOW` hours); otherwise a time within those hours; back to its app's time (`place` notes it in `week.events`) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
 | `closeout.js` | weekly close-out pop-up, pending weeks, reopen, rollover (new day/week) |
 | `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; Tasks; events), `onReload`, `attention` (a week to close out, an event's conflict), `renderDev` (Undo), `bugState` |
@@ -61,5 +61,5 @@ Every change goes through `save()` (colours, `u` timestamps, undo, then storage 
 - Past weeks are closed out (goal hours logged); this week only counts today onward.
 - Tasks aren't stored: they're read afresh from the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`, read-only; none if it's missing). A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none.
 - Events from other apps aren't stored: they're read afresh (`K.agenda`), and only the times you moved them to on their own day are kept (`week.events`, by "app:id"). Moving one never changes its app, and cards never move for one.
-- An event counts toward its day's 24 hours: it takes time no card has, or Free time lends it the hours. Anywhere else it conflicts (with those cards, and any event it overlaps), from today onward; a conflict with no clear time that day stays flagged.
+- An event counts toward its day's 24 hours: it takes time no card has, or Free time lends it the hours. Anywhere else it conflicts (with those cards, and any event it overlaps), from today onward; a conflict with no clear time within `EVENT_WINDOW` (3) hours of its app's time stays flagged. It never moves further than that, nor to another day.
 - Bug reports never include card titles, goal names or what events are.

@@ -1,12 +1,13 @@
-/* Momo · triage.js — an event's pop-up (#eventOverlay): where it's from, what it conflicts with, a
- * quick fix (the nearest clear time that day, earlier or later: one click), or any time that day in
- * 15-minute steps; and back to its app's time once moved. It stays on its own day: when that day has
- * no clear time, its conflict stays flagged. Moving it changes only Momo's board, never its app. */
+/* Momo · triage.js — an event's pop-up (#eventOverlay): where it's from and, while it conflicts, what
+ * with and its one quick fix — the clear time closest to its app's time, within EVENT_WINDOW hours of
+ * it (agenda.js quickFix) — or, with none, that it stays flagged. Without a conflict, its time can be
+ * picked in 15-minute steps within those hours. Once moved, it can go back to its app's time. It stays
+ * on its own day, and moving it changes only Momo's board, never its app. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc } = K.util;
-  const { DAY_HOURS, DAY_LONG, STEP, fmtClock } = A;
+  const { DAY_LONG, STEP, EVENT_WINDOW, fmtClock } = A;
 
   const overlay = () => $("eventOverlay");
   // Esc, × and a click beside it just close it: nothing moves until a button says so.
@@ -27,7 +28,7 @@
   function openEvent(evKey) {
     const key = A.shownKey(), ev = S.agenda.find(x => x.key === evKey);
     if (!ev || ev.done || A.isLocked()) return;
-    const app = K.apps[ev.app], fixes = ev.flag ? A.quickFixes(key, ev) : [];
+    const app = K.apps[ev.app], fix = ev.flag ? A.quickFix(key, ev) : null;
     S.triage = { key, ev: ev.key, at: ev.at };
     $("eventIcon").innerHTML = app ? app.meta.icon : "";
     $("eventTitle").textContent = ev.title;
@@ -36,9 +37,13 @@
       (ev.note ? `<span class="sep">|</span>${esc(ev.note)}` : "") + (ev.moved ? `<br>You moved it to ${at(ev.at)}.` : "");
     $("eventClash").hidden = !ev.flag;
     $("eventClashText").textContent = `Conflicts with ${clashText(ev.clash)}.`;
-    $("eventFixes").innerHTML = fixes.length
-      ? `<span>Quick fix:</span>${fixes.map(t => `<button type="button" class="secondary small" data-at="${t}" title="Move it to ${fmtClock(t)}">${fmtClock(t)}</button>`).join("")}`
-      : `<span>${esc(DAY_LONG[ev.day])} has no free time to move it to, so it stays flagged.</span>`;
+    $("eventFixes").innerHTML = fix !== null
+      ? `<span>Quick fix:</span><button type="button" class="small" data-at="${fix}">Move to ${fmtClock(fix)}</button>`
+      : `<span>No free time within ${EVENT_WINDOW} hours of ${at(ev.home)}, so it stays flagged.</span>`;
+    // While it conflicts, the quick fix is the one way to move it; otherwise its time can be picked.
+    $("eventTimeField").hidden = $("eventMoveBtn").hidden = ev.flag;
+    $("eventCancelBtn").textContent = ev.flag ? "Close" : "Cancel";
+    $("eventTimeLabel").textContent = ev.home === null ? "Time" : `Time (within ${EVENT_WINDOW} hours of ${fmtClock(ev.home)})`;
     $("eventResetBtn").hidden = !ev.moved;
     $("eventResetBtn").textContent = `Back to ${at(ev.home)}`;
     $("eventTime").value = ev.at === null ? "" : fmtClock(ev.at);
@@ -57,23 +62,25 @@
     $("eventNote").className = `note ${hits.length ? "bad" : "good"}`;
   }
 
+  // A time within the event's reach (agenda.js), nearest to the one given.
+  const within = (ev, h) => { const [from, to] = A.reach(ev); return Math.min(to, Math.max(from, h)); };
+
   // − / + move the time 15 minutes, onto the grid first if it's off it (with no time yet: 0900).
   function stepEventTime(dir) {
     const t = S.triage, ev = current();
     if (!t || !ev) return;
-    const to = t.at === null ? 9 : dir > 0 ? Math.floor(t.at / STEP + 1e-9) * STEP + STEP : Math.ceil(t.at / STEP - 1e-9) * STEP - STEP;
-    t.at = Math.min(DAY_HOURS - ev.dur, Math.max(0, to));
+    t.at = within(ev, t.at === null ? 9 : dir > 0 ? Math.floor(t.at / STEP + 1e-9) * STEP + STEP : Math.ceil(t.at / STEP - 1e-9) * STEP - STEP);
     $("eventTime").value = fmtClock(t.at);
     renderChoice();
   }
 
-  // A time typed goes on the 15-minute grid as it's typed; tidy (on leaving the field) shows it
-  // that way. Empty is any time that day, but only for an event its app gave no time.
+  // A time typed goes on the 15-minute grid, within reach, as it's typed; tidy (on leaving the field)
+  // shows it that way. Empty is any time that day, but only for an event its app gave no time.
   function onEventTime(tidy) {
     const t = S.triage, ev = current();
     if (!t || !ev) return;
     const to = A.readClock("eventTime");
-    if (to === null ? ev.home === null : !Number.isNaN(to)) t.at = to === null ? null : Math.min(DAY_HOURS - ev.dur, to);
+    if (to === null ? ev.home === null : !Number.isNaN(to)) t.at = to === null ? null : within(ev, to);
     if (tidy) $("eventTime").value = t.at === null ? "" : fmtClock(t.at);
     renderChoice();
   }

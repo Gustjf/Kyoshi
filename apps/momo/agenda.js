@@ -13,7 +13,7 @@
   "use strict";
   const S = A.S;
   const { esc, isNum, sum, addDays, now, todayStr } = K.util;
-  const { DAYS, DAY_HOURS, DAY_NAMES, DAY_LONG, STEP, FREE_TIME, snap, fmtH, fmtClock, dayIndex, firstDay, thisWeekKey, nextWeekKey } = A;
+  const { DAYS, DAY_HOURS, DAY_NAMES, DAY_LONG, STEP, FREE_TIME, EVENT_WINDOW, snap, fmtH, fmtClock, dayIndex, firstDay, thisWeekKey, nextWeekKey } = A;
 
   const PAD_PX = 6;    // .col-body's padding (momo.css): where 0000 is on a day
   const SET_IN = 0.25; // how far a conflicting event is set in, like a card the cards above run into (momo.css)
@@ -77,16 +77,25 @@
     return { extra: each(ev => ev.extra), loose: each(ev => ev.loose) };
   }
 
-  // The nearest times on its own day where an event would be clear of conflicts, on the 15-minute
-  // grid and (today) not before now: the closest earlier, then the closest later. None: it can't be.
-  function quickFixes(key, ev, list = A.readList(key)) {
+  // The times an event can move to on its own day: within EVENT_WINDOW hours of its app's time either
+  // way, on the 15-minute grid ([from, to]); any time that day for one its app gave no time.
+  function reach(ev) {
+    const last = DAY_HOURS - ev.dur, [lo, hi] = ev.home === null ? [0, last] : [Math.max(0, ev.home - EVENT_WINDOW), Math.min(last, ev.home + EVENT_WINDOW)];
+    return [Math.ceil(lo / STEP - 1e-9) * STEP, Math.floor(hi / STEP + 1e-9) * STEP];
+  }
+
+  // An event's quick fix: the clear time within its reach closest to its app's time (the earlier of
+  // two as close), and today not before now. null when there's none — it stays flagged.
+  function quickFix(key, ev, list = A.readList(key)) {
+    if (ev.home === null) return null;
     const blocks = obstacles(weekAgenda(key, list), dayParts(list, ev.day), ev.day, ev.key);
-    const soonest = key === thisWeekKey() && ev.day === dayIndex(todayStr()) ? hoursNow() : 0;
-    const clear = t => t >= soonest && t + ev.dur <= DAY_HOURS && !blocks.some(o => overlaps({ start: t, end: t + ev.dur }, o));
-    const out = [];
-    for (let t = Math.ceil(ev.at / STEP - 1e-9) * STEP - STEP; t >= 0; t -= STEP) if (clear(t)) { out.push(t); break; }
-    for (let t = Math.floor(ev.at / STEP + 1e-9) * STEP + STEP; t + ev.dur <= DAY_HOURS; t += STEP) if (clear(t)) { out.push(t); break; }
-    return out;
+    const soonest = key === thisWeekKey() && ev.day === dayIndex(todayStr()) ? hoursNow() : 0, [from, to] = reach(ev);
+    let best = null;
+    for (let t = from; t <= to + 1e-9; t += STEP) {
+      const clear = t >= soonest && !blocks.some(o => overlaps({ start: t, end: t + ev.dur }, o));
+      if (clear && (best === null || Math.abs(t - ev.home) < Math.abs(best - ev.home) - 1e-9)) best = t;
+    }
+    return best;
   }
 
   // "Gym", "Gym and Vet", "Gym, Vet and Work" — each name once.
@@ -105,7 +114,7 @@
   function conflictMsg(key, list) {
     if (list.length > 1) return `${list.length} events conflict: ${[...new Set(list.map(ev => `${DAY_NAMES[ev.day]} ${fmtClock(ev.at)}`))].join(", ")} — click one for a quick fix.`;
     const ev = list[0];
-    return `${ev.title} on ${when(ev)} conflicts with ${names(ev.clash)} — ${quickFixes(key, ev).length ? "click it for a quick fix." : `${DAY_LONG[ev.day]} has no free time to move it to.`}`;
+    return `${ev.title} on ${when(ev)} conflicts with ${names(ev.clash)} — ${quickFix(key, ev) !== null ? "click it for a quick fix." : `there's no free time within ${EVENT_WINDOW} hours to move it to.`}`;
   }
 
   // Lays a day's events (from S.agenda) into its plan (render.js dayPlan). One alone in time no card
@@ -231,7 +240,7 @@
   }
 
   Object.assign(A, {
-    hoursNow, overlaps, dayParts, weekAgenda, obstacles, agendaHours, quickFixes, names, when, conflicts, conflictMsg,
+    hoursNow, overlaps, dayParts, weekAgenda, obstacles, agendaHours, reach, quickFix, names, when, conflicts, conflictMsg,
     layEvents, pushLines, overlaysHTML, eventHTML, headEventsHTML, agendaKey, checkAgenda
   });
 })(Kyoshi, Kyoshi.apps.momo);

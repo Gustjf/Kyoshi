@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.332", date: "2026-09-29", changes: [
+      "An event's quick fix is now the one clear time closest to its own, within 3 hours of it so doses stay on schedule; a conflict shows just that, and times picked by hand stay within those 3 hours too."
+    ] },
     { version: "5.322", date: "2026-09-29", changes: [
       "Events now count toward their day's 24 hours: they take free time, or Free time lends them the hours, and no card ever moves for one.",
       "An event on any other card or event is a conflict: its quick fix is the nearest clear time that same day, and with none, the red warning stays.",

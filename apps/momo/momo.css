@@ -237,13 +237,13 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .co-done .stepper { width: 128px; }
 .app-momo .co-result { grid-column: 1 / -1; font-size: .82em; color: var(--muted); }
 .app-momo .co-result strong { color: var(--text); }
-/* An event's pop-up (triage.js): its app's icon by its name; a conflict in red with its quick fix
-   under it (or why there's none); the time's − / + move it 15 minutes. */
+/* An event's pop-up (triage.js): its app's icon by its name; a conflict in red with its one quick fix
+   under it (or why there's none); without a conflict, the time's − / + move it 15 minutes. */
 .app-momo .event-head { display: flex; align-items: center; gap: 8px; }
 .app-momo .modal-hint a { color: inherit; font-weight: 600; }
 .app-momo .event-clash { margin: 0 0 14px; padding: 9px 11px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: .86em; font-weight: 600; line-height: 1.4; }
 .app-momo .event-fixes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--text); font-weight: 400; }
-.app-momo .event-fixes button { background: var(--panel); font-variant-numeric: tabular-nums; }
+.app-momo .event-fixes button { font-variant-numeric: tabular-nums; }
 .app-momo .event-time { max-width: 190px; }
 
 /* --- Phones --- */
