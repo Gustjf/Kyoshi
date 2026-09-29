@@ -17,15 +17,15 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: In progress (and its free spots) & Up next, the backlog's groups (`buildGroups`, made once), Finished |
-| `editor.js` | the add / edit pop-up: category, name, info, Have it?, cost (courses), why; Add another; delete; duplicate check |
+| `editor.js` | the add / edit pop-up: category, name, info, Have it?, why; Add another; delete; duplicate check |
 | `events.js` | `A.init` wiring; moving items (start → a free spot, or the "In progress is full" pop-up to swap one out; up next; done → Up next takes its spot; back to backlog; put back); hooks `onTick`, `onKeydown`, `onReload`, `bugState` |
 | `wanshitong.css` | styles under `.app-wanshitong` |
 
 ## State (`A.S`)
-`items` [{ id, cat, name, info, have, cost, why, added, started, done, deleted, at, u }]:
+`items` [{ id, cat, name, info, have, why, added, started, done, deleted, at, u }]:
 `cat` a `CATS` id (an unknown one from a newer version is kept and shown as Other) · `info` just enough to find it
 (author, year…) · `have` "" (not yet) | "downloaded" | "borrowed" | "owned" ·
-`cost` dollars, 0 = free, null = unknown (unused since courses were removed; kept) · `why` optional note · `added` / `started` / `done`
+`why` optional note · `added` / `started` / `done`
 "YYYY-MM-DD" or "" (`done` set = finished) · deleted ones stay as markers · `at` when added, `u` when last changed.
 `slots` { now, now2, now3, next }: each { id ("" = empty), u } — In progress's spots (`NOW_SPOTS`) and Up next.
 Before 2.000 there was only `now`, so older data and backups fill the first spot. In progress lists its items

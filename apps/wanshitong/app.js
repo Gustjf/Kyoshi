@@ -24,7 +24,7 @@
   // What a recommendation can be, in the order they're listed. Ids are what backups store; add
   // more here and they show up everywhere. info: what the second field asks for (just enough to
   // find it again); search: added to its Google search, so "Dune" finds the right Dune;
-  // cost: keeps what it costs; have / haveLabels: the "Have it?" choices it offers
+  // have / haveLabels: the "Have it?" choices it offers
   // (default: all of HAVE) and any it names its own way. Old ids: see OLD_CATS in data.js.
   const CATS = [
     { id: "book", label: "Book", group: "Books", info: "Author or edition", nameEg: "Piranesi", infoEg: "Susanna Clarke", search: "book" },
@@ -46,7 +46,6 @@
     MAX_NAME: 120,
     MAX_INFO: 120,
     MAX_WHY: 500,
-    MAX_COST: 1000000,
     // Backup file format. Bump only when import has to migrate the data.
     DATA_SCHEMA_VERSION: 1
   });
@@ -55,7 +54,7 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    // Every recommendation: { id, cat, name, info, have, cost, why, added, started, done, deleted, at, u }
+    // Every recommendation: { id, cat, name, info, have, why, added, started, done, deleted, at, u }
     // (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
     items: [],
     // In progress's spots (now, now2, now3) and Up next (next): the item each holds ("" when empty),
@@ -81,7 +80,6 @@
   }
   const haveLabel = (catId, have) => (haveChoices(catId).find(([h]) => h === have) || [have, A.HAVE[have] || ""])[1];
   // "$49", "$1,250.50" or "Free"; "" when it isn't known.
-  const fmtCost = c => (c === null ? "" : c === 0 ? "Free" : `$${c.toLocaleString(undefined, { minimumFractionDigits: c % 1 ? 2 : 0, maximumFractionDigits: 2 })}`);
   // A day, with its year only when it isn't this year: "Sep 28", "Mar 3, 2025".
   const fmtDay = d => (d.slice(0, 4) === todayStr().slice(0, 4) ? fmtShort(d) : fmtDate(d));
   // A Google search for it: its name and info, plus what it is.
@@ -117,7 +115,7 @@
   const unslot = id => SLOTS.forEach(k => { if (S.slots[k].id === id) setSlot(k, ""); });
 
   Object.assign(A, {
-    catOf, groupOf, haveChoices, haveLabel, fmtCost, fmtDay, searchUrl, byNewest,
+    catOf, groupOf, haveChoices, haveLabel, fmtDay, searchUrl, byNewest,
     live, itemById, nowSpots, nowItems, spotOf, freeSpot, nextItem, backlog, finished, setSlot, unslot
   });
 })(Kyoshi);

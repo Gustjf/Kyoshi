@@ -54,10 +54,6 @@ Kyoshi.apps.wanshitong.markup = `
         <label>Have it?</label>
         <div class="choice-pills" id="itemHave"></div>
       </div>
-      <div class="field" id="itemCostField">
-        <label for="itemCost">Cost, $</label>
-        <input type="number" id="itemCost" min="0" step="any" placeholder="0 if it's free">
-      </div>
       <div class="field">
         <label for="itemWhy">Why it's here (optional)</label>
         <textarea id="itemWhy" rows="2" maxlength="500" placeholder="e.g. Sam's favourite, for when I want something hopeful"></textarea>

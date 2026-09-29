@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.110", date: "2026-09-29", changes: [
+      "Removed cost from recommendations and from saved data."
+    ] },
     { version: "2.100", date: "2026-09-29", changes: [
       "Novels and textbooks are now one Books category; the course categories are gone (old ones show as Other)."
     ] },

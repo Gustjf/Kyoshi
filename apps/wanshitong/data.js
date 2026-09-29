@@ -8,7 +8,7 @@
   const OLD_CATS = { novel: "book", textbook: "book", elearning: "other", inperson: "other" };
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
-  const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_COST, DATA_SCHEMA_VERSION } = A;
+  const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, DATA_SCHEMA_VERSION } = A;
 
   const persist = () => {
     A.store.set("items", JSON.stringify(S.items));
@@ -28,8 +28,6 @@
   // (a name or info) also turns runs of spaces and line breaks into one space.
   const cleanText = (v, max) => (typeof v === "string" ? [...v.trim()].slice(0, max).join("").trim() : "");
   const cleanLine = (v, max) => cleanText(typeof v === "string" ? v.replace(/\s+/g, " ") : "", max);
-  // A cost in dollars and cents, or null when it isn't known (0 is free).
-  const cleanCost = v => (isNum(v) && v >= 0 && v <= MAX_COST ? Math.round(v * 100) / 100 : null);
 
   // Saved or imported items in the current shape; anything unusable is dropped, so a damaged
   // file can't break the app. A category from a newer version is kept as it is (shown as Other).
@@ -43,7 +41,6 @@
         name: gone ? "" : cleanLine(i.name, MAX_NAME),
         info: gone ? "" : cleanLine(i.info, MAX_INFO),
         have: !gone && Object.hasOwn(HAVE, i.have) ? i.have : "",
-        cost: gone ? null : cleanCost(i.cost),
         why: gone ? "" : cleanText(i.why, MAX_WHY),
         added: isDate(i.added) ? i.added : "",
         started: !gone && isDate(i.started) ? i.started : "",
@@ -139,5 +136,5 @@
     hasData: () => S.items.length > 0,
     importBackup, combine, afterSync
   };
-  Object.assign(A, { save, storeFolded, cleanText, cleanLine, cleanCost });
+  Object.assign(A, { save, storeFolded, cleanText, cleanLine });
 })(Kyoshi, Kyoshi.apps.wanshitong);

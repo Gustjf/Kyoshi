@@ -4,7 +4,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, SEP, todayStr } = K.util;
-  const { CATS, OTHER, NOW_SPOTS, catOf, groupOf, haveLabel, fmtCost, fmtDay, searchUrl } = A;
+  const { CATS, OTHER, NOW_SPOTS, catOf, groupOf, haveLabel, fmtDay, searchUrl } = A;
 
   // The "search" icon from Lucide (lucide.dev) — ISC License, Copyright (c) Lucide Icons and Contributors.
   const SEARCH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>';
@@ -15,10 +15,10 @@
     `<button type="button" class="${cls}" data-act="edit" data-id="${esc(i.id)}" title="Edit">${esc(i.name)}</button>` +
     (i.info ? `<span class="item-info">${esc(i.info)}</span>` : "") +
     `<a class="search-link" href="${esc(searchUrl(i))}" target="_blank" rel="noopener noreferrer" title="Look it up on Google" aria-label="Look up ${esc(i.name)} on Google">${SEARCH_ICON}</a></div>`;
-  // Have it, its cost, and dates ([label, day]), "|" between.
+  // Have it, and dates ([label, day]), "|" between.
   function metaLine(i, dates, first = "") {
     const have = haveLabel(i.cat, i.have);
-    const bits = [first, have ? `<span class="badge have-${esc(i.have)}">${esc(have)}</span>` : "", esc(fmtCost(i.cost))]
+    const bits = [first, have ? `<span class="badge have-${esc(i.have)}">${esc(have)}</span>` : ""]
       .concat(dates.map(([label, d]) => (d ? `${label} ${fmtDay(d)}` : "")))
       .filter(Boolean);
     return bits.length ? `<div class="item-meta">${bits.join(SEP)}</div>` : "";

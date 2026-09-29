@@ -1,14 +1,14 @@
 /* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, info, Have it?,
- * cost (courses only), why it's here and, when editing, its dates. Add, Add another (keeps the
+ * why it's here and, when editing, its dates. Add, Add another (keeps the
  * pop-up open for the next one), Save and Delete. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, isDate, todayStr, newId, readNumber } = K.util;
-  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_COST, catOf, haveChoices, fmtDay } = A;
+  const { esc, isDate, todayStr, newId } = K.util;
+  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, catOf, haveChoices, fmtDay } = A;
 
   const overlay = () => $("itemOverlay");
-  const FIELDS = ["itemName", "itemInfo", "itemCost", "itemWhy", "itemAdded", "itemDone"];
+  const FIELDS = ["itemName", "itemInfo", "itemWhy", "itemAdded", "itemDone"];
   // What the pop-up holds, to tell whether closing it would lose something.
   const formState = () => JSON.stringify(FIELDS.map(id => $(id).value).concat(S.editing.cat, S.editing.have));
 
@@ -31,7 +31,7 @@
   const offered = e => (haveChoices(e.cat).some(([h]) => h === e.have) ? e.have : "");
 
   // Everything that depends on the category: its pill, what the info field asks for, the
-  // "Have it?" choices, and the cost field (courses).
+  // "Have it?" choices.
   function renderCatFields() {
     const e = S.editing, c = catOf(e.cat);
     $("itemCats").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === e.cat));
@@ -41,7 +41,6 @@
     $("itemHave").innerHTML = [["", "Not yet"]].concat(haveChoices(e.cat))
       .map(([h, label]) => `<button type="button" class="pill" data-have="${h}">${esc(label)}</button>`).join("");
     renderHave();
-    $("itemCostField").hidden = !c.cost;
   }
   const renderHave = () => {
     const have = offered(S.editing);
@@ -56,7 +55,6 @@
     $("itemModalTitle").textContent = i ? "Edit recommendation" : "Add a recommendation";
     $("itemName").value = i ? i.name : "";
     $("itemInfo").value = i ? i.info : "";
-    $("itemCost").value = i && i.cost !== null ? i.cost : "";
     $("itemWhy").value = i ? i.why : "";
     $("itemAdded").value = i ? i.added : "";
     $("itemDone").value = i ? i.done : "";
@@ -87,11 +85,6 @@
     const c = catOf(e.cat);
     const name = A.cleanLine($("itemName").value, MAX_NAME);
     if (!name) { $("itemName").focus(); return alert("Give it a name."); }
-    const cost = c.cost ? readNumber($("itemCost")) : null;
-    if (Number.isNaN(cost) || (cost !== null && (cost < 0 || cost > MAX_COST))) {
-      $("itemCost").focus();
-      return alert("Enter the cost as a number (0 if it's free), or leave it empty.");
-    }
     const added = $("itemAdded").value, done = $("itemDone").value;
     let i = e.id ? A.itemById(e.id) : null;
     if (e.id && !i) {
@@ -101,7 +94,7 @@
     }
     if (i && !isDate(added)) { $("itemAdded").focus(); return alert("Enter the day it was added."); }
     if (i && i.done && !isDate(done)) { $("itemDone").focus(); return alert("Enter the day you finished it."); }
-    const fields = { cat: e.cat, name, info: A.cleanLine($("itemInfo").value, MAX_INFO), have: offered(e), cost: A.cleanCost(cost), why: A.cleanText($("itemWhy").value, MAX_WHY) };
+    const fields = { cat: e.cat, name, info: A.cleanLine($("itemInfo").value, MAX_INFO), have: offered(e), why: A.cleanText($("itemWhy").value, MAX_WHY) };
     if (i) {
       Object.assign(i, fields, { added, done: i.done ? done : "", u: Date.now() });
     } else {
@@ -115,7 +108,7 @@
     A.renderAll();
     if (close || i) return closeEditor();
     // Add another: the same category, a clean form.
-    ["itemName", "itemInfo", "itemCost", "itemWhy"].forEach(id => { $(id).value = ""; });
+    ["itemName", "itemInfo", "itemWhy"].forEach(id => { $(id).value = ""; });
     e.have = "";
     renderCatFields();
     setStatus(`Added “${name}” to ${c.group}.`);
@@ -127,7 +120,7 @@
     const i = S.editing && A.itemById(S.editing.id);
     if (!i || !confirm(`Delete “${i.name}”? This can't be undone.`)) return;
     // Kept as a marker, so another device's older copy can't bring it back.
-    Object.assign(i, { name: "", info: "", have: "", cost: null, why: "", started: "", done: "", deleted: true, u: Date.now() });
+    Object.assign(i, { name: "", info: "", have: "", why: "", started: "", done: "", deleted: true, u: Date.now() });
     A.unslot(i.id);
     closeEditor();
     A.save();
