@@ -1,6 +1,6 @@
 /* Momo · events.js — loads last: wires Momo's buttons, board and pop-ups (A.init), and the
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
- * onHide (redraw; drop any drag), onTick (a new day or week), onReload (another tab saved),
+ * onHide (redraw; drop any drag), onTick (a new day or week; Tasks), onReload (another tab saved),
  * attention (a week to close out), renderDev (Undo in Developer Mode) and bugState. */
 (function (K, A) {
   "use strict";
@@ -42,15 +42,15 @@
     $("loadBaselineBtn").addEventListener("click", A.loadBaseline);
     $("copyPrevBtn").addEventListener("click", A.copyPrevWeek);
     $("saveAsBaseBtn").addEventListener("click", A.saveAsBaseline);
-    $("addBaseCardBtn").addEventListener("click", () => A.openCardEditor(null, { noDay: true }));
     $("gotoBaselineBtn").addEventListener("click", () => { S.view = "base"; A.renderAll(); });
     $("sampleBaselineBtn").addEventListener("click", A.startSampleBaseline);
     $("fillGapsBtn").addEventListener("click", A.fillGaps);
     $("reopenBtn").addEventListener("click", A.reopenWeek);
     $("clearBtn").addEventListener("click", A.clearBoard);
-    $("addParkedBtn").addEventListener("click", () => A.openCardEditor(null, { day: null }));
+    // A new card waits in Tasks (No day), or on the baseline goes on the days picked.
+    $("addTaskBtn").addEventListener("click", () => A.openCardEditor(null, S.view === "base" ? { noDay: true } : { day: null }));
 
-    ["board", "parking"].forEach(id => {
+    ["board", "tasks"].forEach(id => {
       $(id).addEventListener("pointerdown", A.onBoardPointerDown);
       $(id).addEventListener("click", A.onBoardClick);
       $(id).addEventListener("keydown", A.onCardKey);
@@ -192,8 +192,12 @@
     holdAlt(false);
   };
 
-  // Every minute, and whenever the page is back in view: a new day or week.
-  A.onTick = A.checkRollover;
+  // Every minute, and whenever the page is back in view: a new day or week, and what's in
+  // progress in Wan Shi Tong, for Tasks.
+  A.onTick = () => {
+    A.checkRollover();
+    A.checkTasks();
+  };
 
   // Another tab saved: its data is loaded (A.load); undo would step back over it, so it's cleared.
   A.onReload = () => {
@@ -216,7 +220,7 @@
 
   // Bug reports leave out every card title and goal name.
   A.bugState = () => {
-    const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), live = A.liveGoals();
+    const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), live = A.liveGoals(), tasks = A.tasks();
     return [
       `- View: ${S.view}`,
       `- Weeks stored: ${Object.keys(data.weeks).length} (${Object.values(data.weeks).filter(w => w.closed).length} closed)`,
@@ -225,6 +229,7 @@
       `- Goals: ${live.length}, ${live.filter(A.isWeekly).length} in hours a week (+${data.goals.length - live.length} deleted)`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles and goals on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
+      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId).length} from Wan Shi Tong)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
       `- Undo steps: ${S.undoStack.length}`
     ];

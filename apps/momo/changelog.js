@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.122", date: "2026-09-29", changes: [
+      "The parking lot is now Tasks: every long-term goal and everything in progress in Wan Shi Tong waits there, ready to drag onto a day as often as you like (1.5h each time).",
+      "Click a task to put it on several days at once; Tasks shows on the baseline too, and a card's Parked option is now No day."
+    ] },
     { version: "5.022", date: "2026-09-28", changes: [
       "Momo now lives in Kyoshi with your other apps: switch between them from the button beside Theme.",
       "One sync folder now keeps every app's autosaves, and Developer Mode, bug reports and the theme are shared across apps.",

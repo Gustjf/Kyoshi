@@ -1,6 +1,6 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & parking lot · Board & cards · Goals · Pop-up fields · Phones */
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Goals · Pop-up fields · Phones */
 
 /* --- Tokens --- */
 /* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
@@ -21,7 +21,7 @@
 .app-momo .mode-btn.active .vb-date, .app-momo .mode-btn.active .vb-status { color: #fff; opacity: .9; }
 .app-momo #closeOutNowBtn { flex: 0 0 auto; }
 
-/* --- To Be Budgeted bank & parking lot --- */
+/* --- To Be Budgeted bank & Tasks --- */
 .app-momo .bank-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px 16px; flex-wrap: wrap; }
 .app-momo .bank-figure { min-width: 0; flex: 1 1 320px; }
 .app-momo .bank-line { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
@@ -32,13 +32,17 @@
 .app-momo .bank-msg.bad { color: var(--bad); font-weight: 600; }
 .app-momo .bank-msg.good { color: var(--good); }
 .app-momo .bank-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.app-momo .parking { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; min-height: 46px; margin-top: 12px; padding: 7px 8px; border: 1px dashed var(--border); border-radius: 8px; transition: border-color .15s, background-color .15s; }
-.app-momo .parking.drop-target { border-color: var(--accent); background: var(--ring); }
-.app-momo .parking-label { font-size: .72em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.app-momo .parking-total { font-size: .8em; color: var(--muted); }
-.app-momo .parking-cards { display: contents; }
-.app-momo .parking-empty { font-size: .8em; color: var(--muted); }
-.app-momo .parking-add { margin-left: auto; }
+.app-momo .tasks { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; min-height: 46px; margin-top: 12px; padding: 7px 8px; border: 1px dashed var(--border); border-radius: 8px; transition: border-color .15s, background-color .15s; }
+.app-momo .tasks.drop-target { border-color: var(--accent); background: var(--ring); }
+.app-momo .tasks-label { font-size: .72em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.app-momo .tasks-total { font-size: .8em; color: var(--muted); }
+.app-momo .tasks-cards { display: contents; }
+.app-momo .tasks-empty { font-size: .8em; color: var(--muted); }
+.app-momo .tasks-add { margin-left: auto; }
+/* A task to draw from (a goal, or something in progress in Wan Shi Tong) is the outline of a card,
+   with no hours: dragging it adds a card of its own, and it stays for next time. */
+.app-momo .card.task { border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
+.app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
 
 /* --- Board & cards --- */
 .app-momo .board-wrap { overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
@@ -98,10 +102,10 @@
 .app-momo .card.dragging { opacity: .3; }
 /* A card copied (Ctrl+C) or cut (Ctrl+X) is shaded while it waits to be pasted: blue for a copy, amber for a cut.
    While Alt is held, the card under the mouse is shaded red, as Alt+click deletes it (a block's own part: the cards inside it stay). */
-.app-momo .card.clip::after, .app-momo.alt-held :is(#board:not(.locked), #parking) :is(.card:not(.has-inner), .card-own):hover::after { content: ""; position: absolute; inset: 0; border-radius: inherit; outline: 2px dashed var(--clip); outline-offset: -2px; background: color-mix(in srgb, var(--clip) 18%, transparent); pointer-events: none; }
+.app-momo .card.clip::after, .app-momo.alt-held :is(#board:not(.locked), #tasks) :is(.card:not(.has-inner):not(.task), .card-own):hover::after { content: ""; position: absolute; inset: 0; border-radius: inherit; outline: 2px dashed var(--clip); outline-offset: -2px; background: color-mix(in srgb, var(--clip) 18%, transparent); pointer-events: none; }
 .app-momo .card.clip { --clip: var(--accent); }
 .app-momo .card.clip.cut { --clip: var(--warn); }
-.app-momo.alt-held :is(#board:not(.locked), #parking) :is(.card:not(.has-inner), .card-own):hover { --clip: var(--bad); }
+.app-momo.alt-held :is(#board:not(.locked), #tasks) :is(.card:not(.has-inner):not(.task), .card-own):hover { --clip: var(--bad); }
 .app-momo .card.drop-into, .app-momo .card.resizing { box-shadow: 0 0 0 2px var(--accent); }
 .app-momo .grip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; cursor: ns-resize; }
 .app-momo .grip::after { content: ""; position: absolute; left: 50%; bottom: 2px; width: 18px; height: 2px; margin-left: -9px; border-radius: 1px; background: var(--c); opacity: 0; transition: opacity .15s; }
@@ -117,7 +121,7 @@
 .app-momo .card-rest { padding: 0; } /* just its resize edge */
 .app-momo .card.inner { margin: 3px 0 0 4px; padding: 2px 6px; border-radius: 4px; }
 .app-momo .card .card { font-size: 1em; }
-/* Parked cards (and their ghost while dragged) are one line, only as wide as they need. */
+/* Cards in Tasks (and their ghost while dragged) are one line, only as wide as they need. */
 .app-momo .parked > .card-rest { display: none; }
 .app-momo .card.parked { flex-wrap: nowrap; height: auto; align-items: center; padding: 5px 8px; }
 .app-momo .card.parked.has-inner { flex-direction: row; align-items: center; gap: 3px; padding: 3px; }

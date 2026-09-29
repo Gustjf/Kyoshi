@@ -22,27 +22,28 @@ Core Application Workflows
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide); constants (days, 15-min `STEP`, `PALETTE`, drag thresholds, `DATA_SCHEMA_VERSION`, `SAMPLE_BASELINE`); state `A.S`; helpers (hours `fmtH`/`snap`, week keys, `fmtClock`) |
-| `markup.js` | the page: close-out banner, week tabs, bank & parking lot, board, goals, Backup & sync, card/goal/close-out pop-ups |
+| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide); constants (days, 15-min `STEP`, `DRAW_HOURS`, `PALETTE`, drag thresholds, `DATA_SCHEMA_VERSION`, `SAMPLE_BASELINE`); state `A.S`; helpers (hours `fmtH`/`snap`, week keys, `fmtClock`) |
+| `markup.js` | the page: close-out banner, week tabs, bank & Tasks, board, goals, Backup & sync, card/goal/close-out pop-ups |
 | `changelog.js` | version history |
 | `model.js` | **the data model** (header comment documents it): weeks, baseline, goals, budgets, and how cards merge, nest and move (`moveCard`, `mergeTarget`, `insertCard`, `settle`) |
 | `times.js` | times of day (`daySchedule`, `startTimes`, `autoSpot`) and the board's ruler (heights that line cards up across days) |
 | `colors.js` | colours by title/goal key, auto-assigning and swapping (`ensureColors`, `pickColor`) |
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time), goals |
-| `drag.js` | pointer handling: pick up, group drag (Ctrl / long hold), find the drop target |
-| `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board clicks & keys, pins |
+| `tasks.js` | **Tasks**, the strip under the bank: a task per goal still to reach and per thing in progress in Wan Shi Tong (`tasks`, read through its `inProgress()`), drawing a card from one (`drawCard`, `DRAW_HOURS`), clicking one (`openTask`), the week's cards without a day, and redrawing when Wan Shi Tong's change (`checkTasks`) |
+| `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
+| `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
-| `card-editor.js` | card pop-up (days, goal, pin, inside, colour), shared colour swatches, hours & clock parsing |
+| `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
 | `closeout.js` | weekly close-out pop-up, pending weeks, reopen, rollover (new day/week) |
-| `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick`, `onReload`, `attention` (a week to close out), `renderDev` (Undo), `bugState` |
+| `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; Tasks), `onReload`, `attention` (a week to close out), `renderDev` (Undo), `bugState` |
 | `momo.css` | styles under `.app-momo`; page-wide `--momo-hour`, `--momo-slate`, `--momo-tint` |
 
 ## State (`A.S`)
 `data` { weeks, baseline, goals, colors } — shape in `model.js` · `view` "this"|"next"|"base" · `undoStack`, `lastSavedJSON`, `lastSaved` ·
-close-out: `closing`, `closeOutLater`, `knownToday` · editors: `editing`, `editingGoal` · pointer: `press`, `stuck`, `drag`, `resize`, `suppressClick`, `renderPending` · `clip`, `mouse` · `ruler`.
+close-out: `closing`, `closeOutLater`, `knownToday` · editors: `editing`, `editingGoal` · pointer: `press`, `stuck`, `drag` (`draw`: a card drawn from a task), `resize`, `suppressClick`, `renderPending` · `clip`, `mouse` · `ruler` · `tasksKey`.
 Note `A.S.data` is Momo's data; `A.data` is the backup/sync adapter Kyoshi calls.
 
 ## Storage (`A.store`) and backups
@@ -55,4 +56,5 @@ Every change goes through `save()` (colours, `u` timestamps, undo, then storage 
 - A day's cards are ordered; that order sets their times, except pinned cards. Nesting is one level deep (`tidyNesting`).
 - Sync merges whole weeks / goals / colours by their `u` (the later change wins); goal logs from both sides are kept.
 - Past weeks are closed out (goal hours logged); this week only counts today onward.
+- Tasks aren't stored: they're read afresh from the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`, read-only; none if it's missing). A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none.
 - Bug reports never include card titles or goal names.

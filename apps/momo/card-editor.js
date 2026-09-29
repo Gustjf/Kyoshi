@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { isNum, sum, esc, newId, fmtNum } = K.util;
-  const { DAY_HOURS, DAYS, WEEKDAYS, DAY_NAMES, STEP, MAX_GOAL_HOURS, FREE_TIME, POSITIONS, AUTO, PALETTE, HIGHLIGHTS,
+  const { DAY_HOURS, DAYS, WEEKDAYS, DAY_NAMES, STEP, MAX_GOAL_HOURS, DRAW_HOURS, FREE_TIME, POSITIONS, AUTO, PALETTE, HIGHLIGHTS,
     snap, fmtH, cleanText, fmtClock, firstDay, thisWeekKey, nextWeekKey, readNumber } = A;
 
   const overlay = () => $("cardOverlay");
@@ -23,35 +23,38 @@
   }
   const closeEditor = () => K.modal.dismiss(overlay());
 
-  // Titles used before, for the title field's suggestions.
+  // Titles used before, and what's in progress in Wan Shi Tong, for the title field's suggestions.
   function titleSuggestions() {
     const titles = new Map([[FREE_TIME.toLowerCase(), FREE_TIME]]);
     [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].forEach(list => list.cards.forEach(c => {
       if (!c.goalId) titles.set(c.title.toLowerCase(), c.title);
     }));
+    A.tasks().forEach(t => { if (!t.goalId) titles.set(t.title.toLowerCase(), t.title); });
     return [...titles.values()].sort((a, b) => a.localeCompare(b));
   }
 
   // Opens the card editor for a card, or for a new card on a day (null =
-  // parked): before the card before on that day (null for last, AUTO for
-  // wherever it fits), in free time of room hours. Either one can be put on
-  // several days at once.
-  function openCardEditor(id, { day = 0, noDay = false, before = AUTO, room = null } = {}) {
+  // parked, in Tasks): before the card before on that day (null for last,
+  // AUTO for wherever it fits), in free time of room hours; or, with noDay,
+  // with no day picked yet. A new card from a task (from) starts as the ones
+  // it draws. Either one can be put on several days at once.
+  function openCardEditor(id, { day = 0, noDay = false, before = AUTO, room = null, from = null } = {}) {
     if (A.isLocked()) return;
     const key = A.shownKey(), list = A.readList(key);
     const card = id ? list.cards.find(c => c.id === id) : null;
     if (id && !card) return;
     const free = day === null || noDay ? 0 : room !== null ? room : DAY_HOURS - A.dayTotal(list, day);
-    const editing = S.editing = { key, id: card ? card.id : null, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, lastGoalId: card ? card.goalId : null, inner: card ? A.innerCards(list, card) : [] };
+    const draft = card || from; // what the fields start from, if anything
+    const editing = S.editing = { key, id: card ? card.id : null, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, lastGoalId: draft ? draft.goalId : null, inner: card ? A.innerCards(list, card) : [] };
     // Renamed to a new title, a card takes its colour along if no other card on show has its title.
     const oldKey = editing.oldKey;
     if (card && oldKey.startsWith("t:") && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
     $("cardModalTitle").textContent = card ? "Edit card" : "New card";
-    $("cardTitle").value = card ? card.title : "";
-    $("cardHours").value = fmtNum(card ? card.hours : free > 0 && free < 1 ? free : 1);
+    $("cardTitle").value = draft ? draft.title : "";
+    $("cardHours").value = fmtNum(card ? card.hours : from ? DRAW_HOURS : free > 0 && free < 1 ? free : 1);
     const goals = A.liveGoals().filter(g => !A.isReached(g) || (card && card.goalId === g.id));
     $("cardGoal").innerHTML = `<option value="">None</option>` + goals.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
-    $("cardGoal").value = card && goals.some(g => g.id === card.goalId) ? card.goalId : "";
+    $("cardGoal").value = draft && goals.some(g => g.id === draft.goalId) ? draft.goalId : "";
     $("cardGoalField").hidden = !goals.length;
     $("cardColorField").hidden = !!$("cardGoal").value;
     // Inside: the cards on their own it could go inside, by title (on each day
@@ -87,7 +90,7 @@
 
   function renderDayPills() {
     const pills = DAYS.map(d => [d, DAY_NAMES[d]]);
-    if (S.editing.key !== "base") pills.push([null, "Parked"]);
+    if (S.editing.key !== "base") pills.push([null, "No day"]); // it waits in Tasks
     $("cardDays").innerHTML = pills.map(([d, name]) =>
       `<button type="button" class="day-pill${S.editing.days.has(d) ? " active" : ""}" data-day="${d === null ? "" : d}">${name}</button>`).join("");
   }
@@ -99,7 +102,7 @@
     if (editing.days.has(d)) {
       editing.days.delete(d); // saving asks for a day if none is left
     } else if (d === null) {
-      editing.days = new Set([null]); // parked goes on its own
+      editing.days = new Set([null]); // no day goes on its own
     } else {
       editing.days.delete(null);
       editing.days.add(d);
@@ -226,7 +229,7 @@
     if (!title) { $("cardTitle").focus(); return alert("Give the card a name."); }
     if (!isNum(hours)) { $("cardHours").focus(); return alert("Enter how many hours, e.g. 1.5 (in 15-minute steps)."); }
     if (Number.isNaN(pinAt)) { $("cardPin").focus(); return alert("Enter the time it starts, like 2300 or 7:30 — or leave it empty."); }
-    if (!editing.days.size) return alert(editing.key === "base" ? "Pick at least one day." : "Pick at least one day, or Parked.");
+    if (!editing.days.size) return alert(editing.key === "base" ? "Pick at least one day." : "Pick at least one day, or No day to keep it in Tasks.");
     const list = A.listFor(editing.key), days = [...editing.days].sort((a, b) => a - b);
     const card = editing.id ? list.cards.find(c => c.id === editing.id) : null;
     if (editing.id && !card) {

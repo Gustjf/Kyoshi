@@ -1,5 +1,5 @@
-/* Momo · markup.js — Momo's page (A.markup): the week tabs, the To Be Budgeted bank with its
- * parking lot, the board, long-term goals, and its pop-ups (card editor, goal editor, close-out).
+/* Momo · markup.js — Momo's page (A.markup): the week tabs, the To Be Budgeted bank with
+ * Tasks, the board, long-term goals, and its pop-ups (card editor, goal editor, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -39,14 +39,14 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="reopenBtn">Reopen week</button>
         <button class="secondary" id="saveAsBaseBtn">Save as baseline</button>
         <button class="secondary" id="clearBtn">Clear week</button>
-        <button class="secondary" id="addBaseCardBtn">+ New card</button>
       </div>
     </div>
-    <div class="parking" id="parking">
-      <span class="parking-label">Parked</span>
-      <span class="parking-total" id="parkedTotal"></span>
-      <div class="parking-cards" id="parkingCards"></div>
-      <button class="secondary small parking-add" id="addParkedBtn">+ New card</button>
+    <!-- Tasks: a task to draw from for each goal and each thing in progress in Wan Shi Tong, then cards without a day (tasks.js). -->
+    <div class="tasks" id="tasks">
+      <span class="tasks-label">Tasks</span>
+      <span class="tasks-total" id="tasksTotal"></span>
+      <div class="tasks-cards" id="taskCards"></div>
+      <button class="secondary small tasks-add" id="addTaskBtn">+ New card</button>
     </div>
   </section>
 

@@ -114,8 +114,12 @@
   // Empties every spot holding it: back in the backlog (or finished, or deleted).
   const unslot = id => SLOTS.forEach(k => { if (S.slots[k].id === id) setSlot(k, ""); });
 
+  // --- Shared with other apps, read-only (Momo's Tasks): what's in progress, in the order it went
+  // in, as copies: each one's id, name and kind (its category's label, e.g. "Book"). ---
+  const inProgress = () => nowItems().map(i => ({ id: i.id, name: i.name, kind: catOf(i.cat).label }));
+
   Object.assign(A, {
     catOf, groupOf, haveChoices, haveLabel, fmtDay, searchUrl, byNewest,
-    live, itemById, nowSpots, nowItems, spotOf, freeSpot, nextItem, backlog, finished, setSlot, unslot
+    live, itemById, nowSpots, nowItems, spotOf, freeSpot, nextItem, backlog, finished, setSlot, unslot, inProgress
   });
 })(Kyoshi);

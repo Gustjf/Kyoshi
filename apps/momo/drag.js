@@ -1,8 +1,9 @@
 /* Momo · drag.js — picking cards up and working out where they'd land.
  * Pointer Events cover mouse, touch and pen alike. Cards can be reordered within a
- * day, moved between days, or dropped into the parking lot. While dragging, the day
- * under the pointer previews its new total and turns red if the card would push it
- * past 24 hours (drop.js paints that and commits the drop).
+ * day, moved between days, or dropped into Tasks, taking them off their day. A task
+ * there is drawn from instead: dragging it brings a new card (tasks.js), and it stays.
+ * While dragging, the day under the pointer previews its new total and turns red if
+ * the card would push it past 24 hours (drop.js paints that and commits the drop).
  * Holding Ctrl (or ⌘) while dragging, or holding a touch still a little longer before
  * moving, makes it a group drag: the same card on every other day comes along, each
  * staying on its own day and going right after the same card there (see groupMoves). */
@@ -24,7 +25,7 @@
       return;
     }
     if (e.pointerType === "mouse") e.preventDefault(); // no text selection or native drag
-    S.press = { id: cardEl.dataset.id, el: cardEl, pointerId: e.pointerId, type: e.pointerType, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ctrl: e.ctrlKey || e.metaKey, timer: 0 };
+    S.press = { id: cardEl.dataset.id, task: cardEl.dataset.task || null, el: cardEl, pointerId: e.pointerId, type: e.pointerType, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ctrl: e.ctrlKey || e.metaKey, timer: 0 };
     if (e.pointerType !== "mouse") S.press.timer = setTimeout(() => { if (S.press) startDrag(); }, TOUCH_HOLD_MS);
   }
 
@@ -100,9 +101,11 @@
     const p = S.press;
     S.press = null;
     clearTimeout(p.timer);
-    const list = A.shownList(), card = list.cards.find(c => c.id === p.id);
+    // Drawn from a task: a new card, added where it's dropped; the task stays for next time.
+    const list = A.shownList(), task = p.task && A.taskBy(p.task), draw = task ? A.drawCard(task) : null;
+    const card = draw || list.cards.find(c => c.id === p.id);
     const rect = p.el.getBoundingClientRect();
-    const ghost = p.el.cloneNode(true), parked = !ghost.querySelector(".card-time");
+    const ghost = draw ? htmlElement(A.cardHTML(list, draw)) : p.el.cloneNode(true), parked = !ghost.querySelector(".card-time");
     ghost.classList.add("ghost");
     ghost.removeAttribute("tabindex");
     if (!parked) ghost.style.width = `${rect.width}px`;
@@ -112,9 +115,9 @@
     if (parked) (ghost.querySelector(":scope > .card-own") || ghost).insertAdjacentHTML("afterbegin", `<span class="card-time" hidden><span class="clock"></span></span>`);
     A.root.appendChild(ghost); // inside Momo's root, so its styles apply
     const twins = twinsOf(list, card), twinIds = new Set(twins.map(c => c.id));
-    const drag = S.drag = { id: p.id, key: A.shownKey(), el: p.el, home: p.el.closest("#board .col"), hours: card ? A.blockHours(list, card) : 0, ghost, pointerId: p.pointerId, offX: p.x0 - rect.left, offY: p.y0 - rect.top, x0: p.x, y0: p.y, x: p.x, y: p.y, target: null, raf: 0,
+    const drag = S.drag = { id: card ? card.id : p.id, draw, key: A.shownKey(), el: p.el, home: p.el.closest("#board .col"), hours: card ? A.blockHours(list, card) : 0, ghost, pointerId: p.pointerId, offX: p.x0 - rect.left, offY: p.y0 - rect.top, x0: p.x, y0: p.y, x: p.x, y: p.y, target: null, raf: 0,
       twins: [...twinIds], twinEls: [...A.root.querySelectorAll("#board .card")].filter(el => twinIds.has(el.dataset.id)), ctrl: p.ctrl, held: false, group: false, holdTimer: 0 };
-    p.el.classList.add("dragging");
+    if (!draw) p.el.classList.add("dragging");
     document.body.classList.add("is-dragging");
     try { p.el.setPointerCapture(p.pointerId); } catch (err) { /* the pointer is already gone */ }
     if (p.type !== "mouse" && navigator.vibrate) navigator.vibrate(8);
@@ -128,6 +131,13 @@
     moveGhost();
     findTarget();
     drag.raf = requestAnimationFrame(A.autoScroll);
+  }
+
+  // An element made from HTML (the ghost of a card drawn from a task, which isn't on the page).
+  function htmlElement(html) {
+    const box = document.createElement("div");
+    box.innerHTML = html;
+    return box.firstElementChild;
   }
 
   // The same card on each of the board's other days (none for a parked card),
@@ -166,13 +176,15 @@
 
   // Works out where the card would land: a spot in a day, a spot inside a card
   // (over the middle of it, or over a card already inside it), a card it
-  // would merge into, or the parking lot. A group drag has no parking lot, and
-  // its cards don't merge on the way: the spot is mirrored onto each one's day.
+  // would merge into, or Tasks, taking it off its day. Neither a group drag
+  // nor a card drawn from a task can go into Tasks, and nothing on the
+  // baseline can (its cards are all on days). A group drag's cards don't
+  // merge on the way: the spot is mirrored onto each one's day.
   function findTarget() {
-    const drag = S.drag, list = A.readList(drag.key), card = list.cards.find(c => c.id === drag.id);
+    const drag = S.drag, list = A.readList(drag.key), card = drag.draw || list.cards.find(c => c.id === drag.id);
     const el = document.elementFromPoint(drag.x, drag.y);
     const col = el && el.closest("#board .col");
-    const park = !col && el && el.closest("#parking");
+    const park = !col && !drag.group && !drag.draw && drag.key !== "base" && el && el.closest("#tasks");
     let t = null;
     if (card && col) {
       const day = +col.dataset.day;
@@ -186,7 +198,7 @@
         t.spot = { day, parentId, pos, beforeId: before ? before.dataset.id : null };
         t.moves = groupMoves(list, [card.id, ...drag.twins], t.spot);
       }
-    } else if (card && park && !drag.group) {
+    } else if (card && park) {
       t = { day: null, park: true };
     }
     A.paintTarget(t, card);
@@ -195,13 +207,14 @@
   }
 
   // Shows on the ghost when the card would start where it's headed, worked
-  // out by making the drop on a copy of the board (nothing, over the parking
-  // lot or nowhere). In a group drag, that's where it lands on its own day.
+  // out by making the drop on a copy of the board (nothing, over Tasks or
+  // nowhere). In a group drag, that's where it lands on its own day.
   function showGhostTimes(list, card, t) {
     const drag = S.drag;
     let times = null, top = drag.id;
     if (card && t && t.day !== null) {
       const sim = JSON.parse(JSON.stringify(list));
+      if (drag.draw) sim.cards.push({ ...drag.draw });
       if (t.moves) A.dropGroup(sim, drag.id, drag.twins, t.spot);
       else top = (A.moveCard(sim, drag.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos) || { id: top }).id;
       times = A.startTimes(sim, A.daySchedule(sim, t.moves ? card.day : t.day).rows);

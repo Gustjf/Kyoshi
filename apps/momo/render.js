@@ -1,5 +1,5 @@
 /* Momo · render.js — draws the board on screen from A.S: renderAll, then the week tabs,
- * the To Be Budgeted bank (with its parking lot), the board's days and cards (sized to the
+ * the To Be Budgeted bank (with Tasks, see tasks.js), the board's days and cards (sized to the
  * ruler, see times.js), and the long-term goals. */
 (function (K, A) {
   "use strict";
@@ -92,16 +92,9 @@
     $("reopenBtn").hidden = !locked;
     $("copyPrevBtn").hidden = isBase || locked || !A.weekOf(addDays(key, -7)).cards.length;
     $("saveAsBaseBtn").hidden = isBase || !onDays;
-    $("addBaseCardBtn").hidden = !isBase; // weeks have theirs in the parking lot
     $("clearBtn").hidden = locked || !list.cards.length;
     $("clearBtn").textContent = isBase ? "Clear baseline" : "Clear week";
-
-    // The parking lot holds cards without a day; their hours aren't budgeted yet.
-    $("parking").hidden = isBase || locked;
-    const parked = list.cards.filter(c => c.day === null && !c.parentId);
-    $("parkingCards").innerHTML = parked.length ? parked.map(c => cardHTML(list, c)).join("")
-      : `<span class="parking-empty">Drop a card here to take it off its day.</span>`;
-    $("parkedTotal").textContent = !parked.length ? "" : `${fmtH(b.parked)}${b.parked > b.free ? ` · only ${fmtH(b.free)} free` : ""}`;
+    A.renderTasks(list, key, b);
   }
 
   // A card with cards inside it is one block, sized to all of their hours:

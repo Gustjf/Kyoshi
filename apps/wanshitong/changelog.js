@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.120", date: "2026-09-29", changes: [
+      "What's in progress also waits in Momo's Tasks, ready to drag onto your week."
+    ] },
     { version: "2.110", date: "2026-09-29", changes: [
       "Removed cost from recommendations and from saved data."
     ] },

@@ -32,6 +32,7 @@
     MAX_TITLE: 40,
     MAX_GOAL_HOURS: 100000,
     GOAL_MAX_WEEK: 10, // a new goal's most hours a week
+    DRAW_HOURS: 1.5,   // a card drawn from a task in Tasks (tasks.js)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.
@@ -95,6 +96,7 @@
     renderPending: false,  // a redraw held back until a drag ends
     clip: null,            // a card copied or cut for pasting: { key, id, cut, timer }
     mouse: null,           // where the mouse is, for the copy & paste shortcuts: { x, y }
+    tasksKey: "",          // the tasks in Tasks as last drawn, to notice Wan Shi Tong's changing (tasks.js)
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
 

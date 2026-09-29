@@ -1,7 +1,8 @@
 /* Momo · drop.js — the rest of working the board with a pointer: previewing where a dragged
- * card lands (drop lines, day totals), scrolling near the edges, committing the drop,
- * resizing a card from its bottom edge, and clicks and keys on the board (open a card,
- * pin it, add one in free time, Alt+click to delete). drag.js picks cards up. */
+ * card lands (drop lines, day totals), scrolling near the edges, committing the drop (a card
+ * drawn from a task is added there), resizing a card from its bottom edge, and clicks and keys
+ * on the board and Tasks (open a card or a task, pin it, add one in free time, Alt+click to
+ * delete). drag.js picks cards up. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -15,7 +16,7 @@
     // elsewhere (a group drag keeps every card on its day).
     if (drag.home && (!t || t.moves || t.col !== drag.home)) previewCol(drag.home, +drag.home.dataset.total - (t && !t.moves ? drag.hours : 0));
     A.root.querySelectorAll(".card.drop-into").forEach(el => el.classList.remove("drop-into"));
-    $("parking").classList.toggle("drop-target", !!(t && t.park));
+    $("tasks").classList.toggle("drop-target", !!(t && t.park));
     if (!t || !t.col) return hideDropLine();
     if (t.moves) return paintGroup(t.moves);
     const total = +t.col.dataset.total + (card.day === t.day ? 0 : drag.hours);
@@ -132,14 +133,15 @@
     hideDropLine();
     [d.el, ...d.twinEls].forEach(el => el.classList.remove("dragging"));
     document.body.classList.remove("is-dragging");
-    $("parking").classList.remove("drop-target");
+    $("tasks").classList.remove("drop-target");
     A.swallowClick();
     if (commit && d.target && d.target.moves) {
       dropGroup(A.listFor(d.key), d.id, d.twins, d.target.spot);
       A.save();
     } else if (commit && d.target) {
-      const t = d.target;
-      A.moveCard(A.listFor(d.key), d.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos);
+      const t = d.target, list = A.listFor(d.key);
+      if (d.draw) list.cards.push(d.draw); // drawn from a task: a new card, off any day until it moves onto this one
+      A.moveCard(list, d.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos);
       A.save();
     }
     A.renderAll();
@@ -203,14 +205,15 @@
 
   // A click on a pin pins or unpins its card; on free time it adds a card
   // there (free time before a pinned card: in it; at the end of a day:
-  // last); on a card it opens it. With Alt held (Option on a Mac), a click
-  // anywhere on a card (its pin too) deletes it instead, and one on free
-  // time does nothing; Ctrl+Z brings the card back.
+  // last); on a card it opens it, and on a task a new card like the ones it
+  // draws. With Alt held (Option on a Mac), a click anywhere on a card (its
+  // pin too) deletes it instead, and one on free time or a task does
+  // nothing; Ctrl+Z brings the card back.
   function onBoardClick(e) {
     if (S.suppressClick || A.isLocked()) return;
     if (e.altKey) {
       const cardEl = e.target.closest(".card");
-      if (cardEl) A.removeCard(A.shownKey(), cardEl.dataset.id);
+      if (cardEl && !cardEl.dataset.task) A.removeCard(A.shownKey(), cardEl.dataset.id);
       return;
     }
     const pin = e.target.closest(".pin");
@@ -221,8 +224,11 @@
       return A.openCardEditor(null, { day: +free.dataset.addDay, before: free.dataset.before || null, room: +free.dataset.h });
     }
     const cardEl = e.target.closest(".card");
-    if (cardEl) A.openCardEditor(cardEl.dataset.id);
+    if (cardEl) openCard(cardEl);
   }
+
+  // Opens a card in its editor, or for a task a new card like the ones it draws.
+  const openCard = el => (el.dataset.task ? A.openTask(el.dataset.task) : A.openCardEditor(el.dataset.id));
 
   // A pin holds its card at the time it starts now; unpinned, it starts
   // where the card above it ends again.
@@ -239,7 +245,7 @@
   function onCardKey(e) {
     if ((e.key === "Enter" || e.key === " ") && e.target.matches(".card, .card-own") && !A.isLocked()) {
       e.preventDefault();
-      A.openCardEditor(e.target.closest(".card").dataset.id);
+      openCard(e.target.closest(".card"));
     }
   }
 

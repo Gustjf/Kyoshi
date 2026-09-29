@@ -22,7 +22,7 @@
 
   // Ctrl+C or Ctrl+X: marks the card pointed at. False when it isn't at one.
   function clipCard(cut) {
-    const at = pointedAt(), cardEl = at && at.el.closest("#board .card, #parking .card");
+    const at = pointedAt(), cardEl = at && at.el.closest("#board .card, #tasks .card");
     if (!cardEl || S.press || S.drag || S.resize || (cut && A.isLocked())) return false;
     const card = A.shownList().cards.find(c => c.id === cardEl.dataset.id);
     if (!card) return false;
@@ -47,7 +47,7 @@
   // Shades the card copied or cut, when its board is on screen.
   function paintClip() {
     A.root.querySelectorAll(".card.clip").forEach(el => el.classList.remove("clip", "cut"));
-    const clip = S.clip, el = clip && clip.key === A.shownKey() && [...A.root.querySelectorAll("#board .card, #parking .card")].find(c => c.dataset.id === clip.id);
+    const clip = S.clip, el = clip && clip.key === A.shownKey() && [...A.root.querySelectorAll("#board .card, #tasks .card")].find(c => c.dataset.id === clip.id);
     if (!el) return;
     el.classList.add("clip");
     el.classList.toggle("cut", clip.cut);
@@ -57,11 +57,12 @@
   // at, in the same place — inside the same card, if that one's inside a card
   // that can hold this one, else on its own. Over the rest of a day it goes
   // by height: at the top over its heading, at the end over its free time.
-  // Over the parking lot, last there. A card being moved on this board isn't
-  // one to go after, and a pinned card keeps its time (moveCard and placeCard
-  // put it in time order on that day). null when it points nowhere.
+  // Over Tasks, last there, off any day (not on the baseline, whose cards are
+  // all on days). A card being moved on this board isn't one to go after,
+  // and a pinned card keeps its time (moveCard and placeCard put it in time
+  // order on that day). null when it points nowhere.
   function pasteSpot(list, from, card, moving, at) {
-    if (at.el.closest("#parking")) return { day: null, parentId: null, pos: card.pos, beforeId: null };
+    if (at.el.closest("#tasks")) return A.shownKey() === "base" ? null : { day: null, parentId: null, pos: card.pos, beforeId: null };
     const col = at.el.closest("#board .col");
     if (!col) return null;
     const day = +col.dataset.day, over = at.el.closest(".card");
