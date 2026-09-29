@@ -1,23 +1,14 @@
 # Momo — weekly time budget, YNAB-style for hours (a Kyoshi app)
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js` (continues the standalone's).
 
-## Project information / original prompt
-Reference this when it makes sense, unless explicitly told otherwise. Confirm when commands that are given grievously violate this.
-
-use LocalStore and JSON import/export with auto sync. Use my other project, located in the currently connected github, Bosco (Gustjf/Bosco), as a reference for a lot of the UI aspects. Do not modify Bosco in any way. It is read only. This application is supposed to be a "YNAB" style budgeting method but for time. Spend some extra time thinking about the best way to apply that - that is the most important philosophy. i want something very simple, minimalist that I can use to organize my thoughts.
-
-- Kanban-Style Board: The primary interface relies on a drag-and-drop card system rather than a spreadsheet grid.
-- The "To Be Budgeted" Bank: A staging area holding any unassigned hours from the weekly 168-hour pool.
-- Seven Daily Columns: Monday through Sunday layout. Each column features a strict capacity tracker (e.g., Total: 24/24).
-- Task Cards: Time commitments exist as consolidated, dynamically sized blocks based on duration (e.g., a single 8-hour "Work" card rather than eight individual 1-hour cards).
-- Visual Constraints: Columns provide immediate visual feedback (e.g., turning red) if drag-and-drop actions push a specific day over its 24-hour limit.
-
-Core Application Workflows
-- One-Week-Ahead Planning: Budgeting is strictly proactive, focusing on allocating hours for the upcoming week rather than the current day.
-- Baseline Template (Auto-Funding): A one-click mechanism to load a saved configuration of recurring weekly commitments (sleep schedules, typical work shifts). This instantly deducts those hours from the 168-hour pool, leaving only discretionary time in the "To Be Budgeted" bank.
-- Mid-Week Adjustments (Rolling with the Punches): Users can freely drag task cards from one day to another to cover unexpected events, as long as all days balance back to 24 hours.
-- Long-Term Goals (Sinking Funds): Users can establish target hourly goals for multi-month or multi-year projects.
-- Weekly Close-Out Reconciliation: Before opening a new week, a modal prompts the user to review the past week's goal-oriented tasks. The app assumes successful completion by default and deducts those hours from the long-term master goals. If a user did not finish the planned time, they can manually add those unworked hours back to the master goal. The "lost" hours are discarded without requiring the user to categorize where the time actually went.
+## Purpose (the original brief — keep to it; tell me if a request clearly goes against it)
+YNAB-style budgeting, but for time: simple, minimalist, for organizing my thoughts. The YNAB philosophy matters most.
+- A drag-and-drop card board (not a grid): a "To Be Budgeted" bank of unassigned hours from the week's 168, then Mon–Sun columns, each strictly 24h (turns red when over).
+- Cards are consolidated blocks sized by duration (one 8h "Work", not eight 1h cards).
+- Plan the week ahead; a baseline template auto-funds recurring commitments (sleep, work) in one click.
+- Mid-week, drag cards between days as long as every day balances back to 24h.
+- Long-term goals are sinking funds of target hours.
+- Weekly close-out: before a new week, review the past week's goal cards; done by default (hours deducted from the goal); unworked hours can go back to the goal; lost hours are just dropped.
 
 ## Files (load order)
 | File | What's in it |
@@ -30,14 +21,14 @@ Core Application Workflows
 | `colors.js` | colours by title/goal key, auto-assigning and swapping (`ensureColors`, `pickColor`) |
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time, other apps' events), goals |
-| `tasks.js` | **Tasks**, the strip under the bank: a task per goal still to reach and per thing in progress in Wan Shi Tong (`tasks`, read through its `inProgress()`), drawing a card from one (`drawCard`, `DRAW_HOURS`), clicking one (`openTask`), the week's cards without a day, and redrawing when Wan Shi Tong's change (`checkTasks`) |
-| `agenda.js` | **Events** from other apps (`K.agenda`: Bosco's doses, …): a week's events where they are, moved or not (`weekAgenda`), the hours they add to their days (`agendaHours`), their conflicts (`obstacles`, `flag`), how far one can move (`reach`) and its `quickFix`, laying them into a day (`layEvents`: a piece of the day in free time, else drawn over it) and drawing them (`eventHTML`, `overlaysHTML`, `headEventsHTML`), and redrawing when they change (`checkAgenda`) |
+| `tasks.js` | **Tasks** strip under the bank: one per goal still to reach and per Wan Shi Tong item in progress (`inProgress()`); drawing a card from one (`drawCard`), `openTask`, parked cards, `checkTasks` |
+| `agenda.js` | **Events** from other apps (`K.agenda`): the week's events (`weekAgenda`), hours they add (`agendaHours`), conflicts (`obstacles`, `flag`), `reach`/`quickFix`, laying and drawing them (`layEvents`, `eventHTML`, …), `checkAgenda` |
 | `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
 | `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
 | `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
-| `triage.js` | an event's pop-up: while it conflicts, just its quick fix (`quickFix`: the clear time closest to its app's, within `EVENT_WINDOW` hours); otherwise a time within those hours; back to its app's time (`place` notes it in `week.events`) |
+| `triage.js` | an event's pop-up: its quick fix while it conflicts, else a time within `EVENT_WINDOW` hours, or back to its app's time (`place` → `week.events`) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
 | `closeout.js` | weekly close-out pop-up, pending weeks, reopen, rollover (new day/week) |
 | `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; Tasks; events), `onReload`, `attention` (a week to close out, an event's conflict), `renderDev` (Undo), `bugState` |

@@ -21,3 +21,9 @@ part of the contract: storage, backups, sync merging (with delete markers), and 
 
 ## Storage (`A.store`) and backups
 Key: `items` (plus core's `sync`). Backup JSON: `{ schemaVersion: 1, appVersion, items }`.
+
+## Adding a new app from this template
+1. Copy this folder to `apps/<id>/`; rename `template`/`Template` → `<id>`/`<Name>` in every file (incl. `.app-template`, `template.css` → `<id>.css`).
+2. In `app.js` set name, tab title, subtitle, page width and icon (a Lucide SVG with a stroke color, like Bosco's and Momo's).
+3. Add its `<link>`/`<script>` tags to `index.html` (app.js first, events.js last; the switcher lists apps in that order), then give every link a new build stamp.
+4. Rewrite this `CLAUDE.md` for the app (purpose, file map, data model). Start its changelog at 1.000 and add a line to Kyoshi's changelog.

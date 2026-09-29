@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.342", date: "2026-09-29", changes: [
+      "Shortened Momo's notes for the coding assistant."
+    ] },
     { version: "5.332", date: "2026-09-29", changes: [
       "An event's quick fix is now the one clear time closest to its own, within 3 hours of it so doses stay on schedule; a conflict shows just that, and times picked by hand stay within those 3 hours too."
     ] },

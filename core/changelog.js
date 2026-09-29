@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "1.310", date: "2026-09-29", changes: [
+      "Shortened the project notes the coding assistant reads each session, so building costs fewer tokens."
+    ] },
     { version: "1.300", date: "2026-09-29", changes: [
       "Apps can now put events at set times on Momo's board, starting with Bosco's doses; future apps add theirs the same way."
     ] },
