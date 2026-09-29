@@ -45,9 +45,10 @@
 
   // How much Kyoshi keeps, where, and whether the browser has promised to keep it.
   async function renderStorage() {
-    const u = await K.storage.usage();
+    const [u, f] = await Promise.all([K.storage.usage(), K.files.usage()]);
     const where = { indexeddb: "the browser's large store (IndexedDB)", localStorage: "localStorage, the small store (about 5 MB for everything at this address)", memory: "memory only: this browser's storage can't be reached, so changes aren't kept" }[u.backend];
     $("kDevStorage").textContent = `Kyoshi's data: ${fmtBytes(u.bytes)}, in ${where}.` +
+      (f.count ? ` Photos and documents: ${f.count} (${fmtBytes(f.bytes)}).` : "") +
       (u.backend !== "memory" && u.quota ? ` This site uses ${fmtBytes(u.used)} of the ${fmtBytes(u.quota)} this browser allows it.` : "") +
       ` Protected from automatic clean-up: ${u.persisted ? "yes" : "no"}.`;
   }
@@ -59,6 +60,7 @@
       if (!confirm("Time travel is for testing. Kyoshi switches to test mode: nothing is saved or synced until you reload the page. Continue?")) return;
       K.testMode = true;
       K.storage.startTest();
+      K.files.startTest();
       K.sync.stopTimers();
     }
     K.dayOffset += days;

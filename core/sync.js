@@ -6,6 +6,8 @@
  * file. Saves carry version counters (how many changes each device has made) that tell
  * whether another device's save is newer (load it), older (ignore it), or was made while
  * this device also had unsynced changes (combine the two, via the app's A.data.combine).
+ * An app with photos or documents (A.data.files) also has them copied both ways as plain files in
+ * <folder>/<app id>/files/ (core/files.js mirror).
  * Per app (A._sync): meta { device, file, clock, changedAt, dirty } kept in A.store "sync",
  * seen (file name -> "lastModified:size" already read), note (last thing it did), queued, timer. */
 (function (K) {
@@ -183,9 +185,13 @@
     ui();
   }
 
+  // Other devices' saves come in first, then the app's photos and documents are copied both ways
+  // (core/files.js), so a save in the folder never names a file the folder doesn't have yet.
   async function syncPass(A) {
     if (state !== "on" || K.testMode) return;
     await readFolder(A, dir);
+    const root = dir;
+    if (root && A.data.files && await K.files.mirror(A, root, () => root === dir && state === "on" && !K.testMode)) request(A);
     await writeAutosave(A);
     if (A._sync.note === RETRY_NOTE) { A._sync.note = ""; ui(); }
   }

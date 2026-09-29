@@ -17,6 +17,7 @@
     const A = {
       id: meta.id, meta, S: {}, root: null, started: false, subtitle: meta.subtitle || "",
       store: K.storage.scoped(`kyoshi.${meta.id}.`),
+      files: K.files.scoped(meta.id), // photos and documents (core/files.js)
       $: id => A.root.querySelector(`#${CSS.escape(id)}`),
       isActive: () => active === A,
       // A listener on document/window that only fires while this app is on screen.

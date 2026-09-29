@@ -21,12 +21,12 @@ YNAB-style budgeting, but for time: simple, minimalist, for organizing my though
 | `colors.js` | colours by title/goal key, auto-assigning and swapping (`ensureColors`, `pickColor`) |
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time, other apps' events), goals |
-| `tasks.js` | **Tasks** strip under the bank: one per goal still to reach and per Wan Shi Tong item in progress (`inProgress()`); drawing a card from one (`drawCard`), `openTask`, parked cards, `checkTasks` |
+| `tasks.js` | **Tasks** strip under the bank: one per Appa thing with maintenance coming up (`momoTasks()`, sized to its jobs), per goal still to reach and per Wan Shi Tong item in progress (`inProgress()`); drawing a card from one (`drawCard`: Appa's hours, else `DRAW_HOURS`), `openTask`, `appaFor` (a card's "Open in Appa" line), parked cards, `checkTasks` |
 | `agenda.js` | **Events** from other apps (`K.agenda`): the week's events (`weekAgenda`), hours they add (`agendaHours`), conflicts (`obstacles`, `flag`), `reach`/`quickFix`, laying and drawing them (`layEvents`, `eventHTML`, …), `checkAgenda` |
 | `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
 | `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
-| `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task), shared colour swatches, hours & clock parsing |
+| `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task, with Appa's hours and "Open in Appa" line), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
 | `triage.js` | an event's pop-up: its quick fix while it conflicts, else a time within `EVENT_WINDOW` hours, or back to its app's time (`place` → `week.events`) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
@@ -50,7 +50,8 @@ Every change goes through `save()` (colours, `u` timestamps, undo, then storage 
 - A day's cards are ordered; that order sets their times, except pinned cards. Nesting is one level deep (`tidyNesting`).
 - Sync merges whole weeks / goals / colours by their `u` (the later change wins); goal logs from both sides are kept.
 - Past weeks are closed out (goal hours logged); this week only counts today onward.
-- Tasks aren't stored: they're read afresh from the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`, read-only; none if it's missing). A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none.
+- Tasks aren't stored: they're read afresh from Appa (`K.apps.appa.momoTasks()`), the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`), read-only; none from an app that's missing. A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none, and shows no Appa tasks.
+- Appa's task for a thing ("<name> maintenance") needs its jobs' minutes (snapped, 15m at least) and is **funded** by cards with the same title (any case) on days from today on, this week and next (closed weeks count). It shows only while funding falls short and draws a card of what's left, so merged, resized or pasted cards, missed days and jobs that come due later just work. "Open in Appa" closes the editor, then `openFromMomo`; Momo never changes Appa's data.
 - Events from other apps aren't stored: they're read afresh (`K.agenda`), and only the times you moved them to on their own day are kept (`week.events`, by "app:id"). Moving one never changes its app, and cards never move for one.
 - An event counts toward its day's 24 hours: it takes time no card has, or Free time lends it the hours. Anywhere else it conflicts (with those cards, and any event it overlaps), from today onward; a conflict with no clear time within `EVENT_WINDOW` (3) hours of its app's time stays flagged. It never moves further than that, nor to another day.
 - Bug reports never include card titles, goal names or what events are.

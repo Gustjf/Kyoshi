@@ -43,6 +43,11 @@
    with no hours: dragging it adds a card of its own, and it stays for next time. */
 .app-momo .card.task { border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
 .app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
+/* Appa's maintenance: its icon, and the time still to schedule; red-edged once overdue. */
+.app-momo .card.task.from-app { gap: 5px; }
+.app-momo .card.task .app-icon svg { width: 13px; height: 13px; }
+.app-momo .card.task .task-hours { flex: 0 0 auto; font-size: .85em; color: var(--muted); }
+.app-momo .card.task.late { border-color: var(--bad); border-left-color: var(--bad); }
 
 /* --- Board & cards --- */
 .app-momo .board-wrap { overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }

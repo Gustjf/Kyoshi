@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.442", date: "2026-09-29", changes: [
+      "Maintenance from Appa shows up in Tasks two weeks before it's due, one task per thing, sized to how long its jobs take; it leaves once cards on your days cover that time.",
+      "A card or task for Appa's maintenance links to it: Open in Appa shows the job."
+    ] },
     { version: "5.342", date: "2026-09-29", changes: [
       "Shortened Momo's notes for the coding assistant."
     ] },

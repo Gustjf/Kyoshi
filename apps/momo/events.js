@@ -206,8 +206,8 @@
     holdAlt(false);
   };
 
-  // Every minute, and whenever the page is back in view: a new day or week, what's in
-  // progress in Wan Shi Tong, for Tasks, and other apps' events.
+  // Every minute, and whenever the page is back in view: a new day or week, what other apps
+  // share for Tasks (Appa's maintenance, Wan Shi Tong's in progress), and other apps' events.
   A.onTick = () => {
     A.checkRollover();
     A.checkTasks();
@@ -245,7 +245,7 @@
       `- Goals: ${live.length}, ${live.filter(A.isWeekly).length} in hours a week (+${data.goals.length - live.length} deleted)`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles and goals on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
-      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId).length} from Wan Shi Tong)`,
+      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.app).length} from Appa, ${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId && !t.app).length} from Wan Shi Tong)`,
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
       `- Undo steps: ${S.undoStack.length}`

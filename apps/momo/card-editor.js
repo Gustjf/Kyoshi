@@ -20,6 +20,21 @@
       pending: () => !!S.editing && cardFormState() !== S.editing.snapshot,
       ask: "Discard your changes to this card?"
     });
+    // "Open in Appa": the editor closes on the way, and Appa shows the job (its openFromMomo).
+    $("cardFrom").addEventListener("click", e => {
+      const link = e.target.closest("[data-appa]");
+      if (!link || !K.apps.appa || !K.apps.appa.openFromMomo) return;
+      e.preventDefault();
+      K.modal.dismiss(overlay());
+      K.apps.appa.openFromMomo(link.dataset.appa);
+    });
+  }
+
+  // A card or task that's maintenance from Appa (by its title) says what for, with a way there.
+  function renderAppaLine(title) {
+    const a = A.appaFor(title);
+    $("cardFrom").hidden = !a;
+    $("cardFrom").innerHTML = a ? `From Appa: ${esc(a.items.join(", "))}. <a href="#appa" data-appa="${esc(a.id)}">Open in Appa</a>` : "";
   }
   const closeEditor = () => K.modal.dismiss(overlay());
 
@@ -51,7 +66,8 @@
     if (card && oldKey.startsWith("t:") && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
     $("cardModalTitle").textContent = card ? "Edit card" : "New card";
     $("cardTitle").value = draft ? draft.title : "";
-    $("cardHours").value = fmtNum(card ? card.hours : from ? DRAW_HOURS : free > 0 && free < 1 ? free : 1);
+    $("cardHours").value = fmtNum(card ? card.hours : from ? from.hours || DRAW_HOURS : free > 0 && free < 1 ? free : 1);
+    renderAppaLine(draft ? draft.title : "");
     const goals = A.liveGoals().filter(g => !A.isReached(g) || (card && card.goalId === g.id));
     $("cardGoal").innerHTML = `<option value="">None</option>` + goals.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
     $("cardGoal").value = draft && goals.some(g => g.id === draft.goalId) ? draft.goalId : "";

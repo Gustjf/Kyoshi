@@ -72,6 +72,7 @@ Kyoshi.apps.momo.markup = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
       <h3 id="cardModalTitle">New card</h3>
+      <p class="modal-hint" id="cardFrom" hidden></p>
       <div class="field">
         <label for="cardTitle">What</label>
         <input type="text" id="cardTitle" maxlength="40" list="titleSuggestions" placeholder="e.g. Gym" autocomplete="off">

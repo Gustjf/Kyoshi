@@ -1,0 +1,150 @@
+/* Appa · appa.css — the app's own styles, every selector under .app-appa. Shared components (buttons,
+ * inputs, sections, tables, pop-ups…) are in core/kyoshi.css.
+ * Sections: Rows & dots · Home · A thing · The job view · Records tables · Pop-ups & proof · Phones */
+
+/* --- Rows & status dots --- */
+.app-appa .rows { margin-top: 2px; }
+.app-appa .row-item { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-top: 1px solid var(--border); }
+.app-appa .rows .row-item:first-child, .app-appa #comingUp .row-item:first-child { border-top: none; }
+.app-appa .row-item[role=button] { cursor: pointer; border-radius: 4px; }
+.app-appa .row-item[role=button]:hover { background: var(--card-bg); }
+.app-appa .row-item[role=button]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.app-appa .row-main { flex: 1; min-width: 0; }
+.app-appa .row-title { font-weight: 600; overflow-wrap: anywhere; }
+.app-appa .row-sub { font-size: .82em; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.app-appa .row-sub a, .app-appa .sources a, .app-appa .job-source a { color: inherit; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+.app-appa .row-sub a:hover, .app-appa .sources a:hover, .app-appa .job-source a:hover { color: var(--accent); }
+.app-appa .row-item > button { flex: 0 0 auto; }
+.app-appa .sep-dash { color: var(--muted); font-weight: 400; }
+.app-appa .dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+.app-appa .dot.overdue { background: var(--bad); }
+.app-appa .dot.soon { background: var(--warn); }
+.app-appa .dot.near { background: var(--muted); }
+.app-appa .dot.ask { background: var(--accent); }
+.app-appa .dot.none, .app-appa .dot.unknown { background: transparent; border: 1px solid var(--border); }
+.app-appa .overdue:not(.dot) { color: var(--bad); }
+.app-appa .soon:not(.dot) { color: var(--warn); }
+.app-appa .ic { width: 14px; height: 14px; flex: 0 0 auto; vertical-align: -2px; }
+.app-appa .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.app-appa .muted { color: var(--muted); }
+.app-appa .more-link { padding: 0; background: none; color: var(--accent); font-size: .85em; }
+.app-appa .more-link:hover { background: none; text-decoration: underline; }
+
+/* --- Home --- */
+.app-appa .timer-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px 14px; border: 1px solid var(--accent); border-radius: 8px; background: var(--ring); font-size: .9em; }
+.app-appa .timer-bar > span { flex: 1; min-width: 0; }
+.app-appa .timer-bar .ic { width: 18px; height: 18px; color: var(--accent); }
+.app-appa .ask-entry { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.app-appa .ask-entry input { width: 110px; }
+.app-appa .ask-entry .unit { font-size: .85em; color: var(--muted); }
+.app-appa .caught-up { padding: 8px 4px 2px; color: var(--muted); font-size: .9em; line-height: 1.5; }
+.app-appa .caught-up strong { color: var(--good); }
+.app-appa .archived { margin-top: 10px; }
+.app-appa .archived summary { cursor: pointer; font-size: .82em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.app-appa .archived .count { margin-left: 4px; }
+
+/* --- A thing --- */
+.app-appa .back-link { display: inline-block; margin: 0 0 10px; padding: 2px 0; background: none; color: var(--muted); font-size: .88em; }
+.app-appa .back-link:hover { background: none; color: var(--text); text-decoration: underline; }
+.app-appa .thing-head { align-items: flex-start; }
+.app-appa .thing-title { min-width: 0; }
+.app-appa .thing-name { font-size: 1.3em; font-weight: 700; overflow-wrap: anywhere; }
+.app-appa .thing-about { font-size: .88em; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+.app-appa .head-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.app-appa .meter-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .9em; }
+.app-appa .sources { font-size: .82em; color: var(--muted); margin-top: 8px; }
+.app-appa .sources:empty { display: none; }
+
+/* --- The job view: easy to read at arm's length --- */
+.app-appa .job-card { padding: 20px 22px; }
+.app-appa .job-thing { font-size: .85em; color: var(--muted); }
+.app-appa .job-card h2.job-title { margin: 4px 0 6px; font-size: 1.6em; color: var(--text); text-transform: none; letter-spacing: 0; line-height: 1.2; }
+.app-appa .job-due { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .9em; }
+.app-appa .job-every { color: var(--muted); }
+.app-appa .job-every::before { content: "·"; margin-right: 8px; }
+.app-appa .job-source { margin-top: 6px; font-size: .88em; color: var(--muted); }
+.app-appa .job-source:empty, .app-appa .job-last:empty { display: none; }
+.app-appa .job-notes { margin: 16px 0 4px; padding: 14px 16px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border); font-size: 1.05em; line-height: 1.6; overflow-wrap: anywhere; }
+.app-appa .job-notes:empty { display: none; }
+.app-appa .job-notes ul { margin: 4px 0; padding-left: 1.3em; }
+.app-appa .job-notes li { margin: 3px 0; }
+.app-appa .job-notes p { margin: 6px 0; }
+.app-appa .job-notes a { color: var(--accent); }
+.app-appa .job-last { margin-top: 10px; font-size: .85em; color: var(--muted); }
+.app-appa .last-notes { margin-top: 3px; font-style: italic; white-space: pre-line; }
+.app-appa .job-actions { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-top: 18px; }
+.app-appa .job-actions .field-note { flex-basis: 100%; }
+.app-appa button.big { padding: 12px 28px; font-size: 1.05em; font-weight: 600; border-radius: 8px; min-width: 150px; }
+.app-appa .job-links { display: flex; gap: 16px; flex-wrap: wrap; }
+.app-appa .timer-run { display: flex; align-items: center; gap: 8px; font-size: 1.25em; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app-appa .timer-run .ic { width: 22px; height: 22px; color: var(--accent); }
+.app-appa .job-next { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); font-size: .88em; }
+.app-appa .next-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; }
+
+/* --- Records tables --- */
+.app-appa table.records { font-size: .86em; }
+.app-appa table.records tr[data-act] { cursor: pointer; }
+.app-appa table.records tr[data-act]:hover { background: var(--card-bg); }
+.app-appa table.records tr[data-act]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.app-appa table.records td { vertical-align: top; }
+.app-appa .c-date { white-space: nowrap; }
+.app-appa .c-work { overflow-wrap: anywhere; }
+.app-appa .c-cost, .app-appa .c-proof { text-align: right; white-space: nowrap; }
+.app-appa .c-proof { color: var(--muted); width: 1%; }
+.app-appa .c-reading, .app-appa .c-by { color: var(--muted); }
+.app-appa .table-foot { margin-top: 8px; }
+
+/* --- Pop-ups & proof --- */
+.app-appa .choice-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.app-appa .choice-pills .pill { padding: 5px 10px; font-size: .85em; }
+.app-appa .field-note { font-size: .78em; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+.app-appa .field-note:empty { display: none; }
+.app-appa .sched-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.app-appa .sched-row span { font-size: .9em; color: var(--muted); }
+.app-appa select.auto { width: auto; }
+.app-appa input.num-short { width: 76px; }
+.app-appa input.num-mid { width: 120px; }
+.app-appa .docs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.app-appa .doc-row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 6px; align-items: center; }
+.app-appa .more-link#rcMoreBtn { display: block; margin: 2px 0 10px; }
+.app-appa .proof-list { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.app-appa .proof-list:empty { display: none; }
+.app-appa .proof-item { position: relative; }
+.app-appa .proof-item.photo .proof-open { display: block; width: 76px; height: 76px; padding: 0; overflow: hidden; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); }
+.app-appa .proof-item.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.app-appa .proof-missing { display: flex; align-items: center; justify-content: center; height: 100%; padding: 4px; font-size: .68em; color: var(--muted); text-align: center; }
+.app-appa .proof-item.doc .proof-open { display: flex; align-items: center; gap: 6px; max-width: 290px; padding: 6px 28px 6px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: .82em; text-align: left; text-decoration: none; }
+.app-appa .proof-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.app-appa .proof-meta { color: var(--muted); white-space: nowrap; }
+.app-appa .proof-x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; background: var(--panel); border: 1px solid var(--border); color: var(--muted); font-size: .85em; line-height: 1; }
+.app-appa .proof-item.doc .proof-x { top: 50%; right: 5px; transform: translateY(-50%); }
+.app-appa .proof-x:hover { background: var(--bad); border-color: var(--bad); color: #fff; }
+.app-appa .proof-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.app-appa .link-entry { display: grid; grid-template-columns: 1.6fr 1fr auto; gap: 6px; margin-top: 8px; }
+.app-appa .check-list { display: flex; flex-direction: column; gap: 6px; }
+.app-appa .check-list label, .app-appa .check-line label { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: .92em; color: var(--text); cursor: pointer; }
+.app-appa .check-line { display: flex; gap: 18px; flex-wrap: wrap; }
+
+/* --- Phones --- */
+@media (max-width: 640px) {
+  .app-appa .row-item.ask { flex-wrap: wrap; }
+  .app-appa .row-item.ask .row-main { flex-basis: calc(100% - 30px); }
+  .app-appa .ask-entry { margin-left: 19px; }
+  .app-appa .job-card { padding: 16px; }
+  .app-appa .job-actions .big { flex: 1 1 100%; }
+  .app-appa .doc-row, .app-appa .link-entry { grid-template-columns: 1fr auto; }
+  .app-appa .doc-row .doc-link, .app-appa .link-entry input:nth-child(2) { grid-column: 1; }
+  /* A records row folds into two lines: its date and work, then the rest. */
+  .app-appa table.records tr:first-child { display: none; }
+  .app-appa table.records tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 7px 2px; border-bottom: 1px solid var(--border); }
+  .app-appa table.records td { padding: 0; border: none; width: auto; }
+  .app-appa table.records .c-date { order: 1; font-weight: 600; }
+  .app-appa table.records .c-work { order: 2; flex: 1 1 calc(100% - 120px); }
+  .app-appa table.records .c-thing { order: 3; }
+  .app-appa table.records .c-reading { order: 4; }
+  .app-appa table.records .c-by { order: 5; }
+  .app-appa table.records .c-cost { order: 6; }
+  .app-appa table.records .c-proof { order: 7; }
+  .app-appa table.records .c-thing, .app-appa table.records .c-reading, .app-appa table.records .c-by, .app-appa table.records .c-cost, .app-appa table.records .c-proof { font-size: .9em; color: var(--muted); }
+  .app-appa table.records td:empty { display: none; }
+}

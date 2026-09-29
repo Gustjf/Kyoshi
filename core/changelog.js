@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.310", date: "2026-09-29", changes: [
+      "Added Appa, for preventive maintenance and records: switch to it from the button beside Theme.",
+      "Apps can keep photos and PDFs: they stay in the browser's storage and travel through the sync folder as ordinary files (backups hold the data only).",
+      "Apps can make PDF reports, with pages from other PDFs merged right in; Developer Mode counts the photos and documents kept."
+    ] },
     { version: "1.310", date: "2026-09-29", changes: [
       "Shortened the project notes the coding assistant reads each session, so building costs fewer tokens."
     ] },
