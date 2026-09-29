@@ -202,7 +202,7 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <!-- An event from another app (triage.js): what it conflicts with, quick fixes, or a day and time to move it to. -->
+  <!-- An event from another app (triage.js): what it conflicts with, a quick fix, or a time that day to move it to. -->
   <div class="overlay" id="eventOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
@@ -210,11 +210,7 @@ Kyoshi.apps.momo.markup = `
       <p class="modal-hint" id="eventFrom"></p>
       <div class="event-clash" id="eventClash" hidden>
         <div id="eventClashText"></div>
-        <div class="event-fixes" id="eventFixes"><span>Quick fixes:</span><span class="event-fix-list" id="eventFixList"></span></div>
-      </div>
-      <div class="field">
-        <label>Day</label>
-        <div class="day-pills" id="eventDays"></div>
+        <div class="event-fixes" id="eventFixes"></div>
       </div>
       <div class="field">
         <label for="eventTime">Time</label>
@@ -229,7 +225,6 @@ Kyoshi.apps.momo.markup = `
         <button id="eventMoveBtn">Move</button>
         <button class="secondary" id="eventCancelBtn">Cancel</button>
         <span class="spacer"></span>
-        <button class="secondary small" id="eventKeepBtn">Keep here</button>
         <button class="secondary small" id="eventResetBtn"></button>
       </div>
     </div>

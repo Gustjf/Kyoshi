@@ -160,5 +160,5 @@
     return styles;
   }
 
-  Object.assign(A, { daySchedule, startTimes, autoSpot, timeTrouble, hourPx, dayPieces, makeRuler, rulerY, rulerTime, pieceStyles });
+  Object.assign(A, { daySchedule, startTimes, autoSpot, timeTrouble, GAP_PX, MIN_PX, hourPx, dayPieces, makeRuler, rulerY, rulerTime, pieceStyles });
 })(Kyoshi, Kyoshi.apps.momo);

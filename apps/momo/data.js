@@ -114,17 +114,12 @@
       u: cleanU(g.u)
     };
   }
-  // Where other apps' events were moved in a week, or kept despite a conflict (see model.js):
-  // null when there's nothing.
+  // The times other apps' events were moved to in a week (see model.js): null when there's none.
   function cleanEvents(raw) {
     const out = {};
     if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
-      const e = raw[k], m = {};
-      if (!/^[\w-]+:./.test(k) || k.length > 120 || !isObj(e)) return;
-      if (Number.isInteger(e.day) && e.day >= 0 && e.day <= 6) m.day = e.day;
-      if (isNum(e.at) && e.at >= 0 && e.at < DAY_HOURS) m.at = Math.min(DAY_HOURS - STEP, snap(e.at));
-      if (e.keep === true) m.keep = true;
-      if (Object.keys(m).length) out[k] = m;
+      const e = raw[k];
+      if (/^[\w-]+:./.test(k) && k.length <= 120 && isObj(e) && isNum(e.at) && e.at >= 0 && e.at < DAY_HOURS) out[k] = { at: Math.min(DAY_HOURS - STEP, snap(e.at)) };
     });
     return Object.keys(out).length ? out : null;
   }

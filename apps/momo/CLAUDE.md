@@ -31,13 +31,13 @@ Core Application Workflows
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time, other apps' events), goals |
 | `tasks.js` | **Tasks**, the strip under the bank: a task per goal still to reach and per thing in progress in Wan Shi Tong (`tasks`, read through its `inProgress()`), drawing a card from one (`drawCard`, `DRAW_HOURS`), clicking one (`openTask`), the week's cards without a day, and redrawing when Wan Shi Tong's change (`checkTasks`) |
-| `agenda.js` | **Events** from other apps (`K.agenda`: Bosco's doses, …): a week's events where they are, moved or not (`weekAgenda`), their conflicts (`obstacles`, `flag`), drawing them over the board (`dayEventsHTML`, `headEventsHTML`, `agendaPieces` for the ruler), and redrawing when they change (`checkAgenda`) |
+| `agenda.js` | **Events** from other apps (`K.agenda`: Bosco's doses, …): a week's events where they are, moved or not (`weekAgenda`), the hours they add to their days (`agendaHours`), their conflicts (`obstacles`, `flag`) and same-day `quickFixes`, laying them into a day (`layEvents`: a piece of the day in free time, else drawn over it) and drawing them (`eventHTML`, `overlaysHTML`, `headEventsHTML`), and redrawing when they change (`checkAgenda`) |
 | `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
 | `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
 | `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
-| `triage.js` | an event's pop-up: its conflict, quick fixes (`quickFixes`: nearest clear time or day), any day and time of its week, keep it despite a conflict, back to its app's time (`place` notes it in `week.events`) |
+| `triage.js` | an event's pop-up: its conflict and quick fix (nearest clear time that day), any time that day, back to its app's time (`place` notes it in `week.events`) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
 | `closeout.js` | weekly close-out pop-up, pending weeks, reopen, rollover (new day/week) |
 | `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; Tasks; events), `onReload`, `attention` (a week to close out, an event's conflict), `renderDev` (Undo), `bugState` |
@@ -51,7 +51,7 @@ Note `A.S.data` is Momo's data; `A.data` is the backup/sync adapter Kyoshi calls
 ## Storage (`A.store`) and backups
 Key: `data` (plus core's `sync`). First open reads the standalone's `momoData_v1` (never changes it).
 Backup JSON = the standalone's format, so old backups import as-is: `{ schemaVersion: 2, appVersion, weeks, baseline, goals, colors }`.
-A week has `events` only once you've moved or kept one of other apps' events in it (shape in `model.js`).
+A week has `events` only once you've moved one of other apps' events in it (shape in `model.js`).
 Every change goes through `save()` (colours, `u` timestamps, undo, then storage + `A.changed()`).
 
 ## Invariants
@@ -60,5 +60,6 @@ Every change goes through `save()` (colours, `u` timestamps, undo, then storage 
 - Sync merges whole weeks / goals / colours by their `u` (the later change wins); goal logs from both sides are kept.
 - Past weeks are closed out (goal hours logged); this week only counts today onward.
 - Tasks aren't stored: they're read afresh from the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`, read-only; none if it's missing). A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none.
-- Events from other apps aren't stored: they're read afresh (`K.agenda`), and only your moves are kept, in their own week (`week.events`, by "app:id"). Moving one never changes its app. An event takes no hours from its day; it conflicts with events and pinned cards it overlaps, on today onward, unless kept.
+- Events from other apps aren't stored: they're read afresh (`K.agenda`), and only the times you moved them to on their own day are kept (`week.events`, by "app:id"). Moving one never changes its app, and cards never move for one.
+- An event counts toward its day's 24 hours: it takes time no card has, or Free time lends it the hours. Anywhere else it conflicts (with those cards, and any event it overlaps), from today onward; a conflict with no clear time that day stays flagged.
 - Bug reports never include card titles, goal names or what events are.

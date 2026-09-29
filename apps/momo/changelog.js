@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.322", date: "2026-09-29", changes: [
+      "Events now count toward their day's 24 hours: they take free time, or Free time lends them the hours, and no card ever moves for one.",
+      "An event on any other card or event is a conflict: its quick fix is the nearest clear time that same day, and with none, the red warning stays.",
+      "Events look like cards, the full width of the day with their app's icon, and a logged dose gets a small ✓."
+    ] },
     { version: "5.222", date: "2026-09-29", changes: [
       "Events from your other apps show on the board at their day and time, starting with your GLP-1 doses from Bosco; they take no hours from the day.",
       "An event that overlaps another event or a pinned card turns red: click it for a one-click quick fix (the nearest clear time, or the day before or after), pick another day and time that week, or keep it."

@@ -134,13 +134,11 @@
       if (btn) A.pickSeason(+btn.dataset.season);
     });
 
-    $("eventFixList").addEventListener("click", A.onFixClick);
-    $("eventDays").addEventListener("click", A.onEventDay);
+    $("eventFixes").addEventListener("click", A.onFixClick);
     $("eventTime").addEventListener("input", () => A.onEventTime(false));
     $("eventTime").addEventListener("change", () => A.onEventTime(true));
     $("eventMoveBtn").addEventListener("click", A.moveEvent);
     $("eventCancelBtn").addEventListener("click", () => K.modal.dismiss($("eventOverlay")));
-    $("eventKeepBtn").addEventListener("click", A.keepEvent);
     $("eventResetBtn").addEventListener("click", A.resetEvent);
     // Its app's name is a link there: the pop-up closes on the way.
     $("eventFrom").addEventListener("click", e => { if (e.target.closest("a")) A.closeEvent(); });
@@ -248,7 +246,7 @@
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles and goals on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
       `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId).length} from Wan Shi Tong)`,
-      `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.keep).length} kept)`,
+      `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
       `- Undo steps: ${S.undoStack.length}`
     ];

@@ -3,10 +3,9 @@
  * Pure data — nothing here draws or saves (render.js draws, data.js saves).
  *
  * weeks:    { "YYYY-MM-DD" (Monday): { cards, closed, u, events } }
- * events:   { "app:id": { day, at, keep } } — only while you've moved or kept any of other
- *           apps' events that week (see agenda.js): the day (0-6) and time (hours after
- *           midnight, on the 15-minute grid) you moved it to, each only if moved, and keep
- *           when a conflict where it is is fine. The events themselves aren't stored.
+ * events:   { "app:id": { at } } — only while you've moved any of other apps' events that
+ *           week (see agenda.js): the time on its own day you moved it to, in hours after
+ *           midnight on the 15-minute grid. The events themselves aren't stored.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — a total to reach (target, maybe by a due date), or instead hours
@@ -61,11 +60,12 @@
 
   // A board's budget. Each day is its own account: one day's free hours can't
   // cover another day's overbooking, so both are counted per day. This week
-  // only counts today onward — earlier hours are already spent.
+  // only counts today onward — earlier hours are already spent. Other apps'
+  // events count toward their days too (agenda.js agendaHours).
   function budgetOf(list, key) {
-    const first = firstDay(key);
+    const first = firstDay(key), extra = A.agendaHours(key, list).extra;
     const days = DAYS.filter(d => d >= first);
-    const totals = DAYS.map(d => dayTotal(list, d));
+    const totals = DAYS.map(d => dayTotal(list, d) + extra[d]);
     return {
       days, totals, first,
       pool: days.length * DAY_HOURS,

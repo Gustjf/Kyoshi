@@ -67,14 +67,15 @@
   // Gives every counted day's free hours the job "Free time" — the deliberate
   // buffer you shrink when something unexpected comes up: the free time
   // before each pinned card, then at the end of the day, as far as the day's
-  // free hours go.
+  // free hours go. Other apps' events in that free time end up in Free time,
+  // which lends them their hours, so it gets theirs too (loose).
   function fillGaps() {
     const key = A.viewKey();
     if (!key) return;
-    const week = A.ensureWeek(key), b = A.budgetOf(week, key);
+    const week = A.ensureWeek(key), b = A.budgetOf(week, key), { loose } = A.agendaHours(key, week);
     let added = 0;
     b.days.forEach(d => {
-      let room = DAY_HOURS - b.totals[d];
+      let room = DAY_HOURS - b.totals[d] + loose[d];
       const { rows, end } = A.daySchedule(week, d);
       const gaps = rows.filter(r => r.gap > 0).map(r => [r.gap, r.card.id]).concat(end < DAY_HOURS ? [[DAY_HOURS - end, null]] : []);
       gaps.forEach(([gap, beforeId]) => {

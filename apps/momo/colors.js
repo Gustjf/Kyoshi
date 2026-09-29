@@ -63,12 +63,14 @@
   const colorGap = (a, b) => { const p = colorLab(a), q = colorLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
 
   // The keys on show — the baseline's, this week's and next week's cards,
-  // then every goal — and those used lately: on show, or in any week from
-  // COLOR_WEEKS back on.
+  // every goal, then the titles of other apps' events this week and next
+  // (agenda.js; they look like cards) — and those used lately: on show, or
+  // in any week from COLOR_WEEKS back on.
   function colorKeys(d) {
     const tk = thisWeekKey(), from = addDays(tk, -7 * COLOR_WEEKS), shown = new Set(), lately = new Set();
     [d.baseline, d.weeks[tk], d.weeks[nextWeekKey()]].forEach(list => { if (list) list.cards.forEach(c => shown.add(cardKey(c, d))); });
     d.goals.forEach(g => { if (!g.deleted) shown.add(goalKey(g.id)); });
+    K.agenda(tk, addDays(tk, 13)).forEach(e => shown.add(titleKey(e.title, d)));
     Object.keys(d.weeks).forEach(k => { if (k >= from) d.weeks[k].cards.forEach(c => lately.add(cardKey(c, d))); });
     shown.forEach(k => lately.add(k));
     return { shown: [...shown], lately };
@@ -129,10 +131,10 @@
   const cardsOnShow = () => [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].flatMap(list => list.cards);
   const keyOnShow = (key, skip = null) => cardsOnShow().some(c => c !== skip && cardKey(c) === key);
 
-  // A key as it's known: its goal's name, or its title as a card on show has it.
+  // A key as it's known: its goal's name, or its title as a card or event on show has it.
   function keyName(key) {
     if (key.startsWith("g:")) { const g = A.goalById(key.slice(2)); return g ? g.name : ""; }
-    const c = cardsOnShow().find(x => cardKey(x) === key);
+    const tk = thisWeekKey(), c = cardsOnShow().find(x => cardKey(x) === key) || K.agenda(tk, addDays(tk, 13)).find(e => titleKey(e.title) === key);
     return c ? c.title : key.slice(2);
   }
 

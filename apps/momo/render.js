@@ -27,8 +27,8 @@
     [["this", thisWeekKey()], ["next", nextWeekKey()]].forEach(([v, k]) => {
       const w = A.weekOf(k), b = A.budgetOf(w, k), clashes = A.weekAgenda(k, w).filter(ev => ev.flag).length;
       const [text, cls] = w.closed ? ["closed out ✓", "good"]
-        : b.over.length ? [`${fmtH(sum(b.over.map(o => o.by)))} over`, "bad"]
         : clashes ? [`${clashes} conflict${clashes === 1 ? "" : "s"}`, "bad"]
+        : b.over.length ? [`${fmtH(sum(b.over.map(o => o.by)))} over`, "bad"]
         : !w.cards.length ? ["not planned yet", ""]
         : b.free === 0 ? ["all assigned ✓", "good"]
         : [`${fmtH(b.free)} left`, ""];
@@ -56,10 +56,14 @@
     $("bankOf").textContent = isBase ? `left for everything else · ${fmtPct(sum(b.totals))} of the week fixed`
       : b.first ? `of ${b.pool}h left this week` : `of ${b.pool}h`;
 
+    // An event's conflict comes first: it's often why a day is over, and its quick fix balances it.
     let msg, cls = "", late, clashes;
     if (locked) {
       msg = "This week is closed out ✓ — its goal hours are logged and the rest is let go.";
       cls = "good";
+    } else if ((clashes = S.agenda.filter(ev => ev.flag)).length) {
+      cls = "bad";
+      msg = A.conflictMsg(key, clashes);
     } else if (b.over.length) {
       cls = "bad";
       msg = b.over.length === 1
@@ -70,9 +74,6 @@
       msg = late.length === 1
         ? `${DAY_LONG[late[0]]}'s cards don't fit around its pinned times — move one into free time or trim it.`
         : `The cards on ${late.map(d => DAY_NAMES[d]).join(", ")} don't fit around their pinned times — move some into free time or trim them.`;
-    } else if ((clashes = S.agenda.filter(ev => ev.flag)).length) {
-      cls = "bad";
-      msg = A.conflictMsg(clashes);
     } else if (isBase) {
       msg = onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
         : "Your default week: sleep, work, meals — the hours that come around every week. Build it once, then load it into any week with one click.";
@@ -138,9 +139,10 @@
   // Free time on a day, sized to the ruler (style) and saying how much it is:
   // before the pinned card beforeId, else after the day's last card. Clicking
   // it adds a card there; it's the only place on a day that does. A plain
-  // spacer on a closed week.
-  function freeHTML(d, hours, beforeId, locked, style) {
-    const attrs = `class="free ${beforeId ? "gap" : "end"}"${beforeId ? ` data-before="${esc(beforeId)}"` : ""} style="${style}"`;
+  // spacer on a closed week. The last free time on a day fills the rest of it
+  // (last: not when an event splits it and this isn't its last part).
+  function freeHTML(d, hours, beforeId, locked, style, last = true) {
+    const attrs = `class="free ${beforeId || !last ? "gap" : "end"}"${beforeId ? ` data-before="${esc(beforeId)}"` : ""} style="${style}"`;
     return locked ? `<div ${attrs}></div>` : `<button type="button" ${attrs} data-add-day="${d}" data-h="${hours}" aria-label="Add a card in ${fmtH(hours)} free">+ ${fmtH(hours)} free</button>`;
   }
 
@@ -158,7 +160,7 @@
     const today = key === thisWeekKey() ? dayIndex(todayStr()) : -1;
     const { totals } = A.budgetOf(list, key);
     const plans = DAYS.map(d => dayPlan(list, d, locked));
-    S.ruler = A.makeRuler(plans.flatMap(p => p.pieces).concat(A.agendaPieces(S.agenda, plans)));
+    S.ruler = A.makeRuler(plans.flatMap(p => p.pieces.concat(p.extra)));
     $("board").classList.toggle("locked", locked);
     $("board").innerHTML = DAYS.map(d => {
       const total = totals[d];
@@ -176,17 +178,21 @@
   }
 
   // What the board needs to draw a day: its schedule, when each card starts,
-  // and its pieces for the ruler.
+  // its pieces for the ruler, and other apps' events there (agenda.js
+  // layEvents: pieces of their own in free time, else drawn over the day).
   function dayPlan(list, d, locked) {
     const { rows, end } = A.daySchedule(list, d), times = A.startTimes(list, rows);
-    return { rows, end, times, pieces: A.dayPieces(list, rows, times, end, locked) };
+    return A.layEvents({ rows, end, times, pieces: A.dayPieces(list, rows, times, end, locked) }, list, d, locked);
   }
 
-  // A day's cards and free time, sized to the ruler, then other apps' events over them.
-  function dayHTML(list, d, { rows, end, times, pieces }, total, locked) {
-    const styles = A.pieceStyles(pieces);
-    return rows.map(r => (r.gap ? freeHTML(d, r.gap, r.card.id, locked, styles.get(`gap:${r.card.id}`)) : "") + cardHTML(list, r.card, times, styles)).join("") +
-      (locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end"))) + A.dayEventsHTML(d, locked);
+  // A day's cards and free time, sized to the ruler — free time with an event
+  // in it drawn in parts around the event — then the events drawn over the day.
+  function dayHTML(list, d, plan, total, locked) {
+    const { rows, end, times, regions } = plan, styles = A.pushLines(A.pieceStyles(plan.pieces), plan.pushes);
+    const free = (key, hours, beforeId) => (!regions.has(key) ? freeHTML(d, hours, beforeId, locked, styles.get(key))
+      : regions.get(key).map((p, i, all) => (p.ev ? A.eventHTML(p.ev, locked, styles.get(p.key)) : freeHTML(d, p.e - p.s, beforeId, locked, styles.get(p.key), i === all.length - 1))).join(""));
+    return rows.map(r => (r.gap ? free(`gap:${r.card.id}`, r.gap, r.card.id) : "") + cardHTML(list, r.card, times, styles)).join("") +
+      (regions.has("end") ? free("end", DAY_HOURS - end, null) : locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end"))) + A.overlaysHTML(plan, locked);
   }
 
   function renderGoals(list, key) {
