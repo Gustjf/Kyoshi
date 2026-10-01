@@ -7,7 +7,7 @@
   "use strict";
   const S = A.S;
   const { isNum, isPos, isObj, newId } = K.util;
-  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, DATA_SCHEMA_VERSION,
+  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION,
     snap, clampHours, cleanText, isDueDate, isWeekKey, thisWeekKey, nextWeekKey } = A;
 
   const STANDALONE_KEY = "momoData_v1"; // the standalone Momo's data: read (never changed) on the first open in Kyoshi
@@ -41,7 +41,7 @@
     stampChanges(S.lastSaved);
     if (undo && S.lastSavedJSON) {
       S.undoStack.push(S.lastSavedJSON);
-      if (S.undoStack.length > UNDO_MAX) S.undoStack.shift();
+      while (S.undoStack.length > UNDO_MAX || (S.undoStack.length > 1 && S.undoStack.length * S.lastSavedJSON.length > UNDO_MAX_CHARS)) S.undoStack.shift();
     }
     remember();
     store();

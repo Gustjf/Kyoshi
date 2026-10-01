@@ -177,7 +177,7 @@
   // The stores apps and core use
   // ==========================================================================
   // One space in the store: the same calls as localStorage, with keys under prefix
-  // ("kyoshi.<id>."). A testable one keeps its writes in memory in test mode.
+  // ("kyoshi.<id>."), and keys() listing them. A testable one keeps its writes in memory in test mode.
   function scoped(prefix, testable = true) {
     const key = k => prefix + k;
     const sget = k => {
@@ -190,7 +190,8 @@
       get: sget,
       set: (k, v) => (testable && shadow ? void shadow.set(key(k), String(v)) : write(key(k), String(v))),
       remove: k => (testable && shadow ? void shadow.set(key(k), null) : write(key(k), null)),
-      json: k => parse(sget(k))
+      json: k => parse(sget(k)),
+      keys: () => [...cache.keys()].filter(k => k.startsWith(prefix)).map(k => k.slice(prefix.length)) // as saved
     };
   }
 

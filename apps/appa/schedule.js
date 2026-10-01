@@ -5,7 +5,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { addDays, daysBetween, todayStr, localDate, daysInMonth, pad2, mean, fmtDate } = K.util;
+  const { addDays, daysBetween, todayStr, localDate, daysInMonth, pad2, mean } = K.util;
   const { LEAD_DAYS, SOON_DAYS, READING_AHEAD, READING_STALE, ESTIMATE_RUNS, UNITS, niceMinutes, fmtDay, fmtReading, meterOf } = A;
 
   let memoKey = "", memo = new Map();
@@ -87,18 +87,19 @@
 
   // When a job is next due: { date (by time, or projected from the meter), reading (the meter's due
   // reading), by ("time" | "meter"), overdue, days (from today, negative once past) }. date is null
-  // when it can't be told (a meter job with nothing to project from).
+  // when it can't be told (a meter job with nothing to project from, or projected over a century out).
+  const FAR = 36525; // days: a century, past which a meter's pace says nothing (and dates run out)
   const dueOf = job => remember(`due:${job.id}`, () => {
     const thing = A.thingById(job.thingId), b = baseOf(job), today = todayStr();
     const timeDate = job.every ? after(b.date, job.every) : job.seasons.length ? nextSeason(b.date, job.seasons) : null;
     let reading = null, meterDate = null, reached = false;
     if (thing && thing.meter && job.meterEvery && b.reading !== null) {
       reading = b.reading + job.meterEvery;
-      const last = lastReading(thing.id), p = pace(thing);
+      const last = lastReading(thing.id), p = pace(thing), days = last && p ? (reading - last.value) / p : null;
       if (last && last.value >= reading) {
         reached = true;
-        meterDate = p ? addDays(last.date, -Math.floor((last.value - reading) / p)) : last.date;
-      } else if (last && p) meterDate = addDays(last.date, Math.ceil((reading - last.value) / p));
+        meterDate = p ? addDays(last.date, Math.max(-FAR, Math.ceil(days))) : last.date;
+      } else if (days !== null && days <= FAR) meterDate = addDays(last.date, Math.ceil(days));
     }
     const date = [timeDate, meterDate].filter(Boolean).sort()[0] || null;
     return {
@@ -183,10 +184,9 @@
     const month = p * 30.44;
     return month >= 1 ? `about ${fmtReading(Math.round(month), thing)} a month` : `about ${fmtReading(Math.round(p * 365.25), thing)} a year`;
   }
-  const fmtLong = d => fmtDate(d, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
   Object.assign(A, {
     remember, dateOf, points, lastReading, pace, estimate, addMonths, nextSeason, lastDone, baseOf, dueOf, statusOf, minutesOf,
-    readingAsk, upcoming, nextOf, everyText, dueText, lastText, paceText, fmtLong
+    readingAsk, upcoming, nextOf, everyText, dueText, lastText, paceText
   });
 })(Kyoshi, Kyoshi.apps.appa);

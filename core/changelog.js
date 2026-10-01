@@ -5,6 +5,12 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.410", date: "2026-10-01", changes: [
+      "If an app ever can't start, its page now offers to download its data, so your data is never out of reach.",
+      "An odd address ending (like #constructor) no longer leaves the page blank.",
+      "PDF reports no longer fail on a link with a stray % in it, and a damaged or booby-trapped PDF can't freeze the page or use up its memory.",
+      "New apps are checked for a usable id of their own as they're added."
+    ] },
     { version: "2.310", date: "2026-09-29", changes: [
       "Added Appa, for preventive maintenance and records: switch to it from the button beside Theme.",
       "Apps can keep photos and PDFs: they stay in the browser's storage and travel through the sync folder as ordinary files (backups hold the data only).",

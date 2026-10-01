@@ -1,10 +1,13 @@
 /* Kyoshi · core/pdf-filters.js — unpacks the data of a PDF's streams (K.pdf.unfilter), for reading
  * attached PDFs (core/pdf-parse.js): Flate (core/pdf-inflate.js) and LZW, each with the PNG (10–15,
  * a filter type per row) or TIFF (2) predictors; ASCIIHex; ASCII85; RunLength. Images' own formats
- * (DCT, JBIG2, JPX…) are never unpacked: pages are copied with their images as they are. */
+ * (DCT, JBIG2, JPX…) are never unpacked: pages are copied with their images as they are.
+ * Like inflate, each stops at a limit (bytes gathered in a plain list take more room, so a quarter of
+ * K.pdf.MAX_UNPACKED), and settings that make no sense leave the data as it is. */
 (function (K) {
   "use strict";
   const pdf = K.pdf || (K.pdf = {});
+  const LIMIT = pdf.MAX_UNPACKED / 4;
   const isDict = v => !!v && typeof v.get === "function";
   const latin1 = b => { let t = ""; for (let i = 0; i < b.length; i++) t += String.fromCharCode(b[i]); return t; };
 
@@ -13,6 +16,7 @@
     if (pred < 2) return data;
     const colors = p.get("Colors") || 1, bpc = p.get("BitsPerComponent") || 8, cols = p.get("Columns") || 1;
     const bpp = Math.max(1, Math.ceil(colors * bpc / 8)), rowLen = Math.ceil(cols * colors * bpc / 8);
+    if (!(rowLen >= 1)) return data; // a row of no bytes (or fewer) would never move on
     if (pred === 2) { // TIFF: each 8-bit sample adds the one before it
       if (bpc !== 8) return data;
       const out = Uint8Array.from(data);
@@ -20,6 +24,7 @@
       return out;
     }
     const rows = Math.floor(data.length / (rowLen + 1)), out = new Uint8Array(rows * rowLen); // PNG: a filter type per row
+    if (!rows) return out;
     let prev = new Uint8Array(rowLen);
     for (let r = 0; r < rows; r++) {
       const type = data[r * (rowLen + 1)], src = r * (rowLen + 1) + 1, dst = r * rowLen;
@@ -53,7 +58,7 @@
         if (code === 256) { reset(); continue; }
         if (code === 257) return Uint8Array.from(out);
         const entry = code < dict.length && dict[code] ? dict[code] : prev ? prev.concat(prev[0]) : null;
-        if (!entry) return Uint8Array.from(out);
+        if (!entry || out.length + entry.length > LIMIT) return Uint8Array.from(out);
         entry.forEach(v => out.push(v));
         if (prev) dict.push(prev.concat(entry[0]));
         prev = entry;
@@ -80,6 +85,7 @@
       group = [];
     };
     for (const ch of t) {
+      if (out.length > LIMIT) break;
       if (ch === "z" && !group.length) { out.push(0, 0, 0, 0); continue; }
       const d = ch.charCodeAt(0) - 33;
       if (d < 0 || d > 84) continue;
@@ -91,7 +97,7 @@
   }
   function runLength(data) {
     const out = [];
-    for (let i = 0; i < data.length;) {
+    for (let i = 0; i < data.length && out.length <= LIMIT;) {
       const n = data[i++];
       if (n === 128) break;
       if (n < 128) { for (let j = 0; j <= n && i < data.length; j++) out.push(data[i++]); }

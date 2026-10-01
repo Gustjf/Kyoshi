@@ -1,10 +1,12 @@
 /* Kyoshi · core/pdf-inflate.js — K.pdf.inflate(bytes): unpacks Deflate data (zlib-wrapped or raw),
  * the compression inside most PDFs, so attached PDFs can be read (core/pdf-parse.js). Synchronous and
  * forgiving: damaged, cut-short or over-long data gives back whatever could be unpacked before the
- * trouble (which is how PDF readers behave), never an error. After Mark Adler's "puff". */
+ * trouble (which is how PDF readers behave), never an error. After Mark Adler's "puff".
+ * K.pdf.MAX_UNPACKED: the most any stream unpacks to, so a booby-trapped file can't use up the memory. */
 (function (K) {
   "use strict";
   const pdf = K.pdf || (K.pdf = {});
+  const MAX_UNPACKED = pdf.MAX_UNPACKED = 128 * 1024 * 1024;
   const LEN_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
   const LEN_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
   const DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
@@ -35,7 +37,7 @@
   function inflate(input) {
     const data = input instanceof Uint8Array ? input : new Uint8Array(input);
     let pos = 0, bitBuf = 0, bitCnt = 0;
-    let out = new Uint8Array(Math.max(1024, data.length * 4)), n = 0;
+    let out = new Uint8Array(Math.min(MAX_UNPACKED, Math.max(1024, data.length * 4))), n = 0;
     // A zlib header (compression method 8, checksum of the two bytes) is skipped; raw data has none.
     if (data.length > 2 && (data[0] & 0x0f) === 8 && ((data[0] << 8) | data[1]) % 31 === 0) pos = data[1] & 0x20 ? 6 : 2;
 
@@ -52,9 +54,10 @@
     };
     const room = more => {
       if (n + more <= out.length) return;
+      if (n + more > MAX_UNPACKED) throw STOP;
       let size = out.length * 2;
       while (size < n + more) size *= 2;
-      const bigger = new Uint8Array(size);
+      const bigger = new Uint8Array(Math.min(size, MAX_UNPACKED));
       bigger.set(out.subarray(0, n));
       out = bigger;
     };

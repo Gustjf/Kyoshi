@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.121", date: "2026-10-01", changes: [
+      "A category with an unusual name, from a newer version or a synced save, is kept as it is instead of lost on the next save.",
+      "Removed a leftover note from when items had a cost."
+    ] },
     { version: "2.120", date: "2026-09-29", changes: [
       "What's in progress also waits in Momo's Tasks, ready to drag onto your week."
     ] },

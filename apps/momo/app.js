@@ -55,6 +55,7 @@
     OLD_COLORS: ["blue", "violet", "pink", "orange", "yellow", "green", "teal"], // cards' colours 0–6 before titles had their own (7 was slate)
     COLOR_WEEKS: 8, // how long a title off the boards keeps its colour for when it's back
     UNDO_MAX: 40,
+    UNDO_MAX_CHARS: 16e6, // …and no more of them than fit in this much, as years of weeks make each one bigger
     // Drag & drop: a mouse drag starts after a few pixels; on touch a card is held
     // for a moment first, so a plain swipe still scrolls.
     DRAG_START_PX: 4,

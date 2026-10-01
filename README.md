@@ -1,16 +1,18 @@
 # Kyoshi
 
 A quiet home for small, private apps that run entirely in your browser — currently **Bosco** (weight
-tracker with projections), **Momo** (weekly time budget) and **Wan Shi Tong** (media recommendations:
-what's in progress, what's up next, and the rest). You only see the app you're using; switch
-apps from the icon button beside **Theme**. No accounts, no servers, no CDN: plain HTML, CSS and
-JavaScript, built to keep working for years.
+tracker with projections), **Momo** (weekly time budget), **Wan Shi Tong** (media recommendations:
+what's in progress, what's up next, and the rest) and **Appa** (preventive maintenance and records,
+with PDF reports). You only see the app you're using; switch apps from the icon button beside
+**Theme**. No accounts, no servers, no CDN: plain HTML, CSS and JavaScript, built to keep working
+for years.
 
 - **Open it:** the GitHub Pages link, or `index.html` straight from a download of this repo.
 - **Your data:** stays in this browser, in its large storage (IndexedDB). Each app has Export/Import JSON
   in its *Backup & sync* section, and one sync folder (e.g. shared by Syncthing) keeps every app up to
-  date across devices. Developer Mode (Ctrl+9, or the DEV badge) can export or import every app at once,
-  and shows how much storage Kyoshi uses.
+  date across devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as
+  plain files, in `<folder>/<app>/files/`. Developer Mode (Ctrl+9, or the DEV badge) can export or import
+  every app at once, and shows how much storage Kyoshi uses.
 - **Keep backups:** a browser can erase a site's data (clearing browsing data, a full device, or on
   iPhone a week or so without a visit). Kyoshi asks the browser to protect it, but export now and then.
 - **Coming from the standalone Bosco or Momo** on the same site? Your data comes over on first open;

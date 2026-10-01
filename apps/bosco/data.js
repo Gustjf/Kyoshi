@@ -56,7 +56,7 @@
       entries: [...days.values()].sort(byDate),
       goals: [...new Set(goalList.filter(isPos))].sort((a, b) => b - a),
       name: typeof raw.name === "string" ? raw.name.trim() : "",
-      medication: MEDICATIONS[raw.medication] ? raw.medication : "",
+      medication: Object.hasOwn(MEDICATIONS, raw.medication) ? raw.medication : "",
       dosePlan: cleanDosePlan(raw.dosePlan),
       vial: cleanVial(raw.vial),
       paceGoal: cleanPaceGoal(raw.paceGoal)

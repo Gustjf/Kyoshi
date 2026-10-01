@@ -10,8 +10,15 @@
   const { ICONS, fmtMinutes, fmtReading, fmtDay, sourceLink } = A;
   let lock = null; // the screen's wake lock, while a timer runs
 
-  // Notes as HTML: bullet lines become lists, other lines paragraphs; web addresses become links.
-  const linkify = s => esc(s).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  // Notes as HTML: bullet lines become lists, other lines paragraphs; web addresses become links, less
+  // the punctuation after one (a sentence's full stop; a ")" only when the address has more ")" than "(").
+  const count = (s, ch) => s.split(ch).length - 1;
+  const linkify = s => String(s).split(/(https?:\/\/[^\s<]+)/).map((part, i) => {
+    if (i % 2 === 0) return esc(part); // text between the addresses
+    let u = part;
+    while (/[.,;:!?'">\]]$/.test(u) || (u.endsWith(")") && count(u, ")") > count(u, "("))) u = u.slice(0, -1);
+    return `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>${esc(part.slice(u.length))}`;
+  }).join("");
   function notesHTML(text) {
     const out = [];
     let list = [];

@@ -79,7 +79,6 @@
     return (c.have || Object.keys(A.HAVE)).map(h => [h, (c.haveLabels && c.haveLabels[h]) || A.HAVE[h]]);
   }
   const haveLabel = (catId, have) => (haveChoices(catId).find(([h]) => h === have) || [have, A.HAVE[have] || ""])[1];
-  // "$49", "$1,250.50" or "Free"; "" when it isn't known.
   // A day, with its year only when it isn't this year: "Sep 28", "Mar 3, 2025".
   const fmtDay = d => (d.slice(0, 4) === todayStr().slice(0, 4) ? fmtShort(d) : fmtDate(d));
   // A Google search for it: its name and info, plus what it is.

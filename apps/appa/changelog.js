@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.001", date: "2026-10-01", changes: [
+      "Appa no longer stops working when a meter job would come due centuries away (a typo in its interval, or a meter that barely moves): it shows the reading it's due at.",
+      "A job whose thing was deleted on another device no longer breaks the page: Appa goes back home.",
+      "Links in a job's notes leave out the punctuation after them, like a sentence's full stop.",
+      "Removed a helper nothing used."
+    ] },
     { version: "1.000", date: "2026-09-29", changes: [
       "Initial release: preventive maintenance for your things, by time, season or meter reading, whichever comes first, each job noting where its interval comes from.",
       "Jobs go to Momo's Tasks two weeks before they're due, sized to how long they take; Appa learns that from your timed jobs.",

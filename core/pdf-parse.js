@@ -291,6 +291,7 @@
       const data = decode(st), W = st.dict.get("W");
       if (!Array.isArray(W) || W.length < 3) throw fail("A damaged cross-reference stream");
       const [w0, w1, w2] = W.map(w => (Number.isInteger(w) && w >= 0 ? w : 0));
+      if (!(w0 + w1 + w2)) throw fail("A damaged cross-reference stream"); // rows of no bytes would never end
       let index = st.dict.get("Index");
       if (!Array.isArray(index)) index = [0, st.dict.get("Size") || 0];
       let p = 0;

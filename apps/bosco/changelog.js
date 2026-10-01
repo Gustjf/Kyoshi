@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.160", date: "2026-10-01", changes: [
+      "A backup or synced save naming a medication Bosco doesn't know can no longer show “undefined” where its name goes."
+    ] },
     { version: "7.159", date: "2026-09-29", changes: [
       "Your doses now show on Momo's board as 15-minute events at their day and dose time, so each one has its place in your week."
     ] },

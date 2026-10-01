@@ -103,9 +103,9 @@
   }
 
   // The medication new doses are for: the start-up answer, Tirzepatide until answered.
-  const currentMedication = () => (S.profile.medication === "none" || MEDICATIONS[S.profile.medication] ? S.profile.medication : A.LEGACY_MEDICATION);
+  const currentMedication = () => (S.profile.medication === "none" || Object.hasOwn(MEDICATIONS, S.profile.medication) ? S.profile.medication : A.LEGACY_MEDICATION);
   const medicationEnabled = () => currentMedication() !== "none";
-  const medLabel = id => (MEDICATIONS[id] ? MEDICATIONS[id].label : id);
+  const medLabel = id => (Object.hasOwn(MEDICATIONS, id) ? MEDICATIONS[id].label : id);
   // Names a dose's medication only when it isn't the current one.
   const otherMedNote = e => (e.medication !== currentMedication() ? ` (${medLabel(e.medication)})` : "");
 

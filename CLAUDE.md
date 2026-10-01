@@ -61,10 +61,10 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
 ```
 
 ## The app contract
-Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote? })`.
+Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's).
 Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`.
 
-**Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
+**Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
 
 **The app defines on A** (all optional except `markup`):
 | Hook | When Kyoshi calls it |

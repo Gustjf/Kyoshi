@@ -48,8 +48,15 @@
     const m = /^#?([0-9a-f]{6})$/i.exec(c || "") || [0, "000000"];
     return [0, 2, 4].map(i => num(parseInt(m[1].slice(i, i + 2), 16) / 255)).join(" ");
   };
-  // Only web links go into a PDF.
-  const safeUrl = u => (typeof u === "string" && /^https?:\/\/[^\s]+$/i.test(u) ? encodeURI(decodeURI(u)) : null);
+  // Only web links go into a PDF, as plain ASCII (a stray "%", as in ".../50%", becomes "%25");
+  // null for one that can't be written so (a broken character).
+  function safeUrl(u) {
+    if (typeof u !== "string" || !/^https?:\/\/[^\s]+$/i.test(u)) return null;
+    for (const way of [s => encodeURI(decodeURI(s)), encodeURI]) {
+      try { return way(u); } catch (err) { /* try the next way */ }
+    }
+    return null;
+  }
 
   async function deflate(bytes) {
     if (typeof CompressionStream !== "function" || typeof Response !== "function") return null;

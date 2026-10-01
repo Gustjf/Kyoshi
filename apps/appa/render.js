@@ -24,7 +24,7 @@
     S.knownToday = K.util.todayStr();
     // A view whose thing or job is gone (deleted on another device, say) falls back to home.
     if (S.view === "thing" && !A.thingById(S.thingId)) S.view = "home";
-    if (S.view === "job" && !A.jobById(S.jobId)) S.view = "home";
+    if (S.view === "job" && !(A.jobById(S.jobId) && A.thingById(A.jobById(S.jobId).thingId))) S.view = "home";
     Object.entries(VIEWS).forEach(([v, id]) => { $(id).hidden = v !== S.view; });
     if (S.view === "home") renderHome();
     else if (S.view === "thing") renderThing(A.thingById(S.thingId));

@@ -13,7 +13,12 @@
   let active = null;    // the app on screen
   let menuOpen = false; // the switcher's list of apps
 
+  // An app's id is its folder, storage prefix, sync subfolder, #id and CSS scope: lowercase letters and
+  // digits from a letter, one app each ("storage" is taken: core keeps kyoshi.storage.moved).
   K.register = meta => {
+    if (!/^[a-z][a-z0-9]*$/.test(meta.id) || meta.id === "storage" || K.apps[meta.id]) {
+      throw new Error(`Kyoshi can't add an app with the id "${meta.id}": use lowercase letters and digits, starting with a letter, that no other app uses.`);
+    }
     const A = {
       id: meta.id, meta, S: {}, root: null, started: false, subtitle: meta.subtitle || "",
       store: K.storage.scoped(`kyoshi.${meta.id}.`),
@@ -55,21 +60,35 @@
   };
 
   // Makes the app's root, then loads (A.load), gets its sync identity and starts it (A.init).
-  // An app that fails shows why instead, and the others carry on.
+  // An app that fails shows why instead, with a way to download its data, and the others carry on.
   function startApp(A) {
     A.root = document.createElement("div");
     A.root.className = `app-root app-${A.id}`;
     A.root.innerHTML = A.markup || "";
+    let loaded = false;
     try {
       if (A.data) K.backup.mount(A);
       if (A.load) A.load();
+      loaded = true;
       if (A.data) K.sync.loadMeta(A);
       if (A.init) A.init();
       A.started = true;
     } catch (err) {
       console.error(`${A.meta.name} couldn't start.`, err);
-      A.root.innerHTML = `<section><h2>${esc(A.meta.name)} couldn't start</h2><p class="note">Something went wrong while loading it. Use Report a bug below: the report includes the error.</p></section>`;
+      A.root.innerHTML = `<section><h2>${esc(A.meta.name)} couldn't start</h2><p class="note">Something went wrong while loading it. Use Report a bug below: the report includes the error. Your data is still kept in this browser, and you can download a copy of it.</p><div class="toolbar"><button class="secondary">Download its data</button></div></section>`;
+      A.root.querySelector("button").addEventListener("click", () => rescue(A, loaded));
     }
+  }
+
+  // The data of an app that couldn't start, so it's never out of reach: its usual backup (Import JSON
+  // takes it back) when its data could be read, else every key it stored, as it was kept.
+  function rescue(A, loaded) {
+    if (loaded && A.data) {
+      try { return K.backup.exportApp(A); } catch (err) { console.error(`${A.meta.name} couldn't make its backup.`, err); }
+    }
+    const keys = {};
+    A.store.keys().forEach(k => { keys[k] = A.store.get(k); });
+    K.util.downloadJSON({ kyoshiApp: A.id, savedAt: new Date().toISOString(), keys }, `${A.id}-saved-data-${K.util.todayStr()}.json`);
   }
 
   // Puts an app on screen: its root, header, tab title & icon, width, and #id in the URL.

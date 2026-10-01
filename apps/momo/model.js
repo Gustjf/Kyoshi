@@ -45,7 +45,6 @@
   const goalById = id => (id && S.data.goals.find(g => g.id === id && !g.deleted)) || null;
   const isWeekly = g => g.perWeek > 0;
   const goalDone = g => Math.max(0, g.start + sum(Object.values(g.log)));
-  const goalLeft = g => Math.max(0, g.target - goalDone(g));
   const isReached = g => !isWeekly(g) && goalDone(g) >= g.target;
   // Weeks from the given week to a goal's finish-by week, both included.
   const weeksLeft = (g, key) => Math.floor(daysBetween(key, weekKeyOf(g.due)) / 7) + 1;
@@ -188,7 +187,7 @@
 
   Object.assign(A, {
     emptyData, blankWeek, weekOf, ensureWeek, viewKey, shownKey, readList, listFor, shownList, isLocked, hasData,
-    liveGoals, goalById, isWeekly, goalDone, goalLeft, isReached, weeksLeft,
+    liveGoals, goalById, isWeekly, goalDone, isReached, weeksLeft,
     pinned, dayTotal, innerCards, blockHours, plannedFor, budgetOf, weeklyNeed,
     sameKind, inPlace, mergeTarget, neighbours, absorb, canHold, tidyNesting, insertCard, moveCard, settle
   });
