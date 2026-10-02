@@ -41,7 +41,7 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="clearBtn">Clear week</button>
       </div>
     </div>
-    <!-- Tasks: a task to draw from for each goal and each thing in progress in Wan Shi Tong, then cards without a day (tasks.js). -->
+    <!-- Tasks: what other apps need that no block covers, each goal, what's ongoing in other apps, then cards without a day (tasks.js). -->
     <div class="tasks" id="tasks">
       <span class="tasks-label">Tasks</span>
       <span class="tasks-total" id="tasksTotal"></span>
@@ -72,7 +72,7 @@ Kyoshi.apps.momo.markup = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
       <h3 id="cardModalTitle">New card</h3>
-      <p class="modal-hint" id="cardFrom" hidden></p>
+      <div class="modal-hint card-from" id="cardFrom" hidden></div>
       <div class="field">
         <label for="cardTitle">What</label>
         <input type="text" id="cardTitle" maxlength="40" list="titleSuggestions" placeholder="e.g. Gym" autocomplete="off">

@@ -20,25 +20,24 @@
       pending: () => !!S.editing && cardFormState() !== S.editing.snapshot,
       ask: "Discard your changes to this card?"
     });
-    // "Open in Appa": the editor closes on the way, and Appa shows the job (its openFromMomo).
+    // "Open in Appa" (or any app): the editor closes on the way, and the app shows what it needs (core/inbox.js).
     $("cardFrom").addEventListener("click", e => {
-      const link = e.target.closest("[data-appa]");
-      if (!link || !K.apps.appa || !K.apps.appa.openFromMomo) return;
+      const link = e.target.closest("a[data-app]");
+      if (!link) return;
       e.preventDefault();
       K.modal.dismiss(overlay());
-      K.apps.appa.openFromMomo(link.dataset.appa);
+      K.inbox.open(link.dataset.app, link.dataset.id);
     });
   }
 
-  // A card or task that's maintenance from Appa (by its title) says what for, with a way there.
-  function renderAppaLine(title) {
-    const a = A.appaFor(title);
-    $("cardFrom").hidden = !a;
-    $("cardFrom").innerHTML = a ? `From Appa: ${esc(a.items.join(", "))}. <a href="#appa" data-appa="${esc(a.id)}">Open in Appa</a>` : "";
+  // A card other apps' needs fill, or a new one from a task of theirs, says what with, with a way there.
+  function renderFrom(needs) {
+    $("cardFrom").hidden = !needs.length;
+    $("cardFrom").innerHTML = A.fromHTML(needs);
   }
   const closeEditor = () => K.modal.dismiss(overlay());
 
-  // Titles used before, and what's in progress in Wan Shi Tong, for the title field's suggestions.
+  // Titles used before, and the tasks' (what other apps need), for the title field's suggestions.
   function titleSuggestions() {
     const titles = new Map([[FREE_TIME.toLowerCase(), FREE_TIME]]);
     [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].forEach(list => list.cards.forEach(c => {
@@ -67,7 +66,7 @@
     $("cardModalTitle").textContent = card ? "Edit card" : "New card";
     $("cardTitle").value = draft ? draft.title : "";
     $("cardHours").value = fmtNum(card ? card.hours : from ? from.hours || DRAW_HOURS : free > 0 && free < 1 ? free : 1);
-    renderAppaLine(draft ? draft.title : "");
+    renderFrom(card ? (S.fill && S.fill.shown.get(card.id)) || [] : (from && from.needs) || []);
     const goals = A.liveGoals().filter(g => !A.isReached(g) || (card && card.goalId === g.id));
     $("cardGoal").innerHTML = `<option value="">None</option>` + goals.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
     $("cardGoal").value = draft && goals.some(g => g.id === draft.goalId) ? draft.goalId : "";

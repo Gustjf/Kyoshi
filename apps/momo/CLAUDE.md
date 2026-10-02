@@ -21,22 +21,23 @@ YNAB-style budgeting, but for time: simple, minimalist, for organizing my though
 | `colors.js` | colours by title/goal key, auto-assigning and swapping (`ensureColors`, `pickColor`) |
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `save` with undo, `persist`), cleaning (`normalizeData`), undo, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: tabs, bank, board (cards, free time, other apps' events), goals |
-| `tasks.js` | **Tasks** strip under the bank: one per Appa thing with maintenance coming up (`momoTasks()`, sized to its jobs), per goal still to reach and per Wan Shi Tong item in progress (`inProgress()`); drawing a card from one (`drawCard`: Appa's hours, else `DRAW_HOURS`), `openTask`, `appaFor` (a card's "Open in Appa" line), parked cards, `checkTasks` |
+| `inbox.js` | **Blocks**: what other apps need this week and next (`K.inbox`), filling cards with the title each asks for (`fill`: blocks, shortfalls, the board's filled cards), a filled card's line (`fillParts`) and its pop-up's list (`fromHTML`) |
+| `tasks.js` | **Tasks** strip under the bank: what no block covers (timed needs one task per block title, a whole block's need one each), each goal still to reach, ongoing needs (Wan Shi Tong's in progress); drawing a card from one (`drawCard`: its length, else `DRAW_HOURS`), `openTask`, parked cards, `checkTasks` |
 | `agenda.js` | **Events** from other apps (`K.agenda`): the week's events (`weekAgenda`), hours they add (`agendaHours`), conflicts (`obstacles`, `flag`), `reach`/`quickFix`, laying and drawing them (`layEvents`, `eventHTML`, …), `checkAgenda` |
 | `drag.js` | pointer handling: pick up (a task: a new card drawn from it), group drag (Ctrl / long hold), find the drop target |
 | `drop.js` | drop previews & lines, auto-scroll, commit the drop, resize by the grip, board & Tasks clicks & keys, pins |
 | `clipboard.js` | copy / cut / paste cards (Ctrl+C / X / V) |
-| `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; a new card from a task, with Appa's hours and "Open in Appa" line), shared colour swatches, hours & clock parsing |
+| `card-editor.js` | card pop-up (days or No day, goal, pin, inside, colour; what fills it, or a task's needs, with "Open in <App>"), shared colour swatches, hours & clock parsing |
 | `goal-editor.js` | goal pop-up (total or hours a week, finish-by date & season buttons, colour) |
 | `triage.js` | an event's pop-up: its quick fix while it conflicts, else a time within `EVENT_WINDOW` hours, or back to its app's time (`place` → `week.events`) |
 | `baseline.js` | bank actions: load baseline, copy previous week, save as baseline, fill gaps, clear, sample |
 | `closeout.js` | weekly close-out pop-up, pending weeks, reopen, rollover (new day/week) |
-| `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; Tasks; events), `onReload`, `attention` (a week to close out, an event's conflict), `renderDev` (Undo), `bugState` |
+| `events.js` | `A.init` wiring and the hooks: `onKeydown` (Esc, undo, copy/paste, Enter), `onShow`/`onHide`, `onTick` (new day/week; needs; events), `onReload`, `attention` (a week to close out, an event's conflict), `renderDev` (Undo), `bugState` |
 | `momo.css` | styles under `.app-momo`; page-wide `--momo-hour`, `--momo-slate`, `--momo-tint` |
 
 ## State (`A.S`)
 `data` { weeks, baseline, goals, colors } — shape in `model.js` · `view` "this"|"next"|"base" · `undoStack`, `lastSavedJSON`, `lastSaved` ·
-close-out: `closing`, `closeOutLater`, `knownToday` · editors: `editing`, `editingGoal`, `triage` (an event's pop-up) · pointer: `press`, `stuck`, `drag` (`draw`: a card drawn from a task), `resize`, `suppressClick`, `renderPending` · `clip`, `mouse` · `ruler` · `tasksKey` · `agenda` (the shown week's events), `agendaKey`.
+close-out: `closing`, `closeOutLater`, `knownToday` · editors: `editing`, `editingGoal`, `triage` (an event's pop-up) · pointer: `press`, `stuck`, `drag` (`draw`: a card drawn from a task), `resize`, `suppressClick`, `renderPending` · `clip`, `mouse` · `ruler` · `fill` (other apps' needs in their blocks, as last drawn) · `agenda` (the shown week's events), `agendaKey`.
 Note `A.S.data` is Momo's data; `A.data` is the backup/sync adapter Kyoshi calls.
 
 ## Storage (`A.store`) and backups
@@ -50,8 +51,8 @@ Every change goes through `save()` (colours, `u` timestamps, undo, then storage 
 - A day's cards are ordered; that order sets their times, except pinned cards. Nesting is one level deep (`tidyNesting`).
 - Sync merges whole weeks / goals / colours by their `u` (the later change wins); goal logs from both sides are kept.
 - Past weeks are closed out (goal hours logged); this week only counts today onward.
-- Tasks aren't stored: they're read afresh from Appa (`K.apps.appa.momoTasks()`), the goals and Wan Shi Tong (`K.apps.wanshitong.inProgress()`), read-only; none from an app that's missing. A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none, and shows no Appa tasks.
-- Appa's task for a thing ("<name> maintenance") needs its jobs' minutes (snapped, 15m at least) and is **funded** by cards with the same title (any case) on days from today on, this week and next (closed weeks count). It shows only while funding falls short and draws a card of what's left, so merged, resized or pasted cards, missed days and jobs that come due later just work. "Open in Appa" closes the editor, then `openFromMomo`; Momo never changes Appa's data.
+- **Blocks** (Momo decides when, each app what): other apps' needs (`K.inbox`, core/inbox.js) aren't stored; they're read afresh each draw, read-only. A block is any card on a day from today on, this week and next (baseline-loaded and closed weeks' too), soonest first by day then start time. A need fills the soonest block titled its `block` (any case): those with a `date` first, on that day; one with a `due`, on or before it (once overdue, any); the rest in their app's order (a sequence). "block" needs take an empty block each; "time" ones go in whole while the card's hours have room (no length: 60m); "ongoing" ones show on every block with their title. So moving, resizing or pasting cards just works, and filling adds no hours and no conflict. A done need shows ✓ and never goes to Tasks. "Open in <App>" closes the editor, then `K.inbox.open`.
+- Tasks aren't stored either: what no block covers, the goals and the ongoing needs. A timed shortfall is one task per block title, as long as all of it (rounded up to 15m); a whole block's need is a task each; goals and ongoing ones (never used up) draw `DRAW_HOURS`. A drawn card is an ordinary card, parked until it moves onto a day. A card without a day (`day: null`, "parked") sits in Tasks; the baseline has none, and shows only goals and ongoing needs.
 - Events from other apps aren't stored: they're read afresh (`K.agenda`), and only the times you moved them to on their own day are kept (`week.events`, by "app:id"). Moving one never changes its app, and cards never move for one.
 - An event counts toward its day's 24 hours: it takes time no card has, or Free time lends it the hours. Anywhere else it conflicts (with those cards, and any event it overlaps), from today onward; a conflict with no clear time within `EVENT_WINDOW` (3) hours of its app's time stays flagged. It never moves further than that, nor to another day.
 - Bug reports never include card titles, goal names or what events are.

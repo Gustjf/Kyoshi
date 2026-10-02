@@ -1,6 +1,7 @@
 /* Momo · render.js — draws the board on screen from A.S: renderAll, then the week tabs,
  * the To Be Budgeted bank (with Tasks, see tasks.js), the board's days and cards (sized to the
- * ruler, see times.js; other apps' events over them, see agenda.js), and the long-term goals. */
+ * ruler, see times.js; filled with what other apps need, see inbox.js; other apps' events over
+ * them, see agenda.js), and the long-term goals. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -14,6 +15,7 @@
     const key = A.shownKey(), list = A.shownList();
     S.agenda = A.weekAgenda(key, list); // other apps' events on this board (agenda.js)
     S.agendaKey = A.agendaKey();
+    S.fill = A.fill(); // what other apps need, in the blocks it fills (inbox.js)
     renderTabs();
     renderBank(list, key);
     renderBoard(list, key);
@@ -115,11 +117,13 @@
     const g = A.goalById(c.goalId), inner = A.innerCards(list, c);
     const parent = c.parentId && list.cards.find(p => p.id === c.parentId);
     const when = times && times.get(c.id), pin = !!when && !parent && A.pinned(c);
-    const label = `${c.title}, ${fmtH(c.hours)}${g ? `, goal: ${g.name}` : ""}` +
+    const needs = c.day !== null && S.fill && S.fill.shown.get(c.id), fill = needs ? A.fillParts(c, needs) : null;
+    const label = `${c.title}${fill ? ` (${fill.text})` : ""}, ${fmtH(c.hours)}${g ? `, goal: ${g.name}` : ""}` +
       (inner.length ? ` + ${inner.map(x => `${x.title} ${fmtH(x.hours)}`).join(" + ")} = ${fmtH(A.blockHours(list, c))}` : parent ? `, ${POSITION_TEXT[c.pos]} ${parent.title}` : "") +
       (!when ? "" : `, ${pin ? `pinned at ${fmtClock(c.pin)}` : `from ${fmtClock(when.at)}`}${when.clash ? ` — the cards above run ${fmtH(when.clash)} into it` : when.at >= DAY_HOURS ? " — past midnight" : ""}`);
     const button = `role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}"`;
-    const own = `<span class="card-title">${esc(c.title)}</span>` + (when ? timeHTML(c, when, !parent) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
+    const own = `<span class="card-title">${fill ? fill.icons : ""}${esc(c.title)}${fill && fill.names ? `<span class="card-fill"> · ${esc(fill.names)}</span>` : ""}</span>` +
+      (when ? timeHTML(c, when, !parent, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
     const grip = c.day === null ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
@@ -129,11 +133,11 @@
   }
 
   // When a card starts, then its pin if it's on its own: filled while
-  // pinned, else there to pin it where it is.
-  function timeHTML(c, when, canPin) {
+  // pinned, else there to pin it where it is; then a ✓ once what fills it is done.
+  function timeHTML(c, when, canPin, done) {
     const tip = A.pinned(c) ? `Pinned at ${fmtClock(c.pin)} — unpin` : `Pin at ${fmtClock(Math.min(DAY_HOURS - STEP, when.at))}`;
     const pin = canPin ? `<span class="pin${A.pinned(c) ? " on" : ""}" title="${tip}" aria-hidden="true"><svg class="pin-icon" viewBox="0 0 24 24"><use href="#i-pin"/></svg></span>` : "";
-    return `<span class="card-time${when.clash || when.at >= DAY_HOURS ? " clash" : ""}"><span class="clock">${fmtClock(when.at)}</span>${pin}</span>`;
+    return `<span class="card-time${when.clash || when.at >= DAY_HOURS ? " clash" : ""}"><span class="clock">${fmtClock(when.at)}</span>${pin}${done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>`;
   }
 
   // Free time on a day, sized to the ruler (style) and saying how much it is:

@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.543", date: "2026-10-02", changes: [
+      "Blocks: a card fills with what other apps need under its title (Appa's jobs, what's in progress in Wan Shi Tong), showing their icon, a ✓ once done, and the details with \"Open in…\" in its pop-up.",
+      "Tasks shows what no block covers, from any app that lists needs, so new apps need no changes in Momo.",
+      "A card drawn from a task that doesn't say how long now starts at 1 hour, not 1.5."
+    ] },
     { version: "5.443", date: "2026-10-01", changes: [
       "Undo keeps fewer steps once years of weeks make each one big, so a long session can't use up the browser's memory.",
       "Removed a helper nothing used."

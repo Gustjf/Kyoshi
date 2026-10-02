@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.011", date: "2026-10-02", changes: [
+      "Jobs go to Momo through the shared inbox: each fills a \"… maintenance\" card whole, and \"Open in Appa\" opens that very job."
+    ] },
     { version: "1.001", date: "2026-10-01", changes: [
       "Appa no longer stops working when a meter job would come due centuries away (a typo in its interval, or a meter that barely moves): it shows the reading it's due at.",
       "A job whose thing was deleted on another device no longer breaks the page: Appa goes back home.",

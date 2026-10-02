@@ -39,15 +39,20 @@
 .app-momo .tasks-cards { display: contents; }
 .app-momo .tasks-empty { font-size: .8em; color: var(--muted); }
 .app-momo .tasks-add { margin-left: auto; }
-/* A task to draw from (a goal, or something in progress in Wan Shi Tong) is the outline of a card,
-   with no hours: dragging it adds a card of its own, and it stays for next time. */
+/* A task to draw from (what other apps need, or a goal) is the outline of a card: dragging it adds
+   a card of its own. A goal's, or something ongoing like Wan Shi Tong's in progress, stays for next time. */
 .app-momo .card.task { border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
 .app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
-/* Appa's maintenance: its icon, and the time still to schedule; red-edged once overdue. */
+/* From other apps: their icon, and what's short of a block its time; red-edged once overdue. */
 .app-momo .card.task.from-app { gap: 5px; }
 .app-momo .card.task .app-icon svg { width: 13px; height: 13px; }
 .app-momo .card.task .task-hours { flex: 0 0 auto; font-size: .85em; color: var(--muted); }
 .app-momo .card.task.late { border-color: var(--bad); border-left-color: var(--bad); }
+/* A card filled with what other apps need (inbox.js): their icon before its title, what fills it after
+   it, muted, and a ✓ by its time once that's done. */
+.app-momo .card-title > .app-icon { display: inline-flex; margin-right: 4px; vertical-align: -1px; }
+.app-momo .card-title > .app-icon svg { width: 11px; height: 11px; }
+.app-momo .card-fill { font-weight: 400; color: var(--muted); }
 
 /* --- Board & cards --- */
 .app-momo .board-wrap { overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
@@ -246,6 +251,13 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
    under it (or why there's none); without a conflict, the time's − / + move it 15 minutes. */
 .app-momo .event-head { display: flex; align-items: center; gap: 8px; }
 .app-momo .modal-hint a { color: inherit; font-weight: 600; }
+/* The card pop-up's list of what fills it (inbox.js fromHTML): by app, each need with its details. */
+.app-momo .card-from .from-app { display: flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
+.app-momo .card-from .app-icon svg { width: 14px; height: 14px; }
+.app-momo .card-from ul { margin: 2px 0 6px; padding-left: 20px; }
+.app-momo .card-from li strong { color: var(--text); }
+.app-momo .from-done { color: var(--good); font-weight: 700; }
+.app-momo .from-detail { display: block; }
 .app-momo .event-clash { margin: 0 0 14px; padding: 9px 11px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: .86em; font-weight: 600; line-height: 1.4; }
 .app-momo .event-fixes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--text); font-weight: 400; }
 .app-momo .event-fixes button { font-variant-numeric: tabular-nums; }

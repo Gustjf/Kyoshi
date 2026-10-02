@@ -1,100 +1,75 @@
-/* Momo · tasks.js — Tasks, the strip under the To Be Budgeted bank: a task to draw from for each
- * thing with maintenance coming up in Appa, each long-term goal still to reach and each thing in
- * progress in Wan Shi Tong (read through their read-only momoTasks / inProgress), then the week's
- * cards without a day (parked). A goal's or Wan Shi Tong's task has no hours and is never used up:
- * dragging it onto a day adds a new card of DRAW_HOURS (drag.js, drop.js), as often as you like, and
- * clicking it opens that new card in the editor, to put on several days at once. Appa's is sized to the
- * jobs' time and shows until cards with its title on days from today, this week or next, hold that
- * much ("funded"); it draws a card of what's left, and its cards link back to Appa. Tasks aren't
- * stored: they're read afresh whenever they're drawn. */
+/* Momo · tasks.js — Tasks, the strip under the To Be Budgeted bank: what other apps need this week and
+ * next that no block covers (inbox.js), each long-term goal still to reach, and what's ongoing in other
+ * apps (Wan Shi Tong's in progress), then the week's cards without a day (parked). Timed needs no block
+ * has room for make one task per block title, as long as all of them (rounded up to 15 minutes); a need
+ * for a whole block is a task of its own, as long as it says (else DRAW_HOURS). Either draws a card with
+ * the block's title, which the needs then fill, so the task goes. A goal's or an ongoing need's task is
+ * never used up: dragging it onto a day adds a new card of DRAW_HOURS (drag.js, drop.js), as often as you
+ * like, and clicking it opens that new card in the editor, to put on several days at once. Tasks aren't
+ * stored: they're worked out afresh whenever they're drawn. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, newId, addDays, todayStr } = K.util;
-  const { DRAW_HOURS, STEP, fmtH, cleanText, snap, clampHours, thisWeekKey, nextWeekKey } = A;
+  const { esc, newId, todayStr, fmtShort } = K.util;
+  const { DAY_HOURS, DRAW_HOURS, STEP, fmtH, cleanText } = A;
 
-  // What another app shares with Momo, read-only; none while it isn't there or hasn't started
-  // (they start after Momo, so Momo's very first drawing has none).
-  function readApp(id, fn, what) {
-    const P = K.apps[id];
-    try {
-      return P && P.started && P[fn] ? P[fn]() : [];
-    } catch (err) {
-      console.warn(`Couldn't read ${what}.`, err);
-      return [];
-    }
-  }
-  // What's in progress in Wan Shi Tong: [{ id, name, kind }].
-  const inProgress = () => readApp("wanshitong", "inProgress", "what's in progress in Wan Shi Tong");
-  // Appa's maintenance coming up, one per thing: [{ id, title, items: [{ id, name, minutes, due, overdue }] }].
-  const appaTasks = () => readApp("appa", "momoTasks", "Appa's maintenance");
+  // Minutes as hours on the 15-minute grid, rounded up so they fit, within a day.
+  const upHours = m => Math.min(DAY_HOURS, Math.max(1, Math.ceil(m / (STEP * 60))) * STEP);
+  // The soonest due date of some needs ("" if none), and whether any is overdue.
+  const late = (needs, today) => ({
+    due: needs.map(n => n.due).filter(Boolean).sort()[0] || "",
+    overdue: needs.some(n => n.overdue || (n.due && n.due < today))
+  });
 
-  // Hours on cards with a title (any case), on days from today on, this week and next: what funds Appa's task.
-  function scheduled(title) {
-    const t = title.toLowerCase(), today = todayStr();
-    return [thisWeekKey(), nextWeekKey()].reduce((n, key) => n + A.weekOf(key).cards
-      .filter(c => c.day !== null && !c.base && c.title.toLowerCase() === t && addDays(key, c.day) >= today)
-      .reduce((h, c) => h + c.hours, 0), 0);
-  }
-
-  // The tasks, in order: Appa's (what isn't funded yet), each goal still to reach (as the goals list
-  // has them), then what's in progress in Wan Shi Tong; each { key, title, goalId, kind, hours?, app?,
-  // items?, due?, overdue? }. One with the title of a task before it is left out, as it would draw the same card.
-  function tasks() {
-    const out = [], titles = new Set();
-    const add = (key, title, goalId, kind, more = {}) => {
-      const t = title.toLowerCase();
-      if (!title || (!goalId && titles.has(t))) return;
-      titles.add(t);
-      out.push({ key, title, goalId, kind, ...more });
-    };
-    appaTasks().forEach(a => {
-      const title = cleanText(String(a.title || "")), items = Array.isArray(a.items) ? a.items : [];
-      const need = clampHours(items.reduce((n, i) => n + (Number(i.minutes) > 0 ? Number(i.minutes) : 0), 0) / 60), left = snap(need - scheduled(title));
-      const due = items.map(i => i.due).filter(Boolean).sort()[0] || "";
-      if (left >= STEP) add(`a:${a.id}`, title, null, "maintenance", { hours: left, app: "appa", appId: String(a.id), items: items.map(i => String(i.name || "")), due, overdue: items.some(i => i.overdue) });
+  // The tasks, in order: what no block covers (in the order the apps list it), each goal still to reach
+  // (as the goals list has them), then ongoing needs; each { key, title, goalId, hours?, label?, needs?,
+  // due?, overdue?, ongoing? }. An ongoing one with the title of a task before it is left out, as it
+  // would draw the same card.
+  function tasks(f = A.fill()) {
+    const out = [], titles = new Set(), groups = new Map(), today = todayStr();
+    const add = t => { titles.add(t.title.toLowerCase()); out.push(t); return t; };
+    f.short.forEach(n => {
+      const title = cleanText(n.block), k = title.toLowerCase();
+      if (n.fill === "block") return add({ key: `n:${n.app}:${n.id}`, title, goalId: null, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, label: n.title, needs: [n], ...late([n], today) });
+      (groups.get(k) || groups.set(k, add({ key: `b:${k}`, title, goalId: null, needs: [] })).get(k)).needs.push(n);
     });
-    A.liveGoals().filter(g => !A.isReached(g)).forEach(g => add(`g:${g.id}`, g.name, g.id, "goal"));
-    inProgress().forEach(i => add(`w:${i.id}`, cleanText(String(i.name || "")), null, typeof i.kind === "string" ? i.kind : ""));
+    groups.forEach(t => Object.assign(t, { hours: upHours(t.needs.reduce((m, n) => m + A.needMinutes(n), 0)) }, late(t.needs, today)));
+    A.liveGoals().filter(g => !A.isReached(g)).forEach(g => add({ key: `g:${g.id}`, title: g.name, goalId: g.id }));
+    f.needs.filter(n => n.fill === "ongoing" && !n.done).forEach(n => {
+      const title = cleanText(n.block);
+      if (title && !titles.has(title.toLowerCase())) add({ key: `n:${n.app}:${n.id}`, title, goalId: null, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, needs: [n], ongoing: true });
+    });
     return out;
   }
   const taskBy = key => tasks().find(t => t.key === key) || null;
-  const tasksKey = list => JSON.stringify(list.map(t => [t.key, t.title, t.hours || 0, t.due || "", t.overdue || false]));
-
-  // Appa's task for a card or task title (funded or not): what its "Open in Appa" line needs, or null.
-  function appaFor(title) {
-    const t = cleanText(String(title || "")).toLowerCase();
-    const a = t && appaTasks().find(x => cleanText(String(x.title || "")).toLowerCase() === t);
-    return a ? { id: String(a.id), items: (a.items || []).map(i => String(i.name || "")) } : null;
-  }
 
   // A new card drawn from a task: its title and goal, as long as the task says (else DRAW_HOURS), not on a day yet.
   const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: t.goalId, base: false, parentId: null, pos: "bottom", pin: null });
 
-  // A task is the outline of a card, with no hours, in its title's colour (once a card has one) or its
-  // goal's. Appa's shows its icon and the time still to schedule.
+  // A task is the outline of a card, in its title's colour (once a card has one) or its goal's. One from
+  // other apps shows their icon, and what's short of a block its hours (and a whole block's need its name).
   function taskHTML(t) {
-    const hours = t.hours || DRAW_HOURS, appa = t.app && K.apps[t.app];
-    const what = t.app ? `${t.items.join(", ")}, from Appa${t.overdue ? ", overdue" : t.due ? `, due ${K.util.fmtShort(t.due)}` : ""}` : t.goalId ? "goal" : `${t.kind ? `${t.kind.toLowerCase()} ` : ""}in progress in Wan Shi Tong`;
-    const label = `${t.title} (${what}) — drag onto a day to add ${fmtH(hours)}, or click to pick days`;
-    return `<div class="card parked task${t.goalId ? " is-goal" : ""}${t.app ? " from-app" : ""}${t.overdue ? " late" : ""}" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor(t)}">` +
-      (appa ? `<span class="app-icon" aria-hidden="true">${appa.meta.icon}</span>` : "") +
-      `<span class="card-title">${esc(t.title)}</span>${t.app ? `<span class="task-hours">${fmtH(hours)}</span>` : ""}</div>`;
+    const needs = t.needs || [], sized = needs.length > 0 && !t.ongoing, from = A.fillParts({ title: t.label || t.title }, needs);
+    const what = t.goalId ? "goal" : t.ongoing ? `${needs[0].details.length ? `${needs[0].details.join(", ")}, ` : ""}${from.text}`
+      : `${from.text}${t.overdue ? ", overdue" : t.due ? `, due ${fmtShort(t.due)}` : ""}`;
+    const label = `${t.title}${t.label ? ` · ${t.label}` : ""} (${what}) — drag onto a day to add ${fmtH(t.hours || DRAW_HOURS)}, or click to pick days`;
+    return `<div class="card parked task${t.goalId ? " is-goal" : ""}${needs.length ? " from-app" : ""}${t.overdue ? " late" : ""}" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor(t)}">` +
+      from.icons + `<span class="card-title">${esc(t.title)}${t.label && t.label.toLowerCase() !== t.title.toLowerCase() ? `<span class="card-fill"> · ${esc(t.label)}</span>` : ""}</span>` +
+      (sized ? `<span class="task-hours">${fmtH(t.hours)}</span>` : "") + `</div>`;
   }
 
   // Draws Tasks for the board on screen (none on a closed week): the tasks, then the week's cards
-  // without a day, whose hours aren't budgeted yet, with their total. The baseline's cards are
-  // all on days, and it has no Appa tasks (maintenance isn't a weekly habit).
+  // without a day, whose hours aren't budgeted yet, with their total. The baseline's cards are all on
+  // days, and it shows only the tasks that are never used up (what's short is about this week and next).
   function renderTasks(list, key, b) {
-    const isBase = key === "base", locked = !isBase && list.closed, all = tasks(), shown = isBase ? all.filter(t => !t.app) : all;
-    S.tasksKey = tasksKey(all);
+    const isBase = key === "base", locked = !isBase && list.closed;
     $("tasks").hidden = locked;
     if (locked) return;
+    const shown = tasks(S.fill).filter(t => !isBase || t.goalId || t.ongoing);
     const parked = isBase ? [] : list.cards.filter(c => c.day === null && !c.parentId);
-    const sources = ["your long-term goals"].concat(K.apps.wanshitong ? "what's in progress in Wan Shi Tong" : [], K.apps.appa && !isBase ? "maintenance coming up in Appa" : []);
-    const from = sources.length > 1 ? `${sources.slice(0, -1).join(", ")} and ${sources[sources.length - 1]}` : sources[0];
     $("taskCards").innerHTML = shown.map(taskHTML).join("") + parked.map(c => A.cardHTML(list, c)).join("") ||
-      `<span class="tasks-empty">${from[0].toUpperCase()}${from.slice(1)} show up here to drag onto a day.${isBase ? "" : " Drop a card here to take it off its day."}</span>`;
+      `<span class="tasks-empty">${isBase ? "Your long-term goals and what's ongoing in other apps show up here to drag onto a day."
+        : "Your long-term goals and what other apps need this week and next show up here to drag onto a day. Drop a card here to take it off its day."}</span>`;
     $("tasksTotal").textContent = !parked.length ? "" : `${fmtH(b.parked)}${b.parked > b.free ? ` · only ${fmtH(b.free)} free` : ""}`;
   }
 
@@ -105,11 +80,11 @@
     else A.renderAll(); // gone meanwhile: finished in Wan Shi Tong, say
   }
 
-  // Other apps don't tell Momo when what they share changes (in another tab, or from another device
-  // through sync), so every minute Tasks is drawn again if it did.
+  // Other apps don't tell Momo when what they need changes (in another tab, or from another device
+  // through sync), so every minute the board is drawn again if it did.
   function checkTasks() {
-    if (A.isActive() && tasksKey(tasks()) !== S.tasksKey) A.renderAll();
+    if (A.isActive() && (!S.fill || A.inboxKey() !== S.fill.key)) A.renderAll();
   }
 
-  Object.assign(A, { tasks, taskBy, appaFor, drawCard, renderTasks, openTask, checkTasks });
+  Object.assign(A, { tasks, taskBy, drawCard, renderTasks, openTask, checkTasks });
 })(Kyoshi, Kyoshi.apps.momo);

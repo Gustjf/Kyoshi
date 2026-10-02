@@ -32,7 +32,7 @@
     MAX_TITLE: 40,
     MAX_GOAL_HOURS: 100000,
     GOAL_MAX_WEEK: 10, // a new goal's most hours a week
-    DRAW_HOURS: 1.5,   // a card drawn from a task in Tasks (tasks.js)
+    DRAW_HOURS: 1,     // a card drawn from a task in Tasks that doesn't say how long (tasks.js)
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // finish-by years
     FREE_TIME: "Free time",
@@ -98,7 +98,7 @@
     renderPending: false,  // a redraw held back until a drag ends
     clip: null,            // a card copied or cut for pasting: { key, id, cut, timer }
     mouse: null,           // where the mouse is, for the copy & paste shortcuts: { x, y }
-    tasksKey: "",          // the tasks in Tasks as last drawn, to notice Wan Shi Tong's changing (tasks.js)
+    fill: null,            // what other apps need, in the blocks it fills, as last drawn (inbox.js)
     agenda: [],            // other apps' events on the board on screen, as last drawn (agenda.js)
     agendaKey: "",         // their events this week and next as last drawn, to notice them changing
     triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }

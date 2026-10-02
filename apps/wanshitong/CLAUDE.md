@@ -12,7 +12,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, owl icon, 780px wide); constants (`CATS`, `OTHER`, `NOW_SPOTS`, `SLOTS`, `HAVE`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (formatting, Google links, where each item is: `nowSpots`, `nowItems`, `spotOf`, `freeSpot`, `nextItem`, `backlog`, `finished`, `setSlot`, `unslot`); `inProgress()` for other apps |
+| `app.js` | `Kyoshi.register` (name, title, owl icon, 780px wide); constants (`CATS`, `OTHER`, `NOW_SPOTS`, `SLOTS`, `HAVE`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (formatting, Google links, where each item is: `nowSpots`, `nowItems`, `spotOf`, `freeSpot`, `nextItem`, `backlog`, `finished`, `setSlot`, `unslot`); `inbox()` and `open(id)` for Momo |
 | `markup.js` | the page: In progress & Up next, Backlog, Finished, Backup & sync, the add / edit pop-up, and "In progress is full" |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
@@ -39,8 +39,8 @@ Keys: `items`, `slots`, `folded` (this device's; not synced or backed up), `sync
 Backup JSON: `{ schemaVersion: 1, appVersion, items, slots }`.
 
 ## Shared with other apps
-`A.inProgress()` (read-only): what's in progress, in order, as copies `[{ id, name, kind }]` (`kind`: the category's label).
-Momo's Tasks read it. Keep its shape, or change Momo's `tasks.js` along with it.
+`A.inbox()` (core/inbox.js; read-only copies): what's in progress, in order, each `{ id, title: name, fill: "ongoing", details: ["<Kind> in progress"] }`:
+Momo's Tasks keep each to draw from, and its cards with that title show it. `A.open(id)` (Momo's "Open in Wan Shi Tong") opens the item's pop-up.
 
 ## Invariants
 - A spot whose item is gone or finished counts as free, one item in two spots counts in the first, and Up next

@@ -115,7 +115,7 @@
       `- Jobs: ${A.live(S.jobs).length} (${count("overdue")} overdue, ${count("soon")} soon, ${count("near")} near, ${count("unknown")} unknown)`,
       `- Records: ${A.live(S.records).length}, readings: ${A.live(S.readings).length}, photos & PDFs: ${A.live(S.files).length}`,
       `- Deleted markers: ${["things", "jobs", "records", "readings", "files"].map(k => S[k].filter(i => i.deleted).length).join("/")}`,
-      `- Momo tasks: ${A.momoTasks().length}; reading asks: ${things.filter(A.readingAsk).length}; timer: ${S.timer ? "running" : "off"}`
+      `- Needs for Momo: ${A.inbox().length}; reading asks: ${things.filter(A.readingAsk).length}; timer: ${S.timer ? "running" : "off"}`
     ];
   };
 })(Kyoshi, Kyoshi.apps.appa);

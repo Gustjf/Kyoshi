@@ -1,6 +1,6 @@
 /* Momo · events.js — loads last: wires Momo's buttons, board and pop-ups (A.init), and the
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
- * onHide (redraw; drop any drag), onTick (a new day or week; Tasks; other apps' events), onReload
+ * onHide (redraw; drop any drag), onTick (a new day or week; what other apps need; their events), onReload
  * (another tab saved), attention (a week to close out, an event's conflict), renderDev (Undo in
  * Developer Mode) and bugState. */
 (function (K, A) {
@@ -207,7 +207,7 @@
   };
 
   // Every minute, and whenever the page is back in view: a new day or week, what other apps
-  // share for Tasks (Appa's maintenance, Wan Shi Tong's in progress), and other apps' events.
+  // need (blocks and Tasks), and other apps' events.
   A.onTick = () => {
     A.checkRollover();
     A.checkTasks();
@@ -235,7 +235,8 @@
 
   // Bug reports leave out every card title and goal name, and what events are.
   A.bugState = () => {
-    const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), live = A.liveGoals(), tasks = A.tasks();
+    const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), live = A.liveGoals(), f = A.fill(), tasks = A.tasks(f);
+    const placed = f.blocks.reduce((n, x) => n + x.needs.filter(nd => nd.fill !== "ongoing").length, 0);
     const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat();
     return [
       `- View: ${S.view}`,
@@ -245,7 +246,8 @@
       `- Goals: ${live.length}, ${live.filter(A.isWeekly).length} in hours a week (+${data.goals.length - live.length} deleted)`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles and goals on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
-      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.app).length} from Appa, ${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => !t.goalId && !t.app).length} from Wan Shi Tong)`,
+      `- Needs from other apps: ${f.needs.length} (${[...new Set(f.needs.map(n => n.app))].join(", ") || "none"}): ${placed} in ${f.blocks.filter(x => x.needs.length).length} block(s), ${f.short.length} short, ${f.needs.filter(n => n.done).length} done, ${f.needs.filter(n => n.fill === "ongoing").length} ongoing`,
+      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => t.needs && !t.ongoing).length} short, ${tasks.filter(t => t.goalId).length} from goals, ${tasks.filter(t => t.ongoing).length} ongoing)`,
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
       `- Undo steps: ${S.undoStack.length}`

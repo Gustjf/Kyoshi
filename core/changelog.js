@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.510", date: "2026-10-02", changes: [
+      "A shared inbox: any app can list what it needs done this week and next, and Momo fills your matching blocks with it, with a way back to the app."
+    ] },
     { version: "2.410", date: "2026-10-01", changes: [
       "If an app ever can't start, its page now offers to download its data, so your data is never out of reach.",
       "An odd address ending (like #constructor) no longer leaves the page blank.",
