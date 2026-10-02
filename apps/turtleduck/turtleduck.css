@@ -1,0 +1,234 @@
+/* Turtleduck · turtleduck.css — the app's own styles, every selector under .app-turtleduck (page-wide: --turtleduck-…).
+ * Shared components (buttons, inputs, sections, pop-ups…) are in core/kyoshi.css.
+ * Sections: The nav · The plan (the bar and ⋯ menu, the grid, chips, the cart, totals, the sidebar, a phone's list) ·
+ * Recipes · Groceries · The cook view · Pop-ups · Phones */
+:root { --turtleduck-amber: #d97706; }
+[data-theme="dark"] { --turtleduck-amber: #f59e0b; }
+
+/* --- The nav: under the header, as wide as it (core's .header), out of the way in the cook view --- */
+.app-turtleduck .td-nav { max-width: var(--header-width, 780px); margin: 0 auto 14px; }
+.app-turtleduck .td-nav .mode-btn { padding: 10px; }
+.app-turtleduck.cooking .td-nav, .app-turtleduck.cooking [data-kyoshi="backup"] { display: none; }
+.app-turtleduck h2 .count, .app-turtleduck summary .count { margin-left: 4px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.app-turtleduck .flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
+.app-turtleduck .more-link { padding: 4px 6px; background: none; color: var(--accent); font-size: .88em; }
+.app-turtleduck .more-link:hover { background: none; text-decoration: underline; }
+.app-turtleduck .hint { margin-top: 4px; font-size: .78em; color: var(--muted); line-height: 1.4; }
+
+/* --- The plan: the tabs and the ⋯ menu --- */
+.app-turtleduck .plan-bar { display: flex; align-items: stretch; gap: 8px; margin-bottom: 10px; }
+.app-turtleduck .weeks { flex: 1; }
+.app-turtleduck .weeks .mode-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 10px; }
+.app-turtleduck .wk-sub { font-size: .78em; font-weight: 400; color: var(--muted); }
+.app-turtleduck .mode-btn.active .wk-sub { color: #fff; opacity: .9; }
+.app-turtleduck .menu-wrap { position: relative; display: flex; }
+.app-turtleduck .menu-btn { width: 46px; height: auto; }
+.app-turtleduck .menu-btn svg { width: 20px; height: 20px; }
+.app-turtleduck .plan-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; min-width: 240px; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+.app-turtleduck .menu-item { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 10px; border-radius: 6px; background: none; color: var(--text); text-align: left; }
+.app-turtleduck .menu-item:hover, .app-turtleduck .menu-item:focus-visible { background: var(--card-bg); outline: none; }
+[data-theme="dark"] .app-turtleduck .menu-item:hover { background: var(--border); }
+.app-turtleduck .menu-label { padding: 8px 10px 2px; font-size: .72em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.app-turtleduck .menu-tpl { display: flex; align-items: center; gap: 4px; padding-left: 8px; }
+.app-turtleduck .menu-tpl .icon-btn { width: 26px; height: 26px; }
+.app-turtleduck .menu-none { padding: 2px 10px 8px 18px; font-size: .85em; color: var(--muted); }
+.app-turtleduck .menu-item.danger-item { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 6px 6px; color: var(--bad); }
+
+/* --- The grid: a column a day (a label column first), a row a meal, totals under it; the sidebar beside it --- */
+.app-turtleduck .plan-body { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 14px; align-items: start; }
+.app-turtleduck .grid-box { margin: 0; padding: 10px; }
+.app-turtleduck .plan-grid { display: grid; grid-template-columns: 80px repeat(7, minmax(0, 1fr)); gap: 4px; }
+.app-turtleduck .day-head { display: flex; align-items: center; justify-content: space-between; gap: 2px; min-height: 32px; padding: 2px 2px 2px 6px; border-radius: 6px; font-size: .82em; font-weight: 600; }
+.app-turtleduck .day-head.today { background: var(--accent); color: #fff; }
+.app-turtleduck .day-head.past, .app-turtleduck .cell.past, .app-turtleduck .tot.past { opacity: .55; }
+.app-turtleduck .row-head { padding: 8px 2px 0; font-size: .72em; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.app-turtleduck .row-head.cook { color: var(--turtleduck-amber); }
+.app-turtleduck .tot-head { padding-top: 6px; }
+.app-turtleduck .cell { position: relative; display: flex; flex-direction: column; gap: 3px; min-height: 66px; padding: 4px 4px 22px; border: 1px dashed transparent; border-radius: 6px; background: var(--card-bg); cursor: pointer; }
+.app-turtleduck .cell.cook { min-height: 48px; background: transparent; border-color: var(--border); }
+.app-turtleduck .cell.drop-target { border-color: var(--accent); background: var(--ring); }
+.app-turtleduck .cell-add { position: absolute; right: 3px; bottom: 3px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 18px; padding: 0; border-radius: 4px; background: none; color: var(--muted); opacity: 0; }
+.app-turtleduck .cell:hover .cell-add, .app-turtleduck .cell-add:focus-visible { opacity: 1; }
+.app-turtleduck .cell-add:hover { background: var(--border); color: var(--text); }
+.app-turtleduck .cell-add svg { width: 14px; height: 14px; }
+
+/* --- Chips: a planned meal (a pot: cooked there; ↩ a leftover; a fork: a restaurant; Skipped, dashed) --- */
+.app-turtleduck .chip { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; padding: 3px 16px 3px 5px; border: 1px solid var(--border); border-radius: 5px; background: var(--panel); color: var(--text); font-size: .78em; line-height: 1.3; cursor: grab; user-select: none; }
+.app-turtleduck .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.app-turtleduck .chip .glyph { display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; color: var(--muted); }
+.app-turtleduck .chip.cooked .glyph { color: var(--turtleduck-amber); }
+.app-turtleduck .chip-name { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.app-turtleduck .chip-meta { font-size: .9em; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app-turtleduck .chip.cooked { border-left: 3px solid var(--turtleduck-amber); }
+.app-turtleduck .chip.skipped { background: none; border-style: dashed; color: var(--muted); }
+.app-turtleduck .chip.skipped .chip-name { font-weight: 400; font-style: italic; }
+.app-turtleduck .chip.warn { border-color: var(--bad); }
+.app-turtleduck .chip.clipped { opacity: .55; outline: 2px dashed var(--accent); outline-offset: 1px; }
+.app-turtleduck .chip.clipped.cut { opacity: .35; }
+.app-turtleduck .chip.dragging { opacity: .4; }
+.app-turtleduck .chip-x { position: absolute; top: 0; right: 3px; color: var(--muted); font-size: 1.15em; line-height: 1.2; cursor: pointer; opacity: 0; }
+.app-turtleduck .chip:hover .chip-x { opacity: 1; }
+.app-turtleduck .chip-x:hover { color: var(--bad); }
+
+/* --- The cart on a day: filled once a trip is placed there --- */
+.app-turtleduck .cart { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); opacity: .6; }
+.app-turtleduck .cart svg { width: 15px; height: 15px; }
+.app-turtleduck .cart:hover:not(:disabled) { opacity: 1; border-color: var(--border); background: none; }
+.app-turtleduck .cart.on { opacity: 1; background: var(--turtleduck-amber); color: #fff; }
+.app-turtleduck .cart.on:hover { background: var(--turtleduck-amber); filter: brightness(.92); }
+.app-turtleduck .day-head.today .cart:not(.on) { color: #fff; }
+.app-turtleduck .cart:disabled { visibility: hidden; }
+
+/* --- Totals: under each day, and the week's average --- */
+.app-turtleduck .tot { padding: 4px 2px; font-size: .72em; line-height: 1.35; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app-turtleduck .tot-kcal { font-weight: 700; color: var(--text); }
+.app-turtleduck .tot .warn, .app-turtleduck .day-tot .warn { color: var(--warn); font-weight: 700; }
+.app-turtleduck .week-avg { margin-top: 8px; font-size: .85em; color: var(--muted); }
+
+/* --- The sidebar: search, the shelf (Leftovers), the recipes by meal type, all draggable --- */
+.app-turtleduck .sidebar { position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow-y: auto; padding: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+.app-turtleduck .sidebar h2 { margin: 12px 0 6px; font-size: .75em; }
+.app-turtleduck .side-chips { display: flex; flex-direction: column; gap: 4px; }
+.app-turtleduck .chip.shelf { padding-right: 6px; font-size: .82em; }
+.app-turtleduck .side-group { margin-top: 10px; }
+.app-turtleduck .side-group summary { padding: 2px 0; font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); cursor: pointer; user-select: none; }
+.app-turtleduck .side-recipe { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--card-bg); font-size: .85em; cursor: grab; user-select: none; }
+.app-turtleduck .side-recipe:hover, .app-turtleduck .side-recipe:focus-visible { border-color: var(--accent); outline: none; }
+.app-turtleduck .sr-name { min-width: 0; overflow-wrap: anywhere; }
+.app-turtleduck .sr-meta { flex: 0 0 auto; font-size: .88em; color: var(--muted); }
+.app-turtleduck .sidebar .empty-msg { font-size: .85em; }
+
+/* --- A phone's list: a section a day, a row a meal --- */
+.app-turtleduck .list-week { margin: 18px 2px 8px; }
+.app-turtleduck .day { padding: 10px 12px 4px; }
+.app-turtleduck .day-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-turtleduck .day-name { color: var(--text); font-size: 1em; letter-spacing: 0; text-transform: none; }
+.app-turtleduck .day .cart { width: 40px; height: 40px; }
+.app-turtleduck .day .cart svg { width: 20px; height: 20px; }
+.app-turtleduck .day-tot { margin: 0 0 4px; font-size: .8em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app-turtleduck .slot { display: flex; align-items: center; gap: 8px; min-height: 50px; border-top: 1px solid var(--border); cursor: pointer; }
+.app-turtleduck .slot-name { flex: 0 0 72px; font-size: .8em; color: var(--muted); }
+.app-turtleduck .slot-items { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 0; }
+.app-turtleduck .slot-none { color: var(--muted); }
+.app-turtleduck .slot .chip { padding: 6px 8px; font-size: .9em; cursor: pointer; }
+.app-turtleduck .slot .chip-x { display: none; }
+.app-turtleduck .slot-add { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border-radius: 8px; background: none; color: var(--muted); border: 1px solid var(--border); }
+.app-turtleduck .slot-add svg { width: 18px; height: 18px; }
+
+/* --- Recipes: the list by meal type, Archived folded --- */
+.app-turtleduck .recipes-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; }
+.app-turtleduck .recipes-bar input { flex: 1; min-width: 160px; }
+.app-turtleduck .r-group h2 { margin: 16px 0 4px; }
+.app-turtleduck .recipe-row { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--border); }
+.app-turtleduck .r-group .recipe-row:first-of-type { border-top: none; }
+.app-turtleduck .rr-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 10px 4px; border-radius: 4px; background: none; color: var(--text); text-align: left; }
+.app-turtleduck .rr-main:hover { background: var(--card-bg); }
+.app-turtleduck .rr-name { font-weight: 600; overflow-wrap: anywhere; }
+.app-turtleduck .rr-meta { font-size: .82em; color: var(--muted); }
+.app-turtleduck summary { display: flex; align-items: center; list-style: none; cursor: pointer; user-select: none; }
+.app-turtleduck summary::-webkit-details-marker { display: none; }
+.app-turtleduck summary::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 8px 0 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+.app-turtleduck details[open] > summary::before { transform: rotate(45deg); }
+.app-turtleduck summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* --- Groceries: add by hand, a block a list, rows by section with big ticks, Bought folded --- */
+.app-turtleduck .manual-add form { display: flex; gap: 8px; }
+.app-turtleduck .manual-add input { flex: 1; min-width: 0; height: 2.6em; font-size: 1em; }
+.app-turtleduck .manual-add button { flex: 0 0 auto; padding: 0 20px; font-size: 1em; font-weight: 600; }
+.app-turtleduck .g-note { margin: 0 0 14px; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: .9em; }
+.app-turtleduck .g-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-bottom: 2px; }
+.app-turtleduck .g-title { color: var(--text); font-size: 1.05em; letter-spacing: 0; text-transform: none; }
+.app-turtleduck .g-meta { font-size: .82em; color: var(--muted); }
+.app-turtleduck .g-count { margin-left: auto; font-size: .85em; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app-turtleduck .g-head-sec { margin: 12px 0 0; font-size: .72em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.app-turtleduck .g-row { display: flex; align-items: center; gap: 6px; min-height: 50px; border-top: 1px solid var(--border); }
+.app-turtleduck .g-head-sec + .g-row { border-top: none; }
+.app-turtleduck label.g-main { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; margin: 0; padding: 7px 0; color: var(--text); font-size: 1em; cursor: pointer; }
+.app-turtleduck .g-check { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.app-turtleduck .g-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 2px solid var(--muted); border-radius: 7px; color: transparent; transition: background-color .15s, border-color .15s; }
+.app-turtleduck .g-box svg { width: 17px; height: 17px; }
+.app-turtleduck .g-check:checked + .g-box { background: var(--good); border-color: var(--good); color: #fff; }
+.app-turtleduck .g-check:focus-visible + .g-box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-turtleduck .g-text { display: flex; flex-direction: column; min-width: 0; }
+.app-turtleduck .g-what { overflow-wrap: anywhere; }
+.app-turtleduck .g-for, .app-turtleduck .g-tag { font-size: .78em; color: var(--muted); }
+.app-turtleduck .g-tag { font-style: italic; }
+.app-turtleduck .g-row.ticked .g-what { color: var(--muted); text-decoration: line-through; }
+.app-turtleduck select.g-sec { flex: 0 0 auto; width: auto; max-width: 120px; height: 30px; padding: 0 2px; border-color: transparent; background: transparent; color: var(--muted); font-size: .75em; }
+.app-turtleduck select.g-sec:hover, .app-turtleduck select.g-sec:focus { border-color: var(--border); }
+.app-turtleduck .g-remove { width: 34px; height: 34px; }
+.app-turtleduck .g-bought { margin-top: 10px; }
+.app-turtleduck .g-bought > summary { padding: 6px 0; font-size: .85em; color: var(--muted); }
+.app-turtleduck .settings .own-nums { max-width: 520px; }
+
+/* --- The cook view: big type, room to breathe, the width of a page --- */
+.app-turtleduck .cook-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; max-width: 780px; margin: 0 auto 8px; }
+.app-turtleduck .back-link { padding: 8px 0; background: none; color: var(--muted); font-size: .95em; }
+.app-turtleduck .back-link:hover { background: none; color: var(--text); text-decoration: underline; }
+.app-turtleduck .cook-pager { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.app-turtleduck .cook-pager .icon-btn { width: 40px; height: 40px; font-size: 1.4em; }
+.app-turtleduck .cook-page { max-width: 780px; margin-left: auto; margin-right: auto; padding: 18px 22px; font-size: 1.25em; line-height: 1.6; }
+.app-turtleduck .cook-name { margin: 0 0 4px; color: var(--text); font-size: 1.7em; line-height: 1.2; letter-spacing: 0; text-transform: none; overflow-wrap: anywhere; }
+.app-turtleduck .cook-meta { margin: 0; font-size: .8em; color: var(--muted); }
+.app-turtleduck .cook-link { overflow-wrap: anywhere; }
+.app-turtleduck .cook-link a { color: var(--accent); }
+.app-turtleduck .cook-page h3 { margin: 22px 0 6px; font-size: .7em; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.app-turtleduck .cook-ings { margin: 0; padding-left: 1.2em; }
+.app-turtleduck .cook-ings li { margin-bottom: 6px; }
+.app-turtleduck .cook-steps p { margin: 0 0 14px; }
+.app-turtleduck .cook-steps ul { margin: 0 0 14px; padding-left: 1.2em; }
+.app-turtleduck .cook-steps li { margin-bottom: 8px; }
+
+/* --- Pop-ups: the picker, a planned meal's, the recipe's, Paste recipes --- */
+.app-turtleduck .pick-list { display: flex; flex-direction: column; gap: 4px; max-height: 44vh; margin-top: 8px; overflow-y: auto; }
+.app-turtleduck .pick-head { margin: 8px 0 2px; font-size: .72em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.app-turtleduck .pick-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--btn-bg); color: var(--text); text-align: left; }
+.app-turtleduck .pick-item:hover { border-color: var(--accent); background: var(--card-bg); }
+.app-turtleduck .pick-item .glyph { flex: 0 0 auto; width: 14px; height: 14px; color: var(--muted); }
+.app-turtleduck .pi-name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.app-turtleduck .pi-meta { flex: 0 0 auto; font-size: .8em; color: var(--muted); }
+.app-turtleduck .pick-more { margin-top: 6px; }
+.app-turtleduck .pick-own { margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--border); }
+.app-turtleduck .pick-own details { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.app-turtleduck .pick-own summary { min-height: 34px; font-weight: 600; font-size: .92em; }
+.app-turtleduck .pick-own form { margin-top: 8px; }
+.app-turtleduck .skip-btn { margin-top: 10px; }
+.app-turtleduck .own-nums { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.app-turtleduck label.own-num { margin: 0; font-size: .75em; }
+.app-turtleduck .own-num input { margin-top: 2px; }
+.app-turtleduck .entry-where { margin: -8px 0 10px; font-size: .85em; color: var(--muted); }
+.app-turtleduck .entry-line { margin: 0 0 8px; font-size: .9em; }
+.app-turtleduck .entry-note { margin: 0 0 8px; font-size: .88em; }
+.app-turtleduck .entry-step { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.app-turtleduck .es-label { flex: 1; font-size: .9em; }
+.app-turtleduck .es-val { min-width: 2.4em; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.app-turtleduck .entry-step .icon-btn { width: 38px; height: 38px; font-size: 1.15em; }
+.app-turtleduck .entry-left { margin: 6px 0 10px; font-size: .9em; font-weight: 600; }
+.app-turtleduck .entry-left.bad, .app-turtleduck .entry-note.bad { color: var(--bad); }
+.app-turtleduck .also-hint { font-size: 1em; text-transform: none; letter-spacing: 0; }
+.app-turtleduck .also-meals { margin-bottom: 6px; }
+.app-turtleduck .also-meals .mode-btn { padding: 6px 4px; font-size: .82em; }
+.app-turtleduck .also-days { display: flex; flex-wrap: wrap; gap: 4px; }
+.app-turtleduck .also-days .pill { min-height: 34px; padding: 4px 10px; font-size: .85em; }
+.app-turtleduck .types .mode-btn { padding: 8px 4px; font-size: .85em; }
+.app-turtleduck .paste-format pre { margin: 8px 0; padding: 10px; overflow-x: auto; border-radius: 6px; background: var(--card-bg); font-size: .78em; line-height: 1.45; }
+.app-turtleduck .paste-format summary { font-size: .88em; color: var(--accent); }
+.app-turtleduck #pasteText { margin-top: 10px; min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82em; }
+.app-turtleduck #pastePreview { max-height: 34vh; margin-top: 10px; overflow-y: auto; }
+.app-turtleduck label.paste-row { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 7px 2px; border-top: 1px solid var(--border); color: var(--text); font-size: .9em; cursor: pointer; }
+.app-turtleduck .paste-row input { margin-top: 3px; }
+.app-turtleduck .paste-row.skip { opacity: .75; cursor: default; }
+.app-turtleduck .paste-main { display: flex; flex-direction: column; min-width: 0; }
+.app-turtleduck .paste-name { font-weight: 600; overflow-wrap: anywhere; }
+.app-turtleduck .paste-meta { font-size: .85em; color: var(--muted); }
+.app-turtleduck .paste-problem { font-size: .85em; color: var(--bad); }
+
+/* --- Phones: thumbs on Groceries and the list, five numbers in two rows --- */
+@media (max-width: 640px) {
+  .app-turtleduck .td-nav .mode-btn { padding: 12px 6px; }
+  .app-turtleduck .own-nums { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .app-turtleduck .manual-add input, .app-turtleduck .manual-add button { height: 46px; }
+  .app-turtleduck select.g-sec { max-width: 96px; }
+  .app-turtleduck .cook-page { padding: 14px 14px 18px; font-size: 1.15em; }
+  .app-turtleduck .recipes-bar input { flex-basis: 100%; }
+}

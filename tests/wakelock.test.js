@@ -1,13 +1,14 @@
 /* Kyoshi · tests/wakelock.test.js — the screen kept on (core/wakelock.js), with the browser's Wake Lock stood in for
  * (each request and release counted; a request can be slow or refused): on while a Badgermole workout or Appa's job
- * timer runs and that app is on screen; let go on switching apps, Finish, Cancel, stopping the timer or deleting its
- * job; asked for again when the page is back after the browser let go; a slow request that arrives after the end let
+ * timer runs, or a recipe is open in Turtleduck's cook view, and that app is on screen; let go on switching apps, Finish,
+ * Cancel, stopping the timer, deleting its job or leaving the cook view; asked for again when the page is back after the browser let go; a slow request that arrives after the end let
  * go at once; a refusal not asked again every minute, only once the page is back; and nothing else changes when the
  * browser says no or has no Wake Lock at all. */
 "use strict";
 const { eq, open, switchTo, importBackup } = require("./lib");
 const gen = require("./generate");
 const bm = require("./badgermole");
+const td = require("./turtleduck");
 
 // Stands in for navigator.wakeLock, in each page before Kyoshi loads: window.__wake counts what was asked; delay (ms)
 // slows the requests, refuse makes them fail (a browser saying no); __wakeDrop() lets go of every lock, as the
@@ -41,6 +42,27 @@ async function held(tab, n, what) {
 }
 
 module.exports = [
+  {
+    name: "wake lock: Turtleduck's cook view keeps the screen on while it's on screen; Back, Esc and other apps let go",
+    async run(t) {
+      const tab = await open(t, { app: "turtleduck", init: fakeWakeLock }), p = tab.page;
+      await importBackup(tab, gen.turtleduck());
+      await td.view(tab, "recipes");
+      await held(tab, 0, "nothing while browsing recipes");
+      await p.click('#kMount #recipeGroups [data-act="cook"][data-id="rc-chili"]');
+      await held(tab, 1, "on in the cook view");
+      await switchTo(tab, "momo");
+      await held(tab, 0, "let go in another app");
+      await switchTo(tab, "turtleduck");
+      await held(tab, 1, "on again, the recipe still open");
+      await p.click('#kMount [data-act="cook-back"]');
+      await held(tab, 0, "let go on Back");
+      await p.click('#kMount #recipeGroups [data-act="cook"][data-id="rc-curry"]');
+      await held(tab, 1, "on for another recipe");
+      await p.keyboard.press("Escape");
+      await held(tab, 0, "let go on Esc");
+    }
+  },
   {
     name: "wake lock: a workout keeps the screen on while Badgermole is on screen; other apps, Finish and Cancel let go",
     async run(t) {

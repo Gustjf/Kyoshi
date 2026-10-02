@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.230", date: "2026-10-02", changes: [
+      "Added Turtleduck, for meals: recipes typed or pasted in bulk, a two-week plan laid out by dragging them onto the days (portions of a batch kept to place later), shopping trips with a grocery list each, and a cook view; Momo fills your Breakfast, Lunch, Dinner and Cooking cards with the day's meals and a Groceries card on each trip's day."
+    ] },
     { version: "3.130", date: "2026-10-02", changes: [
       "The header keeps one width in every app, so the app switcher and Theme stay put when you switch apps."
     ] },

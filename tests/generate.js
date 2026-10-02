@@ -1,8 +1,8 @@
 /* Kyoshi · tests/generate.js — made-up user data for the end-to-end tests (never real data: the repo is public), from a
  * seeded random generator, so every run gets the same: Badgermole histories (weeks of sessions in a rotation, weights
  * creeping up, bodyweight exercises, either unit, deleted markers), a damaged backup, other apps' backups (to be
- * refused), an Appa job (for its timer), and Momo weeks with "Workout" cards. Dates count back from the tests' TODAY
- * (lib.js). */
+ * refused), an Appa job (for its timer), Turtleduck's recipes with a plan and shopping trips (and a damaged one), and
+ * Momo weeks with "Workout", meal, "Cooking" and "Groceries" cards. Dates count back from the tests' TODAY (lib.js). */
 "use strict";
 const { TODAY, addDays, mondayOf, at } = require("./lib");
 
@@ -131,4 +131,51 @@ function momo(dates, others = []) {
   return { schemaVersion: 2, appVersion: "6.964", weeks, baseline: { cards: [], u: 0 }, goals: [], colors: {} };
 }
 
-module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo };
+// --- Turtleduck: made-up recipes, with fixed ids so tests can name them ---
+const RECIPES = [
+  { id: "rc-chili", name: "Chili", meal: "dinner", servings: 4, prepMin: 15, cookMin: 45, kcal: 650, protein: 45, carbs: 40, fat: 30, fiber: 8,
+    ingredients: ["500 g ground beef", "2 cans kidney beans, drained", "200 g rice", "1 onion, diced", "salt"], steps: "Brown the beef.\n- Add the beans\n- Simmer 30 min\nSeason to taste.", link: "https://example.com/chili" },
+  { id: "rc-friedrice", name: "Fried rice", meal: "dinner", servings: 2, prepMin: 10, cookMin: 15, kcal: 520, protein: 20, carbs: 70, fat: 15, fiber: 3,
+    ingredients: ["1 kg rice", "2 eggs", "1 cup frozen peas", "2 tbsp soy sauce"], steps: "Fry it all." },
+  { id: "rc-oats", name: "Overnight oats", meal: "breakfast", servings: 1, prepMin: 5, kcal: 400, protein: 25, carbs: 50, fat: 10, fiber: 7,
+    ingredients: ["50 g oats", "200 ml milk", "1 banana"], steps: "Mix, and leave overnight." },
+  { id: "rc-salad", name: "Salad", meal: "lunch", servings: 1, prepMin: 10, kcal: 250, protein: 8, carbs: 20, fat: 15, fiber: 6,
+    ingredients: ["1 head lettuce", "2 tomatoes", "1 cup rice"], steps: "Toss it." },
+  { id: "rc-curry", name: "Curry", meal: "dinner", servings: 6, prepMin: 20, cookMin: 40, kcal: 700, protein: 40, carbs: 60, fat: 32, fiber: 5,
+    ingredients: ["1.5 kg chicken thighs", "2 cans coconut milk", "2 tbsp curry paste", "400 g rice"], steps: "Simmer until done." },
+  { id: "rc-bowl", name: "Rice bowl", meal: "lunch", servings: 1, kcal: 600, protein: 30, ingredients: ["2 cups rice", "1 avocado"], steps: "" },
+  { id: "rc-stew", name: "Mystery stew", meal: "dinner", servings: 4, ingredients: ["1 kg potatoes", "2 carrots"], steps: "Stew it." },
+  { id: "rc-soup", name: "Old soup", meal: "lunch", servings: 2, kcal: 300, ingredients: ["1 l stock"], steps: "Heat.", archived: true }
+];
+// A Turtleduck backup: the recipes (all, or those named), planned meals ({ id?, date, meal, recipeId | kind, … } → whole
+// entries), trips (dates), and anything else given (checked, manual, sections, templates, settings).
+function turtleduck({ recipes = RECIPES.map(r => r.id), plan = [], trips = [], ...rest } = {}) {
+  const t = at("2026-01-05");
+  return {
+    schemaVersion: 1, appVersion: "1.000",
+    recipes: RECIPES.filter(r => recipes.includes(r.id)).map((r, i) => ({ prepMin: null, cookMin: null, kcal: null, protein: null, carbs: null, fat: null, fiber: null, link: "", archived: false, ...r, deleted: false, at: t + i, u: t })),
+    plan: plan.map((e, i) => {
+      const r = RECIPES.find(x => x.id === e.recipeId);
+      return { id: `pl-${i}`, kind: "recipe", recipeId: "", name: r ? r.name : "", leftover: false, from: "", scale: 1, servings: e.meal === "cook" ? 0 : 1, kcal: null, protein: null, carbs: null, fat: null, fiber: null, deleted: false, at: t + 100 + i, u: t, ...e };
+    }),
+    trips: trips.map((date, i) => ({ id: `tr-${i}`, date, deleted: false, at: t + 200 + i, u: t })),
+    checked: {}, manual: [], sections: {}, templates: [], settings: { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, u: 0 },
+    ...rest
+  };
+}
+// A Turtleduck backup made of junk: wrong types, duplicates, out-of-range numbers, a leftover on the Cook row, a bad section.
+const damagedTurtleduck = () => ({
+  schemaVersion: 1,
+  recipes: [null, "x", { id: "r1", name: "  Chili \n con carne ", meal: "brunch", servings: 99, kcal: -5, protein: "lots", ingredients: "2 eggs\n\n 1 cup rice ", steps: 42 },
+    { id: "r1", name: "Copy" }, { name: "" }, { id: "r2", name: "Oats", ingredients: [{ qty: 50, unit: "g", name: "oats" }, 7, null] }, { id: "r3", deleted: true, name: "Gone" }],
+  plan: [{ id: "p1", date: addDays(TODAY, 1), meal: "dinner", recipeId: "r1", scale: 37, servings: -2 }, { id: "p2", date: "2026-02-30", meal: "dinner", recipeId: "r1" },
+    { id: "p3", date: TODAY, meal: "cook", kind: "quick", name: "Shake" }, { id: "p4", date: TODAY, meal: "brunch", recipeId: "r1" }, { id: "p5", date: TODAY, meal: "lunch", kind: "quick", name: "Shake", kcal: 1e9 }],
+  trips: [{ id: "t1", date: addDays(TODAY, 2) }, { id: "t2", date: "soon" }],
+  checked: { "rice|cup": { ranges: [[addDays(TODAY, 1), addDays(TODAY, 3)], ["2026-13-01", "x"], [addDays(TODAY, 5), addDays(TODAY, 2)]], u: 1 }, "nounit": { ranges: [] }, "x|g": "yes" },
+  manual: [{ id: "m1", text: "  olive   oil " }, { id: "m2", text: "" }],
+  sections: { rice: { section: "Pantry", u: 1 }, beans: { section: "Garden" } },
+  templates: [{ id: "tp1", name: "Week", entries: [{ day: 9, meal: "lunch", kind: "quick", name: "Shake" }, { day: 1, meal: "dinner", leftover: true, recipeId: "r1", from: 5 }] }],
+  settings: { targets: { kcal: "2000", protein: 150, fat: -1 } }
+});
+
+module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck };
