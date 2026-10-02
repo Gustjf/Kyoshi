@@ -38,6 +38,7 @@ Then `node tests/run.js`: end-to-end tests (Playwright taps through the real pag
 ```
 index.html            shell markup (header, switcher, banners, dev panel, bug pop-up) + every <link>/<script>, in load order
 roadmap.md            the plan: upcoming phases & apps (read when starting one)
+testplan.md           the flow test campaign: simulated lives through Momo and the apps that feed it (read when running it)
 core/                 the shared DNA — K = window.Kyoshi
   base.js             K namespace; console capture for bug reports (loads first)
   changelog.js        Kyoshi's version + changelog
