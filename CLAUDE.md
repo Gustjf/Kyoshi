@@ -1,4 +1,4 @@
-# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, …)
+# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, …)
 Kyoshi holds the user's single-purpose apps and their shared "DNA" (look, storage, sync, backups,
 pop-ups, bug reports, developer mode, meetings). It stays out of sight: the user only sees the app on screen,
 switched from the icon button beside Theme. More apps will be added, each relying on the shared core.
@@ -60,6 +60,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   momo/               weekly time budget (YNAB for hours)
   wanshitong/         media tracker for recommendations (In progress, Up next, the backlog)
   appa/               preventive maintenance & records (jobs to Momo, PDF reports with proof)
+  hawky/              errands & pop-up tasks (quick add on the phone, into Momo's Errands cards)
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 ```
 

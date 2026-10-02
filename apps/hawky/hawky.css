@@ -1,0 +1,61 @@
+/* Hawky · hawky.css — the app's own styles, every selector under .app-hawky.
+ * Shared components (buttons, inputs, sections, pop-ups…) are in core/kyoshi.css.
+ * Sections: Quick add · The list · Done · Phones */
+
+/* --- Quick add: the field and Add, then the chips (core's .mode-btn, smaller), four to a line even on a phone --- */
+.app-hawky .add-line { display: flex; gap: 8px; }
+.app-hawky .add-line input { flex: 1; min-width: 0; height: 2.6em; font-size: 1em; }
+.app-hawky .add-line button { flex: 0 0 auto; padding: 0 20px; font-size: 1em; font-weight: 600; }
+.app-hawky .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.app-hawky .chip { min-height: 38px; padding: 4px; font-size: .85em; font-weight: 400; line-height: 1.15; }
+.app-hawky .add-extra { margin-top: 8px; }
+.app-hawky .add-status { margin-top: 8px; font-size: .82em; color: var(--muted); }
+.app-hawky .add-status:empty { display: none; }
+.app-hawky .add-status.bad { color: var(--bad); }
+
+/* --- The list: its groups, each errand a line with its ✓ (a big target around a small circle) --- */
+.app-hawky h2 .count { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.app-hawky .group { margin-top: 12px; }
+.app-hawky .group-head { display: flex; align-items: baseline; gap: 8px; font-size: .78em; color: var(--muted); }
+.app-hawky .group-title { font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.app-hawky .group.overdue .group-title { color: var(--bad); }
+.app-hawky .errands { list-style: none; margin: 2px 0 0; padding: 0; }
+.app-hawky .errand { display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); border-radius: 4px; }
+.app-hawky .errand:first-child { border-top: none; }
+.app-hawky .tick { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-left: -9px; padding: 0; background: none; color: transparent; }
+.app-hawky .tick:hover { background: none; }
+.app-hawky .tick:focus-visible { outline: none; }
+.app-hawky .tick .box { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 50%; transition: background-color .2s, border-color .2s, color .2s; }
+.app-hawky .tick svg { width: 13px; height: 13px; }
+.app-hawky .tick:hover .box { border-color: var(--good); color: var(--good); }
+.app-hawky .tick:focus-visible .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-hawky .errand.done .tick .box { background: var(--good); border-color: var(--good); color: #fff; }
+.app-hawky .errand-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 6px 0; }
+.app-hawky .errand-text { padding: 2px 0; background: none; color: var(--text); font-size: .95em; text-align: left; overflow-wrap: anywhere; border-radius: 3px; }
+.app-hawky .errand-text:hover { background: none; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+.app-hawky .errand-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-hawky .errand-meta { font-size: .8em; color: var(--muted); white-space: nowrap; }
+.app-hawky .group.overdue .errand-meta { color: var(--bad); }
+.app-hawky .errand.done .errand-text { color: var(--muted); text-decoration: line-through; }
+.app-hawky .errand.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
+
+/* --- Done: folded away under the list --- */
+.app-hawky summary { display: flex; align-items: center; list-style: none; cursor: pointer; user-select: none; }
+.app-hawky summary::-webkit-details-marker { display: none; }
+.app-hawky summary::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 8px 0 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+.app-hawky details[open] > summary::before { transform: rotate(45deg); }
+.app-hawky summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.app-hawky #doneList { margin-top: 8px; }
+.app-hawky #doneMore { margin-top: 8px; }
+
+/* --- Phones: taller field, Add and chips for a thumb --- */
+@media (max-width: 640px) {
+  .app-hawky .add-line input, .app-hawky .add-line button { height: 46px; }
+  .app-hawky .chip { min-height: 42px; }
+  .app-hawky .errand-text { font-size: 1em; }
+}
+/* Narrow phones: "Pick a day" still on one line. */
+@media (max-width: 400px) {
+  .app-hawky .chips { gap: 5px; }
+  .app-hawky .chip { padding: 4px 2px; font-size: .8em; }
+}

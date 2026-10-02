@@ -1,0 +1,14 @@
+/* Hawky · changelog.js — the app's version history, shown in Developer Mode.
+ * Newest first; A.VERSION is the top entry. Version X.YYY, bump one tier per change:
+ * +0.001 bug fix, +0.010 tiny tweak, +0.100 small feature, +1 large feature.
+ * Keep entries brief and high level: a sentence per change. */
+(function (A) {
+  "use strict";
+  A.CHANGELOG = [
+    { version: "1.000", date: "2026-10-02", changes: [
+      "Initial release: errands and pop-up tasks, added in seconds on the phone (a tap each for the day and how long), listed by when they're due, with the done ones folded away.",
+      "Momo fits them into your \"Errands\" cards, soonest due first, and ticks them off there once they're done; what doesn't fit waits in its Tasks."
+    ] }
+  ];
+  A.VERSION = A.CHANGELOG[0].version;
+})(Kyoshi.apps.hawky);

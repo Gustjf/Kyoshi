@@ -68,7 +68,9 @@
   // ==========================================================================
   // BACKUPS (Export / Import JSON)
   // ==========================================================================
-  const looksLike = raw => Array.isArray(raw.items);
+  // A Wan Shi Tong backup or sync file: its items are recommendations, each with its name unless deleted.
+  // Another app's list of items (Hawky's errands have text) isn't one.
+  const looksLike = raw => Array.isArray(raw.items) && raw.items.every(i => !isObj(i) || i.deleted === true || typeof i.name === "string");
 
   function buildBackup() {
     return { schemaVersion: DATA_SCHEMA_VERSION, appVersion: A.VERSION, items: S.items, slots: S.slots };
@@ -79,7 +81,7 @@
   function importBackup(raw, ask = true) {
     if (!raw || !looksLike(raw)) return alert("That file doesn't look like a Wan Shi Tong backup.");
     const items = cleanItems(raw.items);
-    if (raw.items.length && !items.length) return alert("That backup has no recommendations Wan Shi Tong can read.");
+    if (raw.items.length && !items.some(i => !i.deleted)) return alert("That backup has no recommendations Wan Shi Tong can read.");
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Wan Shi Tong. Importing it anyway, but some data may not carry over.");
     }

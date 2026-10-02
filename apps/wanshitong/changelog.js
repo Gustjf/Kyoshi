@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.252", date: "2026-10-02", changes: [
+      "Import JSON now refuses another app's backup (such as Hawky's, which also has a list of items) instead of replacing your list with it."
+    ] },
     { version: "2.251", date: "2026-10-02", changes: [
       "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Wan Shi Tong."
     ] },

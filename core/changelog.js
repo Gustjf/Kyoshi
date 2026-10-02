@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.810", date: "2026-10-02", changes: [
+      "Added Hawky, for errands: jot one down in seconds on the phone, and Momo fits it into your \"Errands\" cards."
+    ] },
     { version: "2.710", date: "2026-10-02", changes: [
       "Checkups: each app can show a quiet \"Last checkup: 12 days ago\" under its name, with Done ✓ for when you've looked it over in depth, and no schedule, reminders or dot.",
       "Picking a schedule in a checkup's settings turns it into a meeting, as before."

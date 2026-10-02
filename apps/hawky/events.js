@@ -1,0 +1,128 @@
+/* Hawky · events.js — loads last: wires the page (A.init): quick add (Enter or Add adds the errand,
+ * clears the field and keeps its focus; tapping a chip leaves the phone's keyboard up), ✓ and its undo,
+ * and the Done fold's Show more; and the hooks Kyoshi calls: onTick (a new day), onReload (another tab
+ * saved), attention (overdue errands) and bugState. */
+(function (K, A) {
+  "use strict";
+  const S = A.S, $ = A.$;
+  const { newId, isDate, addDays, todayStr } = K.util;
+  const { MAX_TEXT, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
+
+  const kept = () => { A.save(); A.renderAll(); };
+
+  function setStatus(text, bad = false) {
+    $("addStatus").textContent = text;
+    $("addStatus").classList.toggle("bad", bad);
+  }
+
+  // Pick a day's date field, with the browser's calendar open where it can be.
+  function openPicker() {
+    const el = $("addDate");
+    try {
+      if (typeof el.showPicker === "function") return el.showPicker();
+    } catch (err) { /* not allowed here: the field is still there to tap */ }
+    el.focus();
+  }
+
+  function pickDay(day) {
+    S.add.day = day;
+    A.renderAdd();
+    setStatus("");
+    if (day === "pick") openPicker();
+  }
+  function pickMinutes(m) {
+    S.add.minutes = m === "other" ? m : +m;
+    A.renderAdd();
+    setStatus("");
+    if (m === "other") $("addOther").focus();
+  }
+
+  // The day the chips give: "YYYY-MM-DD", "" for no day, or null while Pick a day has none.
+  function chipDay() {
+    const today = todayStr(), picked = $("addDate").value;
+    if (S.add.day === "today") return today;
+    if (S.add.day === "tomorrow") return addDays(today, 1);
+    if (S.add.day === "pick") return isDate(picked) ? picked : null;
+    return "";
+  }
+
+  // Quick add: the errand, with the chips' day and estimate. Then the field clears and keeps its focus for
+  // the next one, and the chips go back to no day and 15 minutes.
+  function add() {
+    const text = A.cleanLine($("addText").value, MAX_TEXT), due = chipDay();
+    const minutes = S.add.minutes === "other" ? A.readMinutes($("addOther")) : S.add.minutes;
+    if (!text) return $("addText").focus();
+    if (due === null) {
+      setStatus("Pick the day first.", true);
+      return openPicker();
+    }
+    if (!minutes) {
+      setStatus(`How long? From ${MIN_MINUTES} to ${MAX_MINUTES} minutes.`, true);
+      return $("addOther").focus();
+    }
+    const now = Date.now();
+    S.items.push({ id: newId(), text, due, minutes, done: "", deleted: false, at: now, u: now });
+    A.save();
+    S.add = { day: "none", minutes: DEFAULT_MINUTES };
+    ["addText", "addDate", "addOther"].forEach(id => { $(id).value = ""; });
+    A.renderAll();
+    setStatus(`Added “${text}”${due ? ` for ${dayWords(due)}` : ""}, ${fmtMinutes(minutes)}.`);
+    $("addText").focus();
+  }
+
+  // ✓: done today (into the Done fold, and ✓ on that day's Errands block in Momo); ✓ again undoes it.
+  function tick(id, done) {
+    const i = A.itemById(id);
+    if (!i || !!i.done === done) return;
+    Object.assign(i, { done: done ? todayStr() : "", u: Date.now() });
+    kept();
+  }
+
+  // Buttons drawn into the list carry data-act and data-id.
+  const ACTS = {
+    tick: btn => tick(btn.dataset.id, true),
+    undo: btn => tick(btn.dataset.id, false),
+    edit: btn => A.openEditor(btn.dataset.id)
+  };
+
+  A.init = () => {
+    A.wireEditor();
+    $("addForm").addEventListener("submit", e => { e.preventDefault(); add(); });
+    // Tapping a chip or Add doesn't take the focus, so the phone's keyboard stays up while typing.
+    $("addForm").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
+    $("addDays").addEventListener("click", e => { const b = e.target.closest("button[data-day]"); if (b) pickDay(b.dataset.day); });
+    $("addMinutes").addEventListener("click", e => { const b = e.target.closest("button[data-minutes]"); if (b) pickMinutes(b.dataset.minutes); });
+    $("addText").addEventListener("input", () => setStatus(""));
+    A.root.addEventListener("click", e => {
+      const btn = e.target.closest("[data-act]");
+      if (btn && ACTS[btn.dataset.act]) ACTS[btn.dataset.act](btn);
+    });
+    $("doneMore").addEventListener("click", () => {
+      S.doneShown += DONE_PAGE;
+      A.renderAll();
+    });
+    A.renderAll();
+  };
+
+  // Every minute, and whenever the page is back in view: at a new day, errands move between the groups.
+  A.onTick = () => { if (todayStr() !== S.knownToday) A.renderAll(); };
+
+  // Another tab saved (A.load has read it): show it.
+  A.onReload = () => A.renderAll();
+
+  // A dot on Hawky's icon while any errand is overdue (DOT_WHEN_OVERDUE in app.js turns it off).
+  A.attention = () => {
+    const n = DOT_WHEN_OVERDUE ? A.overdueItems().length : 0;
+    return n ? `${n} errand${n === 1 ? "" : "s"} overdue` : "";
+  };
+
+  // Bug reports: counts and settings only — never the errands' text.
+  A.bugState = () => {
+    const open = A.openItems(), groups = A.GROUPS.map(([key]) => `${key} ${open.filter(i => A.groupOf(i) === key).length}`);
+    return [
+      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done; +${S.items.length - A.live().length} deleted`,
+      `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}`,
+      `- Pop-up: ${S.editing ? "open" : "closed"}; done shown: ${S.doneShown}`
+    ];
+  };
+})(Kyoshi, Kyoshi.apps.hawky);

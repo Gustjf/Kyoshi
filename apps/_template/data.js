@@ -33,6 +33,8 @@
     S.items = cleanItems(A.store.json("items"));
   }
 
+  // Whether a backup or sync file is this app's. Check what's inside, not just the key: Hawky and Wan Shi Tong
+  // keep "items" too (their looksLike check each live item's text or name).
   const looksLike = raw => Array.isArray(raw.items);
 
   function buildBackup() {
