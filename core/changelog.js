@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.010", date: "2026-10-02", changes: [
+      "Added Badgermole, for workouts: routines in a rotation, sets logged with one thumb between them, PRs and a streak; Momo fills your \"Workout\" cards with the week's sessions."
+    ] },
     { version: "2.910", date: "2026-10-02", changes: [
       "Added Iroh, for goals: the vision for each area of your life, this year's goals and this season's, whose hours Momo makes time for.",
       "Meetings can come every season: due in the first week of each new season.",
