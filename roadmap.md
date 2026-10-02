@@ -4,7 +4,7 @@ The plan for the next phases and apps, agreed 2026-10-02. Read it when starting 
 ## Status
 Each finished phase gets a line saying what was decided along the way.
 - [x] Phase 0: Momo's inbox and blocks (2026-10-02). `K.inbox` (core/inbox.js) + `A.inbox`/`A.open`. A need names its `block` (the card title; its own title if left out) and its `fill`: "time", "block" or "ongoing" (never used up, for Wan Shi Tong's in progress). `date` = that day; `due` = on or before (overdue = soonest); else the app's order. Timed needs go in whole, never split. Timed shortfalls make one Tasks card per block title. Done needs show ✓ and never go to Tasks. Any card from today on is a block, baseline-loaded ones included, whole days for now. Appa sends one need per job. Momo's goals stay a Tasks source until Phase 4.
-- [ ] Phase 1: Momo Today
+- [x] Phase 1: Momo Today (2026-10-02). `apps/momo/today.js`; `S.today` picks Today or the board (Today when the window is phone-narrow, ≤ 640px, at load). Today and tomorrow only; earlier today isn't shown. A card inside another shows as its own row, its block in parts around it. Free time is time no card has (a "Free time" card shows as a card), split around events; an unplanned day shows "Nothing's planned" instead of 24h free. Events in conflict are red-edged, as on the board. Tapping a card: its times, goal, what fills it with "Open in <App>", and Edit card (the board's editor); tapping an event: its board pop-up. Those pop-ups put the board's tab on that week first.
 - [ ] Phase 2: Meetings
 - [ ] Phase 3: Hawky (errands)
 - [ ] Phase 4: Iroh (goals ladder)

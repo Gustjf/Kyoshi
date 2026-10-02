@@ -1,7 +1,7 @@
-/* Momo · render.js — draws the board on screen from A.S: renderAll, then the week tabs,
+/* Momo · render.js — draws the board from A.S: renderAll, then the week tabs,
  * the To Be Budgeted bank (with Tasks, see tasks.js), the board's days and cards (sized to the
  * ruler, see times.js; filled with what other apps need, see inbox.js; other apps' events over
- * them, see agenda.js), and the long-term goals. */
+ * them, see agenda.js), and the long-term goals; then Today, when it's on screen (today.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -23,6 +23,7 @@
     A.renderCloseOutControls();
     A.refreshDev(); // the undo count in Developer Mode
     A.paintClip();
+    A.renderToday();
   }
 
   function renderTabs() {

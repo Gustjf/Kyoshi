@@ -1,6 +1,6 @@
 /* Momo · events.js — loads last: wires Momo's buttons, board and pop-ups (A.init), and the
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
- * onHide (redraw; drop any drag), onTick (a new day or week; what other apps need; their events), onReload
+ * onHide (redraw; drop any drag), onTick (a new day or week; what other apps need; their events; Today), onReload
  * (another tab saved), attention (a week to close out, an event's conflict), renderDev (Undo in
  * Developer Mode) and bugState. */
 (function (K, A) {
@@ -98,6 +98,7 @@
     A.defineGoalOverlay();
     A.defineEventOverlay();
     A.defineCloseOutOverlay();
+    A.initToday(); // Today, its buttons and its card pop-up; on a phone Momo opens on it
 
     $("cardSaveBtn").addEventListener("click", A.saveCard);
     $("cardDeleteBtn").addEventListener("click", A.deleteCard);
@@ -207,11 +208,12 @@
   };
 
   // Every minute, and whenever the page is back in view: a new day or week, what other apps
-  // need (blocks and Tasks), and other apps' events.
+  // need (blocks and Tasks), other apps' events, and Today's time left.
   A.onTick = () => {
     A.checkRollover();
     A.checkTasks();
     A.checkAgenda();
+    A.tickToday();
   };
 
   // Another tab saved: its data is loaded (A.load); undo would step back over it, so it's cleared.
@@ -239,7 +241,7 @@
     const placed = f.blocks.reduce((n, x) => n + x.needs.filter(nd => nd.fill !== "ongoing").length, 0);
     const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat();
     return [
-      `- View: ${S.view}`,
+      `- View: ${S.today ? `today (board on ${S.view})` : S.view}`,
       `- Weeks stored: ${Object.keys(data.weeks).length} (${Object.values(data.weeks).filter(w => w.closed).length} closed)`,
       `- Cards this week / next week / baseline: ${A.weekOf(tk).cards.length} / ${A.weekOf(nk).cards.length} / ${data.baseline.cards.length}`,
       `- Pinned this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.pinned).length).join(" / ")}`,

@@ -81,7 +81,8 @@
   // ==========================================================================
   Object.assign(A.S, {
     data: null,            // everything saved and synced: { weeks, baseline, goals, colors } (model.js)
-    view: "this",          // "this" | "next" | "base" — the board on screen; always opens on this week
+    view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
+    today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
     lastSavedJSON: "",     // data as of the last save, as JSON…
     lastSaved: null,       // …and parsed, to tell what the next change touched
@@ -102,6 +103,7 @@
     agenda: [],            // other apps' events on the board on screen, as last drawn (agenda.js)
     agendaKey: "",         // their events this week and next as last drawn, to notice them changing
     triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }
+    detail: null,          // a card's pop-up on Today (today.js): { key: its week, id }
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
 

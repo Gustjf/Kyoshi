@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.643", date: "2026-10-02", changes: [
+      "Today: a big, phone-first view of what's on now with the time left, what's next, the rest of today and tomorrow, free time and other apps' events included.",
+      "Tap a card on Today for its times, goal and what fills it, with \"Open in…\" and a way to edit it; tap an event for its own pop-up.",
+      "Momo opens on Today on a phone and on the board on a computer; the Today and Week buttons switch at any time."
+    ] },
     { version: "5.543", date: "2026-10-02", changes: [
       "Blocks: a card fills with what other apps need under its title (Appa's jobs, what's in progress in Wan Shi Tong), showing their icon, a ✓ once done, and the details with \"Open in…\" in its pop-up.",
       "Tasks shows what no block covers, from any app that lists needs, so new apps need no changes in Momo.",

@@ -1,5 +1,6 @@
-/* Momo · markup.js — Momo's page (A.markup): the week tabs, the To Be Budgeted bank with
- * Tasks, the board, long-term goals, and its pop-ups (card editor, goal editor, an event, close-out).
+/* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
+ * with Tasks, the board, long-term goals) or Today's, and its pop-ups (card editor, goal editor, an event,
+ * a card on Today, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -14,7 +15,18 @@ Kyoshi.apps.momo.markup = `
     <button id="closeOutBannerBtn">Review</button>
   </section>
 
+  <!-- Today (today.js): now, next, the rest of today, then tomorrow. Momo opens here on a phone. -->
+  <div class="today" id="todayView" hidden>
+    <div class="today-bar">
+      <div class="today-head"><h2>Today</h2><span class="today-date" id="todayDate"></span></div>
+      <button class="secondary" id="weekBtn">Week</button>
+    </div>
+    <div id="todayBody"></div>
+  </div>
+
+  <div id="boardView">
   <div class="weekbar">
+    <button class="secondary" id="todayBtn">Today</button>
     <div class="mode-toggle views" id="viewToggle">
       <button type="button" class="mode-btn" data-view="this"><span>This week</span><span class="vb-date" id="tabDate_this"></span><span class="vb-status" id="tabStatus_this"></span></button>
       <button type="button" class="mode-btn" data-view="next"><span>Next week</span><span class="vb-date" id="tabDate_next"></span><span class="vb-status" id="tabStatus_next"></span></button>
@@ -62,6 +74,7 @@ Kyoshi.apps.momo.markup = `
     <div id="goalsEmpty" class="empty-msg">No goals yet. Add a long-term project &mdash; a novel, a language, a certification &mdash; and fund it a few hours every week.</div>
     <div id="goalsList"></div>
   </section>
+  </div>
 
   <section data-kyoshi="backup"></section>
 
@@ -227,6 +240,21 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="eventCancelBtn">Cancel</button>
         <span class="spacer"></span>
         <button class="secondary small" id="eventResetBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- A card tapped on Today (today.js): when, its goal, and what fills it with "Open in <App>". -->
+  <div class="overlay" id="detailOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 class="event-head"><span class="detail-dot" id="detailDot" aria-hidden="true"></span><span id="detailTitle"></span></h3>
+      <p class="modal-hint" id="detailWhen"></p>
+      <div class="modal-hint card-from" id="detailFrom" hidden></div>
+      <div class="modal-actions">
+        <button id="detailCloseBtn">Close</button>
+        <span class="spacer"></span>
+        <button class="secondary" id="detailEditBtn">Edit card</button>
       </div>
     </div>
   </div>
