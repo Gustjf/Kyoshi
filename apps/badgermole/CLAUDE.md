@@ -18,10 +18,10 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `stats.js` | the maths, remembered until the data or the day changes: session minutes and a routine's usual, week counts and the streak, `nextIndex`/`upNext`, bests and PRs, `prefill`, `monthCells` |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `render.js` | `showView` (home or session), `renderAll`, Home (Next up, stats, calendar ‹ ›, Exercises with bests, Routines, Program, Settings), `reveal` |
-| `session.js` | the session: start, steppers, ✓ / Log all sets, a logged set tapped to change (held), jump, Back / Next, Finish, Cancel; the elapsed minutes; the screen's wake lock; Pick a routine |
+| `session.js` | the session: start, steppers, ✓ / Log all sets, a logged set tapped to change (held), jump, Back / Next, Finish, Cancel (starting and ending a session tell `K.wakeLock`); the elapsed minutes; Pick a routine |
 | `editors.js` | the exercise and routine pop-ups, the starter exercises, program edits, settings |
 | `day.js` | the day pop-up: a day's sessions, their sets to fix, add or remove, Delete session |
-| `events.js` | `A.init` wiring and the hooks: `onShow`/`onHide` (wake lock), `onTick`, `onReload`, `bugState`. No `attention`: never a dot |
+| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a session in progress keeps the screen on: core/wakelock.js), `onTick`, `onReload`, `bugState`. No `attention`: never a dot |
 | `badgermole.css` | styles under `.app-badgermole` |
 
 ## State (`A.S`)

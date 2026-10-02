@@ -53,6 +53,7 @@ core/                 the shared DNA — K = window.Kyoshi
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox): header line, Done ✓, settings pop-up, its "meetings" key
   inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings), filling Momo's blocks; K.inbox.open
+  wakelock.js         K.wakeLock: keeps the screen on while the app on screen's A.awake() says so (a timer, a workout)
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
   shell.js            K.register, K.start, switcher menu, theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
@@ -85,6 +86,7 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 | `A.onKeydown(e)` | keys while on screen; return `true` if handled |
 | `A.onReload()` | after `A.load()` for another tab's change: redraw |
 | `A.attention()` | short reason it needs the user ("" if none) → dot on its switcher icon |
+| `A.awake()` | true while the screen should stay on with it on screen (a running timer, a workout); call `K.wakeLock.check()` when that changes (core also checks on show, `A.changed()`, reloads and every minute) — see `core/wakelock.js` |
 | `A.renderDev(box)` | fill `box` with its Developer Mode tools (`.dev-block`s) |
 | `A.bugState()` | lines (`"- Key: value"`) for bug reports — never personal data |
 | `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask) → true once it's in, combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |

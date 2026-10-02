@@ -27,7 +27,7 @@
       isActive: () => active === A,
       // A listener on document/window that only fires while this app is on screen.
       listen: (target, type, fn, opts) => target.addEventListener(type, e => { if (active === A) fn(e); }, opts),
-      changed: (unsaved = true) => K.sync.changed(A, unsaved),
+      changed: (unsaved = true) => { K.sync.changed(A, unsaved); K.wakeLock.check(); }, // a change can end what keeps the screen on
       setSubtitle: text => { A.subtitle = text; if (active === A) $("kAppSubtitle").textContent = text; },
       refreshDev: () => K.dev.refreshTools(A)
     };
@@ -114,6 +114,7 @@
     K.storage.set("kyoshi.lastApp", A.id);
     if (location.hash.slice(1) !== A.id) try { history.replaceState(null, "", `#${A.id}`); } catch (err) { /* some file:// setups */ }
     call(A, "onShow");
+    K.wakeLock.check(); // the screen stays on only for the app on screen that asks (core/wakelock.js)
     renderSwitcher();
     K.dev.refresh();
   }
@@ -221,12 +222,14 @@
   }
 
   // --- Every minute and whenever the page is back in view: each app catches up (a new day,
-  // a dose coming due, a week to close out), in view or not, and so do the meetings. ---
+  // a dose coming due, a week to close out), in view or not, and so do the meetings and the
+  // screen's wake lock (core/wakelock.js). ---
   function tick() {
     K.order.forEach(id => call(K.apps[id], "onTick"));
     K.meetings.render();
     renderSwitcher();
     K.backup.checkStorage();
+    K.wakeLock.check();
   }
   K.tick = tick;
 
@@ -248,7 +251,7 @@
           K.meetings.load(A);
           if (A.data) K.sync.loadMeta(A);
           call(A, "onReload");
-          if (A === active) K.meetings.render();
+          if (A === active) { K.meetings.render(); K.wakeLock.check(); }
           renderSwitcher();
         } catch (err) { console.error(`${A.meta.name} couldn't reload another tab's changes.`, err); }
       }, 50);

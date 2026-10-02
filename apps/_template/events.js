@@ -49,5 +49,6 @@
   A.bugState = () => [`- Items: ${A.liveItems().length} (+${S.items.length - A.liveItems().length} deleted)`];
 
   // Other hooks, when the app needs them: A.onShow, A.onHide, A.onTick (every minute),
-  // A.attention (a dot on its icon), A.renderDev(box) (Developer Mode tools).
+  // A.attention (a dot on its icon), A.awake (the screen kept on while it's true: a timer;
+  // core/wakelock.js), A.renderDev(box) (Developer Mode tools).
 })(Kyoshi, Kyoshi.apps.template);

@@ -1,7 +1,8 @@
 /* Kyoshi · tests/generate.js — made-up user data for the end-to-end tests (never real data: the repo is public), from a
  * seeded random generator, so every run gets the same: Badgermole histories (weeks of sessions in a rotation, weights
  * creeping up, bodyweight exercises, either unit, deleted markers), a damaged backup, other apps' backups (to be
- * refused), and Momo weeks with "Workout" cards. Dates count back from the tests' TODAY (lib.js). */
+ * refused), an Appa job (for its timer), and Momo weeks with "Workout" cards. Dates count back from the tests' TODAY
+ * (lib.js). */
 "use strict";
 const { TODAY, addDays, mondayOf, at } = require("./lib");
 
@@ -111,6 +112,14 @@ const damaged = () => ({
 const hawky = () => ({ schemaVersion: 1, appVersion: "1.000", items: [{ id: "h1", text: "Buy milk", due: "", minutes: 15, done: "", deleted: false, at: 1, u: 1 }] });
 const wanshitong = () => ({ schemaVersion: 1, appVersion: "2.252", items: [{ id: "w1", name: "Dune", kind: "book", deleted: false, at: 1, u: 1 }] });
 
+// An Appa backup: one thing with one job, overdue (so it's on Home's Coming up). Appa's ids are letters and digits only.
+const appa = () => ({
+  schemaVersion: 1, appVersion: "1.132",
+  things: [{ id: "vacuum1", name: "Robot vacuum", meter: "", deleted: false, at: 1, u: 1 }],
+  jobs: [{ id: "filter1", thingId: "vacuum1", name: "Clean the filter", every: { n: 2, unit: "w" }, from: { date: addDays(TODAY, -30) }, est: 15, deleted: false, at: 2, u: 2 }],
+  records: [], readings: [], files: [], settings: { name: "", u: 0 }
+});
+
 // A Momo backup whose weeks have cards titled "Workout" (1 hour each) on the days given ("YYYY-MM-DD"), and any other
 // cards ({ date, title, hours }).
 function momo(dates, others = []) {
@@ -122,4 +131,4 @@ function momo(dates, others = []) {
   return { schemaVersion: 2, appVersion: "6.964", weeks, baseline: { cards: [], u: 0 }, goals: [], colors: {} };
 }
 
-module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, momo };
+module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo };

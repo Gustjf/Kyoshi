@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.001", date: "2026-10-02", changes: [
+      "The screen stays on during a workout through Kyoshi's shared screen-on piece; nothing changes in use."
+    ] },
     { version: "1.000", date: "2026-10-02", changes: [
       "Initial release: workouts as routines in a rotation, each set logged with one thumb between sets (prefilled from last time, a step heavier once every set hit its reps), PRs the moment they happen, the week's count, a streak and a month calendar whose days open to fix what was logged.",
       "Momo fills your \"Workout\" cards with the week's sessions in program order, and ticks them off once they're logged; what doesn't fit waits in its Tasks."

@@ -19,14 +19,14 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `schedule.js` | the maths, never stored, memoized by `S.version` and today: readings & pace, next due (`dueOf`: time/season/meter), `statusOf`, `minutesOf` (the estimate), `readingAsk`, `upcoming`, and the words (`dueText`, `everyText`…) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `render.js` | `showView`, `renderAll`: home (Coming up, Things, Records), a thing (reading, sources, Schedule, History), the records tables, the timer bar |
-| `job-view.js` | the job view (notes as bullets, last time), the timer (`start`/`finish`/`stopTimer`, this device only) and the screen's wake lock |
+| `job-view.js` | the job view (notes as bullets, last time), the timer (`start`/`finish`/`stopTimer`, this device only; it tells `K.wakeLock` when it starts and stops) |
 | `proof.js` | photos (upright JPEGs ≤ 2000 px on white), PDFs (`K.pdf.inspect`: protected or unreadable ones flagged), links, thumbnails |
 | `record.js` | the record pop-up (done / log / full: see its header) and the reading pop-up (`saveReading`) |
 | `thing-editor.js` | the thing pop-up: name, about, serial, meter (fixed once it has readings), pace, sources; archive; delete |
 | `job-editor.js` | the job pop-up: how often (every N / each season / meter only, plus every N on the meter), last done, how long, source + page, notes |
 | `report.js` | the report pop-up and gathering (`gather`) |
 | `report-pdf.js` | the report's layout with `K.pdf` (`buildReport`) |
-| `events.js` | `A.init` wiring and the hooks: `onShow`/`onHide` (wake lock), `onTick`, `onKeydown` (Enter saves), `onReload`, `attention` (overdue, a reading asked for), `renderDev` (photos & PDFs), `bugState` |
+| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a running timer keeps the screen on: core/wakelock.js), `onTick`, `onKeydown` (Enter saves), `onReload`, `attention` (overdue, a reading asked for), `renderDev` (photos & PDFs), `bugState` |
 | `appa.css` | styles under `.app-appa` |
 
 ## State (`A.S`)

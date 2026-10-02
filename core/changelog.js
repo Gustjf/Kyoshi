@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.120", date: "2026-10-02", changes: [
+      "Keeping the screen on (Appa's job timer, a Badgermole workout) is one shared piece now: it reliably lets the screen sleep again once the timer stops or the workout ends, even right after it started."
+    ] },
     { version: "3.020", date: "2026-10-02", changes: [
       "Momo comes first in the switcher and opens first on a new device."
     ] },

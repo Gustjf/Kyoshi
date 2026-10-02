@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.132", date: "2026-10-02", changes: [
+      "The screen goes back to sleeping normally once the timer stops, even right after it started, or once its job is deleted (Kyoshi's shared screen-on piece)."
+    ] },
     { version: "1.131", date: "2026-10-02", changes: [
       "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Appa."
     ] },

@@ -36,11 +36,13 @@ const at = (d, hm = "07:00") => Date.parse(`${d}T${hm}:00Z`);
 // --- A browser tab on Kyoshi ---
 // Opens Kyoshi on an app in a new profile (or ctx: another tab of the same one), the clock at time (ms or ISO), the
 // console watched: { ctx, page, problems, dialogs, answers }. problems: console errors and warnings and page errors;
-// dialogs: every alert / confirm, as [type, message]; answers: what the next confirms say (true when empty).
-async function open(t, { app = "badgermole", size = PHONE, time = at(TODAY), ctx = null } = {}) {
+// dialogs: every alert / confirm, as [type, message]; answers: what the next confirms say (true when empty). init: a
+// function run in every page of a new profile before Kyoshi loads (to stand in for a browser feature).
+async function open(t, { app = "badgermole", size = PHONE, time = at(TODAY), ctx = null, init = null } = {}) {
   if (!ctx) {
     ctx = await t.browser.newContext({ viewport: size, locale: "en-US", timezoneId: "UTC" });
     await ctx.clock.install({ time });
+    if (init) await ctx.addInitScript(init);
     t.contexts.push(ctx);
   }
   const page = await ctx.newPage();

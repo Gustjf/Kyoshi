@@ -1,14 +1,13 @@
 /* Appa · job-view.js — the job view: what you see while doing a job. The job and its thing, when it's
  * due, where its interval comes from, your notes (lines starting "-", "*" or "•" are bullets; links
  * work), and last time. Then Start → Finish: the timer is this device's own (A.store "timer", so it
- * survives a reload), and the screen is kept awake while it runs where the browser allows (Wake Lock).
+ * survives a reload), and the screen stays on while it runs (A.awake in events.js; core/wakelock.js).
  * Finish opens the one-tap Done (record.js); "Already done? Log it" skips the timer. No checklists. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, SEP } = K.util;
   const { ICONS, fmtMinutes, fmtReading, fmtDay, sourceLink } = A;
-  let lock = null; // the screen's wake lock, while a timer runs
 
   // Notes as HTML: bullet lines become lists, other lines paragraphs; web addresses become links, less
   // the punctuation after one (a sentence's full stop; a ")" only when the address has more ")" than "(").
@@ -74,29 +73,12 @@
     A.renderTimerBar();
   }
 
-  // The screen stays on while a timer runs and Appa is on screen (the browser may say no: then it just
-  // follows its own settings).
-  async function keepAwake(on) {
-    try {
-      if (!on || !S.timer || !A.isActive()) {
-        if (lock) await lock.release();
-        lock = null;
-        return;
-      }
-      if (lock || !navigator.wakeLock || document.hidden) return;
-      lock = await navigator.wakeLock.request("screen");
-      lock.addEventListener("release", () => { lock = null; });
-    } catch (err) {
-      lock = null;
-    }
-  }
-
   function start(id) {
     const job = A.jobById(id);
     if (!job || (S.timer && A.jobById(S.timer.jobId))) return; // one at a time (a deleted job's timer doesn't count)
     S.timer = { jobId: job.id, start: Date.now() };
     A.storeTimer();
-    keepAwake(true);
+    K.wakeLock.check(); // the screen stays on while it runs
     A.renderAll();
   }
   // Finish: the one-tap Done with the timer's minutes (the timer stops once it's logged).
@@ -107,7 +89,7 @@
   function stopTimer() {
     S.timer = null;
     A.storeTimer();
-    keepAwake(false);
+    K.wakeLock.check();
   }
   function cancelTimer() {
     if (!S.timer || !confirm("Stop the timer without logging anything?")) return;
@@ -115,5 +97,5 @@
     A.renderAll();
   }
 
-  Object.assign(A, { renderJob, notesHTML, elapsedMinutes, updateElapsed, keepAwake, start, finish, stopTimer, cancelTimer });
+  Object.assign(A, { renderJob, notesHTML, elapsedMinutes, updateElapsed, start, finish, stopTimer, cancelTimer });
 })(Kyoshi, Kyoshi.apps.appa);

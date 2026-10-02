@@ -1,8 +1,9 @@
 /* Badgermole · events.js — loads last: wires the page (A.init): the pop-ups (editors.js, day.js), the session's
  * controls (session.js), the buttons drawn into the page (data-act), the calendar's ‹ ›, the setup folds (open on a
  * wide window, folded on a phone but for the one to do first), and the session's minutes; and the hooks Kyoshi calls:
- * onShow / onHide (the screen stays awake during a session only while Badgermole is on screen), onTick (a new day; the
- * session's minutes), onReload (another tab saved) and bugState (counts only: never names). No dot on the icon. */
+ * onShow, awake (a session in progress keeps the screen on while Badgermole is on screen: core/wakelock.js), onTick
+ * (a new day; the session's minutes), onReload (another tab saved) and bugState (counts only: never names). No dot on
+ * the icon. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -44,19 +45,18 @@
     });
     $("calPrev").addEventListener("click", () => A.moveMonth(-1));
     $("calNext").addEventListener("click", () => A.moveMonth(1));
-    // The session's minutes, and the screen kept awake again when the page comes back.
+    // The session's minutes.
     setInterval(A.updateElapsed, 15000);
-    A.listen(document, "visibilitychange", () => { if (!document.hidden) A.keepAwake(true); });
     openFolds();
     if (S.live) S.view = "session"; // a reload resumes the session in progress
     A.renderAll();
   };
 
-  A.onShow = () => {
-    A.renderAll();
-    A.keepAwake(true);
-  };
-  A.onHide = () => A.keepAwake(false);
+  A.onShow = () => A.renderAll();
+
+  // The screen stays on while a session is in progress and Badgermole is on screen (core/wakelock.js; starting and
+  // ending one tell it).
+  A.awake = () => !!S.live;
 
   // Every minute, and when the page is back in view: a new day moves the week, the streak and the calendar.
   A.onTick = () => {
@@ -65,10 +65,7 @@
   };
 
   // Another tab saved (A.load has read it): show it (the session view stays while its session does).
-  A.onReload = () => {
-    A.renderAll();
-    if (!S.live) A.keepAwake(false);
-  };
+  A.onReload = () => A.renderAll();
 
   // Bug reports: counts and settings only — never the names of exercises or routines.
   A.bugState = () => {

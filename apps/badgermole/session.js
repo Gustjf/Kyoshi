@@ -3,14 +3,13 @@
  * (neither moves on: the extra sets are "Set 4", "Set 5"…), the sets logged (a PR badge the moment one beats the
  * exercise's best; tap one to change it: it waits in the steppers, and goes back as it was unless it's logged again),
  * the routine's exercise list (tap to jump), and the sticky Back · Next · Finish. The session in progress is this
- * device's own (A.S.live, stored as "live": a reload resumes it), and the screen stays awake while it runs and
- * Badgermole is on screen, where the browser allows (Wake Lock). */
+ * device's own (A.S.live, stored as "live": a reload resumes it), and the screen stays on while it runs (A.awake in
+ * events.js; core/wakelock.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, isNum, newId, readNumber, todayStr, now } = K.util;
   const { STEP, MAX_REPS, MAX_WEIGHT, MAX_SESSION_SETS, STALE_HOURS, plural, round2, fmtMinutes, fmtSet, inUnit, unit } = A;
-  let lock = null, wanted = false, asking = false; // the screen's wake lock, whether it's wanted, and a request on its way
 
   const current = () => S.live.items[S.live.pos.item];
   const setsOf = (l, exerciseId) => l.sets.filter(s => s.exerciseId === exerciseId);
@@ -76,29 +75,6 @@
     [$("sesElapsed"), $("liveElapsed")].forEach(el => { if (el) el.textContent = elapsedText(); });
   }
 
-  // The screen stays on while a session runs and Badgermole is on screen (the browser may say no: then it just
-  // follows its own settings). A request still on its way when the lock stops being wanted is let go as it comes.
-  async function keepAwake(on) {
-    wanted = on && !!S.live && A.isActive();
-    try {
-      if (!wanted) {
-        const old = lock;
-        lock = null;
-        if (old) await old.release();
-        return;
-      }
-      if (lock || asking || !navigator.wakeLock || document.hidden) return;
-      asking = true;
-      const got = await navigator.wakeLock.request("screen");
-      asking = false;
-      if (!wanted) return void got.release().catch(() => {});
-      lock = got;
-      got.addEventListener("release", () => { if (lock === got) lock = null; });
-    } catch (err) {
-      asking = false;
-    }
-  }
-
   function setStatus(text, pr = false) {
     $("logStatus").innerHTML = text ? `${pr ? `<span class="badge pr">PR</span> ` : ""}${esc(text)}` : "";
     $("logStatus").classList.remove("bad");
@@ -121,15 +97,12 @@
     if (!items.length) return alert(`${r.name} has no exercises yet. Add some to it in Routines first.`);
     S.live = A.cleanLive({ id: newId(), date: todayStr(), routineId: r.id, name: r.name, started: now(), items, sets: [], pos: { item: 0 } });
     A.storeLive();
+    K.wakeLock.check(); // the screen stays on while it runs
     A.showView("session");
     setStatus("");
-    keepAwake(true);
   }
 
-  function resume() {
-    A.showView("session");
-    keepAwake(true);
-  }
+  const resume = () => A.showView("session");
 
   function jumpTo(i) {
     const l = S.live;
@@ -224,7 +197,7 @@
   function end() {
     S.live = null;
     A.storeLive();
-    keepAwake(false);
+    K.wakeLock.check();
     A.showView("home");
   }
 
@@ -283,5 +256,5 @@
     $("cancelSessionBtn").addEventListener("click", discard);
   }
 
-  Object.assign(A, { renderSession, updateElapsed, elapsedText, keepAwake, startSession, resume, jumpTo, relog, finish, discard, openPick, wireSession });
+  Object.assign(A, { renderSession, updateElapsed, elapsedText, startSession, resume, jumpTo, relog, finish, discard, openPick, wireSession });
 })(Kyoshi, Kyoshi.apps.badgermole);

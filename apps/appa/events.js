@@ -1,8 +1,8 @@
 /* Appa · events.js — loads last: wires the page (A.init) and the hooks Kyoshi calls (the app contract,
- * root CLAUDE.md): onShow / onHide (the running timer keeps the screen awake only while Appa is on
- * screen), onTick (a new day; the timer's minutes), onKeydown (Enter saves a pop-up), onReload (another
- * tab saved), attention (a job overdue, a reading asked for), renderDev (photos & documents) and
- * bugState (counts only: never names, notes, readings, costs or files). */
+ * root CLAUDE.md): onShow, awake (a running timer keeps the screen on while Appa is on screen:
+ * core/wakelock.js), onTick (a new day; the timer's minutes), onKeydown (Enter saves a pop-up),
+ * onReload (another tab saved), attention (a job overdue, a reading asked for), renderDev (photos &
+ * documents) and bugState (counts only: never names, notes, readings, costs or files). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -50,17 +50,16 @@
     $("reportBtn").addEventListener("click", () => A.openReport(""));
     $("thingReportBtn").addEventListener("click", () => A.openReport(S.thingId));
     $("jobBack").addEventListener("click", () => { const j = A.jobById(S.jobId); A.showView(j ? "thing" : "home", j ? j.thingId : ""); });
-    // The running timer's minutes, and the screen kept awake again when the page comes back.
+    // The running timer's minutes.
     setInterval(A.updateElapsed, 15000);
-    A.listen(document, "visibilitychange", () => { if (!document.hidden) A.keepAwake(true); });
     A.renderAll();
   };
 
-  A.onShow = () => {
-    A.renderAll();
-    A.keepAwake(true);
-  };
-  A.onHide = () => A.keepAwake(false);
+  A.onShow = () => A.renderAll();
+
+  // The screen stays on while a timer runs and Appa is on screen (core/wakelock.js; start and stop tell it). A timer
+  // whose job was deleted (here or on another device) doesn't count, as for Start.
+  A.awake = () => !!S.timer && !!A.jobById(S.timer.jobId);
 
   // Every minute, and when the page is back in view: a new day moves what's due.
   A.onTick = () => {
