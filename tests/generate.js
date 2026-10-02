@@ -3,6 +3,9 @@
  * creeping up, bodyweight exercises, either unit, deleted markers), a damaged backup, other apps' backups (to be
  * refused), an Appa job (for its timer), Turtleduck's recipes with a plan and shopping trips (and a damaged one), Pabu's
  * people (and a damaged backup), and Momo weeks with "Workout", meal, "Cooking", "Groceries" and "Keep in touch" cards.
+ * Then fuller worlds, for the flow simulator (tests/sim) and any test: core's meetings, many Hawky errands, Iroh's areas
+ * and goals, Bosco's weekly dose and weigh-ins, Appa's things with meters, seasonal and meter jobs, Wan Shi Tong's
+ * recommendations, Momo's baseline, and an Export all file of them.
  * Dates count back from the tests' TODAY (lib.js). */
 "use strict";
 const { TODAY, addDays, mondayOf, at } = require("./lib");
@@ -221,4 +224,98 @@ const damagedPabu = () => ({
   ]
 });
 
-module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck, PEOPLE, pabu, damagedPabu };
+// --- Fuller worlds (the flow simulator, tests/sim, builds its lives from these; any test can too) ---
+// Made-up first names (never real people's data), and a pick from a seeded rng.
+const NAMES = ["Ada", "Bram", "Cleo", "Dov", "Esme", "Fitz", "Gale", "Hux", "Ines", "Jory", "Kesi", "Lark", "Milo", "Nell", "Odo", "Pia", "Quill",
+  "Rafe", "Suki", "Teo", "Una", "Vale", "Wynn", "Xan", "Yara", "Zev", "Aldo", "Bea", "Cass", "Dara", "Elio", "Fern", "Gil", "Hana", "Ivo", "Juno"];
+const pick = (rng, list) => list[Math.floor(rng() * list.length)];
+const T0 = at("2026-01-05"); // stamps well before TODAY
+
+// Core's meetings for an app's backup (core/meetings.js): { id: { every, minutes, last ("YYYY-MM-DD" or ""), since } }.
+function meetings(spec) {
+  return Object.fromEntries(Object.entries(spec).map(([id, m]) => [id, { every: m.every || "whenever", minutes: m.minutes || 15, last: m.last || "", since: m.since || m.last || TODAY, u: T0 }]));
+}
+
+// Hawky: errands, each { text, due ("" for none), minutes, done ("" or the day), added (a day) }.
+function hawkyItems(list, meet) {
+  return {
+    schemaVersion: 1, appVersion: "1.000", ...(meet ? { meetings: meet } : {}),
+    items: list.map((e, i) => ({ id: `hk${String(i).padStart(4, "0")}`, text: e.text, due: e.due || "", minutes: e.minutes || 15, done: e.done || "", deleted: false, at: at(e.added || addDays(TODAY, -3), "08:00") + i, u: T0 + i }))
+  };
+}
+// Errands to make up: what, and how long (minutes).
+const ERRANDS = [["Return library books", 15], ["Pick up dry cleaning", 30], ["Buy a birthday card", 15], ["Call the dentist", 15], ["Renew passport form", 60],
+  ["Drop off donations", 30], ["Buy stamps", 15], ["Fix the drawer handle", 30], ["Order printer ink", 15], ["Pay the parking ticket", 15], ["Get a key cut", 30],
+  ["Book a haircut", 15], ["Return the parcel", 30], ["Pick up the prescription", 30], ["Buy light bulbs", 15], ["Mail the form", 15], ["Sharpen the knives", 30],
+  ["Hang the picture", 30], ["Sort the recycling", 15], ["Update the address", 15], ["Buy a gift", 60], ["Clean out the car", 60], ["Replace the batteries", 15]];
+
+// Iroh: areas [{ id, name, vision }], goals [{ id, period, title, areaId, parentId, hoursWeek, hoursTotal, next, status, reconciled, at }].
+function iroh({ areas = [], goals = [], meet = null } = {}) {
+  return {
+    schemaVersion: 1, appVersion: "1.000", ...(meet ? { meetings: meet } : {}),
+    areas: areas.map((a, i) => ({ id: a.id, name: a.name, vision: a.vision || "", milestones: a.milestones || "", order: i, deleted: false, at: T0 + i, u: T0 })),
+    goals: goals.map((g, i) => ({
+      id: g.id, areaId: g.areaId || "", period: g.period, title: g.title, why: g.why || "", doneWhen: g.doneWhen || "", parentId: g.parentId || "",
+      hoursWeek: g.hoursWeek || 0, hoursTotal: g.hoursWeek ? 0 : g.hoursTotal || 0, next: g.next || "", reconciled: g.reconciled || TODAY,
+      status: g.status || "open", deleted: false, at: g.at || T0 + 1000 + i, u: g.u || T0
+    }))
+  };
+}
+
+// Bosco: a weekly GLP-1 dose (its plan, the last dose taken) and weigh-ins [{ date, weight }] in lb.
+function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, doseTime = null, lastDose = addDays(TODAY, -5), doses = 4, weights = [], meet = null } = {}) {
+  const entries = weights.map(w => ({ date: w.date, weight: w.weight, doseMg: null, medication: null }));
+  for (let i = 0; i < doses; i++) {
+    const date = addDays(lastDose, -i * intervalDays), e = entries.find(x => x.date === date);
+    if (e) Object.assign(e, { doseMg: weeklyMg * intervalDays / 7, medication });
+    else entries.push({ date, weight: null, doseMg: weeklyMg * intervalDays / 7, medication });
+  }
+  return {
+    schemaVersion: 4, appVersion: "5.900", unit: "lb", name: "", medication, ...(meet ? { meetings: meet } : {}),
+    dosePlan: { medication, intervalDays, weeklyMg, doseTime, nextDose: null, savedAt: "2026-01-05T00:00:00.000Z" },
+    vial: null, paceGoal: null, goals: [180, 170], entries: entries.sort((a, b) => a.date.localeCompare(b.date))
+  };
+}
+
+// Appa: things [{ id, name, meter, pace }], jobs [{ id, thingId, name, every: [n, unit] | null, seasons, meterEvery, from: { date, reading }, est }],
+// readings [{ thingId, date, value }]. Ids are letters and digits only.
+function appaWorld({ things = [], jobs = [], readings = [], meet = null } = {}) {
+  return {
+    schemaVersion: 1, appVersion: "1.132", ...(meet ? { meetings: meet } : {}),
+    things: things.map((t, i) => ({ id: t.id, name: t.name, about: "", serial: "", meter: t.meter || "", pace: t.pace || 0, docs: [], archived: false, deleted: false, at: T0 + i, u: T0 })),
+    jobs: jobs.map((j, i) => ({
+      id: j.id, thingId: j.thingId, name: j.name, every: j.every ? { n: j.every[0], unit: j.every[1] } : null, seasons: j.seasons || [], meterEvery: j.meterEvery || null,
+      from: { date: (j.from && j.from.date) || "", reading: j.from && j.from.reading !== undefined ? j.from.reading : null }, est: j.est || null, source: { docId: "", where: "" }, notes: "", deleted: false, at: T0 + 100 + i, u: T0
+    })),
+    records: [], files: [], settings: { name: "", u: 0 },
+    readings: readings.map((r, i) => ({ id: `rd${String(i).padStart(4, "0")}`, thingId: r.thingId, date: r.date, value: r.value, deleted: false, at: T0 + 500 + i, u: T0 }))
+  };
+}
+
+// Wan Shi Tong: recommendations [{ name, cat, now: true (in progress) | next: true }].
+function library(list, meet = null) {
+  const items = list.map((x, i) => ({ id: `ws${String(i).padStart(3, "0")}`, cat: x.cat || "book", name: x.name, info: "", have: "", why: "", added: addDays(TODAY, -60 + i), started: x.now ? addDays(TODAY, -10) : "", done: "", deleted: false, at: T0 + i, u: T0 }));
+  const spot = (k, i) => ({ id: i >= 0 ? items[i].id : "", u: T0 });
+  const now = list.map((x, i) => (x.now ? i : -1)).filter(i => i >= 0);
+  return {
+    schemaVersion: 1, appVersion: "2.252", ...(meet ? { meetings: meet } : {}), items,
+    slots: { now: spot("now", now[0] ?? -1), now2: spot("now2", now[1] ?? -1), now3: spot("now3", now[2] ?? -1), next: spot("next", list.findIndex(x => x.next)) }
+  };
+}
+
+// Momo: a baseline [{ title, hours, days: [0-6], pin }] (each day's cards in the order given), weeks as momo() makes them.
+function momoWorld({ baseline = [], meet = null } = {}) {
+  const cards = [];
+  [0, 1, 2, 3, 4, 5, 6].forEach(d => baseline.filter(c => c.days.includes(d)).forEach(c => cards.push({
+    id: `bl${cards.length}`, title: c.title, hours: c.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: c.pin === undefined ? null : c.pin
+  })));
+  return { schemaVersion: 2, appVersion: "6.964", ...(meet ? { meetings: meet } : {}), weeks: {}, baseline: { cards, u: T0 }, goals: [], colors: {} };
+}
+
+// Every app's backup in one Export all file (Developer Mode's Import all takes it).
+const exportAll = apps => ({ kyoshiVersion: "3.330", exportedAt: "2026-01-05T00:00:00.000Z", apps });
+
+module.exports = {
+  random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck, PEOPLE, pabu, damagedPabu,
+  NAMES, pick, meetings, hawkyItems, ERRANDS, iroh, bosco, appaWorld, library, momoWorld, exportAll
+};

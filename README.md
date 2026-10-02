@@ -31,4 +31,5 @@ birthdays coming up). You only see the app you're using; switch apps from the ic
 
 Working on it (people or AI): start with [`CLAUDE.md`](CLAUDE.md) — the rules, a map of every file,
 how to add a new app, and how to test a branch before it goes live. `node tests/run.js` runs the end-to-end
-tests (Playwright and made-up data; not part of the site).
+tests (Playwright and made-up data; not part of the site); `node tests/sim/run.js` lives six made-up lives
+through the apps, day by day, and writes `tests/sim/report.md`.
