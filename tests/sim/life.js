@@ -157,7 +157,7 @@ class Life {
     }
     this.device = "phone";
   }
-  async close() { await this.ctx.close().catch(() => {}); }
+  async close() { if (this.ctx) await this.ctx.close().catch(() => {}); }
 
   // Developer Mode's Import all, from a file made of data (the file picker, as the user picks it).
   async importAll(data) {
