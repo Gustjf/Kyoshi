@@ -9,12 +9,12 @@
      Every file link ends in the same build stamp (?v=…): change it with every update, so a
      normal reload loads the new files instead of ones GitHub Pages let the browser keep. -->
 <link rel="icon" id="kFavicon" href="data:,">
-<link rel="stylesheet" href="core/kyoshi.css?v=20261002-0229">
+<link rel="stylesheet" href="core/kyoshi.css?v=20261002-0244">
 <!-- Apps' own styles (each under .app-<id>). -->
-<link rel="stylesheet" href="apps/bosco/bosco.css?v=20261002-0229">
-<link rel="stylesheet" href="apps/momo/momo.css?v=20261002-0229">
-<link rel="stylesheet" href="apps/wanshitong/wanshitong.css?v=20261002-0229">
-<link rel="stylesheet" href="apps/appa/appa.css?v=20261002-0229">
+<link rel="stylesheet" href="apps/bosco/bosco.css?v=20261002-0244">
+<link rel="stylesheet" href="apps/momo/momo.css?v=20261002-0244">
+<link rel="stylesheet" href="apps/wanshitong/wanshitong.css?v=20261002-0244">
+<link rel="stylesheet" href="apps/appa/appa.css?v=20261002-0244">
 </head>
 <body>
 <div class="shell">
@@ -22,7 +22,7 @@
     <div class="header-main">
       <h1 id="kAppName"></h1>
       <div class="subtitle" id="kAppSubtitle"></div>
-      <!-- The app's meetings with you: last met, Done ✓, settings on a tap (core/meetings.js). -->
+      <!-- The app's checkup or meetings with you: last time, Done ✓, settings on a tap (core/meetings.js). -->
       <div class="meetings" id="kMeeting" hidden></div>
     </div>
     <div class="header-actions">
@@ -119,100 +119,100 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="kMeetTitle">
     <button class="modal-close" aria-label="Close">&times;</button>
     <h3 id="kMeetTitle">Meeting</h3>
-    <p class="modal-hint">A regular check-in with this app. When one is due within the next two weeks, it goes to Momo and fills a card titled &ldquo;Meeting&rdquo; in the week before it&rsquo;s due (or Tasks, if none has room). Overdue, it puts a dot on the app&rsquo;s icon.</p>
+    <p class="modal-hint">Whenever: it just remembers the last time, with no reminders. On a schedule it&rsquo;s a meeting: when one is due within the next two weeks, it fills a card titled &ldquo;Meeting&rdquo; in Momo in the week before it&rsquo;s due (or Tasks, if none has room), and overdue, it puts a dot on the app&rsquo;s icon.</p>
     <div class="field-row">
       <div class="field"><label for="kMeetEvery">How often</label><select id="kMeetEvery"></select></div>
       <div class="field"><label for="kMeetMinutes">Minutes</label><input type="number" id="kMeetMinutes" min="5" max="240" step="5"></div>
     </div>
-    <div class="field"><label for="kMeetLast">Last met</label><input type="date" id="kMeetLast" min="2000-01-01"></div>
+    <div class="field"><label for="kMeetLast">Last time</label><input type="date" id="kMeetLast" min="2000-01-01"></div>
     <div class="modal-actions"><button id="kMeetSave">Save</button><button class="secondary" id="kMeetCancel">Cancel</button></div>
     <div class="modal-status" id="kMeetStatus"></div>
   </div>
 </div>
 
 <!-- Core, in order: base.js first (it catches errors while the rest loads). -->
-<script src="core/base.js?v=20261002-0229"></script>
-<script src="core/changelog.js?v=20261002-0229"></script>
-<script src="core/util.js?v=20261002-0229"></script>
-<script src="core/seasons.js?v=20261002-0229"></script>
-<script src="core/storage.js?v=20261002-0229"></script>
-<script src="core/files.js?v=20261002-0229"></script>
-<script src="core/modal.js?v=20261002-0229"></script>
-<script src="core/sync.js?v=20261002-0229"></script>
-<script src="core/backup.js?v=20261002-0229"></script>
-<script src="core/bugs.js?v=20261002-0229"></script>
-<script src="core/dev.js?v=20261002-0229"></script>
-<script src="core/agenda.js?v=20261002-0229"></script>
-<script src="core/meetings.js?v=20261002-0229"></script>
-<script src="core/inbox.js?v=20261002-0229"></script>
+<script src="core/base.js?v=20261002-0244"></script>
+<script src="core/changelog.js?v=20261002-0244"></script>
+<script src="core/util.js?v=20261002-0244"></script>
+<script src="core/seasons.js?v=20261002-0244"></script>
+<script src="core/storage.js?v=20261002-0244"></script>
+<script src="core/files.js?v=20261002-0244"></script>
+<script src="core/modal.js?v=20261002-0244"></script>
+<script src="core/sync.js?v=20261002-0244"></script>
+<script src="core/backup.js?v=20261002-0244"></script>
+<script src="core/bugs.js?v=20261002-0244"></script>
+<script src="core/dev.js?v=20261002-0244"></script>
+<script src="core/agenda.js?v=20261002-0244"></script>
+<script src="core/meetings.js?v=20261002-0244"></script>
+<script src="core/inbox.js?v=20261002-0244"></script>
 <!-- PDF files: made (reports) and read (attached proof). -->
-<script src="core/pdf-font.js?v=20261002-0229"></script>
-<script src="core/pdf-inflate.js?v=20261002-0229"></script>
-<script src="core/pdf-filters.js?v=20261002-0229"></script>
-<script src="core/pdf-parse.js?v=20261002-0229"></script>
-<script src="core/pdf-read.js?v=20261002-0229"></script>
-<script src="core/pdf-write.js?v=20261002-0229"></script>
-<script src="core/pdf-import.js?v=20261002-0229"></script>
-<script src="core/shell.js?v=20261002-0229"></script>
+<script src="core/pdf-font.js?v=20261002-0244"></script>
+<script src="core/pdf-inflate.js?v=20261002-0244"></script>
+<script src="core/pdf-filters.js?v=20261002-0244"></script>
+<script src="core/pdf-parse.js?v=20261002-0244"></script>
+<script src="core/pdf-read.js?v=20261002-0244"></script>
+<script src="core/pdf-write.js?v=20261002-0244"></script>
+<script src="core/pdf-import.js?v=20261002-0244"></script>
+<script src="core/shell.js?v=20261002-0244"></script>
 
 <!-- Apps, in switcher order. Each app: app.js first, events.js last. -->
-<script src="apps/bosco/app.js?v=20261002-0229"></script>
-<script src="apps/bosco/markup.js?v=20261002-0229"></script>
-<script src="apps/bosco/changelog.js?v=20261002-0229"></script>
-<script src="apps/bosco/data.js?v=20261002-0229"></script>
-<script src="apps/bosco/trend.js?v=20261002-0229"></script>
-<script src="apps/bosco/render.js?v=20261002-0229"></script>
-<script src="apps/bosco/setup.js?v=20261002-0229"></script>
-<script src="apps/bosco/doses.js?v=20261002-0229"></script>
-<script src="apps/bosco/image.js?v=20261002-0229"></script>
-<script src="apps/bosco/events.js?v=20261002-0229"></script>
+<script src="apps/bosco/app.js?v=20261002-0244"></script>
+<script src="apps/bosco/markup.js?v=20261002-0244"></script>
+<script src="apps/bosco/changelog.js?v=20261002-0244"></script>
+<script src="apps/bosco/data.js?v=20261002-0244"></script>
+<script src="apps/bosco/trend.js?v=20261002-0244"></script>
+<script src="apps/bosco/render.js?v=20261002-0244"></script>
+<script src="apps/bosco/setup.js?v=20261002-0244"></script>
+<script src="apps/bosco/doses.js?v=20261002-0244"></script>
+<script src="apps/bosco/image.js?v=20261002-0244"></script>
+<script src="apps/bosco/events.js?v=20261002-0244"></script>
 
-<script src="apps/momo/app.js?v=20261002-0229"></script>
-<script src="apps/momo/markup.js?v=20261002-0229"></script>
-<script src="apps/momo/changelog.js?v=20261002-0229"></script>
-<script src="apps/momo/model.js?v=20261002-0229"></script>
-<script src="apps/momo/times.js?v=20261002-0229"></script>
-<script src="apps/momo/colors.js?v=20261002-0229"></script>
-<script src="apps/momo/data.js?v=20261002-0229"></script>
-<script src="apps/momo/render.js?v=20261002-0229"></script>
-<script src="apps/momo/inbox.js?v=20261002-0229"></script>
-<script src="apps/momo/tasks.js?v=20261002-0229"></script>
-<script src="apps/momo/agenda.js?v=20261002-0229"></script>
-<script src="apps/momo/drag.js?v=20261002-0229"></script>
-<script src="apps/momo/drop.js?v=20261002-0229"></script>
-<script src="apps/momo/clipboard.js?v=20261002-0229"></script>
-<script src="apps/momo/card-editor.js?v=20261002-0229"></script>
-<script src="apps/momo/goal-editor.js?v=20261002-0229"></script>
-<script src="apps/momo/triage.js?v=20261002-0229"></script>
-<script src="apps/momo/today.js?v=20261002-0229"></script>
-<script src="apps/momo/baseline.js?v=20261002-0229"></script>
-<script src="apps/momo/closeout.js?v=20261002-0229"></script>
-<script src="apps/momo/events.js?v=20261002-0229"></script>
+<script src="apps/momo/app.js?v=20261002-0244"></script>
+<script src="apps/momo/markup.js?v=20261002-0244"></script>
+<script src="apps/momo/changelog.js?v=20261002-0244"></script>
+<script src="apps/momo/model.js?v=20261002-0244"></script>
+<script src="apps/momo/times.js?v=20261002-0244"></script>
+<script src="apps/momo/colors.js?v=20261002-0244"></script>
+<script src="apps/momo/data.js?v=20261002-0244"></script>
+<script src="apps/momo/render.js?v=20261002-0244"></script>
+<script src="apps/momo/inbox.js?v=20261002-0244"></script>
+<script src="apps/momo/tasks.js?v=20261002-0244"></script>
+<script src="apps/momo/agenda.js?v=20261002-0244"></script>
+<script src="apps/momo/drag.js?v=20261002-0244"></script>
+<script src="apps/momo/drop.js?v=20261002-0244"></script>
+<script src="apps/momo/clipboard.js?v=20261002-0244"></script>
+<script src="apps/momo/card-editor.js?v=20261002-0244"></script>
+<script src="apps/momo/goal-editor.js?v=20261002-0244"></script>
+<script src="apps/momo/triage.js?v=20261002-0244"></script>
+<script src="apps/momo/today.js?v=20261002-0244"></script>
+<script src="apps/momo/baseline.js?v=20261002-0244"></script>
+<script src="apps/momo/closeout.js?v=20261002-0244"></script>
+<script src="apps/momo/events.js?v=20261002-0244"></script>
 
-<script src="apps/wanshitong/app.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/markup.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/changelog.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/data.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/render.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/editor.js?v=20261002-0229"></script>
-<script src="apps/wanshitong/events.js?v=20261002-0229"></script>
+<script src="apps/wanshitong/app.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/markup.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/changelog.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/data.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/render.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/editor.js?v=20261002-0244"></script>
+<script src="apps/wanshitong/events.js?v=20261002-0244"></script>
 
-<script src="apps/appa/app.js?v=20261002-0229"></script>
-<script src="apps/appa/markup.js?v=20261002-0229"></script>
-<script src="apps/appa/changelog.js?v=20261002-0229"></script>
-<script src="apps/appa/model.js?v=20261002-0229"></script>
-<script src="apps/appa/data.js?v=20261002-0229"></script>
-<script src="apps/appa/schedule.js?v=20261002-0229"></script>
-<script src="apps/appa/share.js?v=20261002-0229"></script>
-<script src="apps/appa/render.js?v=20261002-0229"></script>
-<script src="apps/appa/job-view.js?v=20261002-0229"></script>
-<script src="apps/appa/proof.js?v=20261002-0229"></script>
-<script src="apps/appa/record.js?v=20261002-0229"></script>
-<script src="apps/appa/thing-editor.js?v=20261002-0229"></script>
-<script src="apps/appa/job-editor.js?v=20261002-0229"></script>
-<script src="apps/appa/report.js?v=20261002-0229"></script>
-<script src="apps/appa/report-pdf.js?v=20261002-0229"></script>
-<script src="apps/appa/events.js?v=20261002-0229"></script>
+<script src="apps/appa/app.js?v=20261002-0244"></script>
+<script src="apps/appa/markup.js?v=20261002-0244"></script>
+<script src="apps/appa/changelog.js?v=20261002-0244"></script>
+<script src="apps/appa/model.js?v=20261002-0244"></script>
+<script src="apps/appa/data.js?v=20261002-0244"></script>
+<script src="apps/appa/schedule.js?v=20261002-0244"></script>
+<script src="apps/appa/share.js?v=20261002-0244"></script>
+<script src="apps/appa/render.js?v=20261002-0244"></script>
+<script src="apps/appa/job-view.js?v=20261002-0244"></script>
+<script src="apps/appa/proof.js?v=20261002-0244"></script>
+<script src="apps/appa/record.js?v=20261002-0244"></script>
+<script src="apps/appa/thing-editor.js?v=20261002-0244"></script>
+<script src="apps/appa/job-editor.js?v=20261002-0244"></script>
+<script src="apps/appa/report.js?v=20261002-0244"></script>
+<script src="apps/appa/report-pdf.js?v=20261002-0244"></script>
+<script src="apps/appa/events.js?v=20261002-0244"></script>
 
 <script>Kyoshi.start();</script>
 </body>

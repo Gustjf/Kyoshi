@@ -22,13 +22,13 @@ part of the contract: storage, backups, sync merging (with delete markers), and 
 ## Storage (`A.store`) and backups
 Key: `items` (plus core's `sync` and `meetings`). Backup JSON: `{ schemaVersion: 1, appVersion, items }` (plus core's `meetings`).
 
-## A meeting with you (optional)
-Only for an app reviewed less often than daily (the current ones have none; Iroh will): uncomment `meetings` in `app.js` to name
-its regular check-in (what it's about, how often, how long). Core does the rest: the line under the app's name with Done ✓, the
-settings, sync and backups, Momo's "Meeting" cards and the overdue dot (core/meetings.js).
+## Its checkup
+`meetings` in `app.js` names its checkup: no schedule, just "Last checkup: 12 days ago" under the app's name with Done ✓, for a
+deeper look now and then. An app reviewed less often than daily (Iroh, say) names meetings on a schedule instead, which also fill
+Momo's "Meeting" cards and dot the icon when overdue. Core does the rest: the line, its settings, sync and backups (core/meetings.js).
 
 ## Adding a new app from this template
 1. Copy this folder to `apps/<id>/` (`<id>`: lowercase letters and digits, from a letter, not used yet); rename `template`/`Template` → `<id>`/`<Name>` in every file (incl. `.app-template`, `template.css` → `<id>.css`).
-2. In `app.js` set name, tab title, subtitle, page width, icon (a Lucide SVG with a stroke color, like Bosco's and Momo's) and, if it needs one, its meeting.
+2. In `app.js` set name, tab title, subtitle, page width, icon (a Lucide SVG with a stroke color, like Bosco's and Momo's) and its checkup (or meetings).
 3. Add its `<link>`/`<script>` tags to `index.html` (app.js first, events.js last; the switcher lists apps in that order), then give every link a new build stamp.
 4. Rewrite this `CLAUDE.md` for the app (purpose, file map, data model). Start its changelog at 1.000 and add a line to Kyoshi's changelog.

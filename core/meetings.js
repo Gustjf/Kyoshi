@@ -1,19 +1,23 @@
-/* Kyoshi · core/meetings.js — each app's regular meeting with you, as K.meetings: YNAB's "last reconciled", for every app.
+/* Kyoshi · core/meetings.js — each app's checkup or regular meetings with you, as K.meetings: YNAB's "last reconciled".
  * The header shows the app on screen's meetings under its subtitle (#kMeeting: "Meeting: Trend and doses · every month ·
- * last met 12 days ago", Done ✓); tapping one opens its settings (#kMeetOverlay: how often, how long, last met).
+ * last met 12 days ago", Done ✓); tapping one opens its settings (#kMeetOverlay: how often, how long, last time).
  * An app names its meetings' defaults when it registers (K.register):
  *   meetings: [{ id, title, every, minutes, after }]
- * id: a-z, 0-9 and -, unique within the app; title: what it's about ("Trend and doses"); every: "week" | "month" |
- * "quarter" | "year" | "off"; minutes: how long (5–240); after: true to come after the others in Momo (Momo's own,
- * which plans what they sent).
+ * id: a-z, 0-9 and -, unique within the app; title: what it's about ("Trend and doses"); every: "whenever" | "week" |
+ * "month" | "quarter" | "year" | "off"; minutes: how long (5–240); after: true to come after the others in Momo (Momo's
+ * own, which plans what they sent).
+ * "whenever" (no schedule) is a checkup: its line just says when you last did it ("Last checkup: 12 days ago", from its
+ * title) with Done ✓, and it's never due, so no dot and nothing in Momo. Picking a schedule in its settings makes it a
+ * meeting. The current apps each have a checkup, as they're used daily.
  * Kept in each app's store under core's key "meetings" (like core's "sync"): { id: { every, minutes, last, since, u } }.
  * last: the day last met ("" if never); since: the day it was first seen, its first due day; u: when it last changed
  * (the later change wins). It travels with the app's sync file and backups, beside its data (core/sync.js,
  * core/backup.js); a meeting this version doesn't name is kept as it is.
- * Due: last met + every (months stop at the month's end), else since; overdue once that day has passed, which puts
- * a dot on the app's icon (core/shell.js). For Momo (core/inbox.js): each meeting due by the end of next week fills
- * a card titled "Meeting" in the week before it's due (from), or the soonest once overdue (or never had yet); one
- * met in those two weeks shows ✓ on its day. "Open in <App>" shows the app with its meeting line flashing (reveal). */
+ * Due (on a schedule): last met + every (months stop at the month's end), else since; overdue once that day has
+ * passed, which puts a dot on the app's icon (core/shell.js). For Momo (core/inbox.js): each meeting due by the end of
+ * next week fills a card titled "Meeting" in the week before it's due (from), or the soonest once overdue (or never
+ * had yet); one met in those two weeks shows ✓ on its day. "Open in <App>" shows the app with its meeting line
+ * flashing (reveal). */
 (function (K) {
   "use strict";
   const { isObj, isPos, isDate, esc, todayStr, addDays, addMonths, daysBetween, fmtShort, fmtWeekday, readNumber } = K.util;
@@ -21,11 +25,12 @@
   const KEY = "meetings";
   const BLOCK = "Meeting";   // the title of Momo's cards they fill
   const WINDOW_DAYS = 6;     // a meeting goes in a block from this many days before it's due
-  const EVERY = { week: "every week", month: "every month", quarter: "every quarter", year: "every year", off: "off" };
+  const EVERY = { whenever: "whenever", week: "every week", month: "every month", quarter: "every quarter", year: "every year", off: "off" };
   const MONTHS = { month: 1, quarter: 3, year: 12 };
   const MIN_MINUTES = 5, MAX_MINUTES = 240;
   const isId = id => typeof id === "string" && /^[a-z0-9-]{1,20}$/.test(id);
   const cleanMinutes = m => (Number.isInteger(m) && m >= MIN_MINUTES && m <= MAX_MINUTES ? m : 0);
+  const scheduled = every => every !== "whenever" && every !== "off";
   let editing = null; // the settings pop-up: { A, id, start (its fields as opened) }
 
   // The meetings an app named when it registered, checked (an unusable one is left out).
@@ -73,11 +78,11 @@
   const after = (date, every) => (every === "week" ? addDays(date, 7) : addMonths(date, MONTHS[every]));
   const recOf = (A, d) => (A._meet && A._meet[d.id]) || { every: d.every, minutes: d.minutes, last: "", since: "", u: 0 };
 
-  // A meeting today: { def, every, minutes, last, due ("" when off), from (the first day of its week), overdue, soon
+  // A meeting today: { def, every, minutes, last, due ("" without a schedule), from (the first day of its week), overdue, soon
   // (in its week, not overdue: it says when), metToday }.
   function stateOf(A, d) {
     const r = recOf(A, d), today = todayStr(), every = Object.hasOwn(EVERY, r.every) ? r.every : d.every;
-    const due = every === "off" ? "" : r.last ? after(r.last, every) : r.since || today;
+    const due = !scheduled(every) ? "" : r.last ? after(r.last, every) : r.since || today;
     const from = due && addDays(due, -WINDOW_DAYS), overdue = !!due && due < today;
     return { def: d, every, minutes: r.minutes, last: r.last, due, from, overdue, soon: !!due && !overdue && from <= today, metToday: r.last === today };
   }
@@ -113,20 +118,23 @@
   // For bug reports: how each stands, without dates.
   function bugLine(A) {
     const today = todayStr();
-    return states(A).map(s => `${s.def.id} every ${s.every}, ${s.last ? `met ${daysBetween(s.last, today)} days ago` : "not met yet"}` +
+    return states(A).map(s => `${s.def.id} ${scheduled(s.every) ? `every ${s.every}` : s.every}, ${s.last ? `met ${daysBetween(s.last, today)} days ago` : "not met yet"}` +
       (!s.due ? "" : s.overdue ? `, overdue by ${daysBetween(s.due, today)} days` : `, due in ${daysBetween(today, s.due)} days`)).join("; ") || "none";
   }
 
   // --- The header line ---
   // The app on screen's meetings: each one's words (a button to its settings) and Done ✓ (not once met today, nor when off).
+  // A checkup (no schedule) just says when you last did it: "Last checkup: 12 days ago".
   let shown = null; // the line as last drawn, so the minute tick leaves it (and focus on its buttons) alone
   function render() {
     const A = K.active(), list = states(A), box = $("kMeeting");
     const html = list.map(s => {
-      const off = !s.due, words = [`Meeting: ${s.def.title}`, EVERY[s.every]].concat(off ? [] : [lastText(s), dueText(s)]).filter(Boolean).join(" · ");
+      const off = s.every === "off", words = s.every === "whenever"
+        ? `Last ${s.def.title.toLowerCase()}: ${s.metToday ? "today ✓" : s.last ? ago(s.last) : "not yet"}`
+        : [`Meeting: ${s.def.title}`, EVERY[s.every]].concat(off ? [] : [lastText(s), dueText(s)]).filter(Boolean).join(" · ");
       return `<div class="meeting${s.overdue ? " overdue" : s.due === todayStr() ? " due" : off ? " off" : ""}">` +
-        `<button type="button" class="meeting-text" data-meet="${esc(s.def.id)}" title="Meeting settings">${esc(words)}</button>` +
-        (off || s.metToday ? "" : `<button type="button" class="secondary small" data-done="${esc(s.def.id)}" title="Mark this meeting done today">Done ✓</button>`) + `</div>`;
+        `<button type="button" class="meeting-text" data-meet="${esc(s.def.id)}" title="Settings">${esc(words)}</button>` +
+        (off || s.metToday ? "" : `<button type="button" class="secondary small" data-done="${esc(s.def.id)}" title="Mark it done today">Done ✓</button>`) + `</div>`;
     }).join("");
     box.hidden = !list.length;
     if (html !== shown) box.innerHTML = shown = html;
@@ -208,7 +216,7 @@
     const { A, id } = editing, d = defsOf(A).find(x => x.id === id);
     const every = $("kMeetEvery").value, minutes = Math.round(readNumber($("kMeetMinutes"))), last = $("kMeetLast").value;
     if (!cleanMinutes(minutes)) return setStatus(`How long: ${MIN_MINUTES} to ${MAX_MINUTES} minutes.`);
-    if (last && (!isDate(last) || last > todayStr() || last < "2000-01-01")) return setStatus("Last met: a day from 2000 up to today, or leave it empty.");
+    if (last && (!isDate(last) || last > todayStr() || last < "2000-01-01")) return setStatus("Last time: a day from 2000 up to today, or leave it empty.");
     close();
     if (!d || !Object.hasOwn(EVERY, every)) return;
     const s = stateOf(A, d), r = recOf(A, d);
@@ -222,11 +230,11 @@
   }
 
   function init() {
-    $("kMeetEvery").innerHTML = Object.keys(EVERY).map(k => `<option value="${k}">${k === "off" ? "Off" : `Every ${k}`}</option>`).join("");
+    $("kMeetEvery").innerHTML = Object.keys(EVERY).map(k => `<option value="${k}">${k === "off" ? "Off" : k === "whenever" ? "Whenever" : `Every ${k}`}</option>`).join("");
     K.modal.define(overlay(), {
       dismiss: close,
       pending: () => !!editing && fields() !== editing.start,
-      ask: "Discard your changes to this meeting?"
+      ask: "Discard your changes?"
     });
     $("kMeetSave").addEventListener("click", saveSettings);
     $("kMeetCancel").addEventListener("click", () => K.modal.requestDismiss(overlay()));

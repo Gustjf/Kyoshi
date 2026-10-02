@@ -14,6 +14,8 @@
     subtitle: "Every recommendation in one place, and always something worthwhile up next.",
     width: 780,
     backupNote: "Your list lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too.",
+    // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
+    meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30 }],
     // The "owl" icon from Lucide Lab (ISC license) — Wan Shi Tong is the owl spirit who keeps the library of all knowledge — in violet so it shows on light and dark tabs.
     icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="9" rx="8" ry="7"/><path d="M12 9a4 4 0 1 1 8 0v12h-4C9.4 21 4 15.6 4 9a4 4 0 1 1 8 0v1"/><path d="M8 9h.01"/><path d="M16 9h.01"/><path d="M20 21a3.9 3.9 0 1 1 0-7.8"/><path d="M10 19.4V22"/><path d="M14 20.85V22"/></svg>'
   });

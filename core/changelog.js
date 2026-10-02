@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.710", date: "2026-10-02", changes: [
+      "Checkups: each app can show a quiet \"Last checkup: 12 days ago\" under its name, with Done ✓ for when you've looked it over in depth, and no schedule, reminders or dot.",
+      "Picking a schedule in a checkup's settings turns it into a meeting, as before."
+    ] },
     { version: "2.610", date: "2026-10-02", changes: [
       "Meetings: every app has a regular check-in with you, shown under its name with when you last met and a Done ✓ button; tap it to change how often, how long, or when you last met.",
       "A meeting coming due in the next two weeks goes to Momo and fills your \"Meeting\" card in the week before it's due; an overdue one puts a dot on its app's icon. Meetings travel with sync and backups.",

@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.251", date: "2026-10-02", changes: [
+      "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Wan Shi Tong."
+    ] },
     { version: "2.241", date: "2026-10-02", changes: [
       "Wan Shi Tong no longer has a regular meeting with you, as you check it daily."
     ] },

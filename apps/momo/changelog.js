@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.764", date: "2026-10-02", changes: [
+      "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Momo."
+    ] },
     { version: "5.754", date: "2026-10-02", changes: [
       "Momo no longer has a weekly meeting with you, as you check it daily; the weekly close-out stays as it was."
     ] },

@@ -50,7 +50,7 @@ core/                 the shared DNA — K = window.Kyoshi
   bugs.js             K.bugs: "Report a bug" pop-up and log
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
-  meetings.js         K.meetings: an app's regular meeting with you, if it names one (none do yet; kept for Iroh): header line, Done ✓, settings pop-up, its "meetings" key, into K.inbox
+  meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox): header line, Done ✓, settings pop-up, its "meetings" key
   inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings), filling Momo's blocks; K.inbox.open
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
   shell.js            K.register, K.start, switcher menu, theme, keyboard, minute tick, other-tab reload
@@ -64,7 +64,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
 ```
 
 ## The app contract
-Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`, only for an app reviewed less often than daily (none yet; likely just Iroh): `[{ id, title, every: "week"|"month"|"quarter"|"year", minutes, after? }]`, its regular meeting(s) with you (core/meetings.js; `after: true` comes after the other apps' in Momo).
+Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`: `[{ id, title, every: "whenever"|"week"|"month"|"quarter"|"year", minutes, after? }]` (core/meetings.js): the current apps, used daily, each name a checkup (`every: "whenever"`: no schedule, just when you last did it); one on a schedule is a regular meeting, for an app reviewed less often (likely just Iroh; `after: true` comes after the other apps' in Momo).
 Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`.
 
 **Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
@@ -96,5 +96,5 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 - Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
 - Within an app: destructure helpers only from `app.js`; call other files' functions as `A.name()`; expose with `Object.assign(A, { … })`.
 - Between apps: never touch another app's `A.S` or storage. A provider may offer a small read-only function — ask me first. So far: Momo reads every app's `A.agenda` and `A.inbox` (its "Open in <App>" calls `A.open(id)`).
-- Meetings are core's, for apps reviewed less often than daily (the current ones are reviewed daily and have none): an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up, sends them to Momo's "Meeting" cards, and dots the app's icon when one is overdue.
+- Checkups and meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up; one on a schedule also goes to Momo's "Meeting" cards and dots the app's icon when overdue.
 - Time: `K.util.todayStr()` / `K.util.now()` (time travel aware); `Date.now()` only for change stamps (`u`, `savedAt`).

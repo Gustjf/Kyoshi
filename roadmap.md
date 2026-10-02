@@ -5,7 +5,7 @@ The plan for the next phases and apps, agreed 2026-10-02. Read it when starting 
 Each finished phase gets a line saying what was decided along the way.
 - [x] Phase 0: Momo's inbox and blocks (2026-10-02). `K.inbox` (core/inbox.js) + `A.inbox`/`A.open`. A need names its `block` (the card title; its own title if left out) and its `fill`: "time", "block" or "ongoing" (never used up, for Wan Shi Tong's in progress). `date` = that day; `due` = on or before (overdue = soonest); else the app's order. Timed needs go in whole, never split. Timed shortfalls make one Tasks card per block title. Done needs show ✓ and never go to Tasks. Any card from today on is a block, baseline-loaded ones included, whole days for now. Appa sends one need per job. Momo's goals stay a Tasks source until Phase 4.
 - [x] Phase 1: Momo Today (2026-10-02). `apps/momo/today.js`; `S.today` picks Today or the board (Today when the window is phone-narrow, ≤ 640px, at load). Today and tomorrow only; earlier today isn't shown. A card inside another shows as its own row, its block in parts around it. Free time is time no card has (a "Free time" card shows as a card), split around events; an unplanned day shows "Nothing's planned" instead of 24h free. Events in conflict are red-edged, as on the board. Tapping a card: its times, goal, what fills it with "Open in <App>", and Edit card (the board's editor); tapping an event: its board pop-up. Those pop-ups put the board's tab on that week first.
-- [x] Phase 2: Meetings (2026-10-02, on a branch). `core/meetings.js` (K.meetings); each app names its meeting's defaults in `K.register` (`meetings`), and core does the rest. The line sits under the app's name: what it's about, how often, last met, Done ✓; tapping it changes how often, how long and last met. Kept under each app's `meetings` key (core's), carried in sync files and backups next to `savedAt`/`sync`, merged meeting by meeting by the latest change (an import never sets one back). First meetings are due right away and take the soonest Meeting block; the dot comes the next day. A meeting fills a "Meeting" card in the week before it's due (the inbox's new `from`), or the soonest once overdue; Momo's comes last. One met today shows ✓ on today's block. Time travel gained +1 month. Then Bosco, Momo, Wan Shi Tong and Appa dropped their meetings, as they're reviewed daily; the code stays for apps reviewed less often, likely just Iroh.
+- [x] Phase 2: Meetings (2026-10-02, on a branch). `core/meetings.js` (K.meetings); each app names its meeting's defaults in `K.register` (`meetings`), and core does the rest. The line sits under the app's name: what it's about, how often, last met, Done ✓; tapping it changes how often, how long and last met. Kept under each app's `meetings` key (core's), carried in sync files and backups next to `savedAt`/`sync`, merged meeting by meeting by the latest change (an import never sets one back). First meetings are due right away and take the soonest Meeting block; the dot comes the next day. A meeting fills a "Meeting" card in the week before it's due (the inbox's new `from`), or the soonest once overdue; Momo's comes last. One met today shows ✓ on today's block. Time travel gained +1 month. Then Bosco, Momo, Wan Shi Tong and Appa dropped their meetings, as they're used daily, for a checkup each: `every: "whenever"` (no schedule) shows "Last checkup: 12 days ago" with Done ✓, never due and never in Momo; picking a schedule in its settings makes it a meeting again. Scheduled meetings stay for apps reviewed less often, likely just Iroh.
 - [ ] Phase 3: Hawky (errands)
 - [ ] Phase 4: Iroh (goals ladder)
 - [ ] Phase 5: Badgermole (workouts)
@@ -25,7 +25,7 @@ Stop spinning wheels:
 - **Direction:** know what matters.
 - **Allocation:** give it real hours. Every hour has a job, downtime included.
 - **Execution:** run each day from the phone, with details one tap away.
-- **Feedback:** review the apps daily, and Iroh's goals at set meetings (month, quarter, year).
+- **Feedback:** use the apps daily, give each a checkup now and then, and review Iroh's goals at set meetings (month, quarter, year).
 
 ## Decisions
 - **Momo is strictly the next two weeks:** this week and next (Mon–Sun), as now. Nothing further out goes into it.
@@ -36,7 +36,7 @@ Stop spinning wheels:
 - **What actually happened** is reviewed weekly, by exception, at Momo's close-out: the plan is assumed to have happened, and you fix what didn't.
 - **Phone:** Android with Chrome. Folder sync carries everything between phone and computer.
 - **Card length:** a card with no length of its own starts at 60 minutes. Momo's `DRAW_HOURS` goes from 1.5 to 1.
-- **Meetings:** only for apps reviewed less often than daily, likely just Iroh. The rest are reviewed daily, so they have none.
+- **Meetings:** only for apps reviewed less often than daily, likely just Iroh. The rest are used daily and have a checkup instead: "Last checkup: 12 days ago" with Done ✓, no schedule or reminders.
 - **Build order:** daily flow first.
 - **Shared functions:** approved; see below.
 
@@ -47,13 +47,14 @@ WHAT     Hawky errands · Badgermole workouts · Turtleduck meals · People · A
             │  each lists what it needs this week and next
 WHEN     Momo          baseline + this week + next · blocks get filled · Today on the phone
             │  hours spent flow back (read-only)
-REVIEW   each app daily · Momo's weekly close-out · Iroh's meetings (month, quarter, year)
+REVIEW   each app daily, with a checkup now and then · Momo's weekly close-out · Iroh's meetings (month, quarter, year)
 ```
 No app writes another app's data. Names are suggestions until the app is built.
 
 ## Meetings (defaults, each adjustable or off in its app)
-Only for apps reviewed less often than daily. The others are reviewed daily and have none (Bosco, Momo, Wan Shi Tong and
-Appa dropped theirs); core's meetings (`core/meetings.js`) stay for the longer review periods, likely just Iroh's:
+Only for apps reviewed less often than daily. The others are used daily and have a checkup instead (no schedule: "Last
+checkup: 12 days ago" with Done ✓; a schedule picked in its settings makes it a meeting). Core's meetings (`core/meetings.js`)
+stay for the longer review periods, likely just Iroh's:
 | App | Meeting | Every | About |
 |---|---|---|---|
 | Iroh | Reconcile the goals | month | 20 min |
