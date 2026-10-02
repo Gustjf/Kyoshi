@@ -30,6 +30,7 @@ switched from the icon button beside Theme. More apps will be added, each relyin
 
 ## Checking a change
 Open `index.html` from disk, switch to the app, check the console for errors. Developer Mode's time travel rehearses day/week changes without saving.
+Then `node tests/run.js`: end-to-end tests (Playwright taps through the real page with made-up data); add tests for the flows you change.
 
 ---
 
@@ -64,6 +65,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
   badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (sessions into Momo's Workout cards)
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
+tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js
 ```
 
 ## The app contract

@@ -18,7 +18,7 @@ Each finished phase gets a line saying what was decided along the way.
 ## How we work (each phase)
 1. **Start a new session** and say "Phase N of roadmap.md". It reads the root CLAUDE.md (automatic), this file's top sections (Status through "What each app sends Momo") and its own phase, then the phase's **Read first** list. Nothing else up front: every file's header says what's in it.
 2. **Plan mode for 4a, 4b, 5 and 6.** Phases 3 and 7 go straight to building.
-3. **Before pushing:** build, then review the diff (`/code-review`). Check in the browser: the console, phone width, and time travel. Then push to `main`, or to a branch where the phase says so. A phase on a branch is merged (GitHub) before the next phase starts: each builds on the last.
+3. **Before pushing:** build, then review the diff (`/code-review`), then test the flows end to end: add the phase's own to `tests/` and run `node tests/run.js` (Playwright opens the real `index.html` and taps through every app with made-up data from `tests/generate.js`); all must pass. Check in the browser: the console, phone width, and time travel. Then push to `main`, or to a branch where the phase says so. A phase on a branch is merged (GitHub) before the next phase starts: each builds on the last.
 4. **After pushing:** tick the phase here, note the decisions made, and keep the CLAUDE.md files current: the app's, Momo's when Momo changed, the root contract when core changed.
 5. **The user** lives with each phase for a few days, then sends notes in one batch.
 6. **Model:** the strongest for 4a and 4b (shared code, sync, stored data). 5 and 6 are big but self-contained: the strongest if the budget allows. A lighter model is fine for 3, 7 and small tweaks.
@@ -146,6 +146,7 @@ baseline saves the dragging each week.
 - **Versions:** each phase bumps every app it touches. New apps start at 1.000, with a line in Kyoshi's changelog.
 
 ## Verification (every phase)
+- **End-to-end tests:** `node tests/run.js` passes, with the phase's flows added (each test: a fresh browser profile, a fixed clock, made-up data only: the repo is public).
 - **Console check:** open `index.html` from disk, switch to each app, and the console stays clean.
 - **Phone:** check in a narrow window, and on the Android phone through the sync folder: Today, Hawky's quick add, Badgermole's set logging, Turtleduck's tapping.
 - **Time travel (Developer Mode):** jump a day, a week, a month and a season, then check: blocks fill and shortfalls show in Tasks; Iroh's meetings come due, with the dot and the Meeting block; the close-out logs the hours.

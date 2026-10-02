@@ -28,4 +28,5 @@ thumb, PRs and a streak). You only see the app you're using; switch apps from th
    live the same way.
 
 Working on it (people or AI): start with [`CLAUDE.md`](CLAUDE.md) — the rules, a map of every file,
-how to add a new app, and how to test a branch before it goes live.
+how to add a new app, and how to test a branch before it goes live. `node tests/run.js` runs the end-to-end
+tests (Playwright and made-up data; not part of the site).
