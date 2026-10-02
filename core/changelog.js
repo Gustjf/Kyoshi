@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.610", date: "2026-10-02", changes: [
+      "Meetings: every app has a regular check-in with you, shown under its name with when you last met and a Done ✓ button; tap it to change how often, how long, or when you last met.",
+      "A meeting coming due in the next two weeks goes to Momo and fills your \"Meeting\" card in the week before it's due; an overdue one puts a dot on its app's icon. Meetings travel with sync and backups.",
+      "Developer Mode's time travel can jump a month."
+    ] },
     { version: "2.510", date: "2026-10-02", changes: [
       "A shared inbox: any app can list what it needs done this week and next, and Momo fills your matching blocks with it, with a way back to the app."
     ] },

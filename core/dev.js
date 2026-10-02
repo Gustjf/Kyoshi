@@ -4,7 +4,7 @@
  * storage used, bug reports, and a changelog for the app or Kyoshi. The test banner lives here too. */
 (function (K) {
   "use strict";
-  const { fmtDate, todayStr, readFile, fmtBytes } = K.util;
+  const { fmtDate, todayStr, addMonths, daysBetween, readFile, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   let on = false;
   let logFor = "app"; // the changelog shown: "app" (the one on screen) or "kyoshi"
@@ -79,6 +79,7 @@
     $("kDevClose").addEventListener("click", toggle);
     $("kDevPlusDay").addEventListener("click", () => travel(1));
     $("kDevPlusWeek").addEventListener("click", () => travel(7));
+    $("kDevPlusMonth").addEventListener("click", () => travel(daysBetween(todayStr(), addMonths(todayStr(), 1))));
     $("kDevExportAll").addEventListener("click", K.backup.exportAll);
     $("kDevImportAll").addEventListener("click", () => $("kDevImportFile").click());
     $("kDevImportFile").addEventListener("change", async e => {

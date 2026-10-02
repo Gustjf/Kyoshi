@@ -35,7 +35,7 @@ UI: `folded` (backlog groups folded on this device), `editing`, `swapping` (the 
 room), `lastCat`, `knownToday`.
 
 ## Storage (`A.store`) and backups
-Keys: `items`, `slots`, `folded` (this device's; not synced or backed up), `sync` (core's).
+Keys: `items`, `slots`, `folded` (this device's; not synced or backed up), `sync` and `meetings` (core's).
 Backup JSON: `{ schemaVersion: 1, appVersion, items, slots }`.
 
 ## Shared with other apps

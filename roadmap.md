@@ -5,7 +5,7 @@ The plan for the next phases and apps, agreed 2026-10-02. Read it when starting 
 Each finished phase gets a line saying what was decided along the way.
 - [x] Phase 0: Momo's inbox and blocks (2026-10-02). `K.inbox` (core/inbox.js) + `A.inbox`/`A.open`. A need names its `block` (the card title; its own title if left out) and its `fill`: "time", "block" or "ongoing" (never used up, for Wan Shi Tong's in progress). `date` = that day; `due` = on or before (overdue = soonest); else the app's order. Timed needs go in whole, never split. Timed shortfalls make one Tasks card per block title. Done needs show ✓ and never go to Tasks. Any card from today on is a block, baseline-loaded ones included, whole days for now. Appa sends one need per job. Momo's goals stay a Tasks source until Phase 4.
 - [x] Phase 1: Momo Today (2026-10-02). `apps/momo/today.js`; `S.today` picks Today or the board (Today when the window is phone-narrow, ≤ 640px, at load). Today and tomorrow only; earlier today isn't shown. A card inside another shows as its own row, its block in parts around it. Free time is time no card has (a "Free time" card shows as a card), split around events; an unplanned day shows "Nothing's planned" instead of 24h free. Events in conflict are red-edged, as on the board. Tapping a card: its times, goal, what fills it with "Open in <App>", and Edit card (the board's editor); tapping an event: its board pop-up. Those pop-ups put the board's tab on that week first.
-- [ ] Phase 2: Meetings
+- [x] Phase 2: Meetings (2026-10-02, on a branch). `core/meetings.js` (K.meetings); each app names its meeting's defaults in `K.register` (`meetings`), and core does the rest. The line sits under the app's name: what it's about, how often, last met, Done ✓; tapping it changes how often, how long and last met. Kept under each app's `meetings` key (core's), carried in sync files and backups next to `savedAt`/`sync`, merged meeting by meeting by the latest change (an import never sets one back). First meetings are due right away and take the soonest Meeting block; the dot comes the next day. A meeting fills a "Meeting" card in the week before it's due (the inbox's new `from`), or the soonest once overdue; Momo's comes last. One met today shows ✓ on today's block. Time travel gained +1 month.
 - [ ] Phase 3: Hawky (errands)
 - [ ] Phase 4: Iroh (goals ladder)
 - [ ] Phase 5: Badgermole (workouts)
@@ -179,7 +179,7 @@ That adds up to about 45 minutes each Sunday, about an hour a month and about tw
 - **Today view:** reuses Momo's `times.js` (`daySchedule`, `startTimes`), `cardHTML` and `eventHTML`.
 - **Meetings:**
   - Core adds meeting dates to the sync file, next to `savedAt` and `sync` (`core/sync.js`).
-  - Each app's `attention()` gives the dot.
+  - Core gives the dot, after the app's own `attention()` (`core/shell.js`).
 - **Turtleduck's drag and drop** borrows Momo's touch-hold approach (`drag.js`).
 - **Badgermole's calendar** is a plain month grid.
 - **Momo changes:**

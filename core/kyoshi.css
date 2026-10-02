@@ -99,6 +99,17 @@ th { color: var(--muted); font-weight: 600; font-size: .85em; }
 /* --- Shell: header, app switcher, banners, footer, corner tag --- */
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
 .subtitle { color: var(--muted); font-size: .85em; }
+.header-main { min-width: 0; }
+/* The app's meetings with you, under its subtitle (core/meetings.js): muted; due today amber, overdue red. */
+.meetings { display: flex; flex-direction: column; gap: 4px; margin: 6px -4px 0; padding: 2px 4px; border-radius: 6px; }
+.meeting { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: .8em; color: var(--muted); }
+.meeting-text { padding: 2px 0; background: none; color: inherit; font-size: inherit; text-align: left; }
+.meeting-text:hover { background: none; color: var(--text); text-decoration: underline; }
+.meeting.due { color: var(--warn); }
+.meeting.overdue { color: var(--bad); font-weight: 600; }
+.meeting .secondary.small { padding: 2px 8px; font-weight: 400; }
+.meetings.flash { animation: meeting-flash 1.8s ease-out; }
+@keyframes meeting-flash { 0%, 45% { background: var(--unsaved-bg); } 100% { background: transparent; } }
 .header-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .theme-toggle, .switch-btn { display: inline-flex; align-items: center; height: 28px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: .8em; }
 .theme-toggle { padding: 0 10px; }

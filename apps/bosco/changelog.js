@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.260", date: "2026-10-02", changes: [
+      "Bosco has a monthly meeting with you to look over the trend and doses: it shows under Bosco's name, and goes to Momo's Meeting card when it's due."
+    ] },
     { version: "7.160", date: "2026-10-01", changes: [
       "A backup or synced save naming a medication Bosco doesn't know can no longer show “undefined” where its name goes."
     ] },

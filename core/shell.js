@@ -1,8 +1,8 @@
 /* Kyoshi · core/shell.js — the shell: app registry, header & switcher, theme, start-up.
  * K.register(meta) → A, an app's namespace (the app contract is in CLAUDE.md).
  * K.start() (the last line of index.html) opens the store (core/storage.js), makes each app's
- * root from A.markup, loads and starts every app, shows one (the URL's #id, else the last
- * used), then runs the shared keyboard, minute tick and other-tab reloads.
+ * root from A.markup, loads and starts every app (and its meetings, core/meetings.js), shows one
+ * (the URL's #id, else the last used), then runs the shared keyboard, minute tick and other-tab reloads.
  * Only the app on screen is in the page: the others' roots are kept aside (detached) but
  * keep running — so ids only need to be unique within an app, and A.$ looks only inside it. */
 (function (K) {
@@ -45,6 +45,7 @@
     clearTimeout(slow);
     K.backup.init();
     K.bugs.init();
+    K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));
     K.dev.init();
     wireSwitcher();
@@ -59,7 +60,7 @@
     K.backup.checkStorage();
   };
 
-  // Makes the app's root, then loads (A.load), gets its sync identity and starts it (A.init).
+  // Makes the app's root, then loads (A.load) with its meetings, gets its sync identity and starts it (A.init).
   // An app that fails shows why instead, with a way to download its data, and the others carry on.
   function startApp(A) {
     A.root = document.createElement("div");
@@ -70,6 +71,7 @@
       if (A.data) K.backup.mount(A);
       if (A.load) A.load();
       loaded = true;
+      K.meetings.load(A);
       if (A.data) K.sync.loadMeta(A);
       if (A.init) A.init();
       A.started = true;
@@ -91,7 +93,7 @@
     K.util.downloadJSON({ kyoshiApp: A.id, savedAt: new Date().toISOString(), keys }, `${A.id}-saved-data-${K.util.todayStr()}.json`);
   }
 
-  // Puts an app on screen: its root, header, tab title & icon, width, and #id in the URL.
+  // Puts an app on screen: its root, header (meetings too), tab title & icon, width, and #id in the URL.
   function show(A) {
     if (!A || A === active) return;
     closeMenu();
@@ -104,6 +106,7 @@
     document.documentElement.style.setProperty("--app-width", `${A.meta.width || 780}px`);
     $("kAppName").textContent = A.meta.name;
     $("kAppSubtitle").textContent = A.subtitle;
+    K.meetings.render();
     $("kFooterName").textContent = A.meta.name;
     $("kVersionTag").textContent = A.VERSION ? `v${A.VERSION}` : "";
     document.title = A.meta.title || A.meta.name;
@@ -123,8 +126,8 @@
   }
 
   // --- Switcher: one button (the app on screen's icon) opening a list of every app ---
-  // What an app says needs you ("" if nothing): a dot on its icon, and on the button for others.
-  const attention = A => call(A, "attention") || "";
+  // What an app says needs you ("" if nothing), else its overdue meeting: a dot on its icon, and on the button for others.
+  const attention = A => call(A, "attention") || (A.started ? K.meetings.attention(A) : "");
 
   function renderSwitcher() {
     if (!active) return;
@@ -218,9 +221,10 @@
   }
 
   // --- Every minute and whenever the page is back in view: each app catches up (a new day,
-  // a dose coming due, a week to close out), in view or not. ---
+  // a dose coming due, a week to close out), in view or not, and so do the meetings. ---
   function tick() {
     K.order.forEach(id => call(K.apps[id], "onTick"));
+    K.meetings.render();
     renderSwitcher();
     K.backup.checkStorage();
   }
@@ -241,8 +245,10 @@
       reloadTimers[id] = setTimeout(() => {
         try {
           A.load();
+          K.meetings.load(A);
           if (A.data) K.sync.loadMeta(A);
           call(A, "onReload");
+          if (A === active) K.meetings.render();
           renderSwitcher();
         } catch (err) { console.error(`${A.meta.name} couldn't reload another tab's changes.`, err); }
       }, 50);

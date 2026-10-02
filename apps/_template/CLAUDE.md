@@ -20,10 +20,14 @@ part of the contract: storage, backups, sync merging (with delete markers), and 
 `items` [{ id, text, deleted, at, u }] — deleted ones stay as markers; `at` is when it was added (the list's order), `u` when it last changed (the later wins in sync).
 
 ## Storage (`A.store`) and backups
-Key: `items` (plus core's `sync`). Backup JSON: `{ schemaVersion: 1, appVersion, items }`.
+Key: `items` (plus core's `sync` and `meetings`). Backup JSON: `{ schemaVersion: 1, appVersion, items }` (plus core's `meetings`).
+
+## Its meeting with you
+`meetings` in `app.js` names its regular check-in (what it's about, how often, how long). Core does the rest: the line under the
+app's name with Done ✓, the settings, sync and backups, Momo's "Meeting" cards and the overdue dot (core/meetings.js).
 
 ## Adding a new app from this template
 1. Copy this folder to `apps/<id>/` (`<id>`: lowercase letters and digits, from a letter, not used yet); rename `template`/`Template` → `<id>`/`<Name>` in every file (incl. `.app-template`, `template.css` → `<id>.css`).
-2. In `app.js` set name, tab title, subtitle, page width and icon (a Lucide SVG with a stroke color, like Bosco's and Momo's).
+2. In `app.js` set name, tab title, subtitle, page width, icon (a Lucide SVG with a stroke color, like Bosco's and Momo's) and its meeting.
 3. Add its `<link>`/`<script>` tags to `index.html` (app.js first, events.js last; the switcher lists apps in that order), then give every link a new build stamp.
 4. Rewrite this `CLAUDE.md` for the app (purpose, file map, data model). Start its changelog at 1.000 and add a line to Kyoshi's changelog.

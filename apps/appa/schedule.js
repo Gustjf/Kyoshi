@@ -5,7 +5,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { addDays, daysBetween, todayStr, localDate, daysInMonth, pad2, mean } = K.util;
+  const { addDays, addMonths, daysBetween, todayStr, localDate, mean } = K.util;
   const { LEAD_DAYS, SOON_DAYS, READING_AHEAD, READING_STALE, ESTIMATE_RUNS, UNITS, niceMinutes, fmtDay, fmtReading, meterOf } = A;
 
   let memoKey = "", memo = new Map();
@@ -55,11 +55,6 @@
   // ==========================================================================
   // When a job is due
   // ==========================================================================
-  // Months later, kept to the month's end: Jan 31 + 1 month = Feb 28 (or 29).
-  function addMonths(date, n) {
-    const m0 = +date.slice(5, 7) - 1 + n, y = +date.slice(0, 4) + Math.floor(m0 / 12), m = ((m0 % 12) + 12) % 12 + 1;
-    return `${y}-${pad2(m)}-${pad2(Math.min(+date.slice(8, 10), daysInMonth(y, m)))}`;
-  }
   const after = (date, { n, unit }) => (unit === "d" ? addDays(date, n) : unit === "w" ? addDays(date, 7 * n) : addMonths(date, unit === "y" ? 12 * n : n));
   // The first start of one of the chosen seasons after a day (K.seasons.seasonStart: the season under way counts too).
   function nextSeason(date, seasons) {

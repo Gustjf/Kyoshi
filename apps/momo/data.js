@@ -2,7 +2,7 @@
  * standalone Momo left in this browser), cleaning, saving with undo, backups, and combining
  * with other devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and
  * core/sync.js (folder sync) use — not to be confused with A.S.data, Momo's data itself.
- * Storage keys (A.store): data, sync (core's). */
+ * Storage keys (A.store): data, sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -222,7 +222,7 @@
 
   // Replaces everything with the backup's data (raw: its parsed JSON), after validating
   // it first so a bad file never changes anything, and asking first (unless ask is
-  // false: Import all already did) if there's data to lose.
+  // false: Import all already did) if there's data to lose. True once it's in.
   function importBackup(raw, ask = true) {
     if (!isMomoData(raw)) return alert("That file doesn't look like a Momo backup: no weeks, baseline or goals found.");
     const clean = normalizeData(raw);
@@ -239,6 +239,7 @@
     S.closeOutLater = false;
     A.renderAll();
     A.checkCloseOuts();
+    return true;
   }
 
   // ==========================================================================

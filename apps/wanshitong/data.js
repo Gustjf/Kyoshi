@@ -1,7 +1,7 @@
 /* Wan Shi Tong · data.js — the saved data: loading, cleaning, saving, backups, and combining with
  * other devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
  * (folder sync) use. Storage keys (A.store): items, slots, folded (this device's own, never
- * synced or backed up), sync (core's). */
+ * synced or backed up), sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   // Categories that were merged or removed: novels and textbooks are books now; courses (removed) show as Other.
@@ -75,7 +75,7 @@
   }
 
   // Replaces everything with the backup's, after checking it can be read (so a bad file never
-  // changes anything) and asking first (unless ask is false: Import all already did).
+  // changes anything) and asking first (unless ask is false: Import all already did). True once it's in.
   function importBackup(raw, ask = true) {
     if (!raw || !looksLike(raw)) return alert("That file doesn't look like a Wan Shi Tong backup.");
     const items = cleanItems(raw.items);
@@ -91,6 +91,7 @@
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export
     A.renderAll();
+    return true;
   }
 
   // ==========================================================================

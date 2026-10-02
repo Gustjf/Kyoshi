@@ -3,7 +3,8 @@
  * Sync Folder… and the sync status line; runs the banners above every app for sync
  * (#kSyncBanner) and storage (#kStorageBanner: slow to open, out of reach, or nearly full);
  * Export all / Import all (Developer Mode, see core/dev.js) put every app in one file.
- * Uses each app's A.data: build() for exports, importBackup(raw, ask) for imports. */
+ * Uses each app's A.data: build() for exports, importBackup(raw, ask) for imports (true once it's in). A backup
+ * also holds the app's meetings (core/meetings.js), which an import combines with ours, the later change winning. */
 (function (K) {
   "use strict";
   const { isObj, todayStr, downloadJSON, readFile, fmtBytes } = K.util;
@@ -45,8 +46,16 @@
     if (A._backup) A._backup.exportBtn.classList.toggle("unsaved", value);
   }
 
+  // An app's backup: its data, with its meetings beside it.
+  const backupOf = A => ({ ...A.data.build(), meetings: K.meetings.build(A) });
+
+  // Brings in an app's backup (raw: its parsed JSON), asking first if ask; then its meetings, once it's in.
+  function importApp(A, raw, ask) {
+    if (A.data.importBackup(raw, ask) === true) K.meetings.take(A, raw.meetings);
+  }
+
   function exportApp(A) {
-    downloadJSON(A.data.build(), `${A.id}-backup-${todayStr()}.json`);
+    downloadJSON(backupOf(A), `${A.id}-backup-${todayStr()}.json`);
     setUnsaved(A, false);
   }
 
@@ -58,13 +67,13 @@
       if (!isObj(raw.apps[A.id])) return alert(`That Kyoshi backup has nothing for ${A.meta.name} in it.`);
       raw = raw.apps[A.id];
     }
-    A.data.importBackup(raw, true);
+    importApp(A, raw, true);
   }
 
   // One file with every app's backup, under apps.<id>.
   function exportAll() {
     const apps = {};
-    running().forEach(A => { apps[A.id] = A.data.build(); });
+    running().forEach(A => { apps[A.id] = backupOf(A); });
     downloadJSON({ kyoshiVersion: K.VERSION, exportedAt: new Date().toISOString(), apps }, `kyoshi-backup-${todayStr()}.json`);
     running().forEach(A => setUnsaved(A, false));
   }
@@ -76,7 +85,7 @@
     const apps = isObj(raw) && isObj(raw.apps) ? running().filter(A => isObj(raw.apps[A.id])) : [];
     if (!apps.length) return alert("That file isn't an Export all backup. To bring in one app's backup, use Import JSON in that app.");
     if (!confirm(`Replace everything in ${nameList(apps.map(A => A.meta.name))} with this backup? This can't be undone.`)) return;
-    apps.forEach(A => A.data.importBackup(raw.apps[A.id], false));
+    apps.forEach(A => importApp(A, raw.apps[A.id], false));
   }
 
   // Every app's sync button and status line, and the banner shown while sync is paused or broken.

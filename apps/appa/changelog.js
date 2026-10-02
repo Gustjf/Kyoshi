@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.111", date: "2026-10-02", changes: [
+      "Appa has a quarterly meeting with you for new things and records: it shows under Appa's name, and goes to Momo's Meeting card when it's due."
+    ] },
     { version: "1.011", date: "2026-10-02", changes: [
       "Jobs go to Momo through the shared inbox: each fills a \"… maintenance\" card whole, and \"Open in Appa\" opens that very job."
     ] },

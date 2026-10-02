@@ -38,6 +38,7 @@
       `- Apps: ${K.order.map(id => `${K.apps[id].meta.name} ${K.apps[id].VERSION}${K.apps[id].started ? "" : " (failed to start)"}`).join(", ")}`, "",
       "## App State",
       ...appLines,
+      `- Meetings: ${K.meetings.bugLine(A)}`,
       `- Unsaved changes since last export: ${K.backup.isUnsaved(A)}`,
       `- Folder sync: ${K.sync.supported ? K.sync.state() : "unsupported"}`,
       `- Storage: ${K.storage.backend()}`,

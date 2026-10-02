@@ -1,8 +1,8 @@
 /* Momo · inbox.js — what other apps need done this week and next (K.inbox, core/inbox.js), filling your
  * blocks: Momo decides when, each app says what. A block is any card on a day from today on, this week
  * and next; a need fills the soonest one with the title it asks for (its block, any case): a need with a
- * day first, on that day; one due by a day, on or before it (once overdue, the soonest); any other in the
- * order its app lists them. "One per block" needs take an empty block each; timed ones go in whole while
+ * day first, on that day; one due by a day, on or before it (once overdue, the soonest), and not before its
+ * from day if it has one (a meeting goes in the week before it's due); any other in the order its app lists them. "One per block" needs take an empty block each; timed ones go in whole while
  * the card's hours have room. Ongoing ones show on every block with their title. What no block covers
  * goes to Tasks (tasks.js). Nothing is stored: it's worked out afresh each time the board is drawn, so
  * when a block moves its work follows, and filling adds no hours and causes no conflict. */
@@ -41,7 +41,7 @@
   // needs no block covers (not done, not ongoing), shown: the board on screen's filled cards, id -> needs }.
   function fill() {
     const needs = readNeeds(), all = blocks(), today = todayStr(), short = [];
-    const fits = (n, b) => b.title === blockKey(n) && (n.date ? b.date === n.date : !n.due || n.due < today || b.date <= n.due);
+    const fits = (n, b) => b.title === blockKey(n) && (n.date ? b.date === n.date : (!n.from || b.date >= n.from) && (!n.due || n.due < today || b.date <= n.due));
     needs.filter(n => n.date).concat(needs.filter(n => !n.date)).forEach(n => {
       if (n.fill === "ongoing") return all.forEach(b => { if (fits(n, b)) b.needs.push(n); });
       const whole = n.fill === "block", m = needMinutes(n);

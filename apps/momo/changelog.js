@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.743", date: "2026-10-02", changes: [
+      "Momo has a weekly meeting with you to close out last week and plan the next two, after the other apps' meetings.",
+      "A card titled \"Meeting\" fills with the apps' meetings coming due, each in the week before it's due; what doesn't fit goes to Tasks."
+    ] },
     { version: "5.643", date: "2026-10-02", changes: [
       "Today: a big, phone-first view of what's on now with the time left, what's next, the rest of today and tomorrow, free time and other apps' events included.",
       "Tap a card on Today for its times, goal and what fills it, with \"Open in…\" and a way to edit it; tap an event for its own pop-up.",

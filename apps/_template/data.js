@@ -1,6 +1,6 @@
 /* Template · data.js — the app's saved data: loading, cleaning, saving, backups, and combining
  * with other devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and
- * core/sync.js (folder sync) use. Storage keys (A.store): items, sync (core's). */
+ * core/sync.js (folder sync) use. Storage keys (A.store): items, sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -40,7 +40,7 @@
   }
 
   // Replaces everything with the backup's items, asking first (unless ask is false:
-  // Import all already did) if there's anything to lose.
+  // Import all already did) if there's anything to lose. True once it's in.
   function importBackup(raw, ask = true) {
     if (!raw || !looksLike(raw)) return alert("That file doesn't look like a Template backup.");
     const items = cleanItems(raw.items);
@@ -49,6 +49,7 @@
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export
     A.renderAll();
+    return true;
   }
 
   // A save from the sync folder (see core/sync.js): taken whole, or combined with ours item by

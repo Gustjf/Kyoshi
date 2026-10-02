@@ -2,7 +2,7 @@
  * A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js (folder sync) use; it also
  * lists the photos and PDFs the data uses (files), which folder sync copies as plain files and backups
  * leave out. Storage keys (A.store): things, jobs, records, readings, files, settings; timer (this
- * device's running timer: never synced or backed up); sync (core's). */
+ * device's running timer: never synced or backed up); sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   const S = A.S;

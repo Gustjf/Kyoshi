@@ -1,7 +1,7 @@
 /* Bosco · data.js — Bosco's saved data: loading (and, on the first open, bringing in what the
  * standalone Bosco left in this browser), cleaning, saving, backups, and combining with other
  * devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
- * (folder sync) use. Storage keys (A.store): entries, goals, profile, doseSnooze, sync (core's). */
+ * (folder sync) use. Storage keys (A.store): entries, goals, profile, doseSnooze, sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -185,7 +185,7 @@
 
   // Replaces all entries and goals with the backup's (raw: its parsed JSON), after
   // validating it first so a bad file never changes anything, and asking first
-  // (unless ask is false: Import all already did) if there's data to lose.
+  // (unless ask is false: Import all already did) if there's data to lose. True once it's in.
   function importBackup(raw, ask = true) {
     if (!raw || !Array.isArray(raw.entries)) return alert("Invalid backup file: no entries found.");
     // Until Units is answered, the backup's own unit answers it, so its weights aren't converted.
@@ -202,6 +202,7 @@
     S.currentPage = 1;
     A.renderOneTimeInfo();
     A.renderAll();
+    return true;
   }
 
   // ==========================================================================

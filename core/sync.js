@@ -7,7 +7,8 @@
  * whether another device's save is newer (load it), older (ignore it), or was made while
  * this device also had unsynced changes (combine the two, via the app's A.data.combine).
  * An app with photos or documents (A.data.files) also has them copied both ways as plain files in
- * <folder>/<app id>/files/ (core/files.js mirror).
+ * <folder>/<app id>/files/ (core/files.js mirror). Each save also carries the app's meetings (core/meetings.js),
+ * combined meeting by meeting.
  * Per app (A._sync): meta { device, file, clock, changedAt, dirty } kept in A.store "sync",
  * seen (file name -> "lastModified:size" already read), note (last thing it did), queued, timer. */
 (function (K) {
@@ -108,29 +109,32 @@
   }
 
   // --- Reading & writing the folder ---
-  // Brings in a save found in the folder; returns what happened, or "" if nothing.
+  // Brings in a save found in the folder, and its meetings; returns what happened ({ what, data: whether the
+  // app's own data changed }), or null if nothing.
   function incorporate(A, raw) {
     const ch = A._sync, clock = raw.sync && cleanClock(raw.sync.clock);
     const rel = clock ? compareClocks(ch.meta.clock, clock) : "plain";
     // A device with no data yet (a new phone, say) takes a save as it is.
     // Plain backups (Export JSON files) are only ever used that way.
     const replace = rel === "behind" || (!A.data.hasData() && (rel === "diverged" || rel === "plain"));
-    if (!replace && rel !== "diverged") return "";
+    if (!replace && rel !== "diverged") return null;
     const result = A.data.combine(raw, {
       replace, plain: !clock,
       mine: { savedAt: ch.meta.changedAt, device: ch.meta.device },
       theirs: { savedAt: String(raw.savedAt || ""), device: String((raw.sync && raw.sync.device) || "") }
     });
-    if (!result) return "";
+    if (!result) return null;
+    const meet = K.meetings.merge(A, raw.meetings);
     if (clock) ch.meta.clock = maxClocks(ch.meta.clock, clock);
-    if (!clock || !result.same) {
+    if (!clock || !result.same || !meet.same) {
       markLocalChange(A); // a version the folder doesn't have yet, so it gets saved there
     } else {
       ch.meta.changedAt = String(raw.savedAt || ch.meta.changedAt);
       storeMeta(A);
     }
-    if (!result.apply()) return ""; // nothing new here
-    return replace ? "Loaded" : "Combined changes with";
+    const data = result.apply(), met = meet.apply();
+    if (!data && !met) return null; // nothing new here
+    return { what: replace ? "Loaded" : "Combined changes with", data };
   }
 
   // Reads the app's saves that are new or changed since last time, most up to
@@ -146,17 +150,20 @@
       } catch (err) { /* mid-transfer; the next check gets it */ }
     }
     changedFiles.sort((a, b) => b.file.lastModified - a.file.lastModified);
-    let what = "";
+    let what = "", data = false;
     for (const { name, file, sig } of changedFiles) {
       let raw = null;
       try { raw = JSON.parse(await file.text()); } catch (err) { /* not a save, or changed while being read: retried once it changes */ }
       if (root !== dir || K.testMode) return;
       ch.seen.set(name, sig);
-      const result = isObj(raw) && A.data.looksLike(raw) ? incorporate(A, raw) : "";
-      if (result && !what) what = `${result} “${name}”`;
+      const result = isObj(raw) && A.data.looksLike(raw) ? incorporate(A, raw) : null;
+      if (!result) continue;
+      if (!what) what = `${result.what} “${name}”`;
+      data = data || result.data;
     }
     if (!what) return;
-    A.data.afterSync(); // the app stores and redraws what came in
+    if (data) A.data.afterSync(); // the app stores and redraws what came in (meetings are already kept)
+    K.meetings.render();
     ch.note = `${what} at ${clockTime()}`;
     ui();
     K.refreshSwitcher();
@@ -167,7 +174,7 @@
     const root = dir, ch = A._sync, m = ch.meta;
     if (state !== "on" || !m.dirty || K.testMode) return;
     const version = m.clock[m.device];
-    const text = JSON.stringify({ ...A.data.build(), savedAt: m.changedAt, sync: { device: m.device, clock: m.clock } }, null, 2);
+    const text = JSON.stringify({ ...A.data.build(), savedAt: m.changedAt, sync: { device: m.device, clock: m.clock }, meetings: K.meetings.build(A) }, null, 2);
     const sub = await root.getDirectoryHandle(A.id, { create: true });
     const handle = await sub.getFileHandle(m.file, { create: true });
     const out = await handle.createWritable();

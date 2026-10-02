@@ -25,7 +25,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `dosingAsking`, `paceAsking`, `vialEditing`, `anchorEditing`, `vialMode`, `doseAsking`.
 
 ## Storage (`A.store`) and backups
-Keys: `entries`, `goals`, `profile`, `doseSnooze` (this device's "Not yet"), `sync` (core's). First open reads the standalone's
+Keys: `entries`, `goals`, `profile`, `doseSnooze` (this device's "Not yet"), `sync` and `meetings` (core's). First open reads the standalone's
 `weightTrackerEntries_v1` / `weightTrackerGoals_v1` / `weightTrackerProfile_v1` (never changes them).
 Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, entries, goals, cumulativeDoseMgByMedication }`.
 Bump `DATA_SCHEMA_VERSION` only when import has to migrate data (see its comment in `app.js`).

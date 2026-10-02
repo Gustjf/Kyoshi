@@ -1,6 +1,6 @@
 # Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, …)
 Kyoshi holds the user's single-purpose apps and their shared "DNA" (look, storage, sync, backups,
-pop-ups, bug reports, developer mode). It stays out of sight: the user only sees the app on screen,
+pop-ups, bug reports, developer mode, meetings). It stays out of sight: the user only sees the app on screen,
 switched from the icon button beside Theme. More apps will be added, each relying on the shared core.
 
 ## Tech Stack & Hosting (built to run 10+ years untouched)
@@ -50,7 +50,8 @@ core/                 the shared DNA — K = window.Kyoshi
   bugs.js             K.bugs: "Report a bug" pop-up and log
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
-  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox), filling Momo's blocks; K.inbox.open
+  meetings.js         K.meetings: each app's regular meeting with you (header line, Done ✓, settings pop-up), its "meetings" key, into K.inbox
+  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings), filling Momo's blocks; K.inbox.open
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
   shell.js            K.register, K.start, switcher menu, theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
@@ -63,7 +64,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
 ```
 
 ## The app contract
-Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's).
+Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`: `[{ id, title, every: "week"|"month"|"quarter"|"year", minutes, after? }]`, its regular meeting(s) with you (core/meetings.js; `after: true` comes after the other apps' in Momo).
 Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`.
 
 **Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
@@ -81,9 +82,9 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 | `A.attention()` | short reason it needs the user ("" if none) → dot on its switcher icon |
 | `A.renderDev(box)` | fill `box` with its Developer Mode tools (`.dev-block`s) |
 | `A.bugState()` | lines (`"- Key: value"`) for bug reports — never personal data |
-| `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask), combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |
+| `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask) → true once it's in, combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |
 | `A.agenda(from, to)` | events at set times on those days, as copies `[{ id, title, date, time, minutes, note, done }]` for Momo's board — see `core/agenda.js` |
-| `A.inbox(from, to)` | what it needs done this week and next, as copies `[{ id, title, block, details, fill, minutes, date, due, overdue, done }]`, filling Momo's blocks (cards titled `block`) — see `core/inbox.js` |
+| `A.inbox(from, to)` | what it needs done this week and next, as copies `[{ id, title, block, details, fill, minutes, date, due, from, overdue, done }]`, filling Momo's blocks (cards titled `block`) — see `core/inbox.js` (ids starting `meeting:` are core's) |
 | `A.open(id)` | "Open in <App>" from Momo (after Kyoshi shows the app): show that need |
 | `A.CHANGELOG` / `A.VERSION` | changelog.js |
 
@@ -92,7 +93,8 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 - Page-wide listeners go through `A.listen`; listeners on the app's own elements are fine.
 - Pop-ups: `.overlay > .modal` markup + `K.modal` (`define` once, then `open`/`close`/`dismiss`).
 - Styles: shared in `core/kyoshi.css`; app-specific in `apps/<id>/<id>.css` under `.app-<id>`; page-wide custom properties `--<id>-…`.
-- Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes). `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
+- Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
 - Within an app: destructure helpers only from `app.js`; call other files' functions as `A.name()`; expose with `Object.assign(A, { … })`.
 - Between apps: never touch another app's `A.S` or storage. A provider may offer a small read-only function — ask me first. So far: Momo reads every app's `A.agenda` and `A.inbox` (its "Open in <App>" calls `A.open(id)`).
+- Meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up, sends them to Momo's "Meeting" cards, and dots the app's icon when one is overdue.
 - Time: `K.util.todayStr()` / `K.util.now()` (time travel aware); `Date.now()` only for change stamps (`u`, `savedAt`).

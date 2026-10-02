@@ -46,6 +46,11 @@
   const daysBetween = (a, b) => Math.round((dateMs(b) - dateMs(a)) / DAY_MS);
   const addDays = (d, n) => msDate(dateMs(d) + n * DAY_MS);
   const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate(); // m is 1–12
+  // n months on (or back), stopping at the month's end: Jan 31 + 1 month is Feb 28 (or 29).
+  function addMonths(d, n) {
+    const i = +d.slice(0, 4) * 12 + (+d.slice(5, 7) - 1) + n, y = Math.floor(i / 12), m = i - y * 12 + 1;
+    return `${y}-${pad2(m)}-${pad2(Math.min(+d.slice(8, 10), daysInMonth(y, m)))}`;
+  }
   const localDate = t => msDate(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate())); // a moment's day on this device
   // Today and now, moved by any developer time travel (K.dayOffset, see core/dev.js).
   const todayStr = () => addDays(localDate(new Date()), K.dayOffset);
@@ -105,7 +110,7 @@
 
   K.util = {
     isNum, isPos, isObj, sum, mean, extent, newId, esc, pad2, fmtNum, fmtSigned, SEP, fmtBytes, readNumber,
-    DAY_MS, dateMs, msDate, isDate, daysBetween, addDays, daysInMonth, localDate, todayStr, now,
+    DAY_MS, dateMs, msDate, isDate, daysBetween, addDays, addMonths, daysInMonth, localDate, todayStr, now,
     fmtDate, fmtShort, fmtWeekday, isTime, fmtTime, clockTime,
     downloadBlob, downloadJSON, readFile, copyText
   };

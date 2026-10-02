@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.231", date: "2026-10-02", changes: [
+      "Wan Shi Tong has a monthly meeting with you to prune the backlog: it shows under its name, and goes to Momo's Meeting card when it's due."
+    ] },
     { version: "2.131", date: "2026-10-02", changes: [
       "What's in progress goes to Momo through the shared inbox: its cards there show the owl and \"Open in Wan Shi Tong\"."
     ] },

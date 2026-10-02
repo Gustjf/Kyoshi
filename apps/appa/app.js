@@ -13,6 +13,8 @@
     subtitle: "Maintenance that remembers itself, and the records to prove it.",
     width: 780,
     backupNote: "Your records live only in this browser. Export JSON saves them, but not the photos and PDFs: turn on Sync Folder to keep copies of those, and of your records, on your other devices.",
+    // Its meeting with you (core/meetings.js): new things to add, and records to catch up on.
+    meetings: [{ id: "review", title: "New things and records", every: "quarter", minutes: 15 }],
     // The "bull-head" icon from Lucide Lab (ISC license) — Appa is Aang's flying sky bison — in bison brown so it shows on light and dark tabs.
     icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#a26b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10a5 5 0 0 1-4-8 4 4 0 0 0 4 4h10a4 4 0 0 0 4-4 5 5 0 0 1-4 8"/><path d="M6.4 15c-.3-.6-.4-1.3-.4-2 0-4 3-3 3-7"/><path d="M10 12.5v1.6"/><path d="M17.6 15c.3-.6.4-1.3.4-2 0-4-3-3-3-7"/><path d="M14 12.5v1.6"/><path d="M15 22a4 4 0 1 0-3-6.7A4 4 0 1 0 9 22Z"/><path d="M9 18h.01"/><path d="M15 18h.01"/></svg>'
   });
