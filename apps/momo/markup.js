@@ -16,7 +16,7 @@ Kyoshi.apps.momo.markup = `
   </section>
 
   <!-- Today (today.js): now, next, the rest of today, then tomorrow. Momo opens here on a phone. -->
-  <div class="today" id="todayView" hidden>
+  <div class="today-view" id="todayView" hidden>
     <div class="today-bar">
       <div class="today-head"><h2>Today</h2><span class="today-date" id="todayDate"></span></div>
       <button class="secondary" id="weekBtn">Week</button>

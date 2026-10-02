@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.744", date: "2026-10-02", changes: [
+      "Fixed today's column on the board spreading over the next day's when a card in it has a long line, like a Meeting card filled with meetings you've had today.",
+      "Fixed Today's \"Now\" running out of its box during free time, and an event there lines up like the rest."
+    ] },
     { version: "5.743", date: "2026-10-02", changes: [
       "Momo has a weekly meeting with you to close out last week and plan the next two, after the other apps' meetings.",
       "A card titled \"Meeting\" fills with the apps' meetings coming due, each in the week before it's due; what doesn't fit goes to Tasks."

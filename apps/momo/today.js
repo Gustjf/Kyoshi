@@ -62,14 +62,14 @@
   // opens (none for free time, or an event that's done or on a closed week), and its classes (cls: free
   // time, an event, one in conflict, a goal's card, done).
   function about(day, it) {
-    if (it.free) return { color: A.colorCss("slate"), title: "Free", sub: "", done: false, label: `Free, ${span(it)}`, tap: "", cls: " free" };
+    if (it.free) return { color: A.colorCss("slate"), title: "Free", sub: "", done: false, label: `Free, ${span(it)}`, tap: "", cls: " t-free" };
     const when = it.s === null ? "any time" : span(it);
     if (it.ev) {
       const ev = it.ev, app = K.apps[ev.app];
       return {
         color: A.keyColor(A.titleKey(ev.title)), title: `<span class="app-icon" aria-hidden="true">${app ? app.meta.icon : ""}</span>${esc(ev.title)}`, sub: esc(ev.note), done: ev.done,
         label: `${ev.title}${ev.note ? ` (${ev.note})` : ""}, ${when}, from ${app ? app.meta.name : ev.app}${ev.done ? " — done ✓" : ev.flag ? ` — conflicts with ${A.names(ev.clash)}` : ""}`,
-        tap: ev.done || day.closed ? "" : `data-week="${day.key}" data-ev="${esc(ev.key)}"`, cls: ` event${ev.flag ? " clash" : ""}${ev.done ? " done" : ""}`
+        tap: ev.done || day.closed ? "" : `data-week="${day.key}" data-ev="${esc(ev.key)}"`, cls: ` t-event${ev.flag ? " clash" : ""}${ev.done ? " done" : ""}`
       };
     }
     const c = it.card, needs = fillsOf(day.key, c), fill = needs.length ? A.fillParts(c, needs) : null, done = !!fill && fill.done;
@@ -93,7 +93,7 @@
   // Now: what's on, big, with the time left and a bar of how much has gone; under it, anything else on now.
   function nowHTML(day, it, now, also) {
     const a = about(day, it), tag = a.tap ? "button" : "div", gone = Math.min(100, Math.max(0, (now - it.s) / (it.e - it.s) * 100));
-    return `<section class="t-now${it.free ? " free" : ""}" style="--c:${a.color}"><h2>Now</h2>` +
+    return `<section class="t-now${it.free ? " t-free" : ""}" style="--c:${a.color}"><h2>Now</h2>` +
       `<${tagOpen(a, "t-big")}><span class="t-title">${a.title}${tick(a)}</span>${a.sub ? `<span class="t-sub">${a.sub}</span>` : ""}</${tag}>` +
       `<div class="t-left"><strong>${fmtLong(it.e - now)}</strong> left · until ${it.e > DAY_HOURS ? `${fmtClock(it.e - DAY_HOURS)} tomorrow` : fmtClock(it.e)}</div>` +
       `<div class="t-bar" aria-hidden="true"><span style="width:${gone.toFixed(1)}%"></span></div>` + rowsHTML(day, also) + `</section>`;
