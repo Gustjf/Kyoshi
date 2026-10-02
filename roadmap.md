@@ -96,6 +96,7 @@ baseline saves the dragging each week.
 ## Phases (each gets its own detailed plan when started)
 
 ### Phase 5: Badgermole, workouts (new app · `main` · plan mode)
+- **The plan is `roadmap-phase5.md`** (planned 2026-10-02; it wins where it differs from this section: units kept per set, repeats in the program, added weight on bodyweight exercises, auto progression, editable past sessions, nothing to Momo before a program exists, no dot). Once this phase is ticked, its decisions go in the Status line and the file goes.
 - **Read first:** `apps/_template/`, the header of `core/inbox.js`, `apps/hawky/share.js` (the simplest feeder), `apps/appa/job-view.js` (the screen's wake lock), and `niceMinutes` with the timer's state in `apps/appa/app.js`.
 - **Data** (keys `exercises`, `routines`, `program`, `sessions`, `settings`, plus `live`: this device's session in progress, never synced or backed up; the backup holds the five):
   - `exercises [{ id, name ≤ 40, bodyweight, deleted, at, u }]`, with a small starter set offered on first run (Squat, Bench press, Deadlift, Row, Overhead press, Pull-up…)
