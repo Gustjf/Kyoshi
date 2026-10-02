@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.754", date: "2026-10-02", changes: [
+      "Momo no longer has a weekly meeting with you, as you check it daily; the weekly close-out stays as it was."
+    ] },
     { version: "5.744", date: "2026-10-02", changes: [
       "Fixed today's column on the board spreading over the next day's when a card in it has a long line, like a Meeting card filled with meetings you've had today.",
       "Fixed Today's \"Now\" running out of its box during free time, and an event there lines up like the rest."

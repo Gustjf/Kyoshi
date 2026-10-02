@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.270", date: "2026-10-02", changes: [
+      "Bosco no longer has a regular meeting with you, as you check it daily."
+    ] },
     { version: "7.260", date: "2026-10-02", changes: [
       "Bosco has a monthly meeting with you to look over the trend and doses: it shows under Bosco's name, and goes to Momo's Meeting card when it's due."
     ] },

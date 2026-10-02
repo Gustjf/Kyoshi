@@ -13,8 +13,6 @@
     subtitle: "A weekly time budget. Give every hour a job.",
     width: 1180,
     backupNote: "Your plans live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
-    // Its meeting with you (core/meetings.js), after every other app's has sent its work in: the close-out and the plan.
-    meetings: [{ id: "plan", title: "Close out last week, plan the next two", every: "week", minutes: 20, after: true }],
     // The "peach" icon from Lucide Lab (ISC license) — Aang named Momo after a peach ("momo" in Japanese) — in orange so it shows on light and dark tabs.
     icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2a2 2 0 0 0-2 2v2"/><path d="M12 6.5A6 6 0 0 1 22 11c0 6.1-4.5 11-10 11S2 17.1 2 11a6 6 0 0 1 12 0"/></svg>'
   });
