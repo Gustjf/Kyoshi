@@ -97,7 +97,8 @@ th { color: var(--muted); font-weight: 600; font-size: .85em; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .78em; font-weight: 600; }
 
 /* --- Shell: header, app switcher, banners, footer, corner tag --- */
-.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+/* One width in every app (a wider app's page grows beneath it), so the switcher and Theme stay put when you switch. */
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; max-width: var(--header-width, 780px); margin: 0 auto 18px; }
 .subtitle { color: var(--muted); font-size: .85em; }
 .header-main { min-width: 0; }
 /* The app's meetings with you, under its subtitle (core/meetings.js): muted; due today amber, overdue red. */

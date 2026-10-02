@@ -37,6 +37,23 @@ module.exports = [
     }
   },
   {
+    name: "shell: the header keeps one width, so the switcher and Theme stay put between a wide app and a narrow one",
+    async run(t) {
+      const tab = await open(t, { app: "momo", size: DESKTOP }), p = tab.page;
+      // Where the app's name, the switcher and Theme start, in whole pixels.
+      const where = () => p.evaluate(() => ["kAppName", "kSwitchBtn", "kThemeToggle"].map(id => Math.round(document.getElementById(id).getBoundingClientRect().left)));
+      const momo = await where();
+      for (const id of ["hawky", "badgermole"]) {
+        await switchTo(tab, id);
+        eq(await where(), momo, `${id}'s header sits where Momo's does`);
+      }
+      await p.setViewportSize({ width: 1000, height: 800 });
+      const narrower = await where();
+      await switchTo(tab, "momo");
+      eq(await where(), narrower, "and in a narrower window too");
+    }
+  },
+  {
     name: "shell: Export all and Import all carry Badgermole with the other apps",
     async run(t) {
       const tab = await open(t), p = tab.page;

@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.130", date: "2026-10-02", changes: [
+      "The header keeps one width in every app, so the app switcher and Theme stay put when you switch apps."
+    ] },
     { version: "3.120", date: "2026-10-02", changes: [
       "Keeping the screen on (Appa's job timer, a Badgermole workout) is one shared piece now: it reliably lets the screen sleep again once the timer stops or the workout ends, even right after it started."
     ] },
