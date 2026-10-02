@@ -36,6 +36,7 @@ Open `index.html` from disk, switch to the app, check the console for errors. De
 ## Map
 ```
 index.html            shell markup (header, switcher, banners, dev panel, bug pop-up) + every <link>/<script>, in load order
+roadmap.md            the plan: upcoming phases & apps (read when starting one)
 core/                 the shared DNA — K = window.Kyoshi
   base.js             K namespace; console capture for bug reports (loads first)
   changelog.js        Kyoshi's version + changelog
