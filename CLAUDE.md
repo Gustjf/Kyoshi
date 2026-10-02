@@ -70,7 +70,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   pabu/               keep in touch: who's due a call, a text or a visit, each on a cadence (into Momo's Keep in touch cards); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js
-  sim/                the flow simulator (testplan.md): made-up lives through the real page (`node tests/sim/run.js`), its report.md, bundles/
+  sim/                the flow simulator (testplan.md): made-up lives through the real page; `node tests/sim/run.js` writes report.md and bundles/
 ```
 
 ## The app contract
