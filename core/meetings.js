@@ -4,20 +4,21 @@
  * An app names its meetings' defaults when it registers (K.register):
  *   meetings: [{ id, title, every, minutes, after }]
  * id: a-z, 0-9 and -, unique within the app; title: what it's about ("Trend and doses"); every: "whenever" | "week" |
- * "month" | "quarter" | "year" | "off"; minutes: how long (5–240); after: true to come after the others in Momo (Momo's
- * own, which plans what they sent).
+ * "month" | "quarter" | "season" | "year" | "off"; minutes: how long (5–240); after: true to come after the others in
+ * Momo (Momo's own, which plans what they sent).
  * "whenever" (no schedule) is a checkup: its line just says when you last did it ("Last checkup: 12 days ago", from its
  * title) with Done ✓, and it's never due, so no dot and nothing in Momo. Picking a schedule in its settings makes it a
- * meeting. The current apps each have a checkup, as they're used daily.
+ * meeting. The apps used daily each have a checkup; Iroh's (reviewed less often) are meetings.
  * Kept in each app's store under core's key "meetings" (like core's "sync"): { id: { every, minutes, last, since, u } }.
  * last: the day last met ("" if never); since: the day it was first seen, its first due day; u: when it last changed
  * (the later change wins). It travels with the app's sync file and backups, beside its data (core/sync.js,
  * core/backup.js); a meeting this version doesn't name is kept as it is.
- * Due (on a schedule): last met + every (months stop at the month's end), else since; overdue once that day has
- * passed, which puts a dot on the app's icon (core/shell.js). For Momo (core/inbox.js): each meeting due by the end of
- * next week fills a card titled "Meeting" in the week before it's due (from), or the soonest once overdue (or never
- * had yet); one met in those two weeks shows ✓ on its day. "Open in <App>" shows the app with its meeting line
- * flashing (reveal). */
+ * Due (on a schedule): last met + every (months stop at the month's end; a season's is the end of the first week of the
+ * next season to start, core/seasons.js, so it comes up in each new season's first week), else since; overdue once
+ * that day has passed, which puts a dot on the app's icon (core/shell.js). For Momo (core/inbox.js): each meeting due
+ * by the end of next week fills a card titled "Meeting" in the week before it's due (from), or the soonest once
+ * overdue (or never had yet); one met in those two weeks shows ✓ on its day. "Open in <App>" shows the app with its
+ * meeting line flashing (reveal). */
 (function (K) {
   "use strict";
   const { isObj, isPos, isDate, esc, todayStr, addDays, addMonths, daysBetween, fmtShort, fmtWeekday, readNumber } = K.util;
@@ -25,7 +26,7 @@
   const KEY = "meetings";
   const BLOCK = "Meeting";   // the title of Momo's cards they fill
   const WINDOW_DAYS = 6;     // a meeting goes in a block from this many days before it's due
-  const EVERY = { whenever: "whenever", week: "every week", month: "every month", quarter: "every quarter", year: "every year", off: "off" };
+  const EVERY = { whenever: "whenever", week: "every week", month: "every month", quarter: "every quarter", season: "every season", year: "every year", off: "off" };
   const MONTHS = { month: 1, quarter: 3, year: 12 };
   const MIN_MINUTES = 5, MAX_MINUTES = 240;
   const isId = id => typeof id === "string" && /^[a-z0-9-]{1,20}$/.test(id);
@@ -75,7 +76,10 @@
   }
 
   // --- Where each stands ---
-  const after = (date, every) => (every === "week" ? addDays(date, 7) : addMonths(date, MONTHS[every]));
+  // The day a meeting met on date is next due. A season's: the end of the first week of the next season to start, so
+  // its block in Momo is that week, once the new season's goals can be set.
+  const after = (date, every) => (every === "week" ? addDays(date, 7)
+    : every === "season" ? addDays(K.seasons.seasonAfter(date), WINDOW_DAYS) : addMonths(date, MONTHS[every]));
   const recOf = (A, d) => (A._meet && A._meet[d.id]) || { every: d.every, minutes: d.minutes, last: "", since: "", u: 0 };
 
   // A meeting today: { def, every, minutes, last, due ("" without a schedule), from (the first day of its week), overdue, soon

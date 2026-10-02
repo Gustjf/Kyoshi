@@ -5,6 +5,12 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "2.910", date: "2026-10-02", changes: [
+      "Added Iroh, for goals: the vision for each area of your life, this year's goals and this season's, whose hours Momo makes time for.",
+      "Meetings can come every season: due in the first week of each new season.",
+      "Apps can ask Momo for hours that spread over several cards (Iroh's goals), with what's still missing in its Tasks.",
+      "Developer Mode's time travel can jump to the next season."
+    ] },
     { version: "2.810", date: "2026-10-02", changes: [
       "Added Hawky, for errands: jot one down in seconds on the phone, and Momo fits it into your \"Errands\" cards."
     ] },

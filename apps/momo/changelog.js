@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "5.864", date: "2026-10-02", changes: [
+      "Iroh's goals fill your cards titled like them: a goal's hours for the week spread over those cards in turn, the ones on earlier days this week count as done, and what's still missing is a task on that week's board."
+    ] },
     { version: "5.764", date: "2026-10-02", changes: [
       "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Momo."
     ] },

@@ -1,0 +1,65 @@
+/* Iroh · iroh.css — the app's own styles, every selector under .app-iroh.
+ * Shared components (buttons, inputs, sections, pop-ups…) are in core/kyoshi.css.
+ * Sections: Headings · Goals and areas · Earlier · Pop-ups · Phones */
+
+/* --- Headings: the period's name beside its heading, its dates under it --- */
+.app-iroh h2 .h2-sub { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.app-iroh .section-header { margin-bottom: 2px; }
+.app-iroh .period-meta { margin-bottom: 8px; font-size: .8em; color: var(--muted); }
+
+/* --- Goals and areas: a card each --- */
+.app-iroh .goals, .app-iroh .areas { display: flex; flex-direction: column; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.app-iroh .goal, .app-iroh .area { padding: 8px 12px 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; }
+.app-iroh .goal-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
+.app-iroh .goal-title { padding: 2px 0; background: none; color: var(--text); font-size: 1em; font-weight: 600; text-align: left; overflow-wrap: anywhere; border-radius: 3px; }
+.app-iroh .goal-title:hover { background: none; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+.app-iroh .goal-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-iroh .goal-hours { margin-left: auto; font-size: .82em; font-weight: 600; white-space: nowrap; }
+.app-iroh .goal-area, .app-iroh .goal-meta, .app-iroh .goal-status { font-size: .8em; color: var(--muted); }
+.app-iroh .goal-chain { margin-top: 1px; font-size: .82em; color: var(--muted); overflow-wrap: anywhere; }
+.app-iroh .goal-next { margin-top: 6px; font-size: .9em; overflow-wrap: anywhere; }
+.app-iroh .goal-text { margin-top: 6px; font-size: .88em; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
+.app-iroh .goal-label { display: block; font-size: .78em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.app-iroh .none { color: var(--muted); font-style: italic; }
+.app-iroh .goal-rec { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: .8em; color: var(--muted); }
+.app-iroh .goal-rec.stale { color: var(--warn); font-weight: 600; }
+.app-iroh .goal-rec .small { flex: 0 0 auto; }
+.app-iroh .goal-kids { margin: 6px 0 0; padding-left: 18px; font-size: .85em; }
+.app-iroh .goal-kids.none { padding-left: 0; }
+.app-iroh .goal-kids li { margin-top: 2px; overflow-wrap: anywhere; }
+.app-iroh .goal-kids .done, .app-iroh .goal-kids .dropped, .app-iroh .kid-season { color: var(--muted); }
+.app-iroh .goal.closed { background: transparent; }
+.app-iroh .goal.closed .goal-title { color: var(--muted); font-weight: 400; }
+.app-iroh .goal.dropped .goal-title { text-decoration: line-through; }
+.app-iroh .goal.done .goal-status { color: var(--good); }
+.app-iroh .area-moves { display: inline-flex; gap: 4px; margin-left: auto; }
+.app-iroh .area-moves button { min-width: 32px; }
+.app-iroh .goal.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
+
+/* --- Earlier: folded away, a heading per past season or year, a line per goal --- */
+.app-iroh summary { display: flex; align-items: center; list-style: none; cursor: pointer; user-select: none; }
+.app-iroh summary::-webkit-details-marker { display: none; }
+.app-iroh summary::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 8px 0 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+.app-iroh details[open] > summary::before { transform: rotate(45deg); }
+.app-iroh summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.app-iroh .period { margin-top: 12px; }
+.app-iroh .period h3 { margin: 0 0 6px; font-size: .85em; color: var(--muted); }
+.app-iroh .goal.past { padding: 4px 10px; }
+.app-iroh .goal.past .goal-head { align-items: center; }
+.app-iroh .past-end { margin-left: auto; }
+.app-iroh .carried { font-size: .8em; color: var(--good); white-space: nowrap; }
+
+/* --- Pop-ups: chips (core's .mode-btn, smaller), a hint under a field, shorter text boxes --- */
+.app-iroh .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.app-iroh .chip { min-height: 38px; padding: 4px; font-size: .85em; font-weight: 400; }
+.app-iroh #goalHours { margin-top: 8px; }
+.app-iroh .hint { margin-top: 4px; font-size: .78em; color: var(--muted); }
+.app-iroh .hint:empty { display: none; }
+.app-iroh .modal textarea { min-height: 64px; }
+
+/* --- Phones: bigger targets for a thumb --- */
+@media (max-width: 640px) {
+  .app-iroh .goal-title { padding: 6px 0; }
+  .app-iroh .goal-rec .small, .app-iroh .past-end .small, .app-iroh .area-moves button { min-height: 38px; padding: 4px 12px; }
+  .app-iroh .chip { min-height: 42px; }
+}

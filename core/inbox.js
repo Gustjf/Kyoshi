@@ -5,8 +5,11 @@
  * id: the same for the same need every time (unique within the app); title: what it is ("Oil change");
  * block: the title of the cards it fills in Momo ("Car maintenance"), its title if left out; details: a few
  * short lines for its pop-up; fill: "time" (the default: blocks take as many as fit their hours), "block"
- * (one per block, e.g. a workout) or "ongoing" (never used up: it shows on every block with its title and
- * stays in Tasks to draw from); minutes: how long (with "block" and "ongoing", just a drawn card's length);
+ * (one per block, e.g. a workout), "ongoing" (never used up: it shows on every block with its title and
+ * stays in Tasks to draw from) or "hours" (spread over the blocks with its title in turn, each taking the
+ * room it has, until its minutes are used; the cards with its title on days before today, from its from day
+ * on, count as done; what's left is one shortfall, for its week: Iroh's goals, a need a week); minutes: how
+ * long (with "block" and "ongoing", just a drawn card's length; with "hours", up to a week's);
  * date: that day only, else due: on or before that day (once it's passed, the soonest), else any day —
  * the first listed taking the soonest block (a sequence); from: not before that day (with or without due);
  * overdue: true when it's late though no date says so (a meter reading); done: true once done (✓ on its
@@ -20,7 +23,7 @@
 (function (K) {
   "use strict";
   const { isObj, isDate } = K.util;
-  const FILLS = ["time", "block", "ongoing"];
+  const FILLS = ["time", "block", "ongoing", "hours"];
   const MAX_DETAILS = 8;
   const warned = new Set(); // apps whose list failed, said once
 
@@ -31,12 +34,13 @@
     if (!isObj(n)) return null;
     const id = text(n.id, 80), title = text(n.title, 60), date = isDate(n.date) ? n.date : null;
     if (!id || !title || (date && (date < from || date > to))) return null;
+    const fill = FILLS.includes(n.fill) ? n.fill : "time";
     return {
       app: A.id, id, title,
       block: text(n.block, 60) || title,
       details: (Array.isArray(n.details) ? n.details : []).map(s => text(s, 100)).filter(Boolean).slice(0, MAX_DETAILS),
-      fill: FILLS.includes(n.fill) ? n.fill : "time",
-      minutes: Number.isInteger(n.minutes) && n.minutes > 0 ? Math.min(n.minutes, 24 * 60) : null,
+      fill,
+      minutes: Number.isInteger(n.minutes) && n.minutes > 0 ? Math.min(n.minutes, (fill === "hours" ? 7 : 1) * 24 * 60) : null,
       date,
       due: !date && isDate(n.due) ? n.due : null,
       from: !date && isDate(n.from) ? n.from : null,

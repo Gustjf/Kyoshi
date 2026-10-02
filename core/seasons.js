@@ -1,4 +1,5 @@
-/* Kyoshi · core/seasons.js — when each season starts, as K.seasons (used by Bosco and Momo).
+/* Kyoshi · core/seasons.js — when each season starts, as K.seasons (used by Bosco, Momo, Appa, Iroh and
+ * core's season meetings, core/meetings.js).
  * Seasons start on the equinoxes and solstices, the astronomical seasons. Their
  * instants come from Meeus's Astronomical Algorithms (ch. 27), within a minute
  * of a full ephemeris: checked against one, every season from 2000 to 2150
@@ -43,18 +44,25 @@
     return msDate(ms - (behind >= 150 && behind <= 600 ? behind : s === 3 ? 300 : 240) * 60000);
   }
 
+  // The first season to start strictly after a day ("YYYY-MM-DD"), as { label, date, s }.
+  function firstAfter(day) {
+    for (let year = +day.slice(0, 4); ; year++) {
+      for (let s = 0; s < NAMES.length; s++) {
+        const date = seasonStart(year, s);
+        if (date > day) return { label: NAMES[s], date, s };
+      }
+    }
+  }
+  // The day the first season after a day starts.
+  const seasonAfter = day => firstAfter(day).date;
+
   // The next n seasons to start after today, soonest first, as { label, date, s }.
   // The season under way is left out until the next one starts.
   function nextSeasons(n) {
-    const today = todayStr(), next = [];
-    for (let year = +today.slice(0, 4); next.length < n; year++) {
-      NAMES.forEach((label, s) => {
-        const date = seasonStart(year, s);
-        if (date > today && next.length < n) next.push({ label, date, s });
-      });
-    }
+    const next = [];
+    for (let day = todayStr(); next.length < n; day = next[next.length - 1].date) next.push(firstAfter(day));
     return next;
   }
 
-  K.seasons = { NAMES, seasonMs, seasonStart, nextSeasons };
+  K.seasons = { NAMES, seasonMs, seasonStart, nextSeasons, seasonAfter };
 })(Kyoshi);

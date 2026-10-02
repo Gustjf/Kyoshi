@@ -1,4 +1,4 @@
-# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, …)
+# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, Iroh, …)
 Kyoshi holds the user's single-purpose apps and their shared "DNA" (look, storage, sync, backups,
 pop-ups, bug reports, developer mode, meetings). It stays out of sight: the user only sees the app on screen,
 switched from the icon button beside Theme. More apps will be added, each relying on the shared core.
@@ -41,7 +41,7 @@ core/                 the shared DNA — K = window.Kyoshi
   base.js             K namespace; console capture for bug reports (loads first)
   changelog.js        Kyoshi's version + changelog
   util.js             K.util: numbers, text, dates (time-travel aware), formatting, files, clipboard
-  seasons.js          K.seasons: when spring/summer/fall/winter start (North America)
+  seasons.js          K.seasons: when spring/summer/fall/winter start (North America), the next after a day
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
@@ -61,11 +61,12 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   wanshitong/         media tracker for recommendations (In progress, Up next, the backlog)
   appa/               preventive maintenance & records (jobs to Momo, PDF reports with proof)
   hawky/              errands & pop-up tasks (quick add on the phone, into Momo's Errands cards)
+  iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards)
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 ```
 
 ## The app contract
-Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`: `[{ id, title, every: "whenever"|"week"|"month"|"quarter"|"year", minutes, after? }]` (core/meetings.js): the current apps, used daily, each name a checkup (`every: "whenever"`: no schedule, just when you last did it); one on a schedule is a regular meeting, for an app reviewed less often (likely just Iroh; `after: true` comes after the other apps' in Momo).
+Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`: `[{ id, title, every: "whenever"|"week"|"month"|"quarter"|"season"|"year", minutes, after? }]` (core/meetings.js): the apps used daily each name a checkup (`every: "whenever"`: no schedule, just when you last did it); one on a schedule is a regular meeting, for an app reviewed less often (Iroh's; a `"season"` one is due by the end of each new season's first week; `after: true` comes after the other apps' in Momo).
 Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`.
 
 **Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.

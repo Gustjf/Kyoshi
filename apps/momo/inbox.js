@@ -3,9 +3,12 @@
  * and next; a need fills the soonest one with the title it asks for (its block, any case): a need with a
  * day first, on that day; one due by a day, on or before it (once overdue, the soonest), and not before its
  * from day if it has one (a meeting goes in the week before it's due); any other in the order its app lists them. "One per block" needs take an empty block each; timed ones go in whole while
- * the card's hours have room. Ongoing ones show on every block with their title. What no block covers
- * goes to Tasks (tasks.js). Nothing is stored: it's worked out afresh each time the board is drawn, so
- * when a block moves its work follows, and filling adds no hours and causes no conflict. */
+ * the card's hours have room. Ongoing ones show on every block with their title. Hours ones (Iroh's goals,
+ * a need a week) spread over the blocks with their title in turn, each taking the room it has; the cards
+ * with that title on the days before today, from its from day on, count as done (the plan is taken as
+ * done). What no block covers goes to Tasks (tasks.js). Nothing is stored: it's worked out afresh each
+ * time the board is drawn, so when a block moves its work follows, and filling adds no hours and causes
+ * no conflict. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -21,14 +24,14 @@
 
   // The blocks: every card on a day from today on, this week and next, soonest first (by day, then when
   // it starts), each { key: its week, card, date, title (any case), room and used (minutes), whole: a
-  // one-per-block need has it, needs }.
-  function blocks() {
+  // one-per-block need has it, needs }. With past: this week's cards on the days before today instead.
+  function blocks(past = false) {
     const today = todayStr(), out = [];
-    [thisWeekKey(), nextWeekKey()].forEach(key => {
+    (past ? [thisWeekKey()] : [thisWeekKey(), nextWeekKey()]).forEach(key => {
       const list = A.weekOf(key);
       DAYS.forEach(d => {
         const date = addDays(key, d);
-        if (date < today) return;
+        if (past ? date >= today : date < today) return;
         const times = A.startTimes(list, A.daySchedule(list, d).rows);
         list.cards.filter(c => c.day === d && times.has(c.id)).sort((a, b) => times.get(a.id).at - times.get(b.id).at)
           .forEach(card => out.push({ key, card, date, title: card.title.toLowerCase(), room: Math.round(card.hours * 60), used: 0, whole: false, needs: [] }));
@@ -41,9 +44,25 @@
   // needs no block covers (not done, not ongoing), shown: the board on screen's filled cards, id -> needs }.
   function fill() {
     const needs = readNeeds(), all = blocks(), today = todayStr(), short = [];
+    const before = needs.some(n => n.fill === "hours") ? blocks(true) : []; // only hours needs look back
     const fits = (n, b) => b.title === blockKey(n) && (n.date ? b.date === n.date : (!n.from || b.date >= n.from) && (!n.due || n.due < today || b.date <= n.due));
     needs.filter(n => n.date).concat(needs.filter(n => !n.date)).forEach(n => {
       if (n.fill === "ongoing") return all.forEach(b => { if (fits(n, b)) b.needs.push(n); });
+      if (n.fill === "hours") {
+        // Its cards on the days before today, from its from day, count as done; then each block with its title
+        // takes what room it has, in turn, until it's used (each card counted once, whichever need it went to).
+        // What's left is one shortfall, for its week.
+        let left = needMinutes(n);
+        const take = (b, ok) => {
+          const m = ok && left > 0 ? Math.min(b.room - b.used, left) : 0;
+          if (m > 0) { b.used += m; left -= m; }
+          return m > 0;
+        };
+        before.forEach(b => take(b, !!n.from && b.title === blockKey(n) && b.date >= n.from && (!n.due || b.date <= n.due)));
+        all.forEach(b => { if (take(b, !b.whole && fits(n, b))) b.needs.push(n); });
+        if (left > 0 && !n.done) short.push({ ...n, minutes: left });
+        return;
+      }
       const whole = n.fill === "block", m = needMinutes(n);
       const b = all.find(x => fits(n, x) && !x.whole && (whole ? !x.used : x.used + m <= x.room));
       if (!b) {

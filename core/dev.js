@@ -80,6 +80,7 @@
     $("kDevPlusDay").addEventListener("click", () => travel(1));
     $("kDevPlusWeek").addEventListener("click", () => travel(7));
     $("kDevPlusMonth").addEventListener("click", () => travel(daysBetween(todayStr(), addMonths(todayStr(), 1))));
+    $("kDevPlusSeason").addEventListener("click", () => travel(daysBetween(todayStr(), K.seasons.seasonAfter(todayStr())))); // to the next season's first day
     $("kDevExportAll").addEventListener("click", K.backup.exportAll);
     $("kDevImportAll").addEventListener("click", () => $("kDevImportFile").click());
     $("kDevImportFile").addEventListener("change", async e => {
