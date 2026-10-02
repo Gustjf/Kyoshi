@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.020", date: "2026-10-02", changes: [
+      "Momo comes first in the switcher and opens first on a new device."
+    ] },
     { version: "3.010", date: "2026-10-02", changes: [
       "Added Badgermole, for workouts: routines in a rotation, sets logged with one thumb between them, PRs and a streak; Momo fills your \"Workout\" cards with the week's sessions."
     ] },
