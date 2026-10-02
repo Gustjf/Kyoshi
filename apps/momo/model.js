@@ -7,9 +7,10 @@
  *           week (see agenda.js): the time on its own day you moved it to, in hours after
  *           midnight on the 15-minute grid. The events themselves aren't stored.
  * spent:    { "title as typed": hours } — a closed week's close-out (closeout.js): where its
- *           hours went, by title (any case once), on the 15-minute grid; {} when none was
- *           done; none on a week closed before the close-out logged hours. Iroh reads it
- *           (hoursSpent). Reopening the week takes it off.
+ *           hours went for the titles the close-out reviews — the goals whose hours spread
+ *           over its cards (Iroh's) — by title (any case once), on the 15-minute grid; {} when
+ *           none was done; none on a week closed quietly (no goals) or before the close-out
+ *           logged hours. Iroh reads it (hoursSpent). Reopening the week takes it off.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,

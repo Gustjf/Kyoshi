@@ -252,7 +252,6 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .co-detail { margin-top: 3px; font-size: .8em; color: var(--muted); }
 .app-momo .co-done label { margin-bottom: 2px; font-size: .75em; }
 .app-momo .co-done .stepper { width: 128px; }
-.app-momo .co-sum { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: .82em; color: var(--muted); }
 /* An event's pop-up (triage.js): its app's icon by its name; a conflict in red with its one quick fix
    under it (or why there's none); without a conflict, the time's − / + move it 15 minutes. */
 .app-momo .event-head { display: flex; align-items: center; gap: 8px; }

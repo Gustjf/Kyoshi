@@ -4,7 +4,7 @@ its picture in 10 years and milestones 5 years out. **This year**: three to five
 why it matters. **This season**: the goals you're working on now, each serving a year goal, with hours (a week, or in total),
 a next step, and a reconcile at least monthly (amber after `RECONCILE_DAYS`). **Momo** makes the time: every open season goal
 with hours fills your cards titled like it, its hours spread over them in turn; what doesn't fit is a task for that week; and
-Momo's weekly close-out logs the hours each title got, which each season goal shows as its progress ("22 of 60 h, on pace"). Past
+Momo's weekly close-out logs the hours each goal got, which each season goal shows as its progress ("22 of 60 h, on pace"). Past
 seasons fold into **Earlier**, where Carry over copies an open goal into this season. Iroh's periods are seasons
 (core/seasons.js); a season belongs to the year most of it falls in, so the winter that starts in December is the next year's.
 Named after Zuko's uncle, the Dragon of the West (the icon is Lucide's compass, in Fire Nation red).
@@ -62,7 +62,7 @@ Iroh reads Momo's `hoursSpent(title)` (apps/momo/CLAUDE.md; read-only), once Mom
 - "This season" goes by today's date; a week, for Momo and for counting a season's weeks, by its Monday's.
 - Seasons, weeks, amber and the weekly minutes are worked out, never stored. "Today" is `K.util.todayStr()` (time travel works);
   `Date.now()` is only for the `at` / `u` stamps.
-- Progress is Momo's close-out by title: spent is the hours in the season's closed weeks. A goal in hours a week shows "22 of 60 h"
+- Progress is Momo's close-out of each goal: spent is the hours in the season's closed weeks. A goal in hours a week shows "22 of 60 h"
   (out of hours a week × its weeks, from the week it was added), on pace while spent ≥ hours a week × the weeks closed since then − 1 h,
   else "6 h behind" (amber); a total shows what's left and the hours a week to finish (its head just "60 h in total"). Without Momo,
   the plan only. Renaming a goal leaves the hours logged under its old title behind. Iroh redraws on show and each minute when Momo's

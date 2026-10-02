@@ -115,7 +115,10 @@
 
     S.knownToday = todayStr();
     A.renderAll();
-    A.checkCloseOuts();
+    // No close-out check here: Momo starts before Iroh, and K.inbox leaves out apps not started yet, so every past
+    // week would seem to have no goals to review and close quietly, for good. It runs once Momo is shown (onShow:
+    // the shell shows an app only after every app has started), on a new day, and after Confirm and Reopen; after
+    // a reload, a sync or an import only lightly (closeout.js checkCloseOuts).
   };
 
   // Esc cancels a drag, else drops a copied or cut card (a pop-up on top is Kyoshi's to
@@ -182,7 +185,7 @@
   A.onReload = () => {
     S.undoStack = [];
     A.renderAll();
-    A.checkCloseOuts();
+    A.checkCloseOuts(false); // Iroh's goals may reload just after
   };
 
   A.attention = () => (A.reviewWeeks().length ? "a week is ready to close out" : A.conflicts().length ? "an event conflicts with your plans" : "");

@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "6.964", date: "2026-10-02", changes: [
+      "The weekly close-out now lists only your goals from Iroh, each with the hours planned for it that week: lower or raise any that differed.",
+      "A past week without goals closes on its own, with no pop-up.",
+      "Errands, maintenance, meetings and the rest are marked done in their own apps, through a card's \"Open in…\"."
+    ] },
     { version: "6.864", date: "2026-10-02", changes: [
       "Goals now live in Iroh: Momo's Long-term goals, the goal pop-up, the goal on cards and goal tasks are gone. Goals saved here stay in your data and backups, untouched.",
       "The weekly close-out reviews where the week's hours went: every card title on its days, with its planned hours. Lower what fell short; Close out week keeps the hours, and Iroh shows its goals' progress from them.",

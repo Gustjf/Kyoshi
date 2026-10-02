@@ -98,7 +98,7 @@
     $("gotoBaselineBtn").hidden = isBase || locked || hasBaseline;
     $("sampleBaselineBtn").hidden = !isBase || list.cards.length > 0;
     $("fillGapsBtn").hidden = isBase || locked || !onDays || b.free === 0;
-    $("reopenBtn").hidden = !locked;
+    $("reopenBtn").hidden = !locked || !A.reviewRows(key).length; // with no goals to review, it would only close again quietly, its logged hours gone
     $("copyPrevBtn").hidden = isBase || locked || !A.weekOf(addDays(key, -7)).cards.length;
     $("saveAsBaseBtn").hidden = isBase || !onDays;
     $("clearBtn").hidden = locked || !list.cards.length;

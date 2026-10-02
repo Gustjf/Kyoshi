@@ -180,9 +180,8 @@ Kyoshi.apps.momo.markup = `
   <div class="overlay" id="closeOutOverlay">
     <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="closeOutTitle">
       <h3 id="closeOutTitle">Close out the week</h3>
-      <p class="modal-hint">Where the week's hours went, as planned. Lower any that fell short.</p>
+      <p class="modal-hint">Your goals' hours this week, as planned. Change any that differed. Errands, maintenance and the rest are marked done in their own apps.</p>
       <div id="closeOutRows"></div>
-      <p class="co-sum" id="closeOutSum"></p>
       <div class="modal-actions">
         <button id="closeOutConfirmBtn">Close out week</button>
         <button class="secondary" id="closeOutLaterBtn">Later</button>

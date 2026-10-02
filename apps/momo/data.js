@@ -252,7 +252,7 @@
     store(false);
     S.closeOutLater = false;
     A.renderAll();
-    A.checkCloseOuts();
+    A.checkCloseOuts(false); // Import all brings Iroh's goals in after Momo's weeks
     return true;
   }
 
@@ -304,7 +304,7 @@
     remember();
     persist();
     A.renderAll();
-    A.checkCloseOuts();
+    A.checkCloseOuts(false); // Iroh's goals may still be on their way
   }
 
   A.load = load;
