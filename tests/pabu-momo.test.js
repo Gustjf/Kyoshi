@@ -18,7 +18,8 @@ const week = (tab, which) => tab.page.click(`#kMount [data-view="${which}"]`);
 const marks = tab => tab.page.$$eval("#kMount .ev-mark", els => els.map(e => ({ title: e.getAttribute("title"), done: e.classList.contains("done"), button: e.tagName === "BUTTON" })));
 // What Pabu asks of Momo for this week and next: [id, due, from, overdue], or [id, date, done] for a talk.
 const needs = tab => tab.page.evaluate(([from, to]) => Kyoshi.apps.pabu.inbox(from, to).map(n => (n.done ? [n.id, n.date, true] : [n.id, n.due, n.from, n.overdue])), [TODAY, D(11)]);
-const AS_BEFORE = { "card-0": "Keep in touch (Call Mom and Call Ana from Pabu)", "card-1": "Keep in touch (Text Sam from Pabu)" };
+// Mom and Ana are overdue, so today's card is late (red-edged, its label says so).
+const AS_BEFORE = { "card-0": "Keep in touch (Call Mom and Call Ana from Pabu — late)", "card-1": "Keep in touch (Text Sam from Pabu)" };
 
 // Pabu with its people (gen.PEOPLE), and Momo with the Keep in touch cards.
 async function both(t, size = DESKTOP, people = gen.pabu()) {
@@ -52,7 +53,7 @@ module.exports = [
       await switchTo(tab, "momo");
       eq(await cards(tab), AS_BEFORE, "the same names: done only once everyone on the card is");
       await p.click('#kMount .card[data-id="card-0"]');
-      has((await p.locator("#cardOverlay .from-needs").innerText()).replace(/\s*\n\s*/g, " | "), "Call Mom ✓ done · Open in Pabu | Every month · talked today | Ask about the garden. | Call Ana · Open in Pabu", "Mom's ✓ in the pop-up");
+      has((await p.locator("#cardOverlay .from-needs").innerText()).replace(/\s*\n\s*/g, " | "), "Call Mom ✓ done · Open in Pabu | Every month · talked today | Ask about the garden. | Call Ana late · Open in Pabu", "Mom's ✓ in the pop-up, Ana still late");
       await p.keyboard.press("Escape");
 
       // Ana too: everyone on today's card is done.

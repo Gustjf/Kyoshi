@@ -28,7 +28,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `recipes.js` | the Recipes view and the recipe pop-up (Save, Save & add another, Archive, Delete) |
 | `cook.js` | the cook view: `openCook`, paging a day's recipes, Back |
 | `render.js` | `showView` (plan, recipes, groceries or cook), `renderAll`, `reveal` |
-| `events.js` | `A.init` wiring and the hooks: `onShow`, `onHide`, `onTick`, `onReload`, `onKeydown`, `awake` (the cook view keeps the screen on: core/wakelock.js), `bugState`. No `attention`: never a dot |
+| `events.js` | `A.init` wiring and the hooks: `onShow`, `onHide`, `onTick`, `onReload`, `onKeydown`, `awake` (the cook view keeps the screen on: core/wakelock.js), `attention` (a dot while today or tomorrow has no dinner), `bugState` |
 | `turtleduck.css` | styles under `.app-turtleduck` (`--turtleduck-amber` page-wide) |
 
 ## State (`A.S`)
@@ -67,8 +67,9 @@ by `u`, and `settings` whole.
 `meetings` in `app.js`: a 15-minute checkup, no schedule ("Last checkup: 12 days ago" with Done ✓; core/meetings.js).
 
 ## Shared with other apps
-`A.inbox(from, to)` (core/inbox.js; read-only copies, made afresh each call), from `from` (Momo asks from today, so past
-meals never reach it; meals carry no `done`: the plan is taken as eaten):
+`A.inbox(from, to)` (core/inbox.js; read-only copies, made afresh each call), from `from` (Momo asks from this Monday, so this
+week's past meals fill their days' cards too, as the record of the week, and never go to its Tasks; meals carry no `done`: the
+plan is taken as eaten):
 - each day's breakfast, lunch and dinner with anything but skipped meals: `{ id: "meal:<date>:<meal>", title: the names
   joined " + " (≤ 60), block: "Breakfast" | "Lunch" | "Dinner", fill: "block", date, minutes: the sum of `entryMinutes`,
   details: [the slot's nutrition, a line per meal: "Cooked here · serves 4", "Leftovers of Mon's Chili", "Quick meal",
@@ -98,5 +99,7 @@ plan, flashing); a Cook row's recipes in the cook view, paged; a Groceries need,
 - Drag and drop is the mouse's (HTML5); the phone taps. Copy and paste is Momo's: keys and the mouse's place, no buttons.
 - Every cleaner drops what it can't use, so a damaged file never breaks the app. Weeks run Monday to Sunday, as in Momo.
 - Not now: photos, importing from links, a pantry, nutrition databases, unit conversion beyond g/kg and ml/l, plural
-  folding, custom store sections, printing, timers, a favourite star, drag and drop on touch, a dot on the icon.
+  folding, custom store sections, printing, timers, a favourite star, drag and drop on touch.
+- The dot on the icon (`A.attention`): once Turtleduck is in use (a recipe or a planned meal), while today or tomorrow has no
+  dinner planned (anything in its slot counts, Skipped too); it clears once one is.
 - Bug reports and console messages hold counts only: never recipe names, ingredients or meals.

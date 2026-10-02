@@ -5,6 +5,15 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.964", date: "2026-10-02", changes: [
+      "Tasks come in a chunk per app, with its icon, how many and how long, so each app's part of your week is plain to see; they go as you plan them, and the week is “all assigned ✓” only once its Tasks are empty too.",
+      "Each week's Tasks list only what can go on that week; something that could go on either shows on both.",
+      "This week's past days show what was done on them, and a card holding something late is red-edged and says “late”, on the board, in its pop-up and on Today.",
+      "The true cost: Momo keeps what the apps ask of each week, and the Baseline tab shows, app by app, what an average week asks of each block against what your baseline gives it; drag a block it's short of onto a day.",
+      "The close-out waits in its banner on a phone (on a computer it still pops up); Later puts it off until tomorrow; after a break, Close all as planned closes every week waiting; a goal's row says when some of its hours had no card; and a week never planned counts as no hours for your goals.",
+      "“Open in…” from a card's pop-up asks before dropping your changes, a birthday or anything else at any time of day no longer adds to its day's hours, and starting Momo no longer saves anything when nothing changed.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "6.964", date: "2026-10-02", changes: [
       "The weekly close-out now lists only your goals from Iroh, each with the hours planned for it that week: lower or raise any that differed.",
       "A past week without goals closes on its own, with no pop-up.",

@@ -1,7 +1,7 @@
 # Appa — preventive maintenance & records (a Kyoshi app)
 Takes the mental load of looking after your things: a car (miles), a robot vacuum, a floor jack, battery tools…
 Each job is entered once from the manual, with its **source** (which manual, which page). Appa works out when each is
-due (by time, season or meter, whichever comes first) and sends it to **Momo** two weeks ahead, sized to how long
+due (by time, season or meter, whichever comes first) and sends it to **Momo** up to two weeks ahead (within the weeks Momo plans), sized to how long
 it takes, to fill its "<name> maintenance" cards (or Tasks). While you do it, the **job view** shows your own notes
 (bullets: parts, specs, steps) with a Start/Finish timer, and **Done** is one tap. There are no checklists. Timed jobs teach the estimate. Records keep optional
 proof (photos, PDFs, links) and become a minimal **PDF report** (newest first, each job's proof right after it)
@@ -41,10 +41,13 @@ files, `<folder>/appa/files/<id>.jpg|pdf`. **Backups are data only**: `{ schemaV
 readings, files, settings }`, where `files` holds the file records, not their bytes. The backup note says so.
 
 ## Shared with other apps
-`A.inbox()` (core/inbox.js; read-only copies): one timed need per job overdue or due within `LEAD_DAYS` on each thing in use
-`{ id (job), title (job name), block: "<name> maintenance", details: [due text], minutes, due, overdue }`, plus
-`{ id: "reading:<thingId>", title: "Check the odometer", … }` when a reading is asked for. Momo fills cards titled `block` with them, each job
-whole; the rest go to its Tasks. `A.open(id)` (Momo's "Open in Appa") shows that job (or the thing's reading pop-up).
+`A.inbox(from, to)` (core/inbox.js; read-only copies): one timed need per job overdue, or due within `LEAD_DAYS` and by `to`, on each
+thing in use `{ id (job), title (job name), block: "<name> maintenance", details: [due text], minutes, due, overdue }`, plus
+`{ id: "reading:<thingId>", title: "Check the odometer", … }` when a reading is asked for; then each job recorded between `from` and `to`
+(up to today), done on its record's day: `{ id: "done:<recordId>:<jobId>" (a record of other work alone: "done:<recordId>"), title (the
+job as it's called now, or was then), block, details: ["Recorded Oct 1 · by"], minutes (the record's, else its estimate), date, done:
+true }`, so its card shows ✓ there. Momo fills cards titled `block` with them, each job whole; the rest go to its Tasks. `A.open(id)`
+(Momo's "Open in Appa") shows that job (or the thing's reading pop-up, or a recorded job's record).
 
 ## Invariants
 - Due dates, statuses and estimates are worked out, never stored. "Today" is `K.util.todayStr()` (time travel works);

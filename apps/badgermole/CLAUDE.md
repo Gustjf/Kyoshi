@@ -21,7 +21,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `session.js` | the session: start, steppers, ✓ / Log all sets, a logged set tapped to change (held), jump, Back / Next, Finish, Cancel (starting and ending a session tell `K.wakeLock`); the elapsed minutes; Pick a routine |
 | `editors.js` | the exercise and routine pop-ups, the starter exercises, program edits, settings |
 | `day.js` | the day pop-up: a day's sessions, their sets to fix, add or remove, Delete session |
-| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a session in progress keeps the screen on: core/wakelock.js), `onTick`, `onReload`, `bugState`. No `attention`: never a dot |
+| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a session in progress keeps the screen on: core/wakelock.js), `onTick`, `onReload`, `attention` (a dot when today's workout is needed for the week's target), `bugState` |
 | `badgermole.css` | styles under `.app-badgermole` |
 
 ## State (`A.S`)
@@ -77,6 +77,8 @@ shows Home with Next up flashing.
   last), one step up (5 lb / 2.5 kg, a bodyweight one +1 rep) when every planned set of it reached the routine's reps; else the
   routine's line. Weights in another unit convert to the nearest 0.5.
 - The streak judges every week (Monday to Sunday) by the current target; this week counts once hit and never breaks it while open.
+- The dot on the icon (`A.attention`): once a routine is in the program, when today's workout is needed to keep this week's target
+  (workouts left ≥ days left, today included) and none is logged today yet; it clears once one is.
 - A session left running over `STALE_HOURS` ends at its last set; its minutes are capped at `MAX_SESSION_MINUTES`. A session
   past midnight stays on the day it started. One at a time per device: a reload resumes it.
 - The steppers' typing is stored when a field is left (− / + at once), so it survives a reload without a write per key.

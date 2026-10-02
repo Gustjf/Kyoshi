@@ -1,6 +1,7 @@
 /* Hawky · share.js — what Hawky shares with other apps. Momo reads inbox() (core/inbox.js; read-only
- * copies): every open errand, soonest due first and the undated oldest first, then those ticked between
- * from and to (on their day, so ✓ shows on that day's block), all filling Momo's cards titled "Errands",
+ * copies): every open errand due by `to` (so one due in a month takes none of this week's room), soonest
+ * due first, and the undated, oldest first, then those ticked between from and to (on their day, so ✓
+ * shows on that day's block), all filling Momo's cards titled "Errands",
  * each errand whole; what doesn't fit is one Errands task in Momo's Tasks. Momo's "Open in Hawky" calls
  * open(id), which brings the errand into view and flashes it. The needs' ids are the errands' own:
  * change open() along with them (apps/hawky/CLAUDE.md). */
@@ -22,7 +23,7 @@
   function inbox(from, to) {
     const today = todayStr();
     const done = A.live().filter(i => i.done && i.done >= from && i.done <= to).sort((a, b) => a.done.localeCompare(b.done) || a.at - b.at);
-    return A.openItems().concat(done).map(i => need(i, today));
+    return A.openItems().filter(i => !i.due || i.due <= to).concat(done).map(i => need(i, today));
   }
 
   // From Momo's "Open in Hawky" (core/inbox.js puts Hawky on screen first): the errand comes into view and

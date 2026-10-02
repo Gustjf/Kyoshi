@@ -1,6 +1,6 @@
 /* Kyoshi · tests/badgermole-momo.test.js — Badgermole and Momo together, as the user sees them on the board: Workout
  * cards fill in program order this week and next (the rotation running on), a workout no card has room for waits in
- * Tasks ("Workout · Push"), a logged session shows ✓ on its day's card while the other cards keep their routines,
+ * Tasks ("Workout · Push", on its own week's board), a logged session shows ✓ on its day's card while the other cards keep their routines,
  * "Open in Badgermole" (a done card: its day; a planned one: Next up), an empty program asks for nothing; and two tabs
  * of one browser (a finished session reaches the other's Momo; one in progress isn't counted, and resumes on reload). */
 "use strict";
@@ -40,14 +40,17 @@ module.exports = [
       await p.fill("#targetInput", "4");
       await p.locator("#targetInput").blur();
       await switchTo(tab, "momo");
-      eq(await tasks(tab), ["Workout · Push", "Workout · Pull"], "the fourth workouts are tasks");
+      eq(await tasks(tab), ["Workout · Push"], "this week's fourth workout is a task, on this week's board only");
+      await week(tab, "next");
+      eq(await tasks(tab), ["Workout · Pull"], "and next week's on next week's (the rotation on)");
+      await week(tab, "this");
 
       // Log Push today: ✓ on today's card; Pull and Legs keep their cards; Push still waits in Tasks.
       await switchTo(tab, "badgermole");
       await bm.doSession(tab, "Push");
       await switchTo(tab, "momo");
       eq(await cards(tab), { "card-0": "Workout (Push from Badgermole — done ✓)", "card-1": "Workout (Pull from Badgermole)", "card-2": "Workout (Legs from Badgermole)" }, "after logging Push");
-      eq(await tasks(tab), ["Workout · Push", "Workout · Pull"], "the fourths still wait");
+      eq(await tasks(tab), ["Workout · Push"], "the fourth still waits");
 
       // Back to three a week: no task; next week goes on from where this one ends.
       await switchTo(tab, "badgermole");

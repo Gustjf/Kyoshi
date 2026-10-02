@@ -1,5 +1,6 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
- * with Tasks, the board) or Today's, and its pop-ups (card editor, an event, a card on Today, close-out).
+ * with Tasks, a chunk per app, the board) or Today's, and its pop-ups (card editor, an event, a card on
+ * Today, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -52,12 +53,15 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="clearBtn">Clear week</button>
       </div>
     </div>
-    <!-- Tasks: what other apps need that no block covers, what's ongoing in other apps, then cards without a day (tasks.js). -->
+    <!-- Tasks: what each app still needs a place for, a chunk per app, what's ongoing in other apps, then cards without a
+         day (tasks.js); on the baseline, the true cost (truecost.js). -->
     <div class="tasks" id="tasks">
-      <span class="tasks-label">Tasks</span>
-      <span class="tasks-total" id="tasksTotal"></span>
+      <div class="tasks-head">
+        <span class="tasks-label">Tasks</span>
+        <span class="tasks-total" id="tasksTotal"></span>
+        <button class="secondary small tasks-add" id="addTaskBtn">+ New card</button>
+      </div>
       <div class="tasks-cards" id="taskCards"></div>
-      <button class="secondary small tasks-add" id="addTaskBtn">+ New card</button>
     </div>
   </section>
 
@@ -185,6 +189,8 @@ Kyoshi.apps.momo.markup = `
       <div class="modal-actions">
         <button id="closeOutConfirmBtn">Close out week</button>
         <button class="secondary" id="closeOutLaterBtn">Later</button>
+        <span class="spacer"></span>
+        <button class="secondary" id="closeOutAllBtn" hidden>Close all as planned</button>
       </div>
     </div>
   </div>

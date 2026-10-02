@@ -218,11 +218,13 @@ module.exports = [
       eq(await pb.heads(tab), { "Due now": "3 · 3h", "Coming up": "2 · 40m", "Later": "2 · 2h" }, "the groups' heads");
       eq(await pb.birthdays(tab), ["Kai · Oct 1 · tomorrow", "Mom · Oct 12 · in 12 days · turns 60"], "the Birthdays strip");
       const back = await exportBackup(tab);
-      eq([back.schemaVersion, back.appVersion, back.people], [1, "1.000", data.people], "Export gives back the people (and the marker) as they came in");
+      eq([back.schemaVersion, back.appVersion, back.people], [1, await tab.page.evaluate(() => Kyoshi.apps.pabu.VERSION), data.people], "Export gives back the people (and the marker) as they came in");
 
       // A damaged file: only what's usable, with the counts asked first.
       await importBackup(tab, gen.damagedPabu());
-      eq(lastDialog(tab), "Replace your 7 people with the 3 people in this backup? This can't be undone.", "the counts");
+      const asked = lastDialog(tab);
+      has(asked, "Replace your 7 people with the 3 people in this backup? This backup is from ", "the counts, then the backup's date");
+      has(asked, "This can't be undone.", "and that it can't be undone");
       eq(await pb.groups(tab), {
         "Due now": [`${"N".repeat(40)} · Visit · every week · never talked · due today · 🎂 Feb 28`, "Old clock · Text · every month · never talked · due today"],
         "Later": ["Rae Lynn · Call · every month · last talked 3 days ago · due Oct 27"]
@@ -247,10 +249,10 @@ module.exports = [
 
       // A newer version's backup: a heads-up, then it's in.
       await importBackup(tab, { ...gen.pabu(gen.PEOPLE.slice(0, 1)), schemaVersion: 2 });
-      eq(tab.dialogs.map(d => d[1]), [
+      eq(tab.dialogs.map(d => d[1].replace(/ This backup is from .*? This can't/, " This can't")), [
         "Heads up: this backup was made by a newer version of Pabu. Importing it anyway, but some data may not carry over.",
         "Replace your 3 people with the 1 person in this backup? This can't be undone."
-      ], "a heads-up, then the counts");
+      ], "a heads-up, then the counts (and the backup's date)");
       eq(await pb.groups(tab), { "Due now": [LIST["Due now"][0]] }, "Gran alone");
     }
   },

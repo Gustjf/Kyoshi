@@ -82,7 +82,7 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Pabu. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && mine && !confirm(`Replace your ${count(mine)} with the ${count(theirs)} in this backup? This can't be undone.`)) return false;
+    if (ask && mine && !K.backup.ask(A, raw, `Replace your ${count(mine)} with the ${count(theirs)} in this backup?`)) return false;
     S.people = people;
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export

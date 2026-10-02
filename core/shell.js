@@ -1,7 +1,8 @@
 /* Kyoshi · core/shell.js — the shell: app registry, header & switcher, theme, start-up.
  * K.register(meta) → A, an app's namespace (the app contract is in CLAUDE.md).
  * K.start() (the last line of index.html) opens the store (core/storage.js), makes each app's
- * root from A.markup, loads and starts every app (and its meetings, core/meetings.js), shows one
+ * root from A.markup, loads and starts every app (and its meetings, core/meetings.js), then K.ready is
+ * true (an app reading other apps waits for it: they start one at a time), shows one
  * (the URL's #id, else the last used), then runs the shared keyboard, minute tick and other-tab reloads.
  * Only the app on screen is in the page: the others' roots are kept aside (detached) but
  * keep running — so ids only need to be unique within an app, and A.$ looks only inside it. */
@@ -27,7 +28,9 @@
       isActive: () => active === A,
       // A listener on document/window that only fires while this app is on screen.
       listen: (target, type, fn, opts) => target.addEventListener(type, e => { if (active === A) fn(e); }, opts),
-      changed: (unsaved = true) => { K.sync.changed(A, unsaved); K.wakeLock.check(); }, // a change can end what keeps the screen on
+      // A change can end what keeps the screen on, and start the app's meetings counting (its first goal, say). quiet: the
+      // app's own bookkeeping (Momo's asks), synced like any change but not when the data here last changed (core/sync.js).
+      changed: (unsaved = true, quiet = false) => { K.sync.changed(A, unsaved, quiet); K.meetings.settle(A); K.wakeLock.check(); },
       setSubtitle: text => { A.subtitle = text; if (active === A) $("kAppSubtitle").textContent = text; },
       refreshDev: () => K.dev.refreshTools(A)
     };
@@ -47,6 +50,7 @@
     K.bugs.init();
     K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));
+    K.ready = true; // every app has started (or failed to): what one reads from the others is all there now
     K.dev.init();
     wireSwitcher();
     wireKeys();
@@ -222,9 +226,10 @@
   }
 
   // --- Every minute and whenever the page is back in view: each app catches up (a new day,
-  // a dose coming due, a week to close out), in view or not, and so do the meetings and the
-  // screen's wake lock (core/wakelock.js). ---
+  // a dose coming due, a week to close out), in view or not, and so do the meetings (one whose
+  // app came into use by sync starts counting) and the screen's wake lock (core/wakelock.js). ---
   function tick() {
+    K.order.forEach(id => { if (K.apps[id].started) K.meetings.settle(K.apps[id]); });
     K.order.forEach(id => call(K.apps[id], "onTick"));
     K.meetings.render();
     renderSwitcher();

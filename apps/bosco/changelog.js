@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.290", date: "2026-10-02", changes: [
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "7.280", date: "2026-10-02", changes: [
       "A \"Last checkup\" line under the name: tap Done ✓ after a deeper look at Bosco."
     ] },

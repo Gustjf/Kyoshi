@@ -48,15 +48,15 @@ core/                 the shared DNA — K = window.Kyoshi
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
   sync.js             K.sync: folder autosave & sync engine (clocks, merge calls, one subfolder per app, apps' files). No UI.
-  backup.js           K.backup: each app's "Backup & sync" section, sync & storage banners, Export/Import JSON & all
+  backup.js           K.backup: each app's "Backup & sync" section, sync & storage banners, Export/Import JSON & all (dated; K.backup.ask: the import question)
   bugs.js             K.bugs: "Report a bug" pop-up and log
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
-  meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox): header line, Done ✓, settings pop-up, its "meetings" key
+  meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key
   inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings), filling Momo's blocks; K.inbox.open
   wakelock.js         K.wakeLock: keeps the screen on while the app on screen's A.awake() says so (a timer, a workout)
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
-  shell.js            K.register, K.start, switcher menu, theme, keyboard, minute tick, other-tab reload
+  shell.js            K.register, K.start (K.ready once every app has started), switcher menu, theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
 apps/<id>/            one folder per app — its CLAUDE.md has its file map and data model
   bosco/              weight tracker with projections & GLP-1 dosing
@@ -77,7 +77,7 @@ tests/                end-to-end tests, not part of the site: run.js (how to run
 Each app registers in its `app.js`: `const A = Kyoshi.register({ id, name, title, subtitle, width, icon, backupNote?, meetings? })` — `id`: lowercase letters and digits, from a letter, unique (`storage` is core's); `meetings`: `[{ id, title, every: "whenever"|"week"|"month"|"quarter"|"season"|"year", minutes, after? }]` (core/meetings.js): the apps used daily each name a checkup (`every: "whenever"`: no schedule, just when you last did it); one on a schedule is a regular meeting, for an app reviewed less often (Iroh's; a `"season"` one is due by the end of each new season's first week; `after: true` comes after the other apps' in Momo).
 Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`.
 
-**Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true)` (after storing a change: sync count, autosave, Export highlight) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
+**Kyoshi provides on A** (never overwrite): `A.S` (state) · `A.$(id)` (element in this app) · `A.root` · `A.store.get/set/json/remove(key)`, `keys()` (instant) · `A.files.put/get/has/remove/ids` (photos & documents: Blobs, async) · `A.changed(unsaved = true, quiet = false)` (after storing a change: sync count, autosave, Export highlight; quiet: the app's own bookkeeping, not a change of the user's) · `A.listen(target, type, fn)` (page-wide listener, only while on screen) · `A.isActive()` · `A.setSubtitle(text)` · `A.refreshDev()`.
 
 **The app defines on A** (all optional except `markup`):
 | Hook | When Kyoshi calls it |
@@ -89,11 +89,11 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 | `A.onTick()` | every minute and when the page is back in view — every app, on screen or not |
 | `A.onKeydown(e)` | keys while on screen; return `true` if handled |
 | `A.onReload()` | after `A.load()` for another tab's change: redraw |
-| `A.attention()` | short reason it needs the user ("" if none) → dot on its switcher icon |
+| `A.attention()` | short reason it needs the user, when you're behind ("" if none) → dot on its switcher icon |
 | `A.awake()` | true while the screen should stay on with it on screen (a running timer, a workout); call `K.wakeLock.check()` when that changes (core also checks on show, `A.changed()`, reloads and every minute) — see `core/wakelock.js` |
 | `A.renderDev(box)` | fill `box` with its Developer Mode tools (`.dev-block`s) |
 | `A.bugState()` | lines (`"- Key: value"`) for bug reports — never personal data |
-| `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask) → true once it's in, combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |
+| `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask) → true once it's in, combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. importBackup asks with `K.backup.ask(A, raw, "Replace …?")` (it adds the backup's date and how much newer what's here is). With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |
 | `A.agenda(from, to)` | events at set times on those days, as copies `[{ id, title, date, time, minutes, note, done }]` for Momo's board — see `core/agenda.js` |
 | `A.inbox(from, to)` | what it needs done this week and next, as copies `[{ id, title, block, details, fill, minutes, date, due, from, overdue, done }]`, filling Momo's blocks (cards titled `block`) — see `core/inbox.js` (ids starting `meeting:` are core's) |
 | `A.open(id)` | "Open in <App>" from Momo (after Kyoshi shows the app): show that need |
@@ -107,5 +107,6 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 - Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
 - Within an app: destructure helpers only from `app.js`; call other files' functions as `A.name()`; expose with `Object.assign(A, { … })`.
 - Between apps: never touch another app's `A.S` or storage. A provider may offer a small read-only function — ask me first. So far: Momo reads every app's `A.agenda` and `A.inbox` (its "Open in <App>" calls `A.open(id)`); Iroh reads Momo's `hoursSpent` (hours by title per closed week, for its goals' progress).
-- Checkups and meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up; one on a schedule also goes to Momo's "Meeting" cards and dots the app's icon when overdue.
+- Checkups and meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up; one on a schedule also goes to Momo's "Meeting" cards and dots the app's icon when overdue, but only once the app is in use (`A.data.hasData()`).
+- Apps start one at a time (`K.order`): an app reading the others (`K.inbox`, `K.agenda`) before `K.ready` sees only those started before it.
 - Time: `K.util.todayStr()` / `K.util.now()` (time travel aware); `Date.now()` only for change stamps (`u`, `savedAt`).

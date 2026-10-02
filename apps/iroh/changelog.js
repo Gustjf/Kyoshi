@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.200", date: "2026-10-02", changes: [
+      "A dot on Iroh's icon while a goal is more than a week's hours behind, as well as for an overdue meeting.",
+      "Its meetings only start counting once you've added a goal or an area.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.100", date: "2026-10-02", changes: [
       "Each season goal with hours shows its progress from Momo's weekly close-out: \"22 of 60 h, on pace\" (or how far behind) for hours a week; for a total, what's left and the hours a week to finish.",
       "A total's weekly hours in Momo are now what's left of it over the weeks left in the season."

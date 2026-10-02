@@ -41,8 +41,9 @@
   // A week's events, each as K.agenda has it plus: key ("app:id"); day (0-6); home, the time its
   // app has, and at, where it is, moved or not (hours after midnight; null for any time that day);
   // start, end and dur, in hours; moved; extra, the hours it adds to its day (all but any Free time
-  // lends it), and loose, those in time no card has; clash, what it conflicts with ({ title, start,
-  // end }); and flag, a conflict to show: on a day still to come, not done, the week not closed.
+  // lends it; none at any time of day, like a birthday, which takes no time of its own), and loose,
+  // those in time no card has; clash, what it conflicts with ({ title, start, end }); and flag, a
+  // conflict to show: on a day still to come, not done, the week not closed.
   function weekAgenda(key, list = A.readList(key)) {
     if (key === "base") return [];
     const placed = list.events || {}, first = firstDay(key), days = new Map();
@@ -50,7 +51,7 @@
     const evs = K.agenda(key, addDays(key, 6)).map(e => {
       const k = `${e.app}:${e.id}`, p = placed[k] || {}, home = e.time ? hoursOf(e.time) : null;
       const at = isNum(p.at) ? p.at : home, dur = Math.max(STEP, snap(e.minutes / 60));
-      return { ...e, key: k, day: dayIndex(e.date), home, at, start: at, end: at === null ? null : at + dur, dur, moved: at !== home, extra: dur, loose: 0, clash: [], flag: false };
+      return { ...e, key: k, day: dayIndex(e.date), home, at, start: at, end: at === null ? null : at + dur, dur, moved: at !== home, extra: at === null ? 0 : dur, loose: 0, clash: [], flag: false };
     });
     evs.filter(ev => ev.at !== null).forEach(ev => {
       const parts = partsOf(ev.day);

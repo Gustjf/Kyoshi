@@ -3,12 +3,13 @@
  * into the page (data-act; Enter or Space on a chip opens it too), the searches, the plan's shape (a grid wider than
  * PLAN_PX, a list narrower), the mouse's place for Ctrl+C / X / V, and the first view (Groceries on a phone, Momo's
  * rule) — and the hooks Kyoshi calls: onShow, onHide, onTick (a new day), onReload (another tab saved; the cook view
- * stays), onKeydown (copy, cut and paste; Esc), awake (the cook view keeps the screen on: core/wakelock.js) and
- * bugState (counts only: never recipe names, ingredients or meals). No attention: never a dot on the icon. */
+ * stays), onKeydown (copy, cut and paste; Esc), awake (the cook view keeps the screen on: core/wakelock.js), attention
+ * (a dot while today or tomorrow has no dinner planned) and bugState (counts only: never recipe names, ingredients or
+ * meals). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { todayStr } = K.util;
+  const { todayStr, addDays } = K.util;
   const { PLAN_PX, PHONE } = A;
 
   // Buttons and chips drawn into the page say what they do in data-act (and whose, in data-id or data-date).
@@ -113,6 +114,14 @@
 
   // The screen stays on while a recipe is open in the cook view (core/wakelock.js; showView tells it).
   A.awake = () => S.view === "cook";
+
+  // A dot on the icon while today or tomorrow has no dinner planned (anything in its slot counts, Skipped too); it clears
+  // once one is. Not before Turtleduck is in use (a recipe or a planned meal).
+  A.attention = () => {
+    if (!A.liveRecipes().length && !A.liveEntries().length) return "";
+    const today = todayStr(), none = [today, addDays(today, 1)].filter(d => !A.entriesOn(d, "dinner").length);
+    return !none.length ? "" : `no dinner planned ${none.length === 2 ? "today or tomorrow" : none[0] === today ? "today" : "tomorrow"}`;
+  };
 
   // Bug reports: counts and settings only — never recipe names, ingredients or meals.
   A.bugState = () => {

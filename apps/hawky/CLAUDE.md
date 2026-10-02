@@ -2,8 +2,8 @@
 Errands are jotted down the moment they come up, on the phone in seconds: the text, a tap for the day (Today, Tomorrow,
 Pick a day, or none) and one for how long (15 min, 30 min, 1 hour, Other). The list shows them by when they're due:
 Overdue, Today, This week (by Sunday), Later and Someday (no date); ✓ ticks one off, and the done ones fold away.
-**Momo** decides when: every open errand fills your "Errands" cards there, soonest due first, each one whole; what
-doesn't fit is one Errands task in Momo's Tasks. Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
+**Momo** decides when: every open errand due by the end of next week (or undated) fills your "Errands" cards there,
+soonest due first, each one whole; what doesn't fit is one Errands task in Momo's Tasks. Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
@@ -32,8 +32,8 @@ Merged errand by errand by `u`, deleted ones kept as markers (the template's mer
 `looksLike` also checks that each live item has `text` (theirs have `name`), and Import JSON refuses a file with no errands in it.
 
 ## Shared with other apps
-`A.inbox(from, to)` (core/inbox.js; read-only copies): every open errand, soonest due first (so overdue ones lead), then the
-undated oldest first, then those done between `from` and `to`, each `{ id (the errand's), title (its text), block: "Errands",
+`A.inbox(from, to)` (core/inbox.js; read-only copies): every open errand due by `to` (one due later takes none of Momo's room
+yet), soonest due first (so overdue ones lead), then the undated oldest first, then those done between `from` and `to`, each `{ id (the errand's), title (its text), block: "Errands",
 details: ["Due Oct 7"] or ["No date · added Sep 30"], minutes, due (or null), overdue (due before today), done, date (the day done;
 null while open) }`; "added" is the real day, from `at`. Momo fills its "Errands" cards with them by time, each whole, the
 soonest block on or before the due day with room; what doesn't fit is one task; a done one shows ✓ on that day's block and never

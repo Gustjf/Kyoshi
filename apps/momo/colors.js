@@ -78,12 +78,14 @@
 
   // Keeps every key on show with a colour of its own. Where two keys have
   // the same one (two devices' changes combined), the one on show keeps it,
-  // else the one changed last; a key not used lately lets its colour go;
-  // then each key on show without one gets one. True if anything changed.
+  // else the one changed last; a key not used lately lets its colour go — but
+  // not before every app has started (K.ready), as other apps' events aren't on
+  // show until then, so starting Momo never drops their colours and gives them
+  // back; then each key on show without one gets one. True if anything changed.
   function ensureColors(d = S.data) {
     const before = JSON.stringify(d.colors), { shown, lately } = colorKeys(d), onShow = new Set(shown), taken = new Set();
     Object.keys(d.colors).sort((a, b) => onShow.has(b) - onShow.has(a) || d.colors[b].u - d.colors[a].u || (a < b ? -1 : 1)).forEach(k => {
-      if (!lately.has(k) || taken.has(d.colors[k].c)) delete d.colors[k];
+      if ((K.ready && !lately.has(k)) || taken.has(d.colors[k].c)) delete d.colors[k];
       else taken.add(d.colors[k].c);
     });
     shown.forEach(k => { if (k !== FREE_KEY && !d.colors[k]) setColor(d, k, freeColor(d, shown)); });

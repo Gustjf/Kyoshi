@@ -10,9 +10,11 @@
  * title) with Done ✓, and it's never due, so no dot and nothing in Momo. Picking a schedule in its settings makes it a
  * meeting. The apps used daily each have a checkup; Iroh's (reviewed less often) are meetings.
  * Kept in each app's store under core's key "meetings" (like core's "sync"): { id: { every, minutes, last, since, u } }.
- * last: the day last met ("" if never); since: the day it was first seen, its first due day; u: when it last changed
- * (the later change wins). It travels with the app's sync file and backups, beside its data (core/sync.js,
+ * last: the day last met ("" if never); since: the day it was first seen with the app in use, its first due day; u: when
+ * it last changed (the later change wins). It travels with the app's sync file and backups, beside its data (core/sync.js,
  * core/backup.js); a meeting this version doesn't name is kept as it is.
+ * An app's meetings only count once it's in use, holding anything (A.data.hasData(): Iroh's first goal or area): before
+ * that none is due, so an app never opened puts nothing in Momo and no dot anywhere; since waits for that day (settle).
  * Due (on a schedule): last met + every (months stop at the month's end; a season's is the end of the first week of the
  * next season to start, core/seasons.js, so it comes up in each new season's first week), else since; overdue once
  * that day has passed, which puts a dot on the app's icon (core/shell.js). For Momo (core/inbox.js): each meeting due
@@ -57,14 +59,35 @@
   }
   const store = A => A.store.set(KEY, JSON.stringify(A._meet));
 
-  // Reads an app's meetings (at start, and when another tab saved). One never seen before (or kept without its start)
-  // starts today, its first due day, kept quietly: it isn't a change of yours to sync, and any device's start will do.
+  // Whether an app's meetings count yet: once it holds anything (an app without data of its own, always).
+  function inUse(A) {
+    try { return !A.data || A.data.hasData() === true; } catch (err) { return true; }
+  }
+
+  // Reads an app's meetings (at start, and when another tab saved), then settles their start.
   function load(A) {
-    const recs = cleanAll(A.store.json(KEY)), today = todayStr();
-    const fresh = defsOf(A).filter(d => !recs[d.id] || !recs[d.id].since);
-    fresh.forEach(d => { recs[d.id] = recs[d.id] ? { ...recs[d.id], since: today } : { every: d.every, minutes: d.minutes, last: "", since: today, u: 0 }; });
+    A._meet = cleanAll(A.store.json(KEY));
+    settle(A);
+  }
+
+  // Each meeting's start, kept quietly (it isn't a change of yours to sync, and any device's start will do): one never seen
+  // with the app in use (or kept without its start) starts today, its first due day; while the app isn't in use, one never
+  // met has no start, so it counts from the day the app is first used. Called at load, after the app stores a change
+  // (A.changed: its first goal, say) and on the minute tick (data that came in by sync).
+  function settle(A) {
+    if (!A._meet) return;
+    const recs = { ...A._meet }, today = todayStr(), used = inUse(A);
+    let changed = false;
+    defsOf(A).forEach(d => {
+      const r = recs[d.id];
+      if (used && (!r || !r.since)) recs[d.id] = r ? { ...r, since: today } : { every: d.every, minutes: d.minutes, last: "", since: today, u: 0 };
+      else if (!used && r && r.since && !r.last) recs[d.id] = { ...r, since: "" };
+      else return;
+      changed = true;
+    });
+    if (!changed) return;
     A._meet = cleanAll(recs);
-    if (fresh.length) store(A);
+    store(A);
   }
 
   // A change made here (Done, or the settings): kept, then counted for sync and autosaved.
@@ -82,11 +105,11 @@
     : every === "season" ? addDays(K.seasons.seasonAfter(date), WINDOW_DAYS) : addMonths(date, MONTHS[every]));
   const recOf = (A, d) => (A._meet && A._meet[d.id]) || { every: d.every, minutes: d.minutes, last: "", since: "", u: 0 };
 
-  // A meeting today: { def, every, minutes, last, due ("" without a schedule), from (the first day of its week), overdue, soon
-  // (in its week, not overdue: it says when), metToday }.
+  // A meeting today: { def, every, minutes, last, due ("" without a schedule, or while the app isn't in use), from (the first
+  // day of its week), overdue, soon (in its week, not overdue: it says when), metToday }.
   function stateOf(A, d) {
     const r = recOf(A, d), today = todayStr(), every = Object.hasOwn(EVERY, r.every) ? r.every : d.every;
-    const due = !scheduled(every) ? "" : r.last ? after(r.last, every) : r.since || today;
+    const due = !scheduled(every) || !inUse(A) ? "" : r.last ? after(r.last, every) : r.since || today;
     const from = due && addDays(due, -WINDOW_DAYS), overdue = !!due && due < today;
     return { def: d, every, minutes: r.minutes, last: r.last, due, from, overdue, soon: !!due && !overdue && from <= today, metToday: r.last === today };
   }
@@ -253,5 +276,5 @@
     });
   }
 
-  K.meetings = { BLOCK, init, load, needs, attention, bugLine, render, reveal, build, merge, take };
+  K.meetings = { BLOCK, init, load, settle, needs, attention, bugLine, render, reveal, build, merge, take };
 })(Kyoshi);

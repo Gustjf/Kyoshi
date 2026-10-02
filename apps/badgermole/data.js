@@ -190,7 +190,7 @@
       alert("Heads up: this backup was made by a newer version of Badgermole. Importing it anyway, but some data may not carry over.");
     }
     const mine = A.live(S.exercises).length || A.live(S.sessions).length;
-    if (ask && mine && !confirm(`Replace your ${count(S)} with the ${count(next)} in this backup? This can't be undone.`)) return false;
+    if (ask && mine && !K.backup.ask(A, raw, `Replace your ${count(S)} with the ${count(next)} in this backup?`)) return false;
     Object.assign(S, next);
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export

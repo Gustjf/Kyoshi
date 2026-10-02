@@ -286,16 +286,20 @@ class Life {
   // What became of the needs this person did: Appa's recorded jobs (the same day) and yesterday's ✓ (the next morning).
   verifyDone(s, when) {
     const keys = new Map(s.drawn.needs.map(n => [n.key, n]));
+    // A done need can carry an id of its own (Appa's "done:<record>:<job>", Pabu's talk "p:<id>:<day>", a Badgermole session):
+    // it's found by its app, day and title too.
+    const doneThere = (app, id, date, title) => (keys.get(`${app}:${id}`) || {}).done || s.drawn.needs.some(n => n.app === app && n.done && n.date === date && (n.title === title || n.id.endsWith(`:${id}`)));
     this.memory.recorded.splice(0).forEach(r => {
       if (r.date !== s.today) return;
       const n = keys.get(`appa:${r.id}`);
-      if (n && n.done) return;
+      if (doneThere("appa", r.id, r.date, r.title)) return;
       this.count("appaRecordedVanished");
       this.find("appa-no-done", { kind: "flow", sev: "daily rub", title: "A job recorded in Appa disappears from Momo instead of showing ✓", where: "apps/appa/share.js:12-22 (no done need; the roadmap's table says ✓ when recorded)", suspect: 2 },
         `${r.date}: “${r.title}” recorded as done; Momo's card ${n ? "still shows it as to do" : "no longer has it, and shows no ✓"}`);
     });
     if (when !== "morning") return;
-    const yesterday = addDays(s.today, -1), gone = this.memory.doneLog.filter(d => d.date === yesterday && !(keys.get(`${d.app}:${d.id}`) || {}).done);
+    // Momo asks from this Monday: on a Monday, yesterday is last week's, and isn't shown (roadmap Phase 8).
+    const yesterday = addDays(s.today, -1), gone = yesterday < s.thisKey ? [] : this.memory.doneLog.filter(d => d.date === yesterday && !doneThere(d.app, d.id, d.date, d.title));
     if (gone.length) {
       this.count("yesterdayTicksGone", gone.length);
       this.find("yesterday-tick", { kind: "flow", sev: "daily rub", title: "What was done yesterday shows no ✓ in Momo today", where: "apps/momo/inbox.js:18 (K.inbox from today) and inbox.js:28-41 (no blocks before today)", suspect: 1 },
@@ -318,12 +322,8 @@ class Life {
   // Monday morning: last week's next-week cards are this week's; last week's hours shortfalls are gone, with no trace.
   weekChange(s) {
     const last = this.memory.lastSunday, prevKey = addDays(s.thisKey, -7);
-    // A past week Momo never wrote to: never closed out, and not in hoursSpent (Iroh counts only closed weeks).
-    if (!s.momo.prev.stored && prevKey >= mondayOf(START)) {
-      this.count("weeksNeverStored");
-      this.find("week-never-stored", { kind: "design question", sev: "occasional", title: "A week Momo never wrote to is never closed out, and Iroh never hears of it", where: "apps/momo/closeout.js:26 pendingCloseOuts (stored weeks only); hoursSpent:208", suspect: 10 },
-        `${prevKey}: nothing was planned in Momo that week, so it has no close-out and isn't in hoursSpent: Iroh's goals ${(s.truth.iroh && s.truth.iroh.goals.length) ? `(${s.truth.iroh.goals.map(g => g.title).join(", ")}) neither count it nor show it as missed` : "would neither count it nor show it as missed"}`);
-    }
+    // A past week Momo never wrote to: no close-out, and 0 hours in hoursSpent (roadmap Phase 8: the goals fall behind for it).
+    if (!s.momo.prev.stored && prevKey >= mondayOf(START)) this.count("weeksNeverStored");
     if (last && last.key === addDays(s.thisKey, -7)) {
       const now = new Set(s.momo.cards[s.thisKey].map(c => c.id)), lost = last.next.filter(id => !now.has(id));
       if (lost.length) this.find("week-change-lost", { kind: "bug", sev: "blocks the flow", title: "Cards planned for next week are gone on Monday" }, `${lost.length} of ${last.next.length} cards`);

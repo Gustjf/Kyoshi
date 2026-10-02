@@ -87,7 +87,7 @@
     }
     const count = n => `${n} recommendation${n === 1 ? "" : "s"}`;
     const mine = A.live().length, theirs = items.filter(i => !i.deleted).length;
-    if (ask && mine && !confirm(`Replace your ${count(mine)} with the ${count(theirs)} in this backup? This can't be undone.`)) return;
+    if (ask && mine && !K.backup.ask(A, raw, `Replace your ${count(mine)} with the ${count(theirs)} in this backup?`)) return;
     S.items = items;
     S.slots = cleanSlots(raw.slots);
     persist();

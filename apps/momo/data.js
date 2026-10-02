@@ -2,7 +2,8 @@
  * standalone Momo left in this browser), cleaning, saving with undo, backups, and combining
  * with other devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and
  * core/sync.js (folder sync) use — not to be confused with A.S.data, Momo's data itself.
- * Storage keys (A.store): data, sync and meetings (core's). */
+ * Storage keys (A.store): data, sync and meetings (core's), and later (closeout.js: the day the close-out was put
+ * off, this device's own, never synced or backed up). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -18,8 +19,8 @@
     S.lastSaved = JSON.parse(S.lastSavedJSON);
   }
 
-  // Stamps each week, the baseline, each goal and each colour that changed
-  // since the last save with the time, so sync knows which side's copy is newer.
+  // Stamps each week, the baseline, each goal, each colour and each week's asks that
+  // changed since the last save with the time, so sync knows which side's copy is newer.
   function stampChanges(prev) {
     if (!prev) return;
     const data = S.data, now = Date.now(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -29,13 +30,17 @@
     data.goals.forEach(g => { if (!same(g, old.get(g.id))) g.u = now; });
     const had = prev.colors || {};
     Object.keys(data.colors).forEach(k => { if (!same(data.colors[k], had[k])) data.colors[k].u = now; });
+    const asked = prev.asks || {};
+    Object.keys(data.asks).forEach(k => { if (!same(data.asks[k], asked[k])) data.asks[k].u = now; });
   }
 
   // Keeps a change made on this device, with colours for any new titles: the
   // previous version goes on the undo list, then it's stored locally and
   // autosaved to the sync folder (which, when on, stands in for Export JSON).
+  // quiet: Momo's own bookkeeping (a week's asks), which leaves Export JSON as it was and isn't a change of
+  // yours for an import's question (core/backup.js).
   // Returns false if nothing actually changed.
-  function save({ undo = true } = {}) {
+  function save({ undo = true, quiet = false } = {}) {
     A.ensureColors();
     if (JSON.stringify(S.data) === S.lastSavedJSON) return false;
     stampChanges(S.lastSaved);
@@ -44,15 +49,15 @@
       while (S.undoStack.length > UNDO_MAX || (S.undoStack.length > 1 && S.undoStack.length * S.lastSavedJSON.length > UNDO_MAX_CHARS)) S.undoStack.shift();
     }
     remember();
-    store();
+    store(!quiet || K.backup.isUnsaved(A), quiet);
     return true;
   }
 
   // Writes the current data out: locally, then (through Kyoshi) counted for sync
   // and autosaved. In test mode (time travel) Kyoshi keeps it in memory.
-  function store(unsaved = true) {
+  function store(unsaved = true, quiet = false) {
     persist();
-    A.changed(unsaved);
+    A.changed(unsaved, quiet);
   }
 
   /**
@@ -137,6 +142,25 @@
     });
     return out;
   }
+  // What the apps asked of each week, by app and block title (see model.js): minutes, each title once (any case, the
+  // first spelling kept), in key order; a week that asked nothing keeps its empty record (it counts 0 in the average).
+  // Older files simply have none.
+  function cleanAsks(raw) {
+    const out = {};
+    if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
+      const w = raw[k], by = {}, spelt = new Map();
+      if (!isWeekKey(k) || !isObj(w) || !isObj(w.by)) return;
+      Object.keys(w.by).forEach(ak => {
+        const bar = ak.indexOf("|"), app = ak.slice(0, bar), title = cleanText(ak.slice(bar + 1)), m = w.by[ak], low = `${app}|${title.toLowerCase()}`;
+        if (!/^[a-z][a-z0-9]{0,30}$/.test(app) || !title || !isPos(m)) return;
+        if (!spelt.has(low)) spelt.set(low, `${app}|${title}`);
+        const key = spelt.get(low);
+        by[key] = Math.min(100000, (by[key] || 0) + Math.round(m));
+      });
+      out[k] = { by: Object.fromEntries(Object.keys(by).sort().map(x => [x, by[x]])), u: cleanU(w.u) };
+    });
+    return out;
+  }
   function normalizeData(raw) {
     const out = A.emptyData();
     if (!isObj(raw)) return out;
@@ -150,6 +174,7 @@
     const ids = new Set();
     out.goals = (Array.isArray(raw.goals) ? raw.goals : []).map(cleanGoal).filter(g => g && !ids.has(g.id) && ids.add(g.id));
     out.colors = isObj(raw.colors) ? cleanColors(raw.colors) : oldColors(raw, out);
+    out.asks = cleanAsks(raw.asks);
     return out;
   }
   // Colours as saved, in key order; ensureColors sorts out any two keys with the same one.
@@ -230,7 +255,8 @@
       weeks: S.data.weeks,
       baseline: S.data.baseline,
       goals: S.data.goals,
-      colors: S.data.colors
+      colors: S.data.colors,
+      asks: S.data.asks
     };
   }
 
@@ -244,13 +270,14 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !confirm("Replace everything in Momo — your weeks and baseline — with this backup? This can't be undone.")) return;
+    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks and baseline — with this backup?")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];
     remember();
     store(false);
-    S.closeOutLater = false;
+    A.clearLater(); // its close-outs come up again
+    A.forgetAsks(); // this week's asks are seen afresh, over the backup's
     A.renderAll();
     A.checkCloseOuts(false); // Import all brings Iroh's goals in after Momo's weeks
     return true;
@@ -260,14 +287,13 @@
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
   // Combines two versions changed separately: every week, the baseline, every
-  // goal and every title's colour is taken from whichever side changed it
-  // last, and goal hours logged on either side are all kept. Gives the same
+  // goal, every title's colour and every week's asks is taken from whichever side
+  // changed it last, and goal hours logged on either side are all kept. Gives the same
   // result on every device, so two devices combining at once still agree.
   function mergeVersions(a, b) {
     const [older, newer] = a.savedAt + a.device > b.savedAt + b.device ? [b, a] : [a, b];
     const pick = (o, n) => (!o ? n : !n ? o : o.u > n.u ? o : n); // a tie goes to the newer save
-    const weeks = {};
-    [...new Set(Object.keys(older.weeks).concat(Object.keys(newer.weeks)))].sort().forEach(k => { weeks[k] = pick(older.weeks[k], newer.weeks[k]); });
+    const byKey = (x, y) => { const out = {}; [...new Set(Object.keys(x).concat(Object.keys(y)))].sort().forEach(k => { out[k] = pick(x[k], y[k]); }); return out; };
     const goals = new Map(older.goals.map(g => [g.id, g]));
     newer.goals.forEach(g => {
       const o = goals.get(g.id);
@@ -277,9 +303,9 @@
     });
     const colors = {};
     [older.colors, newer.colors].forEach(side => Object.keys(side).forEach(k => { colors[k] = pick(colors[k], side[k]); }));
-    return { weeks, baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors };
+    return { weeks: byKey(older.weeks, newer.weeks), baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors, asks: byKey(older.asks || {}, newer.asks || {}) };
   }
-  const dataKey = d => JSON.stringify([Object.keys(d.weeks).sort().map(k => [k, d.weeks[k]]), d.baseline, d.goals, d.colors]);
+  const dataKey = d => JSON.stringify([Object.keys(d.weeks).sort().map(k => [k, d.weeks[k]]), d.baseline, d.goals, d.colors, Object.keys(d.asks).sort().map(k => [k, d.asks[k]])]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -292,7 +318,7 @@
       same: dataKey(next) === theirKey,
       apply() {
         if (dataKey(next) === dataKey(S.data)) return false; // nothing new here
-        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors };
+        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks };
         return true;
       }
     };

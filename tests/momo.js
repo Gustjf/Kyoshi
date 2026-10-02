@@ -68,7 +68,7 @@ const days = tab => tab.page.$$eval(`${M} #board .col`, cols => cols.map(col => 
         id: c.dataset.id, title: title ? [...title.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim() : "",
         fill: ((title && title.querySelector(".card-fill")) || {}).textContent?.replace(/^\s*·\s*/, "") || "",
         hours: h((o.querySelector(":scope > .card-hours") || {}).textContent), label: o.getAttribute("aria-label") || "",
-        done: !!o.querySelector(".card-time .ev-done"), inner: c.classList.contains("inner"), parent: c.classList.contains("inner") ? c.parentElement.closest(".card").dataset.id : null
+        done: !!o.querySelector(".card-time .ev-done"), late: c.classList.contains("late"), inner: c.classList.contains("inner"), parent: c.classList.contains("inner") ? c.parentElement.closest(".card").dataset.id : null
       };
     }),
     events: [...col.querySelectorAll(".event")].map(e => ({ key: e.dataset.ev || "", title: e.getAttribute("title"), done: e.classList.contains("done"), flag: e.classList.contains("clash") })),

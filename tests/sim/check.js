@@ -15,7 +15,7 @@ function SNAP() {
     tasks: { this: M.tasks(f, thisKey).map(t => ({ key: t.key, title: t.title, hours: t.hours, overdue: !!t.overdue, ongoing: !!t.ongoing, needs: t.needs.map(key) })),
       next: M.tasks(f, nextKey).map(t => ({ key: t.key, title: t.title, hours: t.hours, overdue: !!t.overdue, ongoing: !!t.ongoing, needs: t.needs.map(key) })) }
   };
-  out.inboxKey = JSON.stringify(K.inbox(today, sunday));
+  out.inboxKey = JSON.stringify(K.inbox(thisKey, sunday)); // Momo asks from this Monday (its past days show what was done)
   out.fresh = fillOf(M.fill());
   out.drawn = fillOf(M.S.fill);
   out.stale = !M.S.fill || M.S.fill.key !== out.inboxKey;
@@ -75,7 +75,7 @@ function momo(L, s, dom) {
         L.find(`done-no-card:${n.app}`, { kind: "flow", sev: "daily rub", title: `A ${L.appName(n.app)} need done with no card for it shows nowhere in Momo`, where: "apps/momo/inbox.js:69 (a done need with no block is dropped)", suspect: 4 },
           `${n.title} (done ${n.date}) had no ${n.block} card that day, so Momo shows no ✓ anywhere`);
       }
-      if (!n.done && on.length + (tasked ? 1 : 0) === 0) L.find(`dropped:${n.app}`, { kind: "bug", sev: "blocks the flow", title: "A need is on no card and not in Tasks" }, `${n.app}:${n.title}`);
+      if (!n.done && !(n.date && n.date < today) && on.length + (tasked ? 1 : 0) === 0) L.find(`dropped:${n.app}`, { kind: "bug", sev: "blocks the flow", title: "A need is on no card and not in Tasks" }, `${n.app}:${n.title}`);
       if (on.length > 1 || (on.length && tasked)) L.find(`doubled:${n.app}`, { kind: "bug", sev: "blocks the flow", title: "A need shows twice" }, `${n.app}:${n.title} on ${on.length} cards${tasked ? " and in Tasks" : ""}`);
     }
     on.forEach(b => {
@@ -88,12 +88,7 @@ function momo(L, s, dom) {
       }
       const why = n.date && b.date !== n.date ? `dated ${n.date}, on ${b.date}` : n.from && b.date < n.from ? `not before ${n.from}, on ${b.date}` : n.due && n.due >= today && b.date > n.due ? `due ${n.due}, on ${b.date}` : "";
       if (why) L.find(`due-broken:${n.app}`, { kind: "bug", sev: "daily rub", title: "A need landed outside its days" }, `${n.app}:${n.title}: ${why}`);
-      const late = !n.done && (n.overdue || (n.due && n.due < today));
-      if (late) {
-        L.count(`overdueOnCard:${n.app}`);
-        L.find(`overdue-hidden:${n.app}`, { kind: "signal", sev: "daily rub", title: "Overdue is invisible once a need is on a card", where: "apps/momo/render.js:79 cardHTML (no overdue mark); tasks.js:21", suspect: 3 },
-          `${L.appName(n.app)}'s “${n.title}” was ${n.due ? `due ${n.due}` : "overdue"}, sitting on the ${b.title} card of ${b.date}: nothing on the card says it's late`);
-      }
+      if (!n.done && (n.overdue || (n.due && n.due < today))) L.count(`overdueOnCard:${n.app}`); // the board marks its card late (board below)
     });
     if (n.done && on.length) L.count(`doneShown:${n.app}`);
   });
@@ -132,8 +127,9 @@ function board(L, s, dom, byKey, placed) {
   dom.days.forEach(d => d.cards.forEach(c => {
     const b = blocks.get(c.id);
     const needs = b ? b.needs.map(k => byKey.get(k)).filter(n => n && n.fill !== "ongoing") : [];
-    const all = needs.length > 0 && needs.every(n => n.done);
+    const all = needs.length > 0 && needs.every(n => n.done), late = !all && needs.some(n => !n.done && (n.overdue || (n.due && n.due < s.today)));
     if (b && all !== c.done) L.find("card-tick-wrong", { kind: "bug", sev: "daily rub", title: "A card's ✓ disagrees with what fills it" }, `${c.title} on ${b.date}: ${c.done ? "✓ shown" : "no ✓"} with ${needs.filter(n => n.done).length} of ${needs.length} done`);
+    if (b && late !== !!c.late) L.find("card-late-wrong", { kind: "bug", sev: "daily rub", title: "A card's late mark disagrees with what fills it" }, `${c.title} on ${b.date}: ${c.late ? "marked late" : "not marked late"} with ${needs.filter(n => !n.done && (n.overdue || (n.due && n.due < s.today))).length} late`);
   }));
   const status = (dom.tabs[which] || {}).status || "", tasks = dom.tasks.tasks.filter(t => !t.ongoing);
   if (/all assigned ✓/.test(status) && tasks.length) {

@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.232", date: "2026-10-02", changes: [
+      "Momo gets only the jobs due by the end of next week, and a job recorded this week or next shows ✓ on that day's card there instead of vanishing (“Open in Appa” opens its record).",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.132", date: "2026-10-02", changes: [
       "The screen goes back to sleeping normally once the timer stops, even right after it started, or once its job is deleted (Kyoshi's shared screen-on piece)."
     ] },

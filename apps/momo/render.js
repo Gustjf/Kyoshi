@@ -1,7 +1,8 @@
-/* Momo · render.js — draws the board from A.S: renderAll, then the week tabs,
- * the To Be Budgeted bank (with Tasks, see tasks.js) and the board's days and cards (sized to the
- * ruler, see times.js; filled with what other apps need, see inbox.js; other apps' events over
- * them, see agenda.js); then Today, when it's on screen (today.js). */
+/* Momo · render.js — draws the board from A.S: renderAll, then the week tabs (a week is all assigned
+ * once every hour has a job and its Tasks are empty), the To Be Budgeted bank (with Tasks, see tasks.js)
+ * and the board's days and cards (sized to the ruler, see times.js; filled with what other apps need, see
+ * inbox.js, red-edged while that holds something late; other apps' events over them, see agenda.js); then
+ * Today, when it's on screen (today.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -16,6 +17,7 @@
     S.agenda = A.weekAgenda(key, list); // other apps' events on this board (agenda.js)
     S.agendaKey = A.agendaKey();
     S.fill = A.fill(); // what other apps need, in the blocks it fills (inbox.js)
+    if (A.recordAsks(S.fill)) A.save({ undo: false, quiet: true }); // this week's asks, for the true cost (truecost.js)
     renderTabs();
     renderBank(list, key);
     renderBoard(list, key);
@@ -27,12 +29,12 @@
 
   function renderTabs() {
     [["this", thisWeekKey()], ["next", nextWeekKey()]].forEach(([v, k]) => {
-      const w = A.weekOf(k), b = A.budgetOf(w, k), clashes = A.weekAgenda(k, w).filter(ev => ev.flag).length;
+      const w = A.weekOf(k), b = A.budgetOf(w, k), clashes = A.weekAgenda(k, w).filter(ev => ev.flag).length, left = A.toPlace(w, k);
       const [text, cls] = w.closed ? ["closed out ✓", "good"]
         : clashes ? [`${clashes} conflict${clashes === 1 ? "" : "s"}`, "bad"]
         : b.over.length ? [`${fmtH(sum(b.over.map(o => o.by)))} over`, "bad"]
         : !w.cards.length ? ["not planned yet", ""]
-        : b.free === 0 ? ["all assigned ✓", "good"]
+        : b.free === 0 ? (left ? [`${left} to place`, ""] : ["all assigned ✓", "good"])
         : [`${fmtH(b.free)} left`, ""];
       $(`tabDate_${v}`).textContent = fmtWeek(k);
       $(`tabStatus_${v}`).textContent = text;
@@ -77,14 +79,17 @@
         ? `${DAY_LONG[late[0]]}'s cards don't fit around its pinned times — move one into free time or trim it.`
         : `The cards on ${late.map(d => DAY_NAMES[d]).join(", ")} don't fit around their pinned times — move some into free time or trim them.`;
     } else if (isBase) {
-      msg = onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
+      const short = A.tasks(S.fill, key).filter(t => t.cost).map(t => t.title);
+      msg = short.length ? `In an average week the apps ask for more than your baseline gives ${A.names(short.map(title => ({ title })))}: drag ${short.length === 1 ? "it" : "them"} from Tasks onto a day.`
+        : onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
         : "Your default week: sleep, work, meals — the hours that come around every week. Build it once, then load it into any week with one click.";
     } else if (!list.cards.length) {
       msg = S.data.baseline.cards.length ? "Start with your baseline: one click funds the fixed hours, then give the rest a job."
         : "Start by setting up your baseline: the fixed hours of a typical week.";
     } else if (b.free === 0) {
-      msg = "Every hour has a job ✓";
-      cls = "good";
+      const left = A.toPlace(list, key);
+      msg = left ? `Every hour has a job — but ${left} more still need${left === 1 ? "s" : ""} a place: see Tasks.` : "Every hour has a job ✓";
+      cls = left ? "" : "good";
     } else {
       msg = "Give every remaining hour a job — even if the job is rest.";
     }
@@ -127,7 +132,7 @@
     const grip = c.day === null ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
-    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
+    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}${fill && fill.late ? " late" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
       (inner.length ? `${at("top")}<div class="card-own" style="${size(`own:${c.id}`)}" ${button}>${own}${mid ? "" : grip}</div>` +
         (mid ? `${mid}<div class="card-own card-rest" style="${size(`rest:${c.id}`)}" aria-hidden="true">${grip}</div>` : "") + at("bottom") : own + grip) + `</div>`;
   }

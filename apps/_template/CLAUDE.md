@@ -25,7 +25,8 @@ Key: `items` (plus core's `sync` and `meetings`). Backup JSON: `{ schemaVersion:
 ## Its checkup
 `meetings` in `app.js` names its checkup: no schedule, just "Last checkup: 12 days ago" under the app's name with Done ✓, for a
 deeper look now and then. An app reviewed less often than daily (Iroh, say) names meetings on a schedule instead, which also fill
-Momo's "Meeting" cards and dot the icon when overdue. Core does the rest: the line, its settings, sync and backups (core/meetings.js).
+Momo's "Meeting" cards and dot the icon when overdue, once the app holds anything (`A.data.hasData()`). Core does the rest: the line,
+its settings, sync and backups (core/meetings.js). For a dot when the user is behind in the app itself, define `A.attention`.
 
 ## Adding a new app from this template
 1. Copy this folder to `apps/<id>/` (`<id>`: lowercase letters and digits, from a letter, not used yet); rename `template`/`Template` → `<id>`/`<Name>` in every file (incl. `.app-template`, `template.css` → `<id>.css`).

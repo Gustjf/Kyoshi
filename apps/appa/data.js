@@ -58,7 +58,7 @@
       alert("Heads up: this backup was made by a newer version of Appa. Importing it anyway, but some data may not carry over.");
     }
     const next = cleanAll(raw), n = d => A.live(d.things).length, things = k => `${k} thing${k === 1 ? "" : "s"}`;
-    if (ask && A.live(S.things).length && !confirm(`Replace your ${things(n(S))} and their records with the ${things(n(next))} in this backup? This can't be undone.`)) return false;
+    if (ask && A.live(S.things).length && !K.backup.ask(A, raw, `Replace your ${things(n(S))} and their records with the ${things(n(next))} in this backup?`)) return false;
     Object.assign(S, next);
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export

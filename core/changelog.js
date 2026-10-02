@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.430", date: "2026-10-02", changes: [
+      "Iroh's meetings only start counting once you've added a goal or an area, so an Iroh you haven't used asks Momo for nothing and puts no dot on its icon.",
+      "Importing a backup (an app's Import JSON, or Import all) says when the backup was made and how much newer what's here is, before replacing anything; backups now carry their date."
+    ] },
     { version: "3.330", date: "2026-10-02", changes: [
       "Added Pabu, for keeping in touch: the people you want to stay close to, each due a call, a text or a visit every week to every year; Momo fits them into your “Keep in touch” cards and puts birthdays on its board."
     ] },

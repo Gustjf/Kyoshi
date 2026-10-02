@@ -12,6 +12,10 @@
  *           none was done; none on a week closed quietly (no goals) or before the close-out
  *           logged hours. Iroh reads it (hoursSpent). Reopening the week takes it off.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
+ * asks:     { "YYYY-MM-DD" (Monday): { by: { "<app>|<block title>": minutes }, u } } — what the apps asked of
+ *           that week, as last seen while it was this week (truecost.js), for the true cost; a week
+ *           Momo wasn't opened has none. Kept apart from the weeks, so recording it never touches a week's
+ *           cards or their sync.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
@@ -19,8 +23,8 @@
  * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin }
  *           — goalId: the old goal it was for, kept as it was; nothing sets one any more
  * A day's cards show in the order they're listed, which sets their times
- * (see times.js). `u` is when that week, baseline, goal or colour last
- * changed, which is how sync combines two devices' edits.
+ * (see times.js). `u` is when that week, baseline, goal, colour or week's asks
+ * last changed, which is how sync combines two devices' edits.
  * A card on its own on a day can be pinned: pin is the time it starts, in
  * hours after midnight (23.5 is 2330). Otherwise pin is null.
  * A card can sit inside another on the same day (lunch inside work): parentId
@@ -33,7 +37,7 @@
   const { sum } = K.util;
   const { DAY_HOURS, DAYS, AUTO, thisWeekKey, nextWeekKey, firstDay } = A;
 
-  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {} }; }
+  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {} }; }
   const blankWeek = () => ({ cards: [], closed: false, u: 0 });
   const weekOf = key => S.data.weeks[key] || blankWeek(); // for reading: a week not planned yet reads as empty
   const ensureWeek = key => S.data.weeks[key] || (S.data.weeks[key] = blankWeek());

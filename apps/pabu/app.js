@@ -40,7 +40,7 @@
     WINDOW_DAYS: 6,         // Momo may place someone up to this many days before they're due (as core's meetings)
     SOON_DAYS: 14,          // Coming up: due within this many days
     BIRTHDAY_DAYS: 30,      // the Birthdays strip: those in the next this many days
-    DOT_WHEN_OVERDUE: false // true puts a dot on Pabu's icon while someone is overdue
+    DOT_WHEN_OVERDUE: true // a dot on Pabu's icon while someone is overdue: false turns it off
   });
   const EVERY_WORDS = Object.fromEntries(A.EVERY);
   const MONTHS = { month: 1, quarter: 3, year: 12 };

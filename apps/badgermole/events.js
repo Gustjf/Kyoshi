@@ -2,12 +2,12 @@
  * controls (session.js), the buttons drawn into the page (data-act), the calendar's ‹ ›, the setup folds (open on a
  * wide window, folded on a phone but for the one to do first), and the session's minutes; and the hooks Kyoshi calls:
  * onShow, awake (a session in progress keeps the screen on while Badgermole is on screen: core/wakelock.js), onTick
- * (a new day; the session's minutes), onReload (another tab saved) and bugState (counts only: never names). No dot on
- * the icon. */
+ * (a new day; the session's minutes), onReload (another tab saved), attention (a dot when today's workout is needed
+ * to keep the week's target) and bugState (counts only: never names). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { todayStr } = K.util;
+  const { todayStr, daysBetween } = K.util;
   const FOLDS = ["exercises", "routines", "program", "settings"];
 
   // Buttons drawn into the page say what they do in data-act (and whose, in data-id, data-i or data-date).
@@ -66,6 +66,14 @@
 
   // Another tab saved (A.load has read it): show it (the session view stays while its session does).
   A.onReload = () => A.renderAll();
+
+  // A dot on the icon when today's workout is needed to keep this week's target: as many workouts left as days left,
+  // today included. It clears once one is logged today, and never comes before a routine is in the program.
+  A.attention = () => {
+    const today = todayStr(), target = S.settings.weeklyTarget, left = target - A.thisWeek(), days = daysBetween(today, A.sundayOf(today)) + 1;
+    if (A.nextIndex() < 0 || left <= 0 || left < days || A.sessionsOn(today).length) return "";
+    return `today's workout keeps this week's ${target} (${A.plural(left, "workout")} left, ${A.plural(days, "day")} to go)`;
+  };
 
   // Bug reports: counts and settings only — never the names of exercises or routines.
   A.bugState = () => {

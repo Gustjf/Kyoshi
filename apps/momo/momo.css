@@ -33,22 +33,35 @@
 .app-momo .bank-msg.bad { color: var(--bad); font-weight: 600; }
 .app-momo .bank-msg.good { color: var(--good); }
 .app-momo .bank-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.app-momo .tasks { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; min-height: 46px; margin-top: 12px; padding: 7px 8px; border: 1px dashed var(--border); border-radius: 8px; transition: border-color .15s, background-color .15s; }
+.app-momo .tasks { display: flex; flex-direction: column; gap: 8px; min-height: 46px; margin-top: 12px; padding: 7px 8px; border: 1px dashed var(--border); border-radius: 8px; transition: border-color .15s, background-color .15s; }
 .app-momo .tasks.drop-target { border-color: var(--accent); background: var(--ring); }
+.app-momo .tasks-head { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
 .app-momo .tasks-label { font-size: .72em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .app-momo .tasks-total { font-size: .8em; color: var(--muted); }
-.app-momo .tasks-cards { display: contents; }
+.app-momo .tasks-cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+.app-momo .tasks-cards:empty { display: none; }
 .app-momo .tasks-empty { font-size: .8em; color: var(--muted); }
 .app-momo .tasks-add { margin-left: auto; }
+/* Each app's part of Tasks: a chunk with its icon, name and what it adds up to, its tasks under it. */
+.app-momo .task-app { display: flex; flex-direction: column; gap: 5px; min-width: 0; max-width: 100%; padding: 6px 8px 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+.app-momo .task-app-head { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: .8em; font-weight: 600; }
+.app-momo .task-app-head .app-icon { display: inline-flex; }
+.app-momo .task-app-head .app-icon svg { width: 14px; height: 14px; }
+.app-momo .task-app-sum { font-weight: 400; color: var(--muted); white-space: nowrap; }
+.app-momo .task-app-cards { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 /* A task to draw from (what other apps need) is the outline of a card: dragging it adds a card of
    its own. Something ongoing, like Wan Shi Tong's in progress, stays for next time. */
-.app-momo .card.task { border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
+.app-momo .card.task { gap: 5px; border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
 .app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
-/* From other apps: their icon, and what's short of a block its time; red-edged once overdue. */
-.app-momo .card.task.from-app { gap: 5px; }
-.app-momo .card.task .app-icon svg { width: 13px; height: 13px; }
+/* What's short of a block shows its time; red-edged once late. */
 .app-momo .card.task .task-hours { flex: 0 0 auto; font-size: .85em; color: var(--muted); }
 .app-momo .card.task.late { border-color: var(--bad); border-left-color: var(--bad); }
+/* The baseline's true cost: a block it's short of is a task (its gap to drag in); one it covers, a quiet ✓. */
+.app-momo .card.task.cost .task-hours { color: var(--bad); font-weight: 600; }
+.app-momo .cost-ok { display: inline-block; padding: 5px 8px; border-left: 3px solid var(--c); border-radius: 5px; background: color-mix(in srgb, var(--c) 6%, transparent); font-size: .8em; font-weight: 600; white-space: nowrap; }
+.app-momo .cost-ok .card-fill { color: var(--good); }
+/* A card holding something late (overdue, or past its due day) is red-edged, like a late task. */
+.app-momo .card.late:not(.task) { border-left-color: var(--bad); outline: 1px solid var(--bad); outline-offset: -1px; }
 /* A card filled with what other apps need (inbox.js): their icon before its title, what fills it after
    it, muted, and a ✓ by its time once that's done. */
 .app-momo .card-title > .app-icon { display: inline-flex; margin-right: 4px; vertical-align: -1px; }
@@ -211,8 +224,9 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .t-row:focus-visible, .app-momo .t-big:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .app-momo .t-row.next { min-height: 60px; font-size: 1.1em; }
 .app-momo .t-row.t-free { min-height: 40px; padding-left: 15px; border: 1px dashed var(--border); background: transparent; color: var(--muted); }
-.app-momo .t-row.clash { border-left-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.app-momo .t-row.clash, .app-momo .t-row.late { border-left-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
 .app-momo .t-row.clash .t-when { color: var(--bad); }
+.app-momo .t-late { color: var(--bad); font-weight: 700; }
 .app-momo .t-row.t-free .t-title { font-weight: 400; }
 .app-momo .t-when { flex: 0 0 3.2em; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .app-momo .t-when.any { font-size: .78em; font-weight: 400; line-height: 1.2; }
@@ -262,6 +276,7 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .card-from ul { margin: 2px 0 6px; padding-left: 20px; }
 .app-momo .card-from li strong { color: var(--text); }
 .app-momo .from-done { color: var(--good); font-weight: 700; }
+.app-momo .from-late { color: var(--bad); font-weight: 700; }
 .app-momo .from-detail { display: block; }
 .app-momo .event-clash { margin: 0 0 14px; padding: 9px 11px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: .86em; font-weight: 600; line-height: 1.4; }
 .app-momo .event-fixes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--text); font-weight: 400; }

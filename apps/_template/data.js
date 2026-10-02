@@ -42,11 +42,12 @@
   }
 
   // Replaces everything with the backup's items, asking first (unless ask is false:
-  // Import all already did) if there's anything to lose. True once it's in.
+  // Import all already did) if there's anything to lose: K.backup.ask adds the backup's
+  // date and how much newer what's here is. True once it's in.
   function importBackup(raw, ask = true) {
     if (!raw || !looksLike(raw)) return alert("That file doesn't look like a Template backup.");
     const items = cleanItems(raw.items);
-    if (ask && A.liveItems().length && !confirm("Replace everything in Template with this backup? This can't be undone.")) return;
+    if (ask && A.liveItems().length && !K.backup.ask(A, raw, "Replace everything in Template with this backup?")) return;
     S.items = items;
     persist();
     A.changed(false); // it's from a backup, so there's nothing new to export

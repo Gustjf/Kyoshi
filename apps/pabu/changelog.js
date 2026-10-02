@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.010", date: "2026-10-02", changes: [
+      "A dot on Pabu's icon while anyone is overdue.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.000", date: "2026-10-02", changes: [
       "Initial release: the people you keep in touch with, each with how often and how (a call, a text, a visit), listed by who's due, Talked ✓ with the days kept, and birthdays coming up.",
       "Momo fits them into your “Keep in touch” cards, soonest due first, and shows ✓ once you've talked; birthdays are events on its board."

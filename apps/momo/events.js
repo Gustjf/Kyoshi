@@ -34,8 +34,9 @@
       A.renderAll();
     });
     $("closeOutNowBtn").addEventListener("click", A.closeOutEarly);
+    // Review, in the banner: the close-out now, even if Later was picked today (and on a phone, where it waits there).
     $("closeOutBannerBtn").addEventListener("click", () => {
-      S.closeOutLater = false;
+      A.clearLater();
       const due = A.reviewWeeks();
       if (due.length) A.openCloseOut(due[0]);
     });
@@ -109,6 +110,7 @@
 
     $("closeOutConfirmBtn").addEventListener("click", A.confirmCloseOut);
     $("closeOutLaterBtn").addEventListener("click", A.closeOutLaterClick);
+    $("closeOutAllBtn").addEventListener("click", A.closeAllAsPlanned);
     $("closeOutRows").addEventListener("input", A.onCloseOutInput);
     $("closeOutRows").addEventListener("change", A.onCloseOutChange);
     A.root.addEventListener("click", onStepper);
@@ -205,19 +207,20 @@
     const data = S.data, tk = thisWeekKey(), nk = nextWeekKey(), b = A.budgetOf(A.shownList(), A.shownKey()), f = A.fill(), tasks = A.tasks(f);
     const closed = Object.values(data.weeks).filter(w => w.closed);
     const placed = f.blocks.reduce((n, x) => n + x.needs.filter(nd => nd.fill !== "ongoing").length, 0);
-    const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat();
+    const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat(), cost = A.trueCost();
     return [
       `- View: ${S.today ? `today (board on ${S.view})` : S.view}`,
-      `- Weeks stored: ${Object.keys(data.weeks).length} (${closed.length} closed, ${closed.filter(w => w.spent).length} with hours logged)`,
+      `- Weeks stored: ${Object.keys(data.weeks).length} (${closed.length} closed, ${closed.filter(w => w.spent).length} with hours logged); weeks' asks kept: ${Object.keys(data.asks).length}`,
+      `- True cost: ${cost.rows.length} block titles over ${cost.weeks} week(s), ${cost.rows.filter(r => r.short > 7).length} short in the baseline`,
       `- Cards this week / next week / baseline: ${A.weekOf(tk).cards.length} / ${A.weekOf(nk).cards.length} / ${data.baseline.cards.length}`,
       `- Pinned this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.pinned).length).join(" / ")}`,
       `- Old goals kept (from before Iroh): ${data.goals.length}`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,
       `- Needs from other apps: ${f.needs.length} (${[...new Set(f.needs.map(n => n.app))].join(", ") || "none"}): ${placed} in ${f.blocks.filter(x => x.needs.length).length} block(s), ${f.short.length} short, ${f.needs.filter(n => n.done).length} done, ${f.needs.filter(n => n.fill === "ongoing").length} ongoing`,
-      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => !t.ongoing).length} short, ${tasks.filter(t => t.ongoing).length} ongoing)`,
+      `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => !t.ongoing).length} short, ${tasks.filter(t => t.ongoing).length} ongoing; from ${A.appsIn(tasks).join(", ") || "no app"}); late needs: ${f.needs.filter(n => A.isLate(n)).length}`,
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
-      `- Weeks waiting for close-out: ${A.reviewWeeks().length}`,
+      `- Weeks waiting for close-out: ${A.reviewWeeks().length}${A.laterToday() ? " (put off until tomorrow)" : ""}`,
       `- Undo steps: ${S.undoStack.length}`
     ];
   };

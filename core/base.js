@@ -8,6 +8,7 @@
   const K = window.Kyoshi = {
     apps: Object.create(null), // id -> app namespace (A), see K.register in shell.js; no built-ins, so "#constructor" names no app
     order: [],       // app ids in the order index.html loads them (the switcher's order)
+    ready: false,    // true once every app has started (shell.js K.start): until then, one reading the others sees only those before it
     testMode: false, // on after time travel (dev.js): nothing is saved or synced until a reload
     dayOffset: 0,    // time travel, in days (util.js todayStr/now read it)
     debugLog: []     // recent console errors and warnings, for bug reports

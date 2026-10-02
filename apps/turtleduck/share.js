@@ -4,8 +4,9 @@
  * "Cooking" card; each shopping trip fills a "Groceries" card on its day, ✓ once its list is bought, and while the Now
  * list has anything left to buy, a Groceries need is due the day before the first meal that needs it (a trip with nothing
  * on its list yet isn't ✓: there's still the trip). Momo asks from
- * today on, so past meals never reach it (meals carry no done: the plan is taken as eaten). What no card covers is a
- * "Dinner · Chili" task in Momo. Momo's "Open in Turtleduck" calls open(id): a meal's recipes in the cook view (or the
+ * this Monday, so this week's past meals fill their days' cards too, as the record of the week (meals carry no done:
+ * the plan is taken as eaten), and never go to its Tasks. What no card covers from today on is a "Dinner · Chili" task
+ * in Momo. Momo's "Open in Turtleduck" calls open(id): a meal's recipes in the cook view (or the
  * plan's cell, flashing), a Cook row's in the cook view, a trip's list. The needs' ids are "meal:<date>:<meal>",
  * "cook:<date>", "groceries:<date>" and "groceries:now": change open() along with them (apps/turtleduck/CLAUDE.md). */
 (function (K, A) {

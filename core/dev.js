@@ -87,7 +87,7 @@
       const f = e.target.files[0];
       e.target.value = ""; // so picking the same file again still triggers an import
       const text = f ? await readFile(f) : null;
-      if (typeof text === "string") K.backup.importAllText(text);
+      if (typeof text === "string") K.backup.importAllText(text, f.lastModified); // the file's date, for an old file that doesn't say
     });
     $("kDevCopyBugs").addEventListener("click", K.bugs.copyAll);
     $("kDevDownloadBugs").addEventListener("click", K.bugs.download);

@@ -17,7 +17,7 @@ heart-handshake, in rose). Rules, versioning and the app contract: the root `CLA
 | `share.js` | what Momo reads (`inbox`, `agenda`) and opens (`open`) |
 | `render.js` | `renderAll`, `renderAdd`: the chips, the Birthdays strip, the groups (each with how many and their time) |
 | `editor.js` | the person pop-up: name, how often, how, minutes, the birthday's three fields, note, the days you talked; Save (Enter), Cancel, Delete |
-| `events.js` | `A.init` wiring (quick add, ✓ and its undo) and the hooks: `onTick` (a new day), `onReload`, `attention` (off), `bugState` |
+| `events.js` | `A.init` wiring (quick add, ✓ and its undo) and the hooks: `onTick` (a new day), `onReload`, `attention` (anyone overdue), `bugState` |
 | `pabu.css` | styles under `.app-pabu` |
 
 ## State (`A.S`)
@@ -62,7 +62,7 @@ time: null, minutes: 15, note: "Turns 60 · Call", done: talked that day }`: an 
 - "Today" is `K.util.todayStr()` (time travel works); `Date.now()` is only for the `u` stamps.
 - Birthdays: Feb 29 is kept, and falls on Feb 28 in a year without it; the pop-up checks the day against the month (and
   the year, when given: 1900 to this one). Titles stay within Momo's limits by construction ("Visit " + 40; "'s birthday").
-- The dot on the icon (`A.attention`, "2 people overdue") is off: `DOT_WHEN_OVERDUE: true` in `app.js` turns it on.
+- The dot on the icon (`A.attention`, "2 people overdue") goes away with `DOT_WHEN_OVERDUE: false` in `app.js`.
 - Not now: snooze, groups or tags, phone numbers or other contact details, importing contacts, notifications, message
   history, anniversaries or other dates.
 - Bug reports and console messages hold counts only: never names, notes or birthdays.

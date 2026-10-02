@@ -1,7 +1,7 @@
 /* Pabu · events.js — loads last: wires the page (A.init): quick add (Enter or Add adds the person, clears the field and
  * keeps its focus; tapping a chip leaves the phone's keyboard up), ✓ and its undo, and the names that open the pop-up;
- * and the hooks Kyoshi calls: onTick (a new day), onReload (another tab saved), attention (overdue people, when
- * DOT_WHEN_OVERDUE) and bugState. */
+ * and the hooks Kyoshi calls: onTick (a new day), onReload (another tab saved), attention (overdue people; DOT_WHEN_OVERDUE
+ * turns it off) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -80,7 +80,7 @@
   // Another tab saved (A.load has read it): show it.
   A.onReload = () => A.renderAll();
 
-  // A dot on Pabu's icon while anyone's overdue, only with DOT_WHEN_OVERDUE (app.js): Momo carries who's due.
+  // A dot on Pabu's icon while anyone's overdue (DOT_WHEN_OVERDUE in app.js turns it off).
   A.attention = () => {
     const today = todayStr(), n = DOT_WHEN_OVERDUE ? A.live().filter(p => { const due = A.dueOf(p, today); return due && due < today; }).length : 0;
     return n ? `${A.plural(n, "person", "people")} overdue` : "";

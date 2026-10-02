@@ -1,12 +1,15 @@
-/* Appa · share.js — what Appa shares with other apps. Momo reads inbox() (core/inbox.js; read-only copies):
- * each job due in the next LEAD_DAYS days (or overdue), with the minutes it takes, filling Momo's cards
- * titled "<name> maintenance" (each job whole), and a meter check when a fresh reading is asked for.
- * Momo's "Open in Appa" calls open(id), which shows the job (or the reading pop-up). Keep the needs' ids,
- * or change open() along with them (apps/appa/CLAUDE.md). */
+/* Appa · share.js — what Appa shares with other apps. Momo reads inbox(from, to) (core/inbox.js; read-only copies):
+ * each job due in the next LEAD_DAYS days and by `to` (or overdue), with the minutes it takes, filling Momo's cards
+ * titled "<name> maintenance" (each job whole), and a meter check when a fresh reading is asked for; then each job
+ * recorded between from and to, done on its record's day, so its card shows ✓ there instead of the job vanishing.
+ * Momo's "Open in Appa" calls open(id), which shows the job (or the reading pop-up, or the record). Keep the needs'
+ * ids, or change open() along with them (apps/appa/CLAUDE.md). */
 (function (K, A) {
   "use strict";
-  const { LEAD_DAYS, DEFAULT_MINUTES, READING_MINUTES, meterOf, momoTitle } = A;
+  const { todayStr } = K.util;
+  const { LEAD_DAYS, DEFAULT_MINUTES, READING_MINUTES, meterOf, momoTitle, fmtDay } = A;
   const READING = "reading:"; // a reading ask's id: this, then its thing's
+  const DONE = "done:";       // a recorded job's: this, its record's id, ":" and its job's (or the record's alone, for other work)
 
   // [{ id (a job's, or READING and its thing's), title, block ("<name> maintenance"), details, minutes, due
   // ("YYYY-MM-DD" or ""), overdue }]: things in name order, each one's jobs soonest first, then its reading.
@@ -19,17 +22,41 @@
     if (A.readingAsk(thing)) list.push({ id: READING + thing.id, title: `Check the ${meterOf(thing).reading.toLowerCase()}`, block, details: [], minutes: READING_MINUTES, due: "", overdue: false });
     return list;
   }));
-  const inbox = () => JSON.parse(JSON.stringify(needs())); // copies: Momo can't change Appa's data through them
 
-  // From Momo's "Open in Appa" (core/inbox.js puts Appa on screen first): the job in the job view (the
-  // thing's other due jobs follow it, see job-view.js), or the thing's reading pop-up; home once it's gone.
+  // The jobs recorded between from and to (up to today), each done on its record's day: [{ id, title (the job as it's
+  // called now, or was then), block, details, minutes (the record's, else its estimate), date, done }], by day.
+  function recorded(from, to) {
+    const today = todayStr();
+    return A.recordsOf("").filter(r => r.date >= from && r.date <= to && r.date <= today && A.thingById(r.thingId)).reverse().flatMap(r => {
+      const thing = A.thingById(r.thingId), base = { block: momoTitle(thing), details: [`Recorded ${fmtDay(r.date)}${r.by ? ` · ${r.by}` : ""}`], date: r.date, done: true };
+      const jobs = r.jobs.map(x => {
+        const job = A.jobById(x.jobId);
+        return { ...base, id: `${DONE}${r.id}:${x.jobId}`, title: (job || x).name || "A deleted job", minutes: x.minutes || (job && A.minutesOf(job)) || DEFAULT_MINUTES };
+      });
+      return jobs.length ? jobs : [{ ...base, id: `${DONE}${r.id}`, title: r.title, minutes: DEFAULT_MINUTES }];
+    });
+  }
+
+  // Copies, so Momo can't change Appa's data through them: what's due by `to`, then what was recorded from `from` on.
+  function inbox(from, to) {
+    const open = needs().filter(n => !to || n.overdue || !n.due || n.due <= to);
+    return JSON.parse(JSON.stringify(open)).concat(from && to ? recorded(from, to) : []);
+  }
+
+  // From Momo's "Open in Appa" (core/inbox.js puts Appa on screen first): the job in the job view (the thing's other due
+  // jobs follow it, see job-view.js), the thing's reading pop-up, or a record; home once it's gone.
   function open(id) {
-    const s = String(id), thing = s.startsWith(READING) && A.thingById(s.slice(READING.length)), job = !thing && A.jobById(s);
+    const s = String(id), thing = s.startsWith(READING) && A.thingById(s.slice(READING.length)), job = !thing && !s.startsWith(DONE) && A.jobById(s);
     if (thing) {
       A.showView("thing", thing.id);
       return A.openReading(thing.id);
     }
     if (job && A.thingById(job.thingId)) return A.openJob(job.id);
+    const record = s.startsWith(DONE) && A.recordById(s.slice(DONE.length).split(":")[0]);
+    if (record && A.thingById(record.thingId)) {
+      A.showView("thing", record.thingId);
+      return A.openRecord({ mode: "full", id: record.id });
+    }
     A.showView("home");
   }
 

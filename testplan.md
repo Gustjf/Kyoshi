@@ -1,7 +1,7 @@
 # Kyoshi flow test: simulated lives through Momo
 A test campaign, not a phase: a few made-up people live with Kyoshi for a year or more, the real page driven through time, to find where the flow breaks or rubs before the owner's own final testing. Run by one session, start to finish: build the simulator, run the lives, report, discuss with the owner, then build the agreed changes. Read the root CLAUDE.md (automatic), then this file, then **Read first**.
 
-**Status (2026-10-02): cut short by the owner.** The simulator was built (`tests/sim/`, `tests/momo.js`) and lives 4–6 ran a year or two, 1–3 a few weeks each: no crash, console error or data loss. No report or bundles were written; the discussion went straight to the findings, and its decisions are `roadmap.md`'s Phase 8 "Flow fixes". The simulator stays for rechecking (`node tests/sim/run.js`, or one life: `node tests/sim/run.js planner --weeks 6`).
+**Status (2026-10-02): cut short by the owner.** The simulator was built (`tests/sim/`, `tests/momo.js`) and lives 4–6 ran a year or two, 1–3 a few weeks each: no crash, console error or data loss. No report or bundles were written; the discussion went straight to the findings, and its decisions are `roadmap.md`'s Phase 8 "Flow fixes". The simulator stays for rechecking (`node tests/sim/run.js`, or one life: `node tests/sim/run.js planner --weeks 6`). Phase 8 is built: the simulator reads Momo's window (from this Monday), checks cards' late marks, and finds done needs by their own ids too; the "How the flow works today" notes below describe the flow before it.
 
 ## What we're testing for
 Two things the owner must get from the system, in their words:

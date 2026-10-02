@@ -35,6 +35,7 @@
     MAX_GOAL_HOURS: 100000, // the old goals' limits, which data.js cleanGoal still keeps them within
     GOAL_MAX_WEEK: 10,
     DRAW_HOURS: 1,     // a card drawn from a task in Tasks that doesn't say how long (tasks.js)
+    COST_WEEKS: 13,    // the true cost averages the apps' asks over the weeks kept among this many, this one too (truecost.js)
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // the old goals' finish-by years
     FREE_TIME: "Free time",
@@ -83,14 +84,13 @@
   // STATE
   // ==========================================================================
   Object.assign(A.S, {
-    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors } (model.js)
+    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks } (model.js)
     view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
     today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
     lastSavedJSON: "",     // data as of the last save, as JSON…
     lastSaved: null,       // …and parsed, to tell what the next change touched
-    closing: null,         // the close-out on screen: { key, rows: [{ title, hours, days, done }] }
-    closeOutLater: false,  // "Later" was picked: the banner stands in for the close-out until the next week
+    closing: null,         // the close-out on screen: { key, rows: [{ title, hours, days, asked, done }] } (Later: closeout.js laterToday)
     knownToday: "",        // today as of the last check, to notice midnight and new weeks
     editing: null,         // the card editor's state
     press: null,           // a pointer down on a card that isn't a drag yet

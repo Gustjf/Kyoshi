@@ -2,9 +2,10 @@
  * rest of today in order and tomorrow, free time (time no card has) included. Momo opens on it on a phone
  * and on the board on a computer; the Week and Today buttons switch at any time (S.today). Its times are
  * the board's (times.js): a card with cards inside it shows in its parts around them, and other apps'
- * events (agenda.js) sit at their times, with free time split around them. Tapping a card shows its
- * pop-up (#detailOverlay): when, and what fills it (inbox.js fromHTML) with "Open in <App>", and a
- * way to edit it; tapping an event opens its own (triage.js). Nothing here is stored. */
+ * events (agenda.js) sit at their times, with free time split around them. A card holding something late
+ * is red-edged and says "Late", as on the board. Tapping a card shows its pop-up (#detailOverlay): when,
+ * and what fills it (inbox.js fromHTML) with "Open in <App>", and a way to edit it; tapping an event opens
+ * its own (triage.js). Nothing here is stored. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -12,6 +13,7 @@
   const { DAY_HOURS, DAY_LONG, fmtClock, dayIndex, weekKeyOf, thisWeekKey } = A;
 
   const PHONE = "(max-width: 640px)"; // a phone, as momo.css has it
+  const isPhone = () => window.matchMedia(PHONE).matches;
 
   // How long, or how long until then, in whole minutes rounded up: "45m", "1h", "3h 45m".
   function fmtLong(h) {
@@ -72,10 +74,11 @@
         tap: ev.done || day.closed ? "" : `data-week="${day.key}" data-ev="${esc(ev.key)}"`, cls: ` t-event${ev.flag ? " clash" : ""}${ev.done ? " done" : ""}`
       };
     }
-    const c = it.card, needs = fillsOf(day.key, c), fill = needs.length ? A.fillParts(c, needs) : null, done = !!fill && fill.done;
+    const c = it.card, needs = fillsOf(day.key, c), fill = needs.length ? A.fillParts(c, needs) : null, done = !!fill && fill.done, late = !!fill && fill.late;
     return {
-      color: A.cardColor(c), title: `${fill ? fill.icons : ""}${esc(c.title)}`, sub: fill ? esc(fill.names) : "", done,
-      label: `${c.title}${fill ? ` (${fill.text})` : ""}, ${when}`, tap: `data-week="${day.key}" data-card="${esc(c.id)}"`, cls: done ? " done" : ""
+      color: A.cardColor(c), title: `${fill ? fill.icons : ""}${esc(c.title)}`, done,
+      sub: `${late ? `<span class="t-late">Late</span>${fill.names ? " · " : ""}` : ""}${fill ? esc(fill.names) : ""}`,
+      label: `${c.title}${fill ? ` (${fill.text})` : ""}, ${when}`, tap: `data-week="${day.key}" data-card="${esc(c.id)}"`, cls: done ? " done" : late ? " late" : ""
     };
   }
   const tagOpen = (a, cls) => `${a.tap ? `button type="button" ${a.tap} aria-label="${esc(a.label)}"` : "div"} class="${cls}${a.cls}" title="${esc(a.label)}" style="--c:${a.color}"`;
@@ -205,7 +208,7 @@
 
   // Momo opens on Today on a phone, and on the board on a computer.
   function initToday() {
-    S.today = window.matchMedia(PHONE).matches;
+    S.today = isPhone();
     $("todayBtn").addEventListener("click", () => setToday(true));
     $("weekBtn").addEventListener("click", () => setToday(false));
     $("todayBody").addEventListener("click", onTodayClick);
@@ -222,5 +225,5 @@
     });
   }
 
-  Object.assign(A, { renderToday, tickToday, initToday });
+  Object.assign(A, { isPhone, renderToday, tickToday, initToday });
 })(Kyoshi, Kyoshi.apps.momo);

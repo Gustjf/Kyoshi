@@ -196,7 +196,7 @@
       alert("Heads up: this backup was made by a newer version of Bosco. Importing it anyway, but some data may not carry over.");
     }
     const count = n => `${n} ${n === 1 ? "entry" : "entries"}`;
-    if (ask && S.entries.length && !confirm(`Replace your ${count(S.entries.length)} and goals with the ${count(clean.entries.length)} in this backup? This can't be undone.`)) return;
+    if (ask && S.entries.length && !K.backup.ask(A, raw, `Replace your ${count(S.entries.length)} and goals with the ${count(clean.entries.length)} in this backup?`)) return;
     applyBackup(clean, backupUnit);
     save(false);
     S.currentPage = 1;

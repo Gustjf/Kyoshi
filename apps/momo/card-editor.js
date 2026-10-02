@@ -20,13 +20,14 @@
       pending: () => !!S.editing && cardFormState() !== S.editing.snapshot,
       ask: "Discard your changes to this card?"
     });
-    // "Open in Appa" (or any app): the editor closes on the way, and the app shows what it needs (core/inbox.js).
+    // "Open in Appa" (or any app): the editor closes on the way, asking first if it has changes (as × and Esc do), and
+    // the app shows what it needs (core/inbox.js). Kept open, nothing else happens.
     $("cardFrom").addEventListener("click", e => {
       const link = e.target.closest("a[data-app]");
       if (!link) return;
       e.preventDefault();
-      K.modal.dismiss(overlay());
-      K.inbox.open(link.dataset.app, link.dataset.id);
+      K.modal.requestDismiss(overlay());
+      if (!K.modal.isOpen(overlay())) K.inbox.open(link.dataset.app, link.dataset.id);
     });
   }
 

@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.262", date: "2026-10-02", changes: [
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "2.252", date: "2026-10-02", changes: [
       "Import JSON now refuses another app's backup (such as Hawky's, which also has a list of items) instead of replacing your list with it."
     ] },

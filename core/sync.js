@@ -90,20 +90,21 @@
   const storeMeta = A => A.store.set("sync", JSON.stringify(A._sync.meta));
 
   // Each change made here counts up this device's version, which is how other
-  // devices tell its saves apart from ones they've already seen.
-  function markLocalChange(A) {
+  // devices tell its saves apart from ones they've already seen. changedAt is when the data
+  // here last changed (an import's question names it, core/backup.js): not for quiet bookkeeping.
+  function markLocalChange(A, quiet = false) {
     const m = A._sync.meta;
     m.clock[m.device] = (m.clock[m.device] || 0) + 1;
-    m.changedAt = new Date().toISOString();
+    if (!quiet) m.changedAt = new Date().toISOString();
     m.dirty = true; // not in the sync folder yet
     storeMeta(A);
   }
 
   // An app kept a change (A.changed): counts it, highlights Export JSON while it's in no
   // backup (unless sync is on, whose autosave stands in for that), and autosaves it soon.
-  function changed(A, unsaved = true) {
+  function changed(A, unsaved = true, quiet = false) {
     if (K.testMode || !A._sync) return;
-    markLocalChange(A);
+    markLocalChange(A, quiet);
     K.backup.setUnsaved(A, unsaved && state !== "on");
     scheduleAutosave(A);
   }

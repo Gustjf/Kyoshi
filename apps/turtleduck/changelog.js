@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.100", date: "2026-10-02", changes: [
+      "A dot on Turtleduck's icon while today or tomorrow has no dinner planned.",
+      "This week's past meals show on Momo's board too, as the record of the week.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.000", date: "2026-10-02", changes: [
       "Initial release: recipes typed or pasted in bulk, this week's and next week's meals laid out by dragging recipes onto the days (or tapping), a batch's portions kept on a shelf to place on later days, and each day's calories and macros against your targets.",
       "Shopping trips placed on the days, each with its grocery list worked out from the meals until the next trip, in store sections, ticked off on the phone; a cook view that keeps the screen on.",

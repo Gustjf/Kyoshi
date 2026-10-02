@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.101", date: "2026-10-02", changes: [
+      "A dot on Badgermole's icon when today's workout is needed to keep the week's target; it clears once you've logged one today.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.001", date: "2026-10-02", changes: [
       "The screen stays on during a workout through Kyoshi's shared screen-on piece; nothing changes in use."
     ] },

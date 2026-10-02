@@ -143,7 +143,7 @@ module.exports = [
       const fresh = await open(t, { app: "turtleduck", size: DESKTOP });
       await importBackup(fresh, gen.turtleduck({ recipes: ["rc-oats"] }));
       await importBackup(fresh, backup);
-      eq(lastDialog(fresh), "Replace your 1 recipe and 0 planned meals with the 8 recipes and 2 planned meals in this backup? This can't be undone.", "the confirm counts");
+      has(lastDialog(fresh), "Replace your 1 recipe and 0 planned meals with the 8 recipes and 2 planned meals in this backup? This backup is from Sep 30, 2026, 7:00 AM.", "the confirm counts, and the backup's date");
       eq(await td.entries(fresh).then(l => l.map(e => e.name)), ["Chili", "Chili"], "the plan came in");
 
       // Other apps' backups, and one with nothing in it, change nothing.

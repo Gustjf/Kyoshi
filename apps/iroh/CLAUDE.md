@@ -21,7 +21,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `render.js` | `renderAll`: the four sections (a season goal with its progress from Momo); `progressKey`; `reveal` (a goal into view, flashing) |
 | `goal-editor.js` | the goal pop-up (title, year goal, area, hours, next step, done when, why, status; Delete) and the reconcile pop-up (next step; Reconciled ✓, Mark done, Drop) |
 | `area-editor.js` | the area pop-up (name, in 10 years, in 5 years; Delete) and `moveArea` (↑ ↓) |
-| `events.js` | `A.init` wiring (buttons carry `data-act`), Carry over, and the hooks: `onTick` and `onShow` (a new day, or Momo's logged hours changed), `onReload`, `bugState` |
+| `events.js` | `A.init` wiring (buttons carry `data-act`), Carry over, and the hooks: `onTick` and `onShow` (a new day, or Momo's logged hours changed), `onReload`, `attention` (a goal more than a week behind, or an overdue meeting), `bugState` |
 | `iroh.css` | styles under `.app-iroh` |
 
 ## State (`A.S`)
@@ -45,6 +45,9 @@ and `goals`; Import JSON refuses a file with neither in it.
 Named in `app.js` (core/meetings.js does the rest): Reconcile the goals (every month, 20 min), Season review (every season, 60 min:
 due by the end of each new season's first week, so it comes up when This season is empty and Carry over is there), and Re-read the
 vision, set the year (every year, 2 h). Each fills Momo's "Meeting" cards in the week before it's due, and an overdue one dots the icon.
+They only count once Iroh is in use (a goal or an area: core/meetings.js), so an Iroh never opened asks Momo for nothing.
+The icon's dot (`A.attention`) also comes while a season goal in hours a week is more than a week's share behind (`behindBy` past its
+hours a week, from Momo's close-outs; a week never planned counts 0 there); a total is never behind this way (its weekly share grows).
 
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies): for each week (Monday to Sunday) from `from`'s to `to`'s, every open goal with

@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.010", date: "2026-10-02", changes: [
+      "Momo gets only the errands due by the end of next week (and those without a date), so one due in a month no longer takes this week's room.",
+      "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
+    ] },
     { version: "1.000", date: "2026-10-02", changes: [
       "Initial release: errands and pop-up tasks, added in seconds on the phone (a tap each for the day and how long), listed by when they're due, with the done ones folded away.",
       "Momo fits them into your \"Errands\" cards, soonest due first, and ticks them off there once they're done; what doesn't fit waits in its Tasks."

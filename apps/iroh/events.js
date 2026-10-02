@@ -1,7 +1,8 @@
 /* Iroh · events.js — loads last: wires the page (A.init): the Add buttons, a goal's or an area's title (its
  * pop-up), Reconcile, Carry over and an area's ↑ ↓ (each button carries data-act and data-id); and the hooks
  * Kyoshi calls: onTick and onShow (a new day: reconciles age, and a new season can start; Momo's close-out logged
- * hours), onReload (another tab saved) and bugState. Iroh's dot is core's: an overdue meeting (core/meetings.js). */
+ * hours), onReload (another tab saved), attention (a goal more than a week behind; else core's dot for an overdue
+ * meeting, core/meetings.js) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -50,6 +51,14 @@
 
   // Another tab saved (A.load has read it): show it.
   A.onReload = () => A.renderAll();
+
+  // A dot on the icon while a season goal in hours a week is more than a week's share behind (its progress from Momo's
+  // close-outs: "6 h behind" past its hours a week), or a meeting is overdue (core/meetings.js). A total is never
+  // behind this way: its weekly share grows to catch up.
+  A.attention = () => {
+    const behind = A.goalsIn(A.currentSeason()).filter(g => A.isOpen(g) && g.hoursWeek && (p => p && A.behindBy(g, p) > g.hoursWeek)(A.progressOf(g))).length;
+    return [behind ? `${behind === 1 ? "a goal is" : `${behind} goals are`} more than a week behind` : "", K.meetings.attention(A)].filter(Boolean).join("; ");
+  };
 
   // Bug reports: counts only — never what the areas and goals say.
   A.bugState = () => {
