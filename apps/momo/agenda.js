@@ -24,7 +24,7 @@
   const timed = ev => ev.at !== null && !ev.done; // one done has happened: nothing conflicts with it
   const overlaps = (a, b) => a.start < b.end && b.start < a.end;
   const within = (a, s, e) => Math.max(0, Math.min(a.end, e) - Math.max(a.start, s)); // a's hours between s and e
-  const isSpare = c => !c.goalId && c.title.toLowerCase() === FREE_TIME.toLowerCase();
+  const isSpare = c => c.title.toLowerCase() === FREE_TIME.toLowerCase();
 
   // A day's time, piece by piece (times.js dayPieces): time no card has ({ free }), and each card
   // or part of one, with its title ({ title, spare: it's Free time }); each from s to e.

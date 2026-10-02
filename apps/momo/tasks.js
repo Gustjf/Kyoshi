@@ -1,13 +1,12 @@
 /* Momo · tasks.js — Tasks, the strip under the To Be Budgeted bank: what other apps need this week and
- * next that no block covers (inbox.js), each long-term goal still to reach, and what's ongoing in other
- * apps (Wan Shi Tong's in progress), then the week's cards without a day (parked). Timed needs no block
- * has room for make one task per block title, as long as all of them (rounded up to 15 minutes), and hours
- * needs (Iroh's goals) one per week, shown on that week's board; a need for a whole block is a task of
- * its own, as long as it says (else DRAW_HOURS). Either draws a card with
- * the block's title, which the needs then fill, so the task goes. A goal's or an ongoing need's task is
- * never used up: dragging it onto a day adds a new card of DRAW_HOURS (drag.js, drop.js), as often as you
- * like, and clicking it opens that new card in the editor, to put on several days at once. Tasks aren't
- * stored: they're worked out afresh whenever they're drawn. */
+ * next that no block covers (inbox.js), and what's ongoing in other apps (Wan Shi Tong's in progress),
+ * then the week's cards without a day (parked). Timed needs no block has room for make one task per block
+ * title, as long as all of them (rounded up to 15 minutes), and hours needs (Iroh's goals) one per week,
+ * shown on that week's board; a need for a whole block is a task of its own, as long as it says (else
+ * DRAW_HOURS). Either draws a card with the block's title, which the needs then fill, so the task goes.
+ * An ongoing need's task is never used up: dragging it onto a day adds a new card (drag.js, drop.js), as
+ * often as you like, and clicking it opens that new card in the editor, to put on several days at once.
+ * Tasks aren't stored: they're worked out afresh whenever they're drawn. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -23,41 +22,40 @@
   });
 
   // The tasks of the board on screen (key: its week, or "base"), in order: what no block covers (in the
-  // order the apps list it; hours short only that week's), each goal still to reach (as the goals list has
-  // them), then ongoing needs; each { key, title, goalId, hours?, label?, needs?, due?, overdue?, ongoing? }.
-  // An ongoing one with the title of a task before it is left out, as it would draw the same card.
+  // order the apps list it; hours short only that week's), then ongoing needs; each { key, title, hours,
+  // label?, needs, due?, overdue?, ongoing? }. An ongoing one with the title of a task before it is left
+  // out, as it would draw the same card.
   function tasks(f = A.fill(), key = A.shownKey()) {
     const out = [], titles = new Set(), groups = new Map(), today = todayStr();
     const add = t => { titles.add(t.title.toLowerCase()); out.push(t); return t; };
     f.short.forEach(n => {
       const title = cleanText(n.block), k = title.toLowerCase();
-      if (n.fill === "block") return add({ key: `n:${n.app}:${n.id}`, title, goalId: null, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, label: n.title, needs: [n], ...late([n], today) });
+      if (n.fill === "block") return add({ key: `n:${n.app}:${n.id}`, title, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, label: n.title, needs: [n], ...late([n], today) });
       // Hours short (Iroh's goals) belong to their week: a task each week, on that week's board only.
       const week = n.fill === "hours" && n.from ? weekKeyOf(n.from) : "", group = week ? `${k}|${week}` : k;
       if (week && week !== key) return;
-      (groups.get(group) || groups.set(group, add({ key: `b:${group}`, title, goalId: null, needs: [] })).get(group)).needs.push(n);
+      (groups.get(group) || groups.set(group, add({ key: `b:${group}`, title, needs: [] })).get(group)).needs.push(n);
     });
     groups.forEach(t => Object.assign(t, { hours: upHours(t.needs.reduce((m, n) => m + A.needMinutes(n), 0)) }, late(t.needs, today)));
-    A.liveGoals().filter(g => !A.isReached(g)).forEach(g => add({ key: `g:${g.id}`, title: g.name, goalId: g.id }));
     f.needs.filter(n => n.fill === "ongoing" && !n.done).forEach(n => {
       const title = cleanText(n.block);
-      if (title && !titles.has(title.toLowerCase())) add({ key: `n:${n.app}:${n.id}`, title, goalId: null, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, needs: [n], ongoing: true });
+      if (title && !titles.has(title.toLowerCase())) add({ key: `n:${n.app}:${n.id}`, title, hours: n.minutes ? upHours(n.minutes) : DRAW_HOURS, needs: [n], ongoing: true });
     });
     return out;
   }
   const taskBy = key => tasks().find(t => t.key === key) || null;
 
-  // A new card drawn from a task: its title and goal, as long as the task says (else DRAW_HOURS), not on a day yet.
-  const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: t.goalId, base: false, parentId: null, pos: "bottom", pin: null });
+  // A new card drawn from a task: its title, as long as the task says (else DRAW_HOURS), not on a day yet.
+  const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: null, base: false, parentId: null, pos: "bottom", pin: null });
 
-  // A task is the outline of a card, in its title's colour (once a card has one) or its goal's. One from
-  // other apps shows their icon, and what's short of a block its hours (and a whole block's need its name).
+  // A task is the outline of a card, in its title's colour (once a card has one), with its apps' icons,
+  // and what's short of a block its hours (and a whole block's need its name).
   function taskHTML(t) {
-    const needs = t.needs || [], sized = needs.length > 0 && !t.ongoing, from = A.fillParts({ title: t.label || t.title }, needs);
-    const what = t.goalId ? "goal" : t.ongoing ? `${needs[0].details.length ? `${needs[0].details.join(", ")}, ` : ""}${from.text}`
+    const needs = t.needs, sized = !t.ongoing, from = A.fillParts({ title: t.label || t.title }, needs);
+    const what = t.ongoing ? `${needs[0].details.length ? `${needs[0].details.join(", ")}, ` : ""}${from.text}`
       : `${from.text}${t.overdue ? ", overdue" : t.due ? `, due ${fmtShort(t.due)}` : ""}`;
     const label = `${t.title}${t.label ? ` · ${t.label}` : ""} (${what}) — drag onto a day to add ${fmtH(t.hours || DRAW_HOURS)}, or click to pick days`;
-    return `<div class="card parked task${t.goalId ? " is-goal" : ""}${needs.length ? " from-app" : ""}${t.overdue ? " late" : ""}" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor(t)}">` +
+    return `<div class="card parked task from-app${t.overdue ? " late" : ""}" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor(t)}">` +
       from.icons + `<span class="card-title">${esc(t.title)}${t.label && t.label.toLowerCase() !== t.title.toLowerCase() ? `<span class="card-fill"> · ${esc(t.label)}</span>` : ""}</span>` +
       (sized ? `<span class="task-hours">${fmtH(t.hours)}</span>` : "") + `</div>`;
   }
@@ -69,11 +67,11 @@
     const isBase = key === "base", locked = !isBase && list.closed;
     $("tasks").hidden = locked;
     if (locked) return;
-    const shown = tasks(S.fill, key).filter(t => !isBase || t.goalId || t.ongoing);
+    const shown = tasks(S.fill, key).filter(t => !isBase || t.ongoing);
     const parked = isBase ? [] : list.cards.filter(c => c.day === null && !c.parentId);
     $("taskCards").innerHTML = shown.map(taskHTML).join("") + parked.map(c => A.cardHTML(list, c)).join("") ||
-      `<span class="tasks-empty">${isBase ? "Your long-term goals and what's ongoing in other apps show up here to drag onto a day."
-        : "Your long-term goals and what other apps need this week and next show up here to drag onto a day. Drop a card here to take it off its day."}</span>`;
+      `<span class="tasks-empty">${isBase ? "What's ongoing in other apps shows up here to drag onto a day."
+        : "What other apps need this week and next shows up here to drag onto a day. Drop a card here to take it off its day."}</span>`;
     $("tasksTotal").textContent = !parked.length ? "" : `${fmtH(b.parked)}${b.parked > b.free ? ` · only ${fmtH(b.free)} free` : ""}`;
   }
 

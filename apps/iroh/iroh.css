@@ -17,6 +17,10 @@
 .app-iroh .goal-hours { margin-left: auto; font-size: .82em; font-weight: 600; white-space: nowrap; }
 .app-iroh .goal-area, .app-iroh .goal-meta, .app-iroh .goal-status { font-size: .8em; color: var(--muted); }
 .app-iroh .goal-chain { margin-top: 1px; font-size: .82em; color: var(--muted); overflow-wrap: anywhere; }
+/* Its progress from Momo's close-outs: amber when behind, green once a total is reached. */
+.app-iroh .goal-progress { margin-top: 1px; font-size: .82em; font-weight: 600; color: var(--muted); }
+.app-iroh .goal-progress.behind { color: var(--warn); }
+.app-iroh .goal-progress.reached { color: var(--good); }
 .app-iroh .goal-next { margin-top: 6px; font-size: .9em; overflow-wrap: anywhere; }
 .app-iroh .goal-text { margin-top: 6px; font-size: .88em; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
 .app-iroh .goal-label { display: block; font-size: .78em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }

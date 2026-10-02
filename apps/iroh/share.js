@@ -1,7 +1,7 @@
 /* Iroh · share.js — what Iroh shares with other apps. Momo reads inbox() (core/inbox.js; read-only copies):
  * for each week from from's to to's, every open goal with hours in that week's season (its Monday's) asks for
- * its share of the week (fill "hours"): Momo spreads it over your cards titled like the goal, and what doesn't
- * fit is one task for that week. Momo's "Open in Iroh" calls open(id), which brings the goal into view and
+ * its share of the week (fill "hours"; a total's is what's left of it over the weeks left, app.js weeklyMinutes):
+ * Momo spreads it over your cards titled like the goal, and what doesn't fit is one task for that week. Momo's "Open in Iroh" calls open(id), which brings the goal into view and
  * flashes it. The needs' ids are "goal:<goal id>:<Monday>": change open() along with them (apps/iroh/CLAUDE.md). */
 (function (K, A) {
   "use strict";

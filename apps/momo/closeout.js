@@ -1,12 +1,13 @@
-/* Momo · closeout.js — the weekly close-out (#closeOutOverlay) and noticing a new day or week.
- * Time can't be saved, so nothing rolls over — except goal hours. Once a week is over,
- * its goal cards are reviewed by exception: Momo assumes the planned work happened, you
- * lower any that fell short, and the rest of the week is let go. */
+/* Momo · closeout.js — the weekly close-out (#closeOutOverlay), noticing a new day or week, and what Iroh
+ * reads from it (hoursSpent). Time can't be saved, so nothing rolls over. Once a week is over, where its hours
+ * went is reviewed by exception: every title on its days is listed with the hours planned for it (Free time
+ * and other apps' events left out), Momo assumes the plan happened, you lower any that fell short, and Confirm
+ * keeps the result in the week (spent, see model.js). A week with nothing to review closes quietly. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { isNum, esc, todayStr, fmtNum } = K.util;
-  const { DAY_NAMES, snap, fmtH, fmtWeek, dayIndex, weekKeyOf, thisWeekKey } = A;
+  const { isNum, sum, esc, todayStr, fmtNum } = K.util;
+  const { DAY_HOURS, DAYS, DAY_NAMES, FREE_TIME, snap, fmtH, cleanText, fmtWeek, dayIndex, weekKeyOf, thisWeekKey } = A;
 
   const overlay = () => $("closeOutOverlay");
   // Esc asks first if hours were changed here, then puts it off until later (core/modal.js).
@@ -22,27 +23,26 @@
 
   const pendingCloseOuts = () => Object.keys(S.data.weeks).filter(k => k < thisWeekKey() && !S.data.weeks[k].closed).sort();
 
-  // The goal work scheduled in a week: [{ goalId, name, hours, days: [[day, hours]] }].
-  function goalWork(list) {
-    const byGoal = new Map();
-    list.cards.forEach(c => {
-      const g = c.day === null ? null : A.goalById(c.goalId);
-      if (!g) return;
-      const w = byGoal.get(g.id) || { goalId: g.id, name: g.name, hours: 0, byDay: {} };
-      w.hours += c.hours;
-      w.byDay[c.day] = (w.byDay[c.day] || 0) + c.hours;
-      byGoal.set(g.id, w);
-    });
-    const order = id => S.data.goals.findIndex(g => g.id === id); // same order as the goals list
-    return [...byGoal.values()].sort((a, b) => order(a.goalId) - order(b.goalId))
-      .map(({ byDay, ...w }) => ({ ...w, days: Object.keys(byDay).sort().map(d => [+d, byDay[d]]) }));
+  // Where a week's hours were planned to go: each title on its days (any case, the first spelling kept, Monday
+  // first) with its hours and the days it's on, [{ title, hours, days }], most hours first. Each card counts its
+  // own hours, so one inside another counts on its own. Free time isn't a job to review.
+  function plannedHours(list) {
+    const byTitle = new Map(), free = FREE_TIME.toLowerCase();
+    DAYS.forEach(d => list.cards.forEach(c => {
+      const t = c.title.toLowerCase();
+      if (c.day !== d || t === free) return;
+      const r = byTitle.get(t) || byTitle.set(t, { title: c.title, hours: 0, days: [] }).get(t);
+      r.hours += c.hours;
+      if (!r.days.includes(d)) r.days.push(d);
+    }));
+    return [...byTitle.values()].sort((a, b) => b.hours - a.hours); // ties stay in the board's order
   }
-  const reviewWeeks = () => pendingCloseOuts().filter(k => goalWork(S.data.weeks[k]).length);
+  const reviewWeeks = () => pendingCloseOuts().filter(k => plannedHours(S.data.weeks[k]).length);
 
-  // Closes finished weeks without goal work quietly, then opens the oldest
+  // Closes finished weeks with nothing to review quietly, then opens the oldest
   // close-out due (unless it's been put off, or something else is on screen).
   function checkCloseOuts() {
-    const quiet = pendingCloseOuts().filter(k => !goalWork(S.data.weeks[k]).length);
+    const quiet = pendingCloseOuts().filter(k => !plannedHours(S.data.weeks[k]).length);
     if (quiet.length) {
       quiet.forEach(k => { S.data.weeks[k].closed = true; });
       A.save({ undo: false });
@@ -68,15 +68,35 @@
     K.refreshSwitcher(); // a dot on Momo's icon while a week waits, seen from another app
   }
 
+  // "Mon, Wed, Fri", "Mon–Fri", "every day": the days a title is on, three or more in a row as one run.
+  function dayList(days) {
+    if (days.length === DAYS.length) return "every day";
+    const runs = [];
+    days.forEach(d => {
+      const run = runs[runs.length - 1];
+      if (run && run[1] === d - 1) run[1] = d;
+      else runs.push([d, d]);
+    });
+    return runs.flatMap(([a, b]) => (b - a >= 2 ? [`${DAY_NAMES[a]}–${DAY_NAMES[b]}`] : DAYS.slice(a, b + 1).map(d => DAY_NAMES[d]))).join(", ");
+  }
+
+  // Under the rows: the hours planned on the week's days (Free time's among them), and the hours no card has.
+  function summary(list) {
+    const free = FREE_TIME.toLowerCase(), onDays = list.cards.filter(c => c.day !== null);
+    const planned = sum(onDays.map(c => c.hours)), spare = sum(onDays.filter(c => c.title.toLowerCase() === free).map(c => c.hours));
+    const none = sum(DAYS.map(d => Math.max(0, DAY_HOURS - A.dayTotal(list, d))));
+    return `${fmtH(planned)} planned on its days${spare ? `, ${fmtH(spare)} of it Free time` : ""} · ${fmtH(none)} in no card`;
+  }
+
   function openCloseOut(key) {
     const week = S.data.weeks[key];
     if (!week || week.closed) return;
-    S.closing = { key, rows: goalWork(week).map(w => ({ ...w, done: w.hours })) };
+    S.closing = { key, rows: plannedHours(week).map(r => ({ ...r, done: r.hours })) };
     $("closeOutTitle").textContent = key === thisWeekKey() ? `Close out this week (${fmtWeek(key)})` : `Close out ${fmtWeek(key)}`;
-    $("closeOutRows").innerHTML = S.closing.rows.map((r, i) => `<div class="co-row" style="--c:${A.keyColor(A.goalKey(r.goalId))}">
+    $("closeOutRows").innerHTML = S.closing.rows.map((r, i) => `<div class="co-row" style="--c:${A.cardColor(r)}">
       <div>
-        <div class="co-name"><span class="goal-dot"></span>${esc(r.name)}</div>
-        <div class="co-detail">Planned ${fmtH(r.hours)} · ${r.days.map(([d, h]) => `${DAY_NAMES[d]} ${fmtH(h)}`).join(" · ")}</div>
+        <div class="co-name"><span class="co-dot"></span>${esc(r.title)}</div>
+        <div class="co-detail">Planned ${fmtH(r.hours)} · ${dayList(r.days)}</div>
       </div>
       <div class="co-done">
         <label for="coDone${i}">Done</label>
@@ -86,37 +106,17 @@
           <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
         </div>
       </div>
-      <div class="co-result" id="coResult${i}"></div>
     </div>`).join("");
-    S.closing.rows.forEach((r, i) => updateCloseOutResult(i));
+    $("closeOutSum").textContent = summary(week);
     K.modal.open(overlay());
     renderCloseOutControls();
   }
 
-  // "288h → 280h to go": the goal before and after this week's hours count.
-  // One in hours a week has no total: "40h → 45h done", and how the week did.
-  function updateCloseOutResult(i) {
-    const closing = S.closing, r = closing.rows[i], g = A.goalById(r.goalId);
-    if (!g) return;
-    if (A.isWeekly(g)) {
-      const before = Math.max(0, A.goalDone(g) - (g.log[closing.key] || 0));
-      $(`coResult${i}`).innerHTML = `${fmtH(before)} → <strong>${fmtH(before + r.done)}</strong> done · ` +
-        (r.done >= g.perWeek ? `${fmtH(g.perWeek)} a week met ✓` : `${fmtH(g.perWeek - r.done)} short of ${fmtH(g.perWeek)} a week`);
-      return;
-    }
-    const before = Math.max(0, g.target - (A.goalDone(g) - (g.log[closing.key] || 0)));
-    const after = Math.max(0, before - r.done);
-    $(`coResult${i}`).innerHTML = after === 0 && before > 0
-      ? `${fmtH(before)} to go → <strong>goal reached 🎉</strong>`
-      : `${fmtH(before)} → <strong>${fmtH(after)}</strong> to go`;
-  }
-
   function onCloseOutInput(e) {
-    const i = +e.target.dataset.row, r = S.closing && S.closing.rows[i];
+    const r = S.closing && S.closing.rows[+e.target.dataset.row];
     if (!r) return;
     const v = parseFloat(e.target.value);
     r.done = isNum(v) ? Math.min(r.hours, Math.max(0, snap(v))) : 0;
-    updateCloseOutResult(i);
   }
 
   function onCloseOutChange(e) {
@@ -124,19 +124,15 @@
     if (r) e.target.value = fmtNum(r.done);
   }
 
+  // The hours as reviewed go into the week (spent: each title above zero, as its first card spells it), and it closes.
   function confirmCloseOut() {
     if (!S.closing) return;
     const { key, rows } = S.closing, week = S.data.weeks[key];
     S.closing = null;
     K.modal.close(overlay());
     if (week && !week.closed) {
-      rows.forEach(r => {
-        const g = A.goalById(r.goalId);
-        if (!g) return;
-        const worked = snap(r.done);
-        if (worked > 0) g.log[key] = worked;
-        else delete g.log[key];
-      });
+      week.spent = {};
+      rows.forEach(r => { if (r.done > 0) week.spent[r.title] = snap(r.done); });
       week.closed = true;
       A.save();
     }
@@ -154,18 +150,18 @@
   function closeOutEarly() {
     const key = thisWeekKey(), week = A.weekOf(key);
     if (week.closed) return;
-    if (goalWork(week).length) return openCloseOut(key);
+    if (plannedHours(week).length) return openCloseOut(key);
     A.ensureWeek(key).closed = true;
     A.save();
     A.renderAll();
   }
 
-  // Takes a closed week's goal hours back off and opens it again.
+  // Opens a closed week again, the hours its close-out logged taken back off.
   function reopenWeek() {
     const key = A.viewKey(), week = key && S.data.weeks[key];
     if (!week || !week.closed) return;
     week.closed = false;
-    S.data.goals.forEach(g => { delete g.log[key]; });
+    delete week.spent;
     A.save();
     S.closeOutLater = false;
     A.renderAll();
@@ -183,8 +179,26 @@
     checkCloseOuts();
   }
 
+  // ==========================================================================
+  // SHARED WITH IROH (apps/momo/CLAUDE.md, "Shared with other apps")
+  // ==========================================================================
+  // The hours a title (any case) took in each closed week, as its close-out logged them: { "<Monday>": hours }
+  // for every closed week, 0 where it had none. A week closed without that review (before Momo logged hours,
+  // or by an older copy of it) counts its plan, as the close-out would have. A fresh object each time, so
+  // nothing outside Momo can change its data through it.
+  function hoursSpent(title) {
+    const out = {}, t = typeof title === "string" ? cleanText(title).toLowerCase() : "";
+    if (!t || !S.data) return out;
+    const planned = w => (t === FREE_TIME.toLowerCase() ? 0 : sum(w.cards.filter(c => c.day !== null && c.title.toLowerCase() === t).map(c => c.hours))); // as plannedHours has it
+    Object.keys(S.data.weeks).sort().forEach(k => {
+      const w = S.data.weeks[k];
+      if (w.closed) out[k] = w.spent ? sum(Object.keys(w.spent).filter(s => s.toLowerCase() === t).map(s => w.spent[s])) : planned(w);
+    });
+    return out;
+  }
+
   Object.assign(A, {
-    defineCloseOutOverlay, goalWork, reviewWeeks, checkCloseOuts, renderCloseOutControls, openCloseOut, onCloseOutInput, onCloseOutChange,
-    confirmCloseOut, closeOutLaterClick, closeOutEarly, reopenWeek, checkRollover
+    defineCloseOutOverlay, plannedHours, reviewWeeks, checkCloseOuts, renderCloseOutControls, openCloseOut, onCloseOutInput, onCloseOutChange,
+    confirmCloseOut, closeOutLaterClick, closeOutEarly, reopenWeek, checkRollover, hoursSpent
   });
 })(Kyoshi, Kyoshi.apps.momo);

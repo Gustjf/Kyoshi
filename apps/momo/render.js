@@ -1,11 +1,11 @@
 /* Momo · render.js — draws the board from A.S: renderAll, then the week tabs,
- * the To Be Budgeted bank (with Tasks, see tasks.js), the board's days and cards (sized to the
+ * the To Be Budgeted bank (with Tasks, see tasks.js) and the board's days and cards (sized to the
  * ruler, see times.js; filled with what other apps need, see inbox.js; other apps' events over
- * them, see agenda.js), and the long-term goals; then Today, when it's on screen (today.js). */
+ * them, see agenda.js); then Today, when it's on screen (today.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { sum, esc, addDays, todayStr, fmtDate, fmtShort, fmtNum } = K.util;
+  const { sum, esc, addDays, todayStr, fmtShort, fmtNum } = K.util;
   const { DAY_HOURS, DAYS, DAY_NAMES, DAY_LONG, STEP, POSITION_TEXT, fmtH, fmtPct, fmtClock, fmtWeek, dayIndex, thisWeekKey, nextWeekKey } = A;
 
   function renderAll() {
@@ -19,7 +19,6 @@
     renderTabs();
     renderBank(list, key);
     renderBoard(list, key);
-    renderGoals(list, key);
     A.renderCloseOutControls();
     A.refreshDev(); // the undo count in Developer Mode
     A.paintClip();
@@ -62,7 +61,7 @@
     // An event's conflict comes first: it's often why a day is over, and its quick fix balances it.
     let msg, cls = "", late, clashes;
     if (locked) {
-      msg = "This week is closed out ✓ — its goal hours are logged and the rest is let go.";
+      msg = "This week is closed out ✓ — its hours are logged.";
       cls = "good";
     } else if ((clashes = S.agenda.filter(ev => ev.flag)).length) {
       cls = "bad";
@@ -115,11 +114,11 @@
   // own has a pin, and each piece is sized to the ruler (styles, from
   // pieceStyles).
   function cardHTML(list, c, times = null, styles = null) {
-    const g = A.goalById(c.goalId), inner = A.innerCards(list, c);
+    const inner = A.innerCards(list, c);
     const parent = c.parentId && list.cards.find(p => p.id === c.parentId);
     const when = times && times.get(c.id), pin = !!when && !parent && A.pinned(c);
     const needs = c.day !== null && S.fill && S.fill.shown.get(c.id), fill = needs ? A.fillParts(c, needs) : null;
-    const label = `${c.title}${fill ? ` (${fill.text})` : ""}, ${fmtH(c.hours)}${g ? `, goal: ${g.name}` : ""}` +
+    const label = `${c.title}${fill ? ` (${fill.text})` : ""}, ${fmtH(c.hours)}` +
       (inner.length ? ` + ${inner.map(x => `${x.title} ${fmtH(x.hours)}`).join(" + ")} = ${fmtH(A.blockHours(list, c))}` : parent ? `, ${POSITION_TEXT[c.pos]} ${parent.title}` : "") +
       (!when ? "" : `, ${pin ? `pinned at ${fmtClock(c.pin)}` : `from ${fmtClock(when.at)}`}${when.clash ? ` — the cards above run ${fmtH(when.clash)} into it` : when.at >= DAY_HOURS ? " — past midnight" : ""}`);
     const button = `role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}"`;
@@ -128,7 +127,7 @@
     const grip = c.day === null ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
-    return `<div class="card${g ? " is-goal" : ""}${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
+    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
       (inner.length ? `${at("top")}<div class="card-own" style="${size(`own:${c.id}`)}" ${button}>${own}${mid ? "" : grip}</div>` +
         (mid ? `${mid}<div class="card-own card-rest" style="${size(`rest:${c.id}`)}" aria-hidden="true">${grip}</div>` : "") + at("bottom") : own + grip) + `</div>`;
   }
@@ -200,64 +199,5 @@
       (regions.has("end") ? free("end", DAY_HOURS - end, null) : locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end"))) + A.overlaysHTML(plan, locked);
   }
 
-  function renderGoals(list, key) {
-    const goals = A.liveGoals().sort((a, b) => A.isReached(a) - A.isReached(b)); // reached ones last
-    $("goalsEmpty").hidden = goals.length > 0;
-    const label = key === "base" ? "Baseline" : S.view === "this" ? "This week" : "Next week";
-    const needKey = key === "base" ? nextWeekKey() : key; // the baseline is judged by next week's need
-    const openWeeks = Object.values(S.data.weeks).filter(w => !w.closed);
-    // A goal in hours a week counts what's on the board (what was logged, once
-    // closed out), and can still get the hours left to budget (none once closed).
-    const closed = key !== "base" && list.closed, room = closed ? 0 : A.budgetOf(list, key).free;
-    $("goalsList").innerHTML = goals.map(g => {
-      if (A.isWeekly(g)) return weeklyGoalHTML(g, closed ? g.log[key] || 0 : A.plannedFor(list, g.id), room, label, closed);
-      const done = A.goalDone(g), planned = A.plannedFor(list, g.id);
-      // The bar: solid for hours done, lighter for hours planned in weeks not closed out yet.
-      const pending = sum(openWeeks.map(w => A.plannedFor(w, g.id)));
-      const donePct = Math.min(100, done / g.target * 100);
-      const planPct = Math.max(0, Math.min(100 - donePct, pending / g.target * 100));
-      let meta, badge, overMax = false;
-      if (A.isReached(g)) {
-        meta = `${fmtH(done)} done`;
-        badge = `<span class="badge reached">Reached</span>`;
-      } else {
-        meta = `${fmtH(g.target - done)} to go`;
-        const need = A.weeklyNeed(g, needKey);
-        if (need === null) {
-          badge = `<span class="badge plain">${label}: ${fmtH(planned)}</span>`;
-        } else {
-          meta += A.weeksLeft(g, needKey) > 0 ? ` · needs ${fmtH(need)}/wk to finish by ${fmtDate(g.due)}` : ` · the finish-by date (${fmtDate(g.due)}) has passed`;
-          // Red: staying on time takes more than its most hours a week, and this
-          // week doesn't have the extra sessions scheduled yet.
-          overMax = need > g.maxWeek && planned < need;
-          if (overMax) meta += ` — more than your ${fmtH(g.maxWeek)}/wk`;
-          badge = planned >= need
-            ? `<span class="badge funded">${label}: ${fmtH(planned)} · Funded</span>`
-            : `<span class="badge ${overMax ? "over" : "under"}">${label}: ${fmtH(planned)} · ${fmtH(need - planned)} short</span>`;
-        }
-      }
-      return `<div class="goal${overMax ? " off-track" : ""}" data-goal-id="${esc(g.id)}" role="button" tabindex="0" style="--c:${A.keyColor(A.goalKey(g.id))}">
-        <div class="goal-top"><span class="goal-dot"></span><span class="goal-name">${esc(g.name)}</span><span class="goal-nums">${fmtNum(done)} / ${fmtNum(g.target)}h</span></div>
-        <div class="goal-bar"><span class="done" style="width:${donePct}%"></span><span class="planned" style="width:${planPct}%"></span></div>
-        <div class="goal-bottom"><span class="goal-meta">${meta}</span>${badge}</div>
-      </div>`;
-    }).join("");
-  }
-
-  // A goal in hours a week, for the week on screen, which has `got` of them and
-  // `room` hours left to budget: green (funded) once it has them all, yellow
-  // (under) while the rest still fits in room, red (over) when it doesn't.
-  function weeklyGoalHTML(g, got, room, label, closed) {
-    const short = Math.max(0, g.perWeek - got);
-    const status = !short ? "funded" : short <= room ? "under" : "over";
-    let meta = `${fmtH(A.goalDone(g))} done so far`;
-    if (status === "over" && !closed) meta += room ? ` — only ${fmtH(room)} left to budget` : " — no hours left to budget";
-    return `<div class="goal${status === "over" ? " off-track" : ""}" data-goal-id="${esc(g.id)}" role="button" tabindex="0" style="--c:${A.keyColor(A.goalKey(g.id))}">
-        <div class="goal-top"><span class="goal-dot"></span><span class="goal-name">${esc(g.name)}</span><span class="goal-nums">${fmtH(g.perWeek)} a week</span></div>
-        <div class="goal-bar weekly ${status}"><span class="done" style="width:${Math.min(100, got / g.perWeek * 100)}%"></span></div>
-        <div class="goal-bottom"><span class="goal-meta">${meta}</span><span class="badge ${status}">${label}: ${fmtH(got)} · ${short ? `${fmtH(short)} short` : "Funded"}</span></div>
-      </div>`;
-  }
-
-  Object.assign(A, { renderAll, renderTabs, renderBank, cardHTML, renderBoard, dayPlan, dayHTML, renderGoals });
+  Object.assign(A, { renderAll, renderTabs, renderBank, cardHTML, renderBoard, dayPlan, dayHTML });
 })(Kyoshi, Kyoshi.apps.momo);

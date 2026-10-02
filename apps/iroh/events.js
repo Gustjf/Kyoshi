@@ -1,7 +1,7 @@
 /* Iroh · events.js — loads last: wires the page (A.init): the Add buttons, a goal's or an area's title (its
  * pop-up), Reconcile, Carry over and an area's ↑ ↓ (each button carries data-act and data-id); and the hooks
- * Kyoshi calls: onTick (a new day: reconciles age, and a new season can start), onReload (another tab saved) and
- * bugState. Iroh's dot is core's: an overdue meeting (core/meetings.js). */
+ * Kyoshi calls: onTick and onShow (a new day: reconciles age, and a new season can start; Momo's close-out logged
+ * hours), onReload (another tab saved) and bugState. Iroh's dot is core's: an overdue meeting (core/meetings.js). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -43,8 +43,10 @@
     A.renderAll();
   };
 
-  // Every minute, and whenever the page is back in view: at a new day, reconciles age and a new season can start.
-  A.onTick = () => { if (todayStr() !== S.knownToday) A.renderAll(); };
+  // Every minute, whenever the page is back in view, and when Iroh comes on screen: at a new day, reconciles age
+  // and a new season can start; and a close-out in Momo (here, or in another tab) changes the goals' progress.
+  A.onTick = () => { if (todayStr() !== S.knownToday || A.progressKey() !== S.progressKey) A.renderAll(); };
+  A.onShow = A.onTick;
 
   // Another tab saved (A.load has read it): show it.
   A.onReload = () => A.renderAll();
@@ -53,10 +55,12 @@
   A.bugState = () => {
     const areas = A.liveAreas().length, goals = A.liveGoals(), season = A.currentSeason(), year = A.thisYear();
     const now = A.goalsIn(season), open = now.filter(A.isOpen);
+    const read = open.filter(g => g.hoursWeek || g.hoursTotal).map(g => [g, A.progressOf(g)]).filter(([, p]) => p);
     return [
       `- Areas: ${areas} (+${S.areas.length - areas} deleted)`,
       `- This season (${season}): ${open.length} open (${open.filter(g => A.weeklyMinutes(g) > 0).length} with hours, ${open.filter(g => A.isStale(g)).length} to reconcile), ${now.length - open.length} done or dropped`,
       `- This year (${year}): ${A.goalsIn(year).length} goals; earlier: ${goals.filter(g => A.isPast(g.period)).length}; +${S.goals.length - goals.length} deleted`,
+      `- Progress from Momo: ${read.length} goals with hours (${read.filter(([g, p]) => A.behindBy(g, p)).length} behind, ${read.filter(([g, p]) => g.hoursTotal && p.spent >= g.hoursTotal).length} totals reached)`,
       `- Pop-ups: goal ${S.editing ? "open" : "closed"}, reconcile ${S.reconciling ? "open" : "closed"}, area ${S.areaEditing ? "open" : "closed"}`
     ];
   };

@@ -32,11 +32,11 @@
     STEP: 0.25,        // time moves in 15-minute steps
     BUTTON_STEP: 0.5,  // what the − / + buttons move by
     MAX_TITLE: 40,
-    MAX_GOAL_HOURS: 100000,
-    GOAL_MAX_WEEK: 10, // a new goal's most hours a week
+    MAX_GOAL_HOURS: 100000, // the old goals' limits, which data.js cleanGoal still keeps them within
+    GOAL_MAX_WEEK: 10,
     DRAW_HOURS: 1,     // a card drawn from a task in Tasks that doesn't say how long (tasks.js)
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
-    YEAR_MIN: 2000, YEAR_MAX: 2999, // finish-by years
+    YEAR_MIN: 2000, YEAR_MAX: 2999, // the old goals' finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.
     POSITIONS: ["top", "middle", "bottom"],
@@ -67,7 +67,8 @@
     EDGE_PX: 48,         // the page and board scroll while dragging this close to an edge
     CLIP_MS: 5000,       // a copied or cut card waits this long for the next paste
     // Backup file format. Bump only when the shape changes in a way import has to migrate.
-    // 2: colours moved from each card and goal to data.colors, by title and goal.
+    // 2: colours moved from each card and goal to data.colors, by title and goal. (Closed
+    // weeks' spent came later without a bump: older files simply don't have it.)
     DATA_SCHEMA_VERSION: 2,
     // "Start from a sample" in an empty baseline.
     SAMPLE_BASELINE: [
@@ -82,17 +83,16 @@
   // STATE
   // ==========================================================================
   Object.assign(A.S, {
-    data: null,            // everything saved and synced: { weeks, baseline, goals, colors } (model.js)
+    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors } (model.js)
     view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
     today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
     lastSavedJSON: "",     // data as of the last save, as JSON…
     lastSaved: null,       // …and parsed, to tell what the next change touched
-    closing: null,         // the close-out on screen: { key, rows: [{ goalId, name, hours, days, done }] }
+    closing: null,         // the close-out on screen: { key, rows: [{ title, hours, days, done }] }
     closeOutLater: false,  // "Later" was picked: the banner stands in for the close-out until the next week
     knownToday: "",        // today as of the last check, to notice midnight and new weeks
     editing: null,         // the card editor's state
-    editingGoal: null,     // the goal editor's state
     press: null,           // a pointer down on a card that isn't a drag yet
     stuck: null,           // a mouse down on a pinned card, which doesn't drag: { el, pointerId, x0, y0, moved }
     drag: null,            // the drag in progress

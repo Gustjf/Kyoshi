@@ -1,17 +1,17 @@
 /* Momo · card-editor.js — the card editor pop-up (#cardOverlay): new and existing cards,
- * the days they're on, goal, pin time, which card they sit inside, and colour; saving,
- * deleting, and the colour swatches both editors share (renderColors, onColorClick).
- * Hours fields and clock times are read here for both editors too. */
+ * the days they're on, pin time, which card they sit inside, and colour; saving, deleting,
+ * and the colour swatches (renderColors, onColorClick). Hours fields and clock times are read
+ * here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { isNum, sum, esc, newId, fmtNum } = K.util;
-  const { DAY_HOURS, DAYS, WEEKDAYS, DAY_NAMES, STEP, MAX_GOAL_HOURS, DRAW_HOURS, FREE_TIME, POSITIONS, AUTO, PALETTE, HIGHLIGHTS,
+  const { DAY_HOURS, DAYS, WEEKDAYS, DAY_NAMES, STEP, DRAW_HOURS, FREE_TIME, POSITIONS, AUTO, PALETTE, HIGHLIGHTS,
     snap, fmtH, cleanText, fmtClock, firstDay, thisWeekKey, nextWeekKey, readNumber } = A;
 
   const overlay = () => $("cardOverlay");
   // What the editor holds, to tell whether closing it would lose changes.
-  const cardFormState = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardGoal").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort(), S.editing.pick]);
+  const cardFormState = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort(), S.editing.pick]);
 
   // Esc, × and a click beside the editor ask first if it has unsaved changes (core/modal.js); Cancel doesn't.
   function defineCardOverlay() {
@@ -40,10 +40,8 @@
   // Titles used before, and the tasks' (what other apps need), for the title field's suggestions.
   function titleSuggestions() {
     const titles = new Map([[FREE_TIME.toLowerCase(), FREE_TIME]]);
-    [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].forEach(list => list.cards.forEach(c => {
-      if (!c.goalId) titles.set(c.title.toLowerCase(), c.title);
-    }));
-    A.tasks().forEach(t => { if (!t.goalId) titles.set(t.title.toLowerCase(), t.title); });
+    [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].forEach(list => list.cards.forEach(c => titles.set(c.title.toLowerCase(), c.title)));
+    A.tasks().forEach(t => titles.set(t.title.toLowerCase(), t.title));
     return [...titles.values()].sort((a, b) => a.localeCompare(b));
   }
 
@@ -59,19 +57,14 @@
     if (id && !card) return;
     const free = day === null || noDay ? 0 : room !== null ? room : DAY_HOURS - A.dayTotal(list, day);
     const draft = card || from; // what the fields start from, if anything
-    const editing = S.editing = { key, id: card ? card.id : null, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, lastGoalId: draft ? draft.goalId : null, inner: card ? A.innerCards(list, card) : [] };
+    const editing = S.editing = { key, id: card ? card.id : null, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, inner: card ? A.innerCards(list, card) : [] };
     // Renamed to a new title, a card takes its colour along if no other card on show has its title.
     const oldKey = editing.oldKey;
-    if (card && oldKey.startsWith("t:") && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
+    if (card && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
     $("cardModalTitle").textContent = card ? "Edit card" : "New card";
     $("cardTitle").value = draft ? draft.title : "";
     $("cardHours").value = fmtNum(card ? card.hours : from ? from.hours || DRAW_HOURS : free > 0 && free < 1 ? free : 1);
     renderFrom(card ? (S.fill && S.fill.shown.get(card.id)) || [] : (from && from.needs) || []);
-    const goals = A.liveGoals().filter(g => !A.isReached(g) || (card && card.goalId === g.id));
-    $("cardGoal").innerHTML = `<option value="">None</option>` + goals.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
-    $("cardGoal").value = draft && goals.some(g => g.id === draft.goalId) ? draft.goalId : "";
-    $("cardGoalField").hidden = !goals.length;
-    $("cardColorField").hidden = !!$("cardGoal").value;
     // Inside: the cards on their own it could go inside, by title (on each day
     // picked, that day's one). A card with cards inside it stays on its own.
     const parent = card && card.parentId && list.cards.find(c => c.id === card.parentId);
@@ -126,7 +119,7 @@
   }
 
   // Daily and Weekdays pick those days; on this week only from today on, and
-  // days already gone keep what they had, so goal work isn't added to the past.
+  // days already gone keep what they had, so nothing is added to the past.
   const presetDays = days => days.filter(d => d >= firstDay(S.editing.key));
   function applyPreset(days) {
     if (!S.editing) return;
@@ -143,24 +136,24 @@
     renderDayPills();
   }
 
-  // An editor's colours ("card" or "goal") for a key with its own colour
-  // own, showing c (own, or one picked): the highlights, after own if it's
+  // The editor's colours for a key with its own colour own, showing c
+  // (own, or one picked): the highlights, after own if it's
   // another (and slate, for Free time), so it can be picked back. Each says
   // which key on show has it, other than those in mine; the note under them
   // says what picking c does — swap with the key that has it (or give that
   // one a new colour, if this key had none yet) — else says `about`.
-  function renderColors(which, key, own, c, had, mine, about) {
+  function renderColors(key, own, c, had, mine, about) {
     const opts = PALETTE.slice(0, HIGHLIGHTS).map(([name]) => name);
     if (key === A.FREE_KEY) opts.unshift("slate");
     if (!opts.includes(own)) opts.unshift(own);
     const lead = opts.length - HIGHLIGHTS - 1; // the last swatch before the highlights
     const owners = new Map(A.colorKeys(S.data).shown.filter(k => !mine.includes(k) && S.data.colors[k]).map(k => [S.data.colors[k].c, k]));
-    $(`${which}Colors`).innerHTML = opts.map((o, i) => {
+    $("cardColors").innerHTML = opts.map((o, i) => {
       const who = owners.get(o), tip = `${A.colorName(o)}${who ? ` — “${A.keyName(who)}” has it` : ""}`;
       return `<button type="button" class="swatch${o === c ? " active" : ""}${i === lead ? " own" : ""}" data-color="${o}" style="--c:${A.colorCss(o)}" title="${esc(tip)}" aria-label="${esc(tip)}"></button>`;
     }).join("");
     const other = owners.get(c);
-    $(`${which}ColorNote`).textContent = !other ? about : had ? `Swaps colours with “${A.keyName(other)}”.` : `“${A.keyName(other)}” gets a new colour.`;
+    $("cardColorNote").textContent = !other ? about : had ? `Swaps colours with “${A.keyName(other)}”.` : `“${A.keyName(other)}” gets a new colour.`;
   }
 
   // The colour the card being edited has without one picked here: its
@@ -173,11 +166,11 @@
   }
   function renderCardColors() {
     const editing = S.editing, title = cleanText($("cardTitle").value), key = A.titleKey(title), own = cardOwn(key);
-    renderColors("card", key, own, editing.pick || own, !!(S.data.colors[key] || editing.carry), [key, editing.carry ? editing.oldKey : null],
+    renderColors(key, own, editing.pick || own, !!(S.data.colors[key] || editing.carry), [key, editing.carry ? editing.oldKey : null],
       title ? `Every “${title}” card is this colour.` : "Cards with the same title share a colour.");
   }
 
-  // A colour clicked in an editor is picked, unless it's the one it has anyway.
+  // A colour clicked in the editor is picked, unless it's the one it has anyway.
   function onColorClick(e, state, own, render) {
     const s = e.target.closest(".swatch");
     if (!s || !state) return;
@@ -185,20 +178,10 @@
     render();
   }
 
-  // Picking a goal names the card after it (unless it has a name of its own).
-  function onCardGoalChange() {
-    const g = A.goalById($("cardGoal").value), prev = A.goalById(S.editing.lastGoalId);
-    const t = $("cardTitle").value.trim();
-    if (g && (!t || (prev && t === prev.name))) $("cardTitle").value = g.name;
-    S.editing.lastGoalId = g ? g.id : null;
-    $("cardColorField").hidden = !!g;
-    renderCardColors();
-  }
-
   // Hours fields go on the 15-minute grid within their range, so a number past
   // either end becomes that end. null when empty; NaN when it isn't a number,
   // or isn't above zero where it has to be.
-  const HOUR_RANGES = { cardHours: [STEP, DAY_HOURS], goalTarget: [STEP, MAX_GOAL_HOURS], goalPerWeek: [STEP, 7 * DAY_HOURS], goalDone: [0, MAX_GOAL_HOURS], goalMax: [STEP, 7 * DAY_HOURS] };
+  const HOUR_RANGES = { cardHours: [STEP, DAY_HOURS] };
   function readHours(id) {
     const v = readNumber(id), [min, max] = HOUR_RANGES[id];
     if (v === null || Number.isNaN(v)) return v;
@@ -237,7 +220,6 @@
     if (!editing) return;
     const title = cleanText($("cardTitle").value);
     const hours = readHours("cardHours");
-    const goalId = A.goalById($("cardGoal").value) ? $("cardGoal").value : null;
     const inTitle = $("cardInField").hidden ? "" : $("cardIn").value;
     const pos = POSITIONS.includes($("cardPos").value) ? $("cardPos").value : "middle";
     const setPin = !$("cardPinField").hidden, pinAt = setPin ? readClock("cardPin") : null;
@@ -259,14 +241,14 @@
     const holderOn = d => {
       const p = !inTitle ? null : cur && cur.day === d && cur.title.toLowerCase() === inTitle ? cur
         : d === null ? null : list.cards.find(c => c.day === d && c !== card && !c.parentId && c.title.toLowerCase() === inTitle);
-      return p && !A.sameKind(p, { title, goalId }) ? p : null;
+      return p && !A.sameKind(p, { title }) ? p : null;
     };
     const parentOn = d => (holderOn(d) || { id: null }).id;
     // The time it's pinned at: as typed on the baseline; in a week a card
     // keeps its own, and a new one has none. Only a card on its own on a day has one.
     const pin = setPin ? pinAt : card ? card.pin : null;
     const pinOn = d => (d === null || parentOn(d) ? null : pin);
-    const newCard = day => ({ id: newId(), title, hours, day, goalId, base: false, parentId: parentOn(day), pos, pin: pinOn(day) });
+    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day) });
     // Adds a new card before the card `before` (AUTO: wherever autoSpot puts
     // it; a pinned one always goes there), or into a matching card next to that spot.
     const add = (c, before) => {
@@ -277,7 +259,7 @@
     };
     if (card) {
       const wasPinned = A.pinned(card), orig = card.pin;
-      Object.assign(card, { title, hours, goalId });
+      Object.assign(card, { title, hours });
       // The card stays where it is if its day is still picked, else moves to the
       // first picked day that doesn't have it yet. Each other picked day gets a
       // copy, unless it has the card already (in the same place, else anywhere
@@ -309,17 +291,15 @@
     } else {
       days.forEach(day => add(newCard(day), day === editing.at.day ? editing.at.before : AUTO));
     }
-    // Its title's colour (a goal's cards are the goal's): the one it had, when
-    // it's renamed to a new title and no card on show keeps the old one; and
-    // one picked here, which swaps with the title or goal that had it.
-    if (!goalId) {
-      const key = A.titleKey(title), { oldKey, carry, pick } = editing, colors = S.data.colors;
-      if (carry && key !== oldKey && !colors[key] && colors[oldKey] && !A.keyOnShow(oldKey)) {
-        colors[key] = colors[oldKey];
-        delete colors[oldKey];
-      }
-      if (pick) A.pickColor(key, pick);
+    // Its title's colour: the one it had, when it's renamed to a new title and
+    // no card on show keeps the old one; and one picked here, which swaps with
+    // the title that had it.
+    const key = A.titleKey(title), { oldKey, carry, pick } = editing, colors = S.data.colors;
+    if (carry && key !== oldKey && !colors[key] && colors[oldKey] && !A.keyOnShow(oldKey)) {
+      colors[key] = colors[oldKey];
+      delete colors[oldKey];
     }
+    if (pick) A.pickColor(key, pick);
     closeEditor();
     A.save();
     A.renderAll();
@@ -347,7 +327,7 @@
 
   Object.assign(A, {
     defineCardOverlay, openCardEditor, onDayPill, applyPreset, clearDays, renderColors, typedKey, cardOwn, renderCardColors,
-    onColorClick, onCardGoalChange, HOUR_RANGES, readHours, tidyHours, readClock, renderPinField, renderInnerNote,
+    onColorClick, HOUR_RANGES, readHours, tidyHours, readClock, renderPinField, renderInnerNote,
     saveCard, deleteCard, removeCard
   });
 })(Kyoshi, Kyoshi.apps.momo);

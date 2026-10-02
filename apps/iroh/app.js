@@ -1,11 +1,12 @@
 /* Iroh · app.js — registers Iroh with Kyoshi, plus its constants (limits, how long a reconcile lasts), state
  * (A.S) and small helpers: text and hours, seasons (keys and labels, the season a day is in, a season's weeks)
- * and lookups (a goal's year goal, area and chain, its hours, Momo's share of them each week).
+ * and lookups (a goal's year goal, area and chain, its hours, what Momo's close-outs logged for it, Momo's share
+ * of its hours each week).
  * Loads first of the app's files: the others destructure what's here at the top, and call
  * functions from each other as A.name(). File map and data model: apps/iroh/CLAUDE.md. */
 (function (K) {
   "use strict";
-  const { isNum, fmtNum, dateMs, addDays, daysBetween, fmtShort, todayStr } = K.util;
+  const { isNum, isObj, fmtNum, dateMs, addDays, daysBetween, localDate, fmtShort, todayStr } = K.util;
 
   const A = K.register({
     id: "iroh",
@@ -53,7 +54,8 @@
     editing: null,     // the goal pop-up: { id ("" for a new one), period, season (a season goal), mode, status, snapshot }
     reconciling: null, // the reconcile pop-up: { id, snapshot }
     areaEditing: null, // the area pop-up: { id ("" for a new one), snapshot }
-    knownToday: ""     // today as of the last draw, to redraw when the date changes
+    knownToday: "",    // today as of the last draw, to redraw when the date changes
+    progressKey: ""    // Momo's hours for this season's goals as last drawn, to redraw when a close-out changes them
   });
 
   // ==========================================================================
@@ -134,12 +136,47 @@
   // "today", "yesterday", "23 days ago".
   const ago = (d, today = todayStr()) => { const n = daysBetween(d, today); return n === 0 ? "today" : n === 1 ? "yesterday" : n > 1 ? `${n} days ago` : `on ${fmtShort(d)}`; };
 
-  // Momo's share of a season goal each week, in minutes: its hours a week, or its total over its season's weeks
-  // (rounded up to 15 minutes); 0 without hours.
-  function weeklyMinutes(g) {
+  // What Momo's weekly close-outs logged for a season goal, by its title (Momo's hoursSpent: read-only, every
+  // closed week): { spent: its hours in the season's closed weeks, closed: the closed weeks from the one it was
+  // added in, weeks: the season's weeks from that one, left: the weeks from this one on not closed yet }. null
+  // for a year goal, or while Momo hasn't started (or can't say).
+  let warned = false;
+  function progressOf(g) {
+    const momo = K.apps.momo;
+    if (!isSeason(g.period) || !momo || !momo.started || typeof momo.hoursSpent !== "function") return null;
+    let byWeek;
+    try {
+      byWeek = momo.hoursSpent(g.title);
+    } catch (err) {
+      if (!warned) console.warn("Couldn't read Momo's hours.", err);
+      warned = true;
+      return null;
+    }
+    if (!isObj(byWeek)) return null;
+    const weeks = weeksOf(g.period), first = mondayOf(localDate(new Date(g.at))), thisWeek = mondayOf(todayStr());
+    const closed = m => m in byWeek, mine = weeks.filter(m => m >= first);
+    return {
+      spent: weeks.reduce((h, m) => h + (closed(m) && isNum(byWeek[m]) ? byWeek[m] : 0), 0),
+      closed: mine.filter(closed).length,
+      weeks: mine.length,
+      left: weeks.filter(m => m >= thisWeek && !closed(m)).length
+    };
+  }
+  // How far a goal in hours a week is behind (p: its progressOf): its hours a week for each week closed since it
+  // was added, less the hours spent; 0 within an hour of that (on pace), and for a total.
+  const behindBy = (g, p) => { const b = g.hoursWeek * p.closed - p.spent; return g.hoursWeek && b > 1 ? b : 0; };
+
+  // Momo's share of a season goal each week, in minutes: its hours a week; or, for a total, what's left of it
+  // after the hours Momo's close-outs logged, over the season's weeks still to come (this one on, not closed) —
+  // else, for a past season or without Momo, its total over its season's weeks. Rounded up to 15 minutes; 0
+  // without hours, or once a total is reached. p: its progressOf, when it's been read already.
+  function weeklyMinutes(g, p) {
     if (g.hoursWeek) return Math.round(g.hoursWeek * 60);
     if (!g.hoursTotal || !isSeason(g.period)) return 0;
-    return Math.ceil(g.hoursTotal * 60 / Math.max(1, weeksOf(g.period).length) / 15) * 15;
+    if (p === undefined) p = progressOf(g);
+    if (p && p.spent >= g.hoursTotal) return 0;
+    const [hours, weeks] = p && p.left ? [g.hoursTotal - p.spent, p.left] : [g.hoursTotal, weeksOf(g.period).length];
+    return Math.ceil(hours * 60 / Math.max(1, weeks) / 15) * 15;
   }
   // "5 h a week", "20 h in total, 1.75 h a week", "" without hours.
   const hoursText = g => (g.hoursWeek ? `${fmtHours(g.hoursWeek)} a week`
@@ -148,6 +185,7 @@
   Object.assign(A, {
     cleanLine, cleanText, cleanHours, fmtHours,
     isSeason, isYear, yearOf, seasonsOf, seasonLabel, nextSeason, startOf, endOf, seasonOf, currentSeason, thisYear, isPast, mondayOf, weeksOf,
-    live, liveAreas, liveGoals, areaById, goalById, goalsIn, isOpen, childrenOf, parentOf, areaOf, chainOf, isStale, ago, weeklyMinutes, hoursText
+    live, liveAreas, liveGoals, areaById, goalById, goalsIn, isOpen, childrenOf, parentOf, areaOf, chainOf, isStale, ago,
+    progressOf, behindBy, weeklyMinutes, hoursText
   });
 })(Kyoshi);

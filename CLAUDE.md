@@ -61,7 +61,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   wanshitong/         media tracker for recommendations (In progress, Up next, the backlog)
   appa/               preventive maintenance & records (jobs to Momo, PDF reports with proof)
   hawky/              errands & pop-up tasks (quick add on the phone, into Momo's Errands cards)
-  iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards)
+  iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 ```
 
@@ -97,6 +97,6 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 - Styles: shared in `core/kyoshi.css`; app-specific in `apps/<id>/<id>.css` under `.app-<id>`; page-wide custom properties `--<id>-…`.
 - Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
 - Within an app: destructure helpers only from `app.js`; call other files' functions as `A.name()`; expose with `Object.assign(A, { … })`.
-- Between apps: never touch another app's `A.S` or storage. A provider may offer a small read-only function — ask me first. So far: Momo reads every app's `A.agenda` and `A.inbox` (its "Open in <App>" calls `A.open(id)`).
+- Between apps: never touch another app's `A.S` or storage. A provider may offer a small read-only function — ask me first. So far: Momo reads every app's `A.agenda` and `A.inbox` (its "Open in <App>" calls `A.open(id)`); Iroh reads Momo's `hoursSpent` (hours by title per closed week, for its goals' progress).
 - Checkups and meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up; one on a schedule also goes to Momo's "Meeting" cards and dots the app's icon when overdue.
 - Time: `K.util.todayStr()` / `K.util.now()` (time travel aware); `Date.now()` only for change stamps (`u`, `savedAt`).

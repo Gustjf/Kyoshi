@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "6.864", date: "2026-10-02", changes: [
+      "Goals now live in Iroh: Momo's Long-term goals, the goal pop-up, the goal on cards and goal tasks are gone. Goals saved here stay in your data and backups, untouched.",
+      "The weekly close-out reviews where the week's hours went: every card title on its days, with its planned hours. Lower what fell short; Close out week keeps the hours, and Iroh shows its goals' progress from them.",
+      "Every past week with cards on its days comes up for a close-out, and Reopen takes its hours back off.",
+      "Cards with the same title always fold together and share a colour, a goal's old cards included."
+    ] },
     { version: "5.864", date: "2026-10-02", changes: [
       "Iroh's goals fill your cards titled like them: a goal's hours for the week spread over those cards in turn, the ones on earlier days this week count as done, and what's still missing is a task on that week's board."
     ] },

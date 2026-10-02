@@ -1,12 +1,13 @@
-/* Iroh · render.js — draws the page from A.S: This season (each open goal with its hours, its chain, the next step
- * and when it was last reconciled, with Reconcile; then those done or dropped), This year (each goal with its
- * area, done-when, why and season goals), Vision (the areas, each with its pictures and ↑ ↓) and Earlier (past
- * seasons' goals, an open one with Carry over, then past years'). reveal(id) brings a goal into view. */
+/* Iroh · render.js — draws the page from A.S: This season (each open goal with its hours and its progress from
+ * Momo's close-outs, its chain, the next step and when it was last reconciled, with Reconcile; then those done or
+ * dropped), This year (each goal with its area, done-when, why and season goals), Vision (the areas, each with its
+ * pictures and ↑ ↓) and Earlier (past seasons' goals, an open one with Carry over, then past years'). reveal(id)
+ * brings a goal into view. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, fmtShort, fmtDate, todayStr } = K.util;
-  const { seasonLabel, isOpen } = A;
+  const { esc, fmtNum, fmtShort, fmtDate, todayStr } = K.util;
+  const { seasonLabel, isOpen, fmtHours } = A;
 
   const STATUS = { done: "Done ✓", dropped: "Dropped" };
   const titleBtn = (act, id, text) => `<button type="button" class="goal-title" data-act="${act}" data-id="${esc(id)}">${esc(text)}</button>`;
@@ -14,11 +15,27 @@
   const textHTML = (label, text) => (text ? `<div class="goal-text"><span class="goal-label">${label}</span>${esc(text)}</div>` : "");
 
   // --- This season ---
-  // An open goal: its title (its pop-up) and hours, where it leads, the next step, and when it was last reconciled.
+  // A goal's progress from Momo's close-outs (p: A.progressOf): "22 of 60 h, on pace" or "6 h behind" for hours a
+  // week; "22 of 60 h · 38 h to go, 5 h a week to finish" for a total. Nothing without Momo: the plan only.
+  function progressHTML(g, p) {
+    if (!p) return "";
+    const of = `${fmtNum(p.spent)} of ${fmtHours(g.hoursWeek ? g.hoursWeek * p.weeks : g.hoursTotal)}`;
+    if (g.hoursWeek) {
+      const behind = A.behindBy(g, p);
+      return `<div class="goal-progress${behind ? " behind" : ""}">${esc(behind ? `${of}, ${fmtHours(behind)} behind` : `${of}, on pace`)}</div>`;
+    }
+    const left = g.hoursTotal - p.spent;
+    return left <= 0 ? `<div class="goal-progress reached">${esc(`${of} · reached ✓`)}</div>`
+      : `<div class="goal-progress">${esc(`${of} · ${fmtHours(left)} to go${p.left ? `, ${fmtHours(A.weeklyMinutes(g, p) / 60)} a week to finish` : ""}`)}</div>`;
+  }
+
+  // An open goal: its title (its pop-up) and hours with its progress, where it leads, the next step, and when it
+  // was last reconciled.
   function seasonGoalHTML(g, today) {
-    const chain = A.chainOf(g), hours = A.hoursText(g);
+    const chain = A.chainOf(g), p = g.hoursWeek || g.hoursTotal ? A.progressOf(g) : null;
+    const hours = p && g.hoursTotal ? `${fmtHours(g.hoursTotal)} in total` : A.hoursText(g); // the progress says what a week
     return `<li class="goal" data-id="${esc(g.id)}"><div class="goal-head">${titleBtn("edit", g.id, g.title)}` +
-      (hours ? `<span class="goal-hours">${esc(hours)}</span>` : "") + `</div>` +
+      (hours ? `<span class="goal-hours">${esc(hours)}</span>` : "") + `</div>` + progressHTML(g, p) +
       (chain ? `<div class="goal-chain">${esc(chain)}</div>` : "") +
       `<div class="goal-next${g.next ? "" : " none"}">${g.next ? `Next: ${esc(g.next)}` : "No next step yet"}</div>` +
       `<div class="goal-rec${A.isStale(g, today) ? " stale" : ""}"><span>${g.reconciled ? `Reconciled ${A.ago(g.reconciled, today)}` : "Not reconciled yet"}</span>` +
@@ -97,8 +114,13 @@
       .map(p => `<div class="period"><h3>${esc(A.isSeason(p) ? seasonLabel(p) : `${p} (year goals)`)}</h3><ul class="goals">${A.goalsIn(p).map(g => pastHTML(g, titles)).join("")}</ul></div>`).join("");
   }
 
+  // Momo's hours for this season's open goals with hours (those that show progress), to notice a close-out
+  // changing them (events.js).
+  const progressKey = () => JSON.stringify(A.goalsIn(A.currentSeason()).filter(g => isOpen(g) && (g.hoursWeek || g.hoursTotal)).map(A.progressOf));
+
   function renderAll() {
     const today = S.knownToday = todayStr();
+    S.progressKey = progressKey();
     renderSeason(today);
     renderYear();
     renderVision();
@@ -117,5 +139,5 @@
     row.classList.add("flash");
   }
 
-  Object.assign(A, { renderAll, reveal });
+  Object.assign(A, { progressKey, renderAll, reveal });
 })(Kyoshi, Kyoshi.apps.iroh);

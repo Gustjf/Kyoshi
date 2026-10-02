@@ -3,8 +3,8 @@
  * and on the board on a computer; the Week and Today buttons switch at any time (S.today). Its times are
  * the board's (times.js): a card with cards inside it shows in its parts around them, and other apps'
  * events (agenda.js) sit at their times, with free time split around them. Tapping a card shows its
- * pop-up (#detailOverlay): when, its goal, and what fills it (inbox.js fromHTML) with "Open in <App>",
- * and a way to edit it; tapping an event opens its own (triage.js). Nothing here is stored. */
+ * pop-up (#detailOverlay): when, and what fills it (inbox.js fromHTML) with "Open in <App>", and a
+ * way to edit it; tapping an event opens its own (triage.js). Nothing here is stored. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -60,7 +60,7 @@
   // What an item is: its colour, title (after a card's apps' icons, or an event's app's), the line under
   // it (what fills a card, an event's note), whether it's done, its words for a tooltip, what tapping it
   // opens (none for free time, or an event that's done or on a closed week), and its classes (cls: free
-  // time, an event, one in conflict, a goal's card, done).
+  // time, an event, one in conflict, done).
   function about(day, it) {
     if (it.free) return { color: A.colorCss("slate"), title: "Free", sub: "", done: false, label: `Free, ${span(it)}`, tap: "", cls: " t-free" };
     const when = it.s === null ? "any time" : span(it);
@@ -75,7 +75,7 @@
     const c = it.card, needs = fillsOf(day.key, c), fill = needs.length ? A.fillParts(c, needs) : null, done = !!fill && fill.done;
     return {
       color: A.cardColor(c), title: `${fill ? fill.icons : ""}${esc(c.title)}`, sub: fill ? esc(fill.names) : "", done,
-      label: `${c.title}${fill ? ` (${fill.text})` : ""}, ${when}`, tap: `data-week="${day.key}" data-card="${esc(c.id)}"`, cls: `${A.goalById(c.goalId) ? " is-goal" : ""}${done ? " done" : ""}`
+      label: `${c.title}${fill ? ` (${fill.text})` : ""}, ${when}`, tap: `data-week="${day.key}" data-card="${esc(c.id)}"`, cls: done ? " done" : ""
     };
   }
   const tagOpen = (a, cls) => `${a.tap ? `button type="button" ${a.tap} aria-label="${esc(a.label)}"` : "div"} class="${cls}${a.cls}" title="${esc(a.label)}" style="--c:${a.color}"`;
@@ -173,22 +173,22 @@
     K.modal.close(overlay());
   }
 
-  // A card's day and times (a block's, with the cards inside it), its goal, and what fills it, with
-  // "Open in <App>"; Edit opens it in the card editor (not on a closed week).
+  // A card's day and times (a block's, with the cards inside it), and what fills it, with "Open in
+  // <App>"; Edit opens it in the card editor (not on a closed week).
   function openDetail(key, id) {
     const list = A.readList(key), card = list.cards.find(c => c.id === id);
     const parent = card && card.parentId ? list.cards.find(c => c.id === card.parentId) : null;
     const rows = card && card.day !== null ? A.daySchedule(list, card.day).rows : [], row = rows.find(r => r.card === (parent || card));
     if (!row) return A.renderAll(); // gone meanwhile: changed in another tab, say
     const at = parent ? A.startTimes(list, rows).get(card.id).at : row.start, end = parent ? at + card.hours : row.end;
-    const inner = A.innerCards(list, card), needs = fillsOf(key, card), g = A.goalById(card.goalId);
+    const inner = A.innerCards(list, card), needs = fillsOf(key, card);
     const date = addDays(key, card.day), today = todayStr();
     const day = date === today ? "Today" : date === addDays(today, 1) ? "Tomorrow" : DAY_LONG[card.day];
     S.detail = { key, id };
     $("detailDot").style.setProperty("--c", A.cardColor(card));
     $("detailTitle").textContent = card.title;
     $("detailWhen").textContent = `${day}, ${fmtClock(at)}–${fmtClock(end)} · ${fmtLong(end - at)}` +
-      (inner.length ? `, with ${A.names(inner)} inside` : parent ? `, inside ${parent.title}` : "") + (g ? ` · Goal: ${g.name}` : "");
+      (inner.length ? `, with ${A.names(inner)} inside` : parent ? `, inside ${parent.title}` : "");
     $("detailFrom").hidden = !needs.length;
     $("detailFrom").innerHTML = A.fromHTML(needs);
     $("detailEditBtn").hidden = !!list.closed;

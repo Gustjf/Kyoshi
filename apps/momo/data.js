@@ -123,13 +123,27 @@
     });
     return Object.keys(out).length ? out : null;
   }
+  // The hours a closed week's close-out logged by title (see model.js): each title once, any case (the
+  // first spelling kept), on the 15-minute grid, at most the week's 168 hours. Kept even when empty: the
+  // week was reviewed and nothing was done.
+  function cleanSpent(raw) {
+    const out = {}, spelt = new Map();
+    Object.keys(raw).forEach(k => {
+      const title = cleanText(k), h = isPos(raw[k]) ? snap(raw[k]) : 0, low = title.toLowerCase();
+      if (!title || h <= 0) return;
+      if (!spelt.has(low)) spelt.set(low, title);
+      const t = spelt.get(low);
+      out[t] = Math.min(7 * DAY_HOURS, (out[t] || 0) + h);
+    });
+    return out;
+  }
   function normalizeData(raw) {
     const out = A.emptyData();
     if (!isObj(raw)) return out;
     if (isObj(raw.weeks)) {
       Object.keys(raw.weeks).sort().forEach(k => {
-        const w = raw.weeks[k], events = isObj(w) && cleanEvents(w.events);
-        if (isWeekKey(k) && isObj(w)) out.weeks[k] = { cards: cleanCards(w.cards, true), closed: w.closed === true, u: cleanU(w.u), ...(events ? { events } : {}) };
+        const w = raw.weeks[k], events = isObj(w) && cleanEvents(w.events), spent = isObj(w) && w.closed === true && isObj(w.spent) && cleanSpent(w.spent);
+        if (isWeekKey(k) && isObj(w)) out.weeks[k] = { cards: cleanCards(w.cards, true), closed: w.closed === true, u: cleanU(w.u), ...(events ? { events } : {}), ...(spent ? { spent } : {}) };
       });
     }
     if (isObj(raw.baseline)) out.baseline = { cards: cleanCards(raw.baseline.cards, false), u: cleanU(raw.baseline.u) };
@@ -224,13 +238,13 @@
   // it first so a bad file never changes anything, and asking first (unless ask is
   // false: Import all already did) if there's data to lose. True once it's in.
   function importBackup(raw, ask = true) {
-    if (!isMomoData(raw)) return alert("That file doesn't look like a Momo backup: no weeks, baseline or goals found.");
+    if (!isMomoData(raw)) return alert("That file doesn't look like a Momo backup: no weeks or baseline found.");
     const clean = normalizeData(raw);
     if (!A.hasData(clean)) return alert("That backup has nothing in it Momo can use.");
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !confirm("Replace everything in Momo — weeks, baseline and goals — with this backup? This can't be undone.")) return;
+    if (ask && A.hasData(S.data) && !confirm("Replace everything in Momo — your weeks and baseline — with this backup? This can't be undone.")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];

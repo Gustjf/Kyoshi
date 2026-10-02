@@ -7,11 +7,10 @@
   const { isNum, addDays, newId } = K.util;
   const { DAY_HOURS, DAYS, FREE_TIME, SAMPLE_BASELINE, fmtWeek } = A;
 
-  // Copies of cards with new ids, each inside the copy of the card it was
-  // inside. Goal cards keep their goal only if it still exists.
+  // Copies of cards with new ids, each inside the copy of the card it was inside.
   function copyCards(cards, fields = {}) {
     const ids = new Map(cards.map(c => [c.id, newId()]));
-    return cards.map(c => ({ ...c, id: ids.get(c.id), parentId: ids.get(c.parentId) || null, goalId: A.goalById(c.goalId) ? c.goalId : null, ...fields }));
+    return cards.map(c => ({ ...c, id: ids.get(c.id), parentId: ids.get(c.parentId) || null, ...fields }));
   }
 
   // Auto-funding: the baseline's cards go into each day, pinned ones at their
@@ -40,7 +39,7 @@
   }
 
   // Copies the week before's plan into the week on screen, replacing what's
-  // there (after asking). Goal cards keep their goal only if it still exists.
+  // there (after asking).
   function copyPrevWeek() {
     const key = A.viewKey();
     if (!key) return;

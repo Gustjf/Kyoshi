@@ -1,17 +1,22 @@
 /* Momo · model.js — the data model (A.S.data) and the rules for moving cards around in it:
- * weeks, the baseline, goals, budgets, and how cards merge, nest, and move between days.
+ * weeks, the baseline, budgets, and how cards merge, nest, and move between days.
  * Pure data — nothing here draws or saves (render.js draws, data.js saves).
  *
- * weeks:    { "YYYY-MM-DD" (Monday): { cards, closed, u, events } }
+ * weeks:    { "YYYY-MM-DD" (Monday): { cards, closed, u, events, spent } }
  * events:   { "app:id": { at } } — only while you've moved any of other apps' events that
  *           week (see agenda.js): the time on its own day you moved it to, in hours after
  *           midnight on the 15-minute grid. The events themselves aren't stored.
+ * spent:    { "title as typed": hours } — a closed week's close-out (closeout.js): where its
+ *           hours went, by title (any case once), on the 15-minute grid; {} when none was
+ *           done; none on a week closed before the close-out logged hours. Iroh reads it
+ *           (hoursSpent). Reopening the week takes it off.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
- *           — a total to reach (target, maybe by a due date), or instead hours
- *           a week (perWeek, with no target or due date), judged week by week
- * colors:   { key: { c, u } } — each title's and goal's colour (see colors.js)
+ *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
+ *           in backups and sync too, but nothing reads them any more
+ * colors:   { key: { c, u } } — each title's colour (see colors.js)
  * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin }
+ *           — goalId: the old goal it was for, kept as it was; nothing sets one any more
  * A day's cards show in the order they're listed, which sets their times
  * (see times.js). `u` is when that week, baseline, goal or colour last
  * changed, which is how sync combines two devices' edits.
@@ -24,8 +29,8 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { sum, daysBetween } = K.util;
-  const { DAY_HOURS, DAYS, STEP, AUTO, thisWeekKey, nextWeekKey, weekKeyOf, firstDay } = A;
+  const { sum } = K.util;
+  const { DAY_HOURS, DAYS, AUTO, thisWeekKey, nextWeekKey, firstDay } = A;
 
   function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {} }; }
   const blankWeek = () => ({ cards: [], closed: false, u: 0 });
@@ -39,23 +44,11 @@
   const isLocked = () => S.view !== "base" && shownList().closed;
   const hasData = d => d.goals.length > 0 || d.baseline.cards.length > 0 || Object.values(d.weeks).some(w => w.cards.length > 0);
 
-  // Goals. Hours done = what it started with plus every closed-out week's hours.
-  // One in hours a week has no total, so it's never reached.
-  const liveGoals = () => S.data.goals.filter(g => !g.deleted);
-  const goalById = id => (id && S.data.goals.find(g => g.id === id && !g.deleted)) || null;
-  const isWeekly = g => g.perWeek > 0;
-  const goalDone = g => Math.max(0, g.start + sum(Object.values(g.log)));
-  const isReached = g => !isWeekly(g) && goalDone(g) >= g.target;
-  // Weeks from the given week to a goal's finish-by week, both included.
-  const weeksLeft = (g, key) => Math.floor(daysBetween(key, weekKeyOf(g.due)) / 7) + 1;
-
   const pinned = c => typeof c.pin === "number";
   const dayTotal = (list, d) => sum(list.cards.filter(c => c.day === d).map(c => c.hours));
   // The cards inside a card, and the hours of the whole block.
   const innerCards = (list, card) => list.cards.filter(c => c.parentId === card.id);
   const blockHours = (list, card) => card.hours + sum(innerCards(list, card).map(c => c.hours));
-  // Goal hours scheduled on a board's days (parked cards aren't scheduled).
-  const plannedFor = (list, goalId) => sum(list.cards.filter(c => c.goalId === goalId && c.day !== null).map(c => c.hours));
 
   // A board's budget. Each day is its own account: one day's free hours can't
   // cover another day's overbooking, so both are counted per day. This week
@@ -74,23 +67,13 @@
     };
   }
 
-  // Hours a week a goal needs from the given week on to finish by its date:
-  // what's left after closed-out work and earlier open weeks' plans, spread over
-  // the weeks remaining. null when it has no date.
-  function weeklyNeed(g, key) {
-    if (!g.due) return null;
-    const earlier = sum(Object.keys(S.data.weeks).filter(k => k < key && !S.data.weeks[k].closed).map(k => plannedFor(S.data.weeks[k], g.id)));
-    const left = Math.max(0, g.target - goalDone(g) - earlier);
-    return Math.ceil(left / Math.max(1, weeksLeft(g, key)) / STEP) * STEP;
-  }
-
   // Cards are consolidated: one block per activity at a time. A card dropped
-  // or created right next to a matching card (same title and goal) on its own
+  // or created right next to a matching card (same title, any case) on its own
   // — just above or below it — or at the same position inside the same card
   // folds into it, unless that would make a card longer than a day. Apart
   // they stay apart (Sleep at both ends of a day), as do pinned and parked
   // cards. The spot on its own is before the card beforeId, else at the end.
-  const sameKind = (a, b) => a.title.toLowerCase() === b.title.toLowerCase() && (a.goalId || null) === (b.goalId || null);
+  const sameKind = (a, b) => a.title.toLowerCase() === b.title.toLowerCase();
   const inPlace = (c, day, parentId, pos) => c.day === day && c.parentId === parentId && (!parentId || c.pos === pos);
   function mergeTarget(list, card, day, parentId = null, pos = "bottom", beforeId = null) {
     if (day === null || pinned(card)) return null;
@@ -187,8 +170,7 @@
 
   Object.assign(A, {
     emptyData, blankWeek, weekOf, ensureWeek, viewKey, shownKey, readList, listFor, shownList, isLocked, hasData,
-    liveGoals, goalById, isWeekly, goalDone, isReached, weeksLeft,
-    pinned, dayTotal, innerCards, blockHours, plannedFor, budgetOf, weeklyNeed,
+    pinned, dayTotal, innerCards, blockHours, budgetOf,
     sameKind, inPlace, mergeTarget, neighbours, absorb, canHold, tidyNesting, insertCard, moveCard, settle
   });
 })(Kyoshi, Kyoshi.apps.momo);

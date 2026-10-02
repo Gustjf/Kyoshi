@@ -12,7 +12,7 @@ Kyoshi.apps.iroh.markup = `
     <div class="period-meta" id="seasonMeta"></div>
     <div id="seasonEmpty" class="empty-msg"></div>
     <ul class="goals" id="seasonGoals"></ul>
-    <div class="footnote">Give a goal hours a week, or in total, and Momo fills your cards titled like it with them; what doesn't fit waits in its Tasks. Reconcile each goal at least once a month: is it on track, and what's the next step?</div>
+    <div class="footnote">Give a goal hours a week, or in total, and Momo fills your cards titled like it with them; what doesn't fit waits in its Tasks, and Momo's weekly close-out logs the hours they got. Reconcile each goal at least once a month: is it on track, and what's the next step?</div>
   </section>
 
   <section>

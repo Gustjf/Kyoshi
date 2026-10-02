@@ -1,6 +1,6 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Goals · Today · Pop-up fields · Phones */
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Pop-up fields · Phones */
 
 /* --- Tokens --- */
 /* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
@@ -40,8 +40,8 @@
 .app-momo .tasks-cards { display: contents; }
 .app-momo .tasks-empty { font-size: .8em; color: var(--muted); }
 .app-momo .tasks-add { margin-left: auto; }
-/* A task to draw from (what other apps need, or a goal) is the outline of a card: dragging it adds
-   a card of its own. A goal's, or something ongoing like Wan Shi Tong's in progress, stays for next time. */
+/* A task to draw from (what other apps need) is the outline of a card: dragging it adds a card of
+   its own. Something ongoing, like Wan Shi Tong's in progress, stays for next time. */
 .app-momo .card.task { border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
 .app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
 /* From other apps: their icon, and what's short of a block its time; red-edged once overdue. */
@@ -91,7 +91,6 @@
 .app-momo .col-body > .card.clashing { margin-left: 25%; box-shadow: 0 1px 5px rgba(0, 0, 0, .3); }
 .app-momo .card-title { flex: 1 0 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .app-momo .card-hours { flex: 0 0 auto; color: var(--muted); font-size: .92em; font-variant-numeric: tabular-nums; }
-.app-momo .card.is-goal > .card-title::before, .app-momo .card.is-goal > .card-own > .card-title::before { content: ""; display: inline-block; box-sizing: border-box; width: 8px; height: 8px; margin: -2px 5px 0 0; border: 2px solid var(--c); border-radius: 50%; vertical-align: middle; }
 /* When a card starts, on the 24-hour clock (red when the cards above run
    into it, or past midnight), then its pin: filled in the card's colour
    while pinned, otherwise only there on hover. A pinned card stays put. */
@@ -180,39 +179,6 @@ body.is-dragging, body.is-resizing { user-select: none; -webkit-user-select: non
 /* While a card is dragged or resized, events let the pointer through to the day under them. */
 body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-events: none; }
 
-/* --- Goals --- */
-.app-momo .goal { padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
-.app-momo .goal:first-child { border-top: none; padding-top: 2px; }
-.app-momo .goal:hover .goal-name, .app-momo .goal:focus-visible .goal-name { color: var(--accent); }
-.app-momo .goal:focus-visible { outline: none; }
-.app-momo .goal-top { display: flex; align-items: center; gap: 8px; }
-.app-momo .goal-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
-.app-momo .goal-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-momo .goal-nums { font-size: .85em; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.app-momo .goal-bar { display: flex; height: 6px; margin: 7px 0 6px 18px; border-radius: 3px; background: var(--border); overflow: hidden; }
-.app-momo .goal-bar .done { background: var(--c); }
-.app-momo .goal-bar .planned { background: color-mix(in srgb, var(--c) 40%, transparent); }
-/* A goal in hours a week: its bar is the week's hours toward them, green once
-   there, yellow while short with enough hours left to budget, red without. */
-.app-momo .goal-bar.weekly { --s: var(--good); background: color-mix(in srgb, var(--s) 25%, var(--border)); }
-.app-momo .goal-bar.weekly.under { --s: var(--warn); }
-.app-momo .goal-bar.weekly.over { --s: var(--bad); }
-.app-momo .goal-bar.weekly .done { background: var(--s); }
-.app-momo .goal-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; margin-left: 18px; }
-.app-momo .goal-meta { font-size: .8em; color: var(--muted); }
-/* A goal this plan can't meet: it needs more than its most hours a week to
-   stay on time, or the week is short of its hours a week with too few left. */
-.app-momo .goal.off-track { margin: 0 -8px; padding: 9px 8px; border-radius: 6px; background: var(--bad-bg); border-top-color: transparent; }
-.app-momo .goal.off-track + .goal { border-top-color: transparent; }
-.app-momo .goal.off-track .goal-name, .app-momo .goal.off-track .goal-nums, .app-momo .goal.off-track .goal-meta { color: var(--bad); }
-.app-momo .goal.off-track .goal-meta { font-weight: 600; }
-.app-momo .badge { font-size: .75em; white-space: nowrap; }
-/* Pills on a fixed light background keep their dark text in both themes. */
-.app-momo .badge.funded, .app-momo .badge.reached { background: #dcfce7; color: #16a34a; }
-.app-momo .badge.under { background: #fef3c7; color: #92400e; }
-.app-momo .badge.over { background: var(--bad); color: #fff; }
-.app-momo .badge.plain { background: var(--border); color: var(--muted); }
-
 /* --- Today (today.js) --- */
 /* The phone's view, big and in one column (centred on a wide screen). Now is a panel in its card's
    colour: its title large, the time left, and a bar of how much of it has gone. Then rows, as cards
@@ -257,12 +223,11 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .t-title > .app-icon { display: inline-flex; margin-right: 6px; vertical-align: -2px; }
 .app-momo .t-title > .app-icon svg { width: 15px; height: 15px; }
 .app-momo .t-big .t-title > .app-icon svg { width: 20px; height: 20px; }
-.app-momo .is-goal .t-title::before { content: ""; display: inline-block; box-sizing: border-box; width: 10px; height: 10px; margin: -2px 6px 0 0; border: 2px solid var(--c); border-radius: 50%; vertical-align: middle; }
 .app-momo .t-empty p { margin: 0 0 12px; font-size: 1.1em; }
 /* A card's pop-up on Today: a dot in its colour by its title. */
 .app-momo .detail-dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
 
-/* --- Pop-up fields: steppers, day pills, presets, dates, colours, close-out rows --- */
+/* --- Pop-up fields: steppers, day pills, presets, colours, close-out rows --- */
 .app-momo .stepper { display: flex; }
 .app-momo .stepper input { min-width: 0; text-align: center; border-radius: 0; }
 .app-momo .step-btn { flex: 0 0 34px; padding: 0; border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font-size: 1.1em; line-height: 1; }
@@ -276,27 +241,18 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .field-head { display: flex; align-items: center; justify-content: space-between; gap: 4px 10px; flex-wrap: wrap; margin-bottom: 5px; }
 .app-momo .field-head label { margin: 0; }
 .app-momo .presets { display: flex; gap: 5px; margin-left: auto; }
-.app-momo .presets button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.app-momo .presets button.active:hover { background: var(--accent-dark); }
-.app-momo .date-parts { display: flex; gap: 8px; }
-.app-momo .date-parts > * { min-width: 0; }
-.app-momo .date-parts select { flex: 2 1 0; }
-.app-momo .date-parts input { flex: 1 1 0; }
-.app-momo .date-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
-.app-momo .date-note { font-size: .8em; color: var(--muted); }
-.app-momo .date-note.bad { color: var(--bad); }
 .app-momo .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .app-momo .swatch { width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 2px solid var(--panel); background: var(--c); box-shadow: 0 0 0 1px var(--border); transition: transform .1s; }
 .app-momo .swatch:hover { background: var(--c); transform: scale(1.12); }
 .app-momo .swatch.active { box-shadow: 0 0 0 2px var(--text); }
 .app-momo .swatch.own { margin-right: 6px; } /* its colour now, when that isn't a highlight */
 .app-momo .co-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--border); }
-.app-momo .co-name { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.app-momo .co-name { display: flex; align-items: center; gap: 7px; font-weight: 600; overflow-wrap: anywhere; }
+.app-momo .co-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
 .app-momo .co-detail { margin-top: 3px; font-size: .8em; color: var(--muted); }
 .app-momo .co-done label { margin-bottom: 2px; font-size: .75em; }
 .app-momo .co-done .stepper { width: 128px; }
-.app-momo .co-result { grid-column: 1 / -1; font-size: .82em; color: var(--muted); }
-.app-momo .co-result strong { color: var(--text); }
+.app-momo .co-sum { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: .82em; color: var(--muted); }
 /* An event's pop-up (triage.js): its app's icon by its name; a conflict in red with its one quick fix
    under it (or why there's none); without a conflict, the time's − / + move it 15 minutes. */
 .app-momo .event-head { display: flex; align-items: center; gap: 8px; }

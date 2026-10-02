@@ -1,6 +1,5 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
- * with Tasks, the board, long-term goals) or Today's, and its pop-ups (card editor, goal editor, an event,
- * a card on Today, close-out).
+ * with Tasks, the board) or Today's, and its pop-ups (card editor, an event, a card on Today, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -53,7 +52,7 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="clearBtn">Clear week</button>
       </div>
     </div>
-    <!-- Tasks: what other apps need that no block covers, each goal, what's ongoing in other apps, then cards without a day (tasks.js). -->
+    <!-- Tasks: what other apps need that no block covers, what's ongoing in other apps, then cards without a day (tasks.js). -->
     <div class="tasks" id="tasks">
       <span class="tasks-label">Tasks</span>
       <span class="tasks-total" id="tasksTotal"></span>
@@ -65,15 +64,6 @@ Kyoshi.apps.momo.markup = `
   <div class="board-wrap" id="boardWrap">
     <div class="board" id="board"></div>
   </div>
-
-  <section id="goalsSection">
-    <div class="section-header">
-      <h2>Long-term goals</h2>
-      <button class="secondary small" id="newGoalBtn">+ New goal</button>
-    </div>
-    <div id="goalsEmpty" class="empty-msg">No goals yet. Add a long-term project &mdash; a novel, a language, a certification &mdash; and fund it a few hours every week.</div>
-    <div id="goalsList"></div>
-  </section>
   </div>
 
   <section data-kyoshi="backup"></section>
@@ -91,20 +81,14 @@ Kyoshi.apps.momo.markup = `
         <input type="text" id="cardTitle" maxlength="40" list="titleSuggestions" placeholder="e.g. Gym" autocomplete="off">
         <datalist id="titleSuggestions"></datalist>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="cardHours">Hours</label>
-          <div class="stepper">
-            <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
-            <input type="number" id="cardHours" step="0.25" min="0.25" max="24">
-            <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
-          </div>
-          <div class="note" id="cardInnerNote" hidden></div>
+      <div class="field">
+        <label for="cardHours">Hours</label>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
+          <input type="number" id="cardHours" step="0.25" min="0.25" max="24">
+          <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
         </div>
-        <div class="field" id="cardGoalField">
-          <label for="cardGoal">Goal</label>
-          <select id="cardGoal"></select>
-        </div>
+        <div class="note" id="cardInnerNote" hidden></div>
       </div>
       <div class="field">
         <div class="field-head">
@@ -150,72 +134,6 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <div class="overlay" id="goalOverlay">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">
-      <button class="modal-close" aria-label="Close">&times;</button>
-      <h3 id="goalModalTitle">New goal</h3>
-      <div class="field">
-        <label for="goalName">Goal</label>
-        <input type="text" id="goalName" maxlength="40" placeholder="e.g. Write the novel" autocomplete="off">
-      </div>
-      <div class="field mode-toggle" id="goalKind" role="group" aria-label="Measure the goal in">
-        <button type="button" class="mode-btn" data-kind="total">Total hours</button>
-        <button type="button" class="mode-btn" data-kind="weekly">Hours a week</button>
-      </div>
-      <div class="field-row">
-        <div class="field" id="goalTargetField">
-          <label for="goalTarget">Total hours</label>
-          <input type="number" id="goalTarget" min="0.25" max="100000" step="0.25" placeholder="e.g. 500">
-        </div>
-        <div class="field" id="goalPerWeekField" hidden>
-          <label for="goalPerWeek">Hours a week</label>
-          <input type="number" id="goalPerWeek" min="0.25" max="168" step="0.25" placeholder="e.g. 5">
-        </div>
-        <div class="field">
-          <label for="goalDone">Done so far</label>
-          <input type="number" id="goalDone" min="0" max="100000" step="0.25" placeholder="0">
-        </div>
-      </div>
-      <p class="modal-hint" id="goalWeeklyNote" hidden>Each week it turns green once the week has these hours, yellow while it's short but enough hours are left to budget, and red when too few are.</p>
-      <div class="field" id="goalDueField">
-        <div class="field-head">
-          <label for="goalDueMonth">Finish by (optional)</label>
-          <span class="presets" id="goalSeasons">
-            <button type="button" class="secondary small" data-season="0">Spring</button>
-            <button type="button" class="secondary small" data-season="1">Summer</button>
-            <button type="button" class="secondary small" data-season="2">Fall</button>
-            <button type="button" class="secondary small" data-season="3">Winter</button>
-          </span>
-        </div>
-        <div class="date-parts">
-          <select id="goalDueMonth" aria-label="Month"></select>
-          <input type="number" id="goalDueDay" min="1" max="31" step="1" inputmode="numeric" placeholder="Day" aria-label="Day">
-          <input type="number" id="goalDueYear" min="2000" max="2999" step="1" inputmode="numeric" placeholder="Year" aria-label="Year">
-        </div>
-        <div class="date-foot" id="goalDueFoot">
-          <span class="date-note" id="goalDueNote"></span>
-          <button type="button" class="secondary small" id="goalDueClearBtn">Clear</button>
-        </div>
-      </div>
-      <div class="field" id="goalMaxField">
-        <label for="goalMax">Most hours a week</label>
-        <input type="number" id="goalMax" min="0.25" max="168" step="0.25" placeholder="10">
-        <div class="note">The goal turns red when finishing by its date would take more than this.</div>
-      </div>
-      <div class="field">
-        <label>Colour</label>
-        <div class="swatches" id="goalColors"></div>
-        <div class="note" id="goalColorNote"></div>
-      </div>
-      <div class="modal-actions">
-        <button id="goalSaveBtn">Save</button>
-        <button class="secondary" id="goalCancelBtn">Cancel</button>
-        <span class="spacer"></span>
-        <button class="danger" id="goalDeleteBtn">Delete</button>
-      </div>
-    </div>
-  </div>
-
   <!-- An event from another app (triage.js): what it conflicts with and its quick fix, or (without a conflict) a time near its own to move it to. -->
   <div class="overlay" id="eventOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
@@ -244,7 +162,7 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <!-- A card tapped on Today (today.js): when, its goal, and what fills it with "Open in <App>". -->
+  <!-- A card tapped on Today (today.js): when, and what fills it with "Open in <App>". -->
   <div class="overlay" id="detailOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
@@ -262,8 +180,9 @@ Kyoshi.apps.momo.markup = `
   <div class="overlay" id="closeOutOverlay">
     <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="closeOutTitle">
       <h3 id="closeOutTitle">Close out the week</h3>
-      <p class="modal-hint">Hours done toward each goal. Lower any that fell short.</p>
+      <p class="modal-hint">Where the week's hours went, as planned. Lower any that fell short.</p>
       <div id="closeOutRows"></div>
+      <p class="co-sum" id="closeOutSum"></p>
       <div class="modal-actions">
         <button id="closeOutConfirmBtn">Close out week</button>
         <button class="secondary" id="closeOutLaterBtn">Later</button>

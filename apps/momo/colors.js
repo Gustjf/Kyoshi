@@ -1,15 +1,16 @@
-/* Momo · colors.js — card and goal colours.
+/* Momo · colors.js — card colours.
  * Every card with the same title is the same colour, wherever it is, and no
- * two titles share one; a goal's cards (and any card called its name) are
- * the goal's colour instead. So colours belong to keys — "t:" and a title
- * in lower case, or "g:" and a goal's id — in data.colors as { c, u }: c is
- * a PALETTE name, or "x0", "x1"… for colours made up once the whole palette
- * is on show. Free time is slate unless it's given a colour.
- * A key on show (on the baseline, this week or next, or a goal) without a
- * colour gets the highlight least like the colours on show, else the least
- * like them of the rest. A title off the boards keeps its colour for
- * COLOR_WEEKS after it was last used, unless one on show needs it, so it's
- * the same colour when it's back. Picking a colour another key has swaps them. */
+ * two titles share one. So colours belong to keys — "t:" and a title in lower
+ * case — in data.colors as { c, u }: c is a PALETTE name, or "x0", "x1"… for
+ * colours made up once the whole palette is on show. A title that's the name
+ * of one of Momo's old goals (from before goals moved to Iroh) keeps that
+ * goal's key instead, "g:" and its id, so its cards keep the colour they had.
+ * Free time is slate unless it's given a colour.
+ * A key on show (on the baseline, this week or next) without a colour gets
+ * the highlight least like the colours on show, else the least like them of
+ * the rest. A title off the boards keeps its colour for COLOR_WEEKS after it
+ * was last used, unless one on show needs it, so it's the same colour when
+ * it's back. Picking a colour another key has swaps them. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -19,13 +20,13 @@
   const PALETTE_HEX = new Map(PALETTE);
   const FREE_KEY = `t:${FREE_TIME.toLowerCase()}`;
   const goalKey = id => `g:${id}`;
-  // A title's key; a goal's name is that goal's, so a card called that is its colour too.
+  // A title's key; an old goal's name is that goal's, so a card called that keeps its colour.
   function titleKey(title, d = S.data) {
     const t = title.trim().toLowerCase(), g = d.goals.find(x => !x.deleted && x.name.toLowerCase() === t);
     return g ? goalKey(g.id) : `t:${t}`;
   }
-  // A card's key: its goal's while it has one, else its title's.
-  const cardKey = (c, d = S.data) => (c.goalId && d.goals.some(g => g.id === c.goalId && !g.deleted) ? goalKey(c.goalId) : titleKey(c.title, d));
+  // A card's key: its title's (an old goal's card too).
+  const cardKey = (c, d = S.data) => titleKey(c.title, d);
   const isColor = c => PALETTE_HEX.has(c) || /^x\d{1,4}$/.test(c);
   // Made-up colours, in OKLCH: hues a golden angle apart, at two lightnesses.
   const extraLch = i => [i % 2 ? 0.74 : 0.64, 0.1, (i * 137.508 + 10) % 360];
@@ -63,13 +64,12 @@
   const colorGap = (a, b) => { const p = colorLab(a), q = colorLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
 
   // The keys on show — the baseline's, this week's and next week's cards,
-  // every goal, then the titles of other apps' events this week and next
-  // (agenda.js; they look like cards) — and those used lately: on show, or
-  // in any week from COLOR_WEEKS back on.
+  // then the titles of other apps' events this week and next (agenda.js;
+  // they look like cards) — and those used lately: on show, or in any week
+  // from COLOR_WEEKS back on.
   function colorKeys(d) {
     const tk = thisWeekKey(), from = addDays(tk, -7 * COLOR_WEEKS), shown = new Set(), lately = new Set();
     [d.baseline, d.weeks[tk], d.weeks[nextWeekKey()]].forEach(list => { if (list) list.cards.forEach(c => shown.add(cardKey(c, d))); });
-    d.goals.forEach(g => { if (!g.deleted) shown.add(goalKey(g.id)); });
     K.agenda(tk, addDays(tk, 13)).forEach(e => shown.add(titleKey(e.title, d)));
     Object.keys(d.weeks).forEach(k => { if (k >= from) d.weeks[k].cards.forEach(c => lately.add(cardKey(c, d))); });
     shown.forEach(k => lately.add(k));
@@ -131,11 +131,12 @@
   const cardsOnShow = () => [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].flatMap(list => list.cards);
   const keyOnShow = (key, skip = null) => cardsOnShow().some(c => c !== skip && cardKey(c) === key);
 
-  // A key as it's known: its goal's name, or its title as a card or event on show has it.
+  // A key as it's known: its title as a card or event on show has it, else an old goal's name or the key's title.
   function keyName(key) {
-    if (key.startsWith("g:")) { const g = A.goalById(key.slice(2)); return g ? g.name : ""; }
     const tk = thisWeekKey(), c = cardsOnShow().find(x => cardKey(x) === key) || K.agenda(tk, addDays(tk, 13)).find(e => titleKey(e.title) === key);
-    return c ? c.title : key.slice(2);
+    if (c) return c.title;
+    const g = key.startsWith("g:") && S.data.goals.find(x => x.id === key.slice(2));
+    return g ? g.name : key.slice(2);
   }
 
   Object.assign(A, {

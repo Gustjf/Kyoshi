@@ -4,9 +4,9 @@ A quiet home for small, private apps that run entirely in your browser — curre
 tracker with projections), **Momo** (weekly time budget), **Wan Shi Tong** (media recommendations:
 what's in progress, what's up next, and the rest), **Appa** (preventive maintenance and records,
 with PDF reports), **Hawky** (errands, jotted down in seconds on the phone) and **Iroh** (goals: a vision
-for each area of your life, this year's goals and this season's, whose hours Momo makes time for). You only see the app
-you're using; switch apps from the icon button beside **Theme**. No accounts, no servers, no CDN:
-plain HTML, CSS and JavaScript, built to keep working for years.
+for each area of your life, this year's goals and this season's, whose hours Momo makes time for and logs
+at its weekly close-out). You only see the app you're using; switch apps from the icon button beside
+**Theme**. No accounts, no servers, no CDN: plain HTML, CSS and JavaScript, built to keep working for years.
 
 - **Open it:** the GitHub Pages link, or `index.html` straight from a download of this repo.
 - **Your data:** stays in this browser, in its large storage (IndexedDB). Each app has Export/Import JSON
