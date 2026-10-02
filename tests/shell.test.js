@@ -43,7 +43,7 @@ module.exports = [
       // Where the app's name, the switcher and Theme start, in whole pixels.
       const where = () => p.evaluate(() => ["kAppName", "kSwitchBtn", "kThemeToggle"].map(id => Math.round(document.getElementById(id).getBoundingClientRect().left)));
       const momo = await where();
-      for (const id of ["hawky", "badgermole", "turtleduck"]) {
+      for (const id of ["hawky", "badgermole", "turtleduck", "pabu"]) {
         await switchTo(tab, id);
         eq(await where(), momo, `${id}'s header sits where Momo's does`);
       }

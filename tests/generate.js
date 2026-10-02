@@ -1,8 +1,9 @@
 /* Kyoshi · tests/generate.js — made-up user data for the end-to-end tests (never real data: the repo is public), from a
  * seeded random generator, so every run gets the same: Badgermole histories (weeks of sessions in a rotation, weights
  * creeping up, bodyweight exercises, either unit, deleted markers), a damaged backup, other apps' backups (to be
- * refused), an Appa job (for its timer), Turtleduck's recipes with a plan and shopping trips (and a damaged one), and
- * Momo weeks with "Workout", meal, "Cooking" and "Groceries" cards. Dates count back from the tests' TODAY (lib.js). */
+ * refused), an Appa job (for its timer), Turtleduck's recipes with a plan and shopping trips (and a damaged one), Pabu's
+ * people (and a damaged backup), and Momo weeks with "Workout", meal, "Cooking", "Groceries" and "Keep in touch" cards.
+ * Dates count back from the tests' TODAY (lib.js). */
 "use strict";
 const { TODAY, addDays, mondayOf, at } = require("./lib");
 
@@ -178,4 +179,46 @@ const damagedTurtleduck = () => ({
   settings: { targets: { kcal: "2000", protein: 150, fat: -1 } }
 });
 
-module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck };
+// --- Pabu: made-up people, with fixed ids so tests can name them. talks: days back from TODAY (newest first); added: days
+// back (else a fixed stamp well before TODAY). As of TODAY (Wed Sep 30): Gran, Mom and Ana are overdue (Ana never talked,
+// so due the day she was added), Sam and Jo come up within two weeks (Jo not before Oct 4 in Momo), Lee is due in
+// December, Kai is birthday only (tomorrow), and Mom turns 60 on Oct 12. ---
+const PEOPLE = [
+  { id: "pp-gran", name: "Gran", every: "month", how: "visit", minutes: 120, talks: [40] },
+  { id: "pp-mom", name: "Mom", every: "month", how: "call", minutes: 30, talks: [35, 70], birthday: "1966-10-12", note: "Ask about the garden.\nShe's back from the lake on Friday." },
+  { id: "pp-ana", name: "Ana", every: "2weeks", how: "call", minutes: 30, talks: [], added: 3 },
+  { id: "pp-sam", name: "Sam", every: "week", how: "text", minutes: 10, talks: [1] },
+  { id: "pp-jo", name: "Jo", every: "2weeks", how: "call", minutes: 30, talks: [4] },
+  { id: "pp-lee", name: "Lee", every: "quarter", how: "visit", minutes: 120, talks: [10] },
+  { id: "pp-kai", name: "Kai", every: "none", how: "call", minutes: 30, talks: [], birthday: "10-01" },
+  { id: "pp-gone", deleted: true }
+];
+// A Pabu backup of those people (or others in the same shape), each as Pabu keeps them.
+function pabu(people = PEOPLE) {
+  const t = at("2026-01-05");
+  return {
+    schemaVersion: 1, appVersion: "1.000",
+    people: people.map((p, i) => ({
+      id: p.id, name: p.deleted ? "" : p.name, every: p.every || "month", how: p.how || "call", minutes: p.minutes || 30,
+      talks: p.deleted ? [] : (p.talks || []).map(n => addDays(TODAY, -n)), note: p.deleted ? "" : p.note || "", birthday: p.deleted ? "" : p.birthday || "",
+      deleted: !!p.deleted, at: p.added === undefined ? t + i : at(addDays(TODAY, -p.added)), u: t
+    }))
+  };
+}
+// A Pabu backup made of junk: wrong types, a duplicate id, no names, a 500-character name, a how often from a newer
+// version ("fortnight", kept but read as every month), minutes out of range, bad days and one ahead of today, an
+// impossible birthday, a moment no date can hold, and a deleted marker. Three people are usable: Rae Lynn, the long name
+// and Old clock.
+const damagedPabu = () => ({
+  schemaVersion: 1,
+  people: [
+    null, 7, "x",
+    { id: "d1", name: "  Rae \n  Lynn ", every: "fortnight", how: 3, minutes: 1e9, talks: ["2026-02-30", 5, addDays(TODAY, -3), addDays(TODAY, -3), addDays(TODAY, 2), "soon"], birthday: "13-45", note: 42 },
+    { id: "d1", name: "Copy" }, { name: "" }, { id: "d5", name: "   " },
+    { id: "d2", name: "N".repeat(500), every: "week", how: "visit", minutes: "lots", talks: "yesterday", birthday: "02-29", at: -5 },
+    { id: "d3", deleted: true, name: "Gone", talks: [TODAY], at: 1, u: 1 },
+    { id: "d4", name: "Old clock", every: "month", how: "text", minutes: 12.6, talks: [addDays(TODAY, 1)], at: 9e15, u: "soon" }
+  ]
+});
+
+module.exports = { random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck, PEOPLE, pabu, damagedPabu };

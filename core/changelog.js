@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.330", date: "2026-10-02", changes: [
+      "Added Pabu, for keeping in touch: the people you want to stay close to, each due a call, a text or a visit every week to every year; Momo fits them into your “Keep in touch” cards and puts birthdays on its board."
+    ] },
     { version: "3.230", date: "2026-10-02", changes: [
       "Added Turtleduck, for meals: recipes typed or pasted in bulk, a two-week plan laid out by dragging them onto the days (portions of a batch kept to place later), shopping trips with a grocery list each, and a cook view; Momo fills your Breakfast, Lunch, Dinner and Cooking cards with the day's meals and a Groceries card on each trip's day."
     ] },

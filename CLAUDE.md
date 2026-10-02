@@ -1,4 +1,4 @@
-# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, Iroh, Badgermole, Turtleduck, …)
+# Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, Iroh, Badgermole, Turtleduck, Pabu, …)
 Kyoshi holds the user's single-purpose apps and their shared "DNA" (look, storage, sync, backups,
 pop-ups, bug reports, developer mode, meetings). It stays out of sight: the user only sees the app on screen,
 switched from the icon button beside Theme. More apps will be added, each relying on the shared core.
@@ -66,6 +66,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
   badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (sessions into Momo's Workout cards)
   turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips with a grocery list each, a cook view (meals into Momo's Breakfast/Lunch/Dinner/Cooking cards, Groceries on trip days)
+  pabu/               keep in touch: who's due a call, a text or a visit, each on a cadence (into Momo's Keep in touch cards); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js
 ```
