@@ -34,7 +34,7 @@
       const [text, cls] = w.closed ? ["closed out ✓", "good"]
         : clashes ? [`${clashes} conflict${clashes === 1 ? "" : "s"}`, "bad"]
         : b.over.length ? [`${fmtH(sum(b.over.map(o => o.by)))} over`, "bad"]
-        : !w.cards.length ? ["not planned yet", ""]
+        : !A.isPlanned(w) ? ["not planned yet", ""]
         : b.free === 0 ? (left ? [`${left} to place`, ""] : ["all assigned ✓", "good"])
         : [`${fmtH(b.free)} left`, ""];
       $(`tabDate_${v}`).textContent = fmtWeek(k);
@@ -51,7 +51,7 @@
   function renderBank(list, key) {
     const isBase = key === "base", locked = !isBase && list.closed;
     const b = A.budgetOf(list, key);
-    const onDays = list.cards.some(c => c.day !== null);
+    const onDays = list.cards.some(c => c.day !== null), ownCards = list.cards.some(c => !c.slot); // the apps' slots aren't yours to build on
     // Like YNAB's Ready to Assign: green while there are hours to give a job. An
     // overbooked day doesn't change the number; it gets its own red line below.
     $("bank").classList.toggle("pos", !locked && b.free > 0);
@@ -85,9 +85,9 @@
       const names = A.names(short.map(title => ({ title }))), drag = `drag ${short.length === 1 ? "it" : "them"} from Tasks onto a day`;
       msg = apps ? `In an average week ${apps}${short.length ? `, and more than it gives ${names}: ${drag}` : ": trim a card to make room"}.`
         : short.length ? `In an average week the apps ask for more than your baseline gives ${names}: ${drag}.`
-        : onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
+        : ownCards ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
         : "Your default week: sleep, work, meals — the hours that come around every week. Build it once, then load it into any week with one click.";
-    } else if (!list.cards.length) {
+    } else if (!A.isPlanned(list)) {
       msg = S.data.baseline.cards.length ? "Start with your baseline: one click funds the fixed hours, then give the rest a job."
         : "Start by setting up your baseline: the fixed hours of a typical week.";
     } else if (b.free === 0) {
@@ -105,12 +105,12 @@
     $("loadBaselineBtn").textContent = baseLoaded ? "Reload baseline" : "Load baseline";
     $("loadBaselineBtn").classList.toggle("secondary", baseLoaded);
     $("gotoBaselineBtn").hidden = isBase || locked || hasBaseline;
-    $("sampleBaselineBtn").hidden = !isBase || list.cards.length > 0;
+    $("sampleBaselineBtn").hidden = !isBase || ownCards;
     $("fillGapsBtn").hidden = isBase || locked || !onDays || b.free === 0;
     $("reopenBtn").hidden = !locked || !A.reviewRows(key).length; // with no goals to review, it would only close again quietly, its logged hours gone
-    $("copyPrevBtn").hidden = isBase || locked || !A.weekOf(addDays(key, -7)).cards.length;
+    $("copyPrevBtn").hidden = isBase || locked || !A.weekOf(addDays(key, -7)).cards.some(c => !c.need); // the apps' own cards aren't copied
     $("saveAsBaseBtn").hidden = isBase || !onDays;
-    $("clearBtn").hidden = locked || !list.cards.length;
+    $("clearBtn").hidden = locked || !list.cards.some(c => !A.isFixed(c)); // the cards set in other apps would come straight back
     $("clearBtn").textContent = isBase ? "Clear baseline" : "Clear week";
     A.renderTasks(list, key, b);
   }
@@ -123,32 +123,38 @@
   // own has a pin, and each piece is sized to the ruler (styles, from
   // pieceStyles). Another app's card shows its app's icon, filled or not; one
   // missed on a day gone by (inbox.js) is red-edged, as late ones are; one whose
-  // day its app sets (a meal, something done) can't be Alt+clicked away (fixed).
+  // day its app sets (a meal, something done) can't be Alt+clicked away (fixed);
+  // one its app sets altogether (set: a slot's, a fixed need's) has no grip and a
+  // pin that's only a sign, and says where it's set.
   function cardHTML(list, c, times = null, styles = null) {
     const inner = A.innerCards(list, c);
     const parent = c.parentId && list.cards.find(p => p.id === c.parentId);
-    const when = times && times.get(c.id), pin = !!when && !parent && A.pinned(c);
+    const when = times && times.get(c.id), pin = !!when && !parent && A.pinned(c), set = A.isFixed(c), P = set && K.apps[c.app];
     const needs = c.day !== null && S.fill && S.fill.shown.get(c.id), fill = needs ? A.fillParts(c, needs) : null;
     const missed = !!fill && !fill.done && S.fill.missed.has(c.id), icons = fill ? fill.icons : c.app ? A.iconsHTML([{ app: c.app }]) : "";
     const label = `${c.title}${fill ? ` (${missed ? `${fill.what} — missed: drag it to a day ahead` : fill.text})` : ""}, ${fmtH(c.hours)}` +
       (inner.length ? ` + ${inner.map(x => `${x.title} ${fmtH(x.hours)}`).join(" + ")} = ${fmtH(A.blockHours(list, c))}` : parent ? `, ${POSITION_TEXT[c.pos]} ${parent.title}` : "") +
-      (!when ? "" : `, ${pin ? `pinned at ${fmtClock(c.pin)}` : `from ${fmtClock(when.at)}`}${when.clash ? ` — the cards above run ${fmtH(when.clash)} into it` : when.at >= DAY_HOURS ? " — past midnight" : ""}`);
+      (!when ? "" : `, ${pin ? `pinned at ${fmtClock(c.pin)}` : `from ${fmtClock(when.at)}`}${when.clash ? ` — the cards above run ${fmtH(when.clash)} into it` : when.at >= DAY_HOURS ? " — past midnight" : ""}`) +
+      (P ? `, set in ${P.meta.name}` : "");
     const button = `role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}"`;
     const own = `<span class="card-title">${icons}${esc(c.title)}${fill && fill.names ? `<span class="card-fill"> · ${esc(fill.names)}</span>` : ""}</span>` +
-      (when ? timeHTML(c, when, !parent, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
-    const grip = c.day === null ? "" : `<span class="grip" aria-hidden="true"></span>`;
+      (when ? timeHTML(c, when, !parent && !set, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
+    const grip = c.day === null || set ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
-    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}${fill && (fill.late || missed) ? " late" : ""}${A.isDated(c) ? " fixed" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
+    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}${fill && (fill.late || missed) ? " late" : ""}${A.isDated(c) || set ? " fixed" : ""}${set ? " set" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
       (inner.length ? `${at("top")}<div class="card-own" style="${size(`own:${c.id}`)}" ${button}>${own}${mid ? "" : grip}</div>` +
         (mid ? `${mid}<div class="card-own card-rest" style="${size(`rest:${c.id}`)}" aria-hidden="true">${grip}</div>` : "") + at("bottom") : own + grip) + `</div>`;
   }
 
   // When a card starts, then its pin if it's on its own: filled while
-  // pinned, else there to pin it where it is; then a ✓ once what fills it is done.
+  // pinned, else there to pin it where it is (a card its app sets: a sign
+  // that it's pinned there, shown on phones too); then a ✓ once what fills it is done.
   function timeHTML(c, when, canPin, done) {
     const tip = A.pinned(c) ? `Pinned at ${fmtClock(c.pin)} — unpin` : `Pin at ${fmtClock(Math.min(DAY_HOURS - STEP, when.at))}`;
-    const pin = canPin ? `<span class="pin${A.pinned(c) ? " on" : ""}" title="${tip}" aria-hidden="true"><svg class="pin-icon" viewBox="0 0 24 24"><use href="#i-pin"/></svg></span>` : "";
+    const icon = `<svg class="pin-icon" viewBox="0 0 24 24"><use href="#i-pin"/></svg>`;
+    const pin = canPin ? `<span class="pin${A.pinned(c) ? " on" : ""}" title="${tip}" aria-hidden="true">${icon}</span>`
+      : A.isFixed(c) && A.pinned(c) ? `<span class="set-pin" aria-hidden="true">${icon}</span>` : "";
     return `<span class="card-time${when.clash || when.at >= DAY_HOURS ? " clash" : ""}"><span class="clock">${fmtClock(when.at)}</span>${pin}${done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>`;
   }
 

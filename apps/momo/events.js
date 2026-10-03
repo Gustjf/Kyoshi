@@ -93,7 +93,7 @@
     $("cardDailyBtn").addEventListener("click", () => A.applyPreset(DAYS));
     $("cardWeekdaysBtn").addEventListener("click", () => A.applyPreset(WEEKDAYS));
     $("cardClearDaysBtn").addEventListener("click", A.clearDays);
-    $("cardColors").addEventListener("click", e => A.onColorClick(e, S.editing, () => A.cardOwn(A.typedKey()), A.renderCardColors));
+    $("cardColors").addEventListener("click", e => A.onColorClick(e, S.editing, () => A.cardOwn(A.typedKey()), A.colorPicked));
     $("cardTitle").addEventListener("input", () => { if (S.editing) A.renderCardColors(); }); // a title typed shows its colour
     $("cardIn").addEventListener("change", () => { $("cardPosField").hidden = !$("cardIn").value; A.renderPinField(); });
     $("cardPin").addEventListener("change", () => { const t = A.readClock("cardPin"); if (isNum(t)) $("cardPin").value = A.fmtClock(t); });
@@ -222,6 +222,7 @@
       `- Cards this week / next week / baseline: ${A.weekOf(tk).cards.length} / ${A.weekOf(nk).cards.length} / ${data.baseline.cards.length}`,
       `- Apps' own cards this week / next week: ${apps.map(l => l.length).join(" / ")} (${apps.flat().filter(c => c.auto).length} placed by Momo, untouched); card needs: ${cardNeeds.length} (${cardNeeds.filter(n => n.date).length} dated, ${f.short.filter(n => n.fill === "card").length} in Tasks); missed on screen: ${f.missed.size}`,
       `- Pinned this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.pinned).length).join(" / ")}`,
+      `- Slots in the apps' routines / the baseline's slot cards: ${A.slotsNow().size} / ${data.baseline.cards.filter(c => c.slot).length}; set in their app this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.isFixed).length).join(" / ")} (${[A.weekOf(tk), A.weekOf(nk)].map(l => l.cards.filter(c => c.slot).length).join(" / ")} slot copies)`,
       `- Old goals kept (from before Iroh): ${data.goals.length}`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles on show)`,
       `- On screen: ${fmtH(b.free)} to be budgeted, ${b.over.length} overbooked day(s), ${fmtH(b.parked)} parked`,

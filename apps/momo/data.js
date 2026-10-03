@@ -76,9 +76,10 @@
     const onDay = Number.isInteger(c.day) && c.day >= 0 && c.day <= 6;
     if (!onDay && !allowParked) return null;
     const parentId = typeof c.parentId === "string" && c.parentId ? c.parentId.slice(0, 40) : null;
-    // Another app's card (model.js): its app's id, and the need it's for, which is that app's.
+    // Another app's card (model.js): its app's id, and the need it's for or the slot of its routine it keeps, both that app's.
     const app = typeof c.app === "string" && APP_ID.test(c.app) ? c.app : null;
-    const need = app && typeof c.need === "string" && c.need.startsWith(`${app}:`) && c.need.length > app.length + 1 ? c.need.slice(0, 100) : null;
+    const appKey = k => (app && typeof k === "string" && k.startsWith(`${app}:`) && k.length > app.length + 1 ? k.slice(0, 100) : null);
+    const need = appKey(c.need), slot = appKey(c.slot);
     return {
       id: typeof c.id === "string" && c.id ? c.id.slice(0, 40) : newId(),
       title,
@@ -91,7 +92,9 @@
       pin: onDay && !parentId && isNum(c.pin) && c.pin >= 0 && c.pin < DAY_HOURS ? Math.min(DAY_HOURS - STEP, snap(c.pin)) : null,
       need,
       app,
-      auto: !!need && c.auto === true
+      auto: (!!need || !!slot) && c.auto === true,
+      slot,
+      fixed: !!app && c.fixed === true
     };
   }
   function cleanCards(list, allowParked) {
@@ -263,6 +266,7 @@
     if (!S.undoStack.length) return;
     S.data = JSON.parse(S.undoStack.pop());
     save({ undo: false });
+    A.placeCards(); // what's set in other apps heals at once (their slots, their dated cards)
     A.renderAll();
   }
 

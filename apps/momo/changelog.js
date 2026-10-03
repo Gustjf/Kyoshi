@@ -5,6 +5,13 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.064", date: "2026-10-03", changes: [
+      "Your baseline keeps a card for each of Turtleduck's meal slots (breakfast, lunch and dinner every day) and each scheduled grocery trip, pinned at the times set in Turtleduck and as long as their usual length; they follow when those change, and your own cards stay where they are (one running into a slot is flagged, to arrange once).",
+      "Loaded into a week, a slot takes its meal's name, length and time (a day's exception too), and goes back to the plain slot when the meal goes; a cooking session or a trip off the schedule gets a pinned card of its own, even in a week not planned yet. Nothing of Turtleduck's waits in Tasks any more.",
+      "Cards set in Turtleduck can't be dragged, resized, pinned, cut or deleted in Momo: tapped, they show “Change it in Turtleduck” (or “Set in Turtleduck” on an empty slot) with Close; their colour still changes there. A copy (Ctrl+C) is yours. Clear and Save as baseline keep the slots.",
+      "The true cost counts each meal slot's title (Dinner…) against the room its slots give it, so meals aren't charged twice against your free hours.",
+      "Reload Momo on every device: an older copy would drop the slots' details when it syncs."
+    ] },
     { version: "9.064", date: "2026-10-03", changes: [
       "Upcoming weekends: a folded line under the board and under Today shows how many of the next 13 weekends have a plan; open it to see each and type a brief plan, so weekends get spent on purpose. Reload Momo on every device.",
       "This week's and next week's Saturday on the board shows its weekend's plan too: tap it to change it."

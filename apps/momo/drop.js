@@ -4,7 +4,8 @@
  * there), resizing a card from its bottom edge, and clicks and keys on the board and Tasks
  * (open a card, a task or an event, pin a card, add one in free time, Alt+click to delete, but
  * not a card whose day its app sets). A card Momo placed (model.js auto) that's moved, resized
- * or pinned is yours from then on. drag.js picks cards up. */
+ * or pinned is yours from then on; one set in its app (model.js fixed) is never moved, resized,
+ * pinned or deleted here. drag.js picks cards up. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -142,7 +143,7 @@
       A.save();
     } else if (commit && d.target) {
       const t = d.target, list = A.listFor(d.key), card = list.cards.find(c => c.id === d.id);
-      if (t.park && card && card.need) return A.removeCard(d.key, d.id); // another app's: its need waits in Tasks again
+      if (t.park && card && card.need && !A.isFixed(card)) return A.removeCard(d.key, d.id); // another app's: its need waits in Tasks again
       if (d.draw) list.cards.push(d.draw); // drawn from a task: a new card, off any day until it moves onto this one
       A.moveCard(list, d.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos);
       touch(list, d.id);
@@ -168,7 +169,7 @@
   function startResize(e, cardEl) {
     e.preventDefault();
     const list = A.shownList(), card = list.cards.find(c => c.id === cardEl.dataset.id);
-    if (!card) return;
+    if (!card || A.isFixed(card)) return; // its app sets how long it is
     // When its edge is: where the card ends, or its own hours below any cards in its middle.
     const at = A.startTimes(list, A.daySchedule(list, card.day).rows).get(card.id).at;
     const edge = at + card.hours + sum(A.innerCards(list, card).filter(c => c.pos === "middle").map(c => c.hours));
@@ -218,15 +219,15 @@
   // before a pinned card: in it; at the end of a day: last); on a card it
   // opens it, and on a task a new card like the ones it draws. With Alt held
   // (Option on a Mac), a click anywhere on a card (its pin too) deletes it
-  // instead, and one on free time, a task or an event does nothing; Ctrl+Z
-  // brings the card back.
+  // instead — but not one whose day its app sets, nor one set in its app — and
+  // one on free time, a task or an event does nothing; Ctrl+Z brings the card back.
   function onBoardClick(e) {
     if (S.suppressClick || A.isLocked()) return;
     const ev = e.target.closest("[data-ev]");
     if (ev) return e.altKey ? undefined : A.openEvent(ev.dataset.ev);
     if (e.altKey) {
       const cardEl = e.target.closest(".card"), card = cardEl && A.shownList().cards.find(c => c.id === cardEl.dataset.id);
-      if (card && !cardEl.dataset.task && !A.isDated(card)) A.removeCard(A.shownKey(), card.id); // a meal's, say: changed in its app
+      if (card && !cardEl.dataset.task && !A.isDated(card) && !A.isFixed(card)) A.removeCard(A.shownKey(), card.id); // a meal's, say: changed in its app
       return;
     }
     const pin = e.target.closest(".pin");
@@ -244,10 +245,10 @@
   const openCard = el => (el.dataset.task ? A.openTask(el.dataset.task) : A.openCardEditor(el.dataset.id));
 
   // A pin holds its card at the time it starts now; unpinned, it starts
-  // where the card above it ends again.
+  // where the card above it ends again. Not a card set in its app (its time is that app's).
   function togglePin(id) {
     const list = A.listFor(A.shownKey()), card = list.cards.find(c => c.id === id);
-    if (!card || card.day === null || card.parentId) return;
+    if (!card || card.day === null || card.parentId || A.isFixed(card)) return;
     const row = A.daySchedule(list, card.day).rows.find(r => r.card === card);
     card.pin = A.pinned(card) ? null : Math.min(DAY_HOURS - STEP, row.start);
     card.auto = false;

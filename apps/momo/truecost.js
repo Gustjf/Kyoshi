@@ -3,7 +3,8 @@
  * cards (fill "card": errands, calls, workouts, meals, jobs), all together, the free time it leaves (its 168 hours less
  * its cards; Free time counts as free) — so what's short every week shows up before it bites.
  * Each week's asks are kept as they're seen (data.asks, model.js): while a week is this week, what every app asks of it,
- * by app and block title ("<app>|" for its own cards), in minutes: the needs on its days (done ones too), its hours needs,
+ * by app and block title ("<app>|" for its own cards; a slot's need, its slot's title: its room is the baseline's slot
+ * cards, routine.js), in minutes: the needs on its days (done ones too), its hours needs,
  * and any other that could go on it (tasks.js canGo), but never what's ongoing. They're recorded only once every app has
  * started (K.ready: until then the others' needs aren't in), and only when this device sees them change, so two devices
  * that see a week a little differently never write over each other in turn. The baseline's Tasks show it: first a line
@@ -18,11 +19,12 @@
   const { DAY_HOURS, STEP, COST_WEEKS, FREE_TIME, fmtH, cleanText, thisWeekKey } = A;
 
   // What the apps ask of the week starting key: { "<app>|<block title>": minutes }, the title as first spelt, "<app>|" for
-  // its own cards, in key order.
+  // its own cards — but a need filling a slot of its app's routine under its slot's title ("Dinner": its block) —, in key
+  // order.
   function weekAsk(f, key) {
     const out = {}, spelt = new Map(), end = addDays(key, 6);
     f.needs.filter(n => n.fill !== "ongoing" && (n.date ? n.date >= key && n.date <= end : A.canGo(n, key))).forEach(n => {
-      const title = n.fill === "card" ? "" : cleanText(n.block), low = `${n.app}|${title.toLowerCase()}`;
+      const title = n.fill === "card" && !n.slot ? "" : cleanText(n.block), low = `${n.app}|${title.toLowerCase()}`;
       if (!title && n.fill !== "card") return;
       if (!spelt.has(low)) spelt.set(low, `${n.app}|${title}`);
       const k = spelt.get(low);
@@ -46,21 +48,24 @@
   }
 
   // The true cost: { weeks: how many weeks it's over, rows: the block titles [{ title, apps: [{ id, minutes }] (most
-  // first), minutes: its average a week, room: the baseline's minutes for it (any case), short }] in the order first
+  // first), minutes: its average a week, room: the baseline's minutes for it (any case), short, slot: the title of an
+  // app's slot cards }] in the order first
   // asked, apps: the apps' own cards [{ id, minutes: their average a week }] in the switcher's order, total: theirs
   // together, free: the minutes the baseline leaves free (Free time counts as free) }. An app that asks for cards of its
   // own (now, or in a week kept) and for nothing else now has the block titles kept from before it did ("Errands")
-  // counted as its own cards, so last month's rows don't linger.
+  // counted as its own cards, so last month's rows don't linger — but not a title one of its slot cards in the baseline
+  // has (routine.js: "Dinner"), whose room is those cards (already out of the free time: nothing counts twice).
   function trueCost() {
     const tk = thisWeekKey(), from = addDays(tk, -7 * (COST_WEEKS - 1));
     const weeks = Object.keys(S.data.asks).filter(k => k >= from && k <= tk).sort(), titles = new Map(), room = new Map(), own = new Map();
     const split = ak => { const bar = ak.indexOf("|"); return [ak.slice(0, bar), ak.slice(bar + 1)]; };
     const now = S.fill ? S.fill.needs : [], cardApps = new Set(now.filter(n => n.fill === "card").map(n => n.app));
+    const slotted = new Set(S.data.baseline.cards.filter(c => c.slot).map(c => `${c.app}|${c.title.toLowerCase()}`));
     weeks.forEach(k => Object.keys(S.data.asks[k].by).forEach(ak => { const [app, title] = split(ak); if (!title) cardApps.add(app); }));
     now.forEach(n => { if (n.fill !== "card" && n.fill !== "ongoing") cardApps.delete(n.app); });
     weeks.forEach(k => Object.keys(S.data.asks[k].by).forEach(ak => {
       const [app, title] = split(ak), low = title.toLowerCase(), m = S.data.asks[k].by[ak];
-      if (!title || cardApps.has(app)) return own.set(app, (own.get(app) || 0) + m);
+      if (!title || (cardApps.has(app) && !slotted.has(`${app}|${low}`))) return own.set(app, (own.get(app) || 0) + m);
       const t = titles.get(low) || titles.set(low, { title, apps: new Map() }).get(low);
       t.apps.set(app, (t.apps.get(app) || 0) + m);
     }));
@@ -72,7 +77,7 @@
       rows: [...titles].map(([low, t]) => {
         const apps = [...t.apps].map(([id, m]) => ({ id, minutes: m / weeks.length })).sort((a, b) => b.minutes - a.minutes);
         const minutes = sum(apps.map(a => a.minutes)), r = room.get(low) || 0;
-        return { title: t.title, apps, minutes, room: r, short: Math.max(0, minutes - r) };
+        return { title: t.title, apps, minutes, room: r, short: Math.max(0, minutes - r), slot: apps.some(a => slotted.has(`${a.id}|${low}`)) };
       }),
       apps, total: sum(apps.map(a => a.minutes)), free: 7 * DAY_HOURS * 60 - busy
     };
@@ -90,10 +95,13 @@
   // Minutes on the 15-minute grid, as Momo writes hours: "2.5h", "45m".
   const about = m => fmtH(Math.max(STEP, Math.round(m / (STEP * 60)) * STEP));
   const appNames = r => A.names(r.apps.map(a => ({ title: K.apps[a.id] ? K.apps[a.id].meta.name : a.id })));
-  // A block title the baseline is short of: what it asks a week and what the baseline gives, and the gap to drag in.
+  // A block title the baseline is short of: what it asks a week and what the baseline gives, and the gap to drag in (an
+  // app's slots: or a longer usual length for them there).
   function costHTML(t) {
     const r = t.cost, gives = r.room ? fmtH(r.room / 60) : "nothing";
-    const label = `${t.title}: ${appNames(r)} ask${r.apps.length === 1 ? "s" : ""} about ${about(r.minutes)} a week, your baseline gives ${gives} — drag onto a day to add the ${fmtH(t.hours)} it's short, or click to pick days`;
+    const remedy = `drag onto a day to add the ${fmtH(t.hours)} it's short, or click to pick days`;
+    const label = `${t.title}: ${appNames(r)} ask${r.apps.length === 1 ? "s" : ""} about ${about(r.minutes)} a week, your baseline gives ${gives} — ` +
+      (r.slot ? `give its slots a longer usual length in ${appNames(r)}, or ${remedy}` : remedy);
     return `<div class="card parked task cost" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor(t)}">` +
       `<span class="card-title">${esc(t.title)}<span class="card-fill"> · ${about(r.minutes)} a week, baseline ${r.room ? fmtH(r.room / 60) : "0h"}</span></span><span class="task-hours">+${fmtH(t.hours)}</span></div>`;
   }

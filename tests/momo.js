@@ -4,8 +4,10 @@
  * Events: the mouse down, a few moves past its threshold, up), New card, the bank's actions (Load or Reload baseline,
  * Copy previous week, Fill gaps with Free time, Save as baseline, Clear), the close-out (its banner, the pop-up's rows,
  * the Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's pop-up), the
- * card editor's From section and "Open in <App>", and the switcher's dots with their tooltips. What Momo drew from
- * (its fill of other apps' needs) is read too, for checks. Selectors live here, so a markup change is fixed in one place. */
+ * card editor's From section, "Open in <App>" and read-only state (a card set in its app), and the switcher's dots with
+ * their tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a card looks, trying to
+ * drag one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps' needs) is read too, for
+ * checks. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -141,12 +143,50 @@ async function newCard(tab, { title, hours = 1, days: on = [] }) {
   }
   await p.click(`${M} #cardSaveBtn`);
 }
-// A card's editor, by its id: { title, hours, from: what fills it, by app [{ app, needs: [{ title, done, id, details }] }] }.
+// A card's editor, by its id: { title, hours, from: what fills it, by app [{ app, needs: [{ title, done, id, details }] }],
+// readonly (a card set in its app: no Save, fields off), change: "Change it in …" / "Set in …" ("" when hidden), changeId:
+// what its link opens, close: the Cancel button's words }.
 async function openCard(tab, id) {
   const p = tab.page, card = `${M} #board .card[data-id="${id}"]`;
   await p.click((await p.locator(`${card} > .card-own`).count()) ? `${card} > .card-own` : card, { position: { x: 12, y: 8 } });
   await p.waitForSelector(`${M} #cardOverlay.open`);
-  return { title: await p.inputValue(`${M} #cardTitle`), hours: +(await p.inputValue(`${M} #cardHours`)), from: await fromList(tab, "cardFrom") };
+  const more = await p.evaluate(() => {
+    const $ = s => document.querySelector(`#kMount ${s}`), ch = $("#cardChange"), a = ch.querySelector("a");
+    return { readonly: $("#cardSaveBtn").hidden && $("#cardTitle").disabled, change: ch.hidden ? "" : ch.textContent.trim(), changeId: a ? a.dataset.id : "", close: $("#cardCancelBtn").textContent.trim(), canDelete: !$("#cardDeleteBtn").hidden };
+  });
+  return { title: await p.inputValue(`${M} #cardTitle`), hours: +(await p.inputValue(`${M} #cardHours`)), from: await fromList(tab, "cardFrom"), ...more };
+}
+// The baseline's cards as stored, in order: [{ id, title, hours, day, pin, slot, fixed, auto, app }].
+const baselineCards = tab => tab.page.evaluate(() => Kyoshi.apps.momo.S.data.baseline.cards.map(c => ({ id: c.id, title: c.title, hours: c.hours, day: c.day, pin: c.pin, slot: c.slot, fixed: c.fixed, auto: c.auto, app: c.app })));
+// A week's cards as stored (key: its Monday), in order, the same way.
+const weekCards = (tab, key) => tab.page.evaluate(k => (Kyoshi.apps.momo.S.data.weeks[k] || { cards: [] }).cards.map(c => ({ id: c.id, title: c.title, hours: c.hours, day: c.day, pin: c.pin, slot: c.slot, fixed: c.fixed, auto: c.auto, app: c.app, need: c.need })), key);
+// How a card on the board looks set in its app: { set (its class), grip, pin (a pin to click), sign (the pin that's only a sign) }.
+const cardLook = (tab, id) => tab.page.$eval(`${M} #board .card[data-id="${id}"]`, c => ({
+  set: c.classList.contains("set"), grip: !!c.querySelector(":scope > .grip, :scope > .card-own > .grip"), pin: !!c.querySelector(".pin"), sign: !!c.querySelector(".set-pin")
+}));
+// Tries to drag a card on the board by the mouse onto another day's free time at its end: whether it went (its day after).
+async function tryDrag(tab, id, day) {
+  const p = tab.page, card = p.locator(`${M} #board .card[data-id="${id}"]`).first();
+  const from = await card.boundingBox(), end = p.locator(`${M} #board .col[data-day="${day}"] .col-body > .free.end`);
+  const box = (await end.count()) ? await end.boundingBox() : await p.locator(`${M} #board .col[data-day="${day}"] .col-body`).boundingBox();
+  const [x0, y0] = [from.x + Math.min(30, from.width / 2), from.y + Math.min(10, from.height / 2)];
+  await p.mouse.move(x0, y0);
+  await p.mouse.down();
+  for (let i = 1; i <= 3; i++) await p.mouse.move(x0 + i * 4, y0 + i * 3);
+  await p.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height - 4, 10), { steps: 4 });
+  await p.mouse.up();
+  return p.evaluate(([cid, d]) => { const S = Kyoshi.apps.momo.S, c = Kyoshi.apps.momo.shownList().cards.find(x => x.id === cid); return !!c && c.day === d && !S.drag; }, [id, day]);
+}
+// Alt+click on a card (deletes one of yours).
+async function altClick(tab, id) {
+  const p = tab.page, card = p.locator(`${M} #board .card[data-id="${id}"]`).first();
+  await card.click({ modifiers: ["Alt"], position: { x: 12, y: 8 } });
+}
+// Ctrl+C / Ctrl+X / Ctrl+V with the mouse over an element (Momo's clipboard goes by where the mouse is).
+async function shortcut(tab, key, selector) {
+  const p = tab.page, box = await p.locator(selector).first().boundingBox();
+  await p.mouse.move(box.x + Math.min(12, box.width / 2), box.y + Math.min(8, box.height / 2));
+  await p.keyboard.press(`Control+${key}`);
 }
 // The From section of the card editor ("cardFrom") or of Today's card pop-up ("detailFrom").
 const fromList = (tab, id) => tab.page.$$eval(`${M} #${id} .from-needs li`, els => els.map(li => {
@@ -239,6 +279,7 @@ const switchTip = tab => tab.page.getAttribute("#kSwitchBtn", "title");
 
 module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
-  newCard, openCard, fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible,
+  newCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
+  fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };

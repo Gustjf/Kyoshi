@@ -2,7 +2,9 @@
  * copy the previous week, save a week as the baseline, fill gaps with Free time, clear a
  * board, and start the baseline from a sample. Other apps' cards (model.js need) belong to
  * their week: copying a week or saving one as the baseline leaves them out, and the ones Momo
- * placed go back in at their times once a week has your cards (place.js). */
+ * placed go back in at their times once a week has your cards (place.js). The apps' slot cards
+ * (model.js slot, routine.js) are Momo's to keep: loading and copying bring them along, and
+ * saving a week as the baseline or clearing the baseline gets them back as the routines say. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -51,7 +53,8 @@
     if (!key) return;
     const prev = A.weekOf(addDays(key, -7)), week = A.ensureWeek(key), cards = prev.cards.filter(c => !c.need);
     if (!cards.length || week.closed) return;
-    if (week.cards.length && !confirm(`Replace this week's ${week.cards.length} card${week.cards.length === 1 ? "" : "s"} with a copy of ${fmtWeek(addDays(key, -7))}?`)) return;
+    const had = week.cards.filter(c => !(c.auto && c.need)).length; // not the cards Momo placed for the apps: they come back
+    if (had && !confirm(`Replace this week's ${had} card${had === 1 ? "" : "s"} with a copy of ${fmtWeek(addDays(key, -7))}?`)) return;
     week.cards = copyCards(cards);
     A.placeCards({ save: false });
     A.save();
@@ -59,13 +62,16 @@
   }
 
   // Makes the week on screen the new baseline: its cards on days (not parked)
-  // replace the baseline's, but not other apps' (those come and go each week).
+  // replace the baseline's, but not other apps' (those come and go each week)
+  // nor their slots' (the routines put the baseline's back at once).
   function saveAsBaseline() {
     const key = A.viewKey(), week = key && A.weekOf(key);
-    const cards = week ? week.cards.filter(c => c.day !== null && !c.need) : [];
+    const cards = week ? week.cards.filter(c => c.day !== null && !c.need && !c.slot) : [];
     if (!cards.length) return;
-    if (S.data.baseline.cards.length && !confirm(`Replace your baseline (${S.data.baseline.cards.length} cards) with this week's ${cards.length} cards?`)) return;
+    const had = S.data.baseline.cards.filter(c => !c.slot).length;
+    if (had && !confirm(`Replace your baseline (${had} cards) with this week's ${cards.length} cards?`)) return;
     S.data.baseline.cards = copyCards(cards, { base: false });
+    A.syncSlots();
     A.save();
     A.renderAll();
   }
@@ -87,7 +93,7 @@
       gaps.forEach(([gap, beforeId]) => {
         const hours = Math.min(gap, room);
         if (hours <= 0) return;
-        const c = { id: newId(), title: FREE_TIME, hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false };
+        const c = { id: newId(), title: FREE_TIME, hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false };
         const into = A.mergeTarget(week, c, d, null, "bottom", beforeId);
         if (into) into.hours += hours;
         else A.insertCard(week, c, beforeId);
@@ -100,11 +106,14 @@
     A.renderAll();
   }
 
+  // Clears a board, but for the cards set in other apps (model.js fixed): they stay, as those apps put them.
   function clearBoard() {
-    const key = A.shownKey(), list = A.readList(key);
-    if (!list.cards.length || A.isLocked()) return;
-    if (!confirm(key === "base" ? "Clear the whole baseline?" : `Remove all ${list.cards.length} cards from this week?`)) return;
-    A.listFor(key).cards = [];
+    const key = A.shownKey(), list = A.readList(key), n = list.cards.filter(c => !A.isFixed(c)).length;
+    if (!n || A.isLocked()) return;
+    const stay = list.cards.some(A.isFixed) ? " Cards set in other apps stay." : "";
+    if (!confirm(key === "base" ? `Clear the whole baseline?${stay}` : `Remove all ${n} cards from this week?${stay}`)) return;
+    A.listFor(key).cards = list.cards.filter(A.isFixed);
+    A.placeCards({ save: false }); // and anything they'd lost comes back (place.js, routine.js)
     A.save();
     A.renderAll();
   }
@@ -112,7 +121,7 @@
   // The sample's titles take its colours, where no other title has them.
   function startSampleBaseline() {
     S.data.baseline.cards = DAYS.flatMap(d => SAMPLE_BASELINE.filter(s => s.days.includes(d))
-      .map(s => ({ id: newId(), title: s.title, hours: s.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false })));
+      .map(s => ({ id: newId(), title: s.title, hours: s.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false })));
     SAMPLE_BASELINE.forEach(s => {
       const key = A.titleKey(s.title);
       if (!S.data.colors[key] && !Object.values(S.data.colors).some(e => e.c === s.color)) S.data.colors[key] = { c: s.color, u: 0 };

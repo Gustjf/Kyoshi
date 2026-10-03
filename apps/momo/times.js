@@ -63,6 +63,15 @@
     return row ? row.card.id : null;
   }
 
+  // Where a card pinned at a time its app sets (a slot's card, routine.js; a
+  // fixed need's, place.js) comes in among a day's cards without moving them:
+  // before the first card on its own starting at or after that time, else
+  // last. Those before it that run past its time clash with it (timeTrouble).
+  function timeSpot(list, day, card) {
+    const row = daySchedule(list, day, card).rows.find(r => r.start >= card.pin);
+    return row ? row.card.id : null;
+  }
+
   // The days (of those given) whose cards don't fit around their pinned
   // times: some run into a pinned card, or past midnight on a day that isn't
   // overbooked.
@@ -160,5 +169,5 @@
     return styles;
   }
 
-  Object.assign(A, { daySchedule, startTimes, autoSpot, timeTrouble, GAP_PX, MIN_PX, hourPx, dayPieces, makeRuler, rulerY, rulerTime, pieceStyles });
+  Object.assign(A, { daySchedule, startTimes, autoSpot, timeSpot, timeTrouble, GAP_PX, MIN_PX, hourPx, dayPieces, makeRuler, rulerY, rulerTime, pieceStyles });
 })(Kyoshi, Kyoshi.apps.momo);

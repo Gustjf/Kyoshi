@@ -170,7 +170,7 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <!-- A card tapped on Today (today.js): when, and what fills it with "Open in <App>". -->
+  <!-- A card tapped on Today (today.js): when, and what fills it with "Open in <App>"; one set in its app, where to change it. -->
   <div class="overlay" id="detailOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
@@ -180,6 +180,7 @@ Kyoshi.apps.momo.markup = `
       <div class="modal-actions">
         <button id="detailCloseBtn">Close</button>
         <span class="spacer"></span>
+        <span class="card-change" id="detailChange" hidden></span>
         <button class="secondary" id="detailEditBtn">Edit card</button>
       </div>
     </div>

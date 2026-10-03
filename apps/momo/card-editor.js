@@ -4,7 +4,10 @@
  * here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one.
  * Another app's card (model.js need: an errand, a meal…) goes on one day at a time, and its
  * colour is its app's; one whose day its app sets (a meal, a trip, something done) has no
- * Delete: "Change it in <App>" leads there. Editing one Momo placed makes it yours (auto). */
+ * Delete: "Change it in <App>" leads there. Editing one Momo placed makes it yours (auto).
+ * One set in its app altogether (model.js fixed: a slot's card, a meal at its time) is only
+ * shown (read-only: Close, no Save or Delete) with "Change it in <App>" — or, for a slot
+ * with nothing in it, "Set in <App>" — and its colour, its app's, changes at once. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -37,6 +40,13 @@
     $("cardChange").addEventListener("click", openApp);
   }
 
+  // Where a card its app sets is changed (P: that app): "Change it in <App>", at what it holds (its need with a day
+  // first); a slot's card with nothing in it, "Set in <App>", at its slot (the routine's id: where its times are set).
+  function changeHTML(card, needs, P) {
+    const n = needs.find(x => x.date) || needs[0], id = n ? n.id : card.slot ? card.slot.slice(P.id.length + 1) : "";
+    return `${n || !card.slot ? "Change it" : "Set"} in <a href="#${esc(P.id)}" data-app="${esc(P.id)}" data-id="${esc(id)}">${esc(P.meta.name)}</a>`;
+  }
+
   // A card other apps' needs fill, or a new one from a task of theirs, says what with, with a way there.
   function renderFrom(needs) {
     $("cardFrom").hidden = !needs.length;
@@ -66,12 +76,17 @@
     const free = day === null || noDay ? 0 : room !== null ? room : DAY_HOURS - A.dayTotal(list, day);
     const draft = card || from; // what the fields start from, if anything
     const need = card ? card.need : from && from.need ? from.need : null, app = card ? card.app : need ? from.app : null;
-    const editing = S.editing = { key, id: card ? card.id : null, need, app, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, inner: card ? A.innerCards(list, card) : [] };
+    const readonly = !!card && A.isFixed(card); // set in its app: only its colour changes here
+    const editing = S.editing = { key, id: card ? card.id : null, need, app, readonly, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, inner: card ? A.innerCards(list, card) : [] };
     // Renamed to a new title, a card takes its colour along if no other card on show has its title (an app's card
     // keeps its app's, whatever its title).
     const oldKey = editing.oldKey;
     if (card && !app && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
-    $("cardModalTitle").textContent = card ? "Edit card" : "New card";
+    $("cardModalTitle").textContent = !card ? "New card" : readonly ? "Card" : "Edit card";
+    ["cardTitle", "cardHours", "cardIn", "cardPos", "cardPin"].forEach(f => { $(f).disabled = readonly; });
+    overlay().querySelectorAll(".step-btn").forEach(b => { b.disabled = readonly; });
+    $("cardSaveBtn").hidden = readonly;
+    $("cardCancelBtn").textContent = readonly ? "Close" : "Cancel";
     $("cardTitle").value = draft ? draft.title : "";
     $("cardHours").value = fmtNum(card ? card.hours : from ? from.hours || DRAW_HOURS : free > 0 && free < 1 ? free : 1);
     const needs = card ? A.cardNeeds(card) : (from && from.needs) || [];
@@ -82,7 +97,7 @@
     const holders = new Map(), own = card ? card.title.toLowerCase() : "";
     if (!editing.inner.length) list.cards.forEach(c => {
       const t = c.title.toLowerCase();
-      if (!c.parentId && t !== own && !holders.has(t)) holders.set(t, c.title);
+      if (!c.parentId && !A.isFixed(c) && t !== own && !holders.has(t)) holders.set(t, c.title); // nothing goes inside a card set in its app
     });
     $("cardIn").innerHTML = `<option value="">None</option>` + [...holders].map(([t, title]) => `<option value="${esc(t)}">${esc(title)}</option>`).join("");
     $("cardIn").value = parent ? parent.title.toLowerCase() : "";
@@ -98,31 +113,31 @@
     const noWeekdays = !presetDays(WEEKDAYS).length; // this week, on a weekend
     $("cardWeekdaysBtn").disabled = noWeekdays;
     $("cardWeekdaysBtn").title = noWeekdays ? "No weekdays left this week" : "";
-    ["cardDailyBtn", "cardWeekdaysBtn", "cardClearDaysBtn"].forEach(b => { $(b).hidden = !!need; }); // one day at a time
-    // A card whose day its app sets (a meal, a trip, something done) is changed there, not deleted here.
-    const fixed = card && A.isDated(card), P = fixed && K.apps[app];
+    ["cardDailyBtn", "cardWeekdaysBtn", "cardClearDaysBtn"].forEach(b => { $(b).hidden = !!need || readonly; }); // one day at a time
+    // A card whose day its app sets (a meal, a trip, something done), or set there altogether, is changed there, not deleted here.
+    const fixed = card && (A.isDated(card) || readonly), P = fixed && K.apps[app];
     $("cardDeleteBtn").hidden = !card || fixed;
     $("cardChange").hidden = !P;
-    $("cardChange").innerHTML = P ? `Change it in <a href="#${esc(P.id)}" data-app="${esc(P.id)}" data-id="${esc(needs.find(n => n.date).id)}">${esc(P.meta.name)}</a>` : "";
+    $("cardChange").innerHTML = P ? changeHTML(card, needs, P) : "";
     $("titleSuggestions").innerHTML = titleSuggestions().map(t => `<option value="${esc(t)}"></option>`).join("");
     renderDayPills();
     renderCardColors();
     editing.snapshot = cardFormState();
     editing.fields = cardFields();
     K.modal.open(overlay());
-    $("cardTitle").focus();
+    $(readonly ? "cardCancelBtn" : "cardTitle").focus();
   }
 
   function renderDayPills() {
-    const pills = DAYS.map(d => [d, DAY_NAMES[d]]);
-    if (S.editing.key !== "base" && !S.editing.need) pills.push([null, "No day"]); // it waits in Tasks (another app's goes back there by Delete)
+    const pills = DAYS.map(d => [d, DAY_NAMES[d]]), ro = S.editing.readonly ? " disabled" : "";
+    if (S.editing.key !== "base" && !S.editing.need && !S.editing.readonly) pills.push([null, "No day"]); // it waits in Tasks (another app's goes back there by Delete)
     $("cardDays").innerHTML = pills.map(([d, name]) =>
-      `<button type="button" class="day-pill${S.editing.days.has(d) ? " active" : ""}" data-day="${d === null ? "" : d}">${name}</button>`).join("");
+      `<button type="button" class="day-pill${S.editing.days.has(d) ? " active" : ""}" data-day="${d === null ? "" : d}"${ro}>${name}</button>`).join("");
   }
 
   function onDayPill(e) {
     const btn = e.target.closest(".day-pill"), editing = S.editing;
-    if (!btn || !editing) return;
+    if (!btn || !editing || editing.readonly) return;
     const d = btn.dataset.day === "" ? null : +btn.dataset.day;
     if (editing.need) {
       editing.days = new Set([d]); // another app's card: one day, the one picked
@@ -142,7 +157,7 @@
   // Not for another app's card, which goes on one day (they're hidden then).
   const presetDays = days => days.filter(d => d >= firstDay(S.editing.key));
   function applyPreset(days) {
-    if (!S.editing || S.editing.need) return;
+    if (!S.editing || S.editing.need || S.editing.readonly) return;
     const first = firstDay(S.editing.key);
     const picked = [...S.editing.days].filter(d => d !== null && d < first).concat(presetDays(days));
     if (!picked.length) return;
@@ -151,7 +166,7 @@
   }
   // Clear unpicks every day, to start the choice over.
   function clearDays() {
-    if (!S.editing || S.editing.need) return;
+    if (!S.editing || S.editing.need || S.editing.readonly) return;
     S.editing.days = new Set();
     renderDayPills();
   }
@@ -189,6 +204,19 @@
     const editing = S.editing, title = cleanText($("cardTitle").value), key = typedKey(), own = cardOwn(key);
     renderColors(key, own, editing.pick || own, !!(S.data.colors[key] || editing.carry), [key, editing.carry ? editing.oldKey : null],
       editing.app ? `All ${A.keyName(key)} cards share this colour.` : title ? `Every “${title}” card is this colour.` : "Cards with the same title share a colour.");
+  }
+  // A colour clicked in the editor: shown, to keep with Save; on a card set in its app (read-only, no Save), its app's
+  // colour changes at once.
+  function colorPicked() {
+    const editing = S.editing;
+    if (editing && editing.readonly && editing.pick) {
+      A.pickColor(typedKey(), editing.pick);
+      editing.pick = null;
+      A.save();
+      A.renderAll();
+      editing.snapshot = cardFormState();
+    }
+    renderCardColors();
   }
 
   // A colour clicked in the editor is picked, unless it's the one it has anyway.
@@ -238,7 +266,7 @@
 
   function saveCard() {
     const editing = S.editing;
-    if (!editing) return;
+    if (!editing || editing.readonly) return; // set in its app: nothing to save here
     const title = cleanText($("cardTitle").value);
     const hours = readHours("cardHours");
     const inTitle = $("cardInField").hidden ? "" : $("cardIn").value;
@@ -269,7 +297,7 @@
     // keeps its own, and a new one has none. Only a card on its own on a day has one.
     const pin = setPin ? pinAt : card ? card.pin : null;
     const pinOn = d => (d === null || parentOn(d) ? null : pin);
-    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false });
+    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false, slot: null, fixed: false });
     // Adds a new card before the card `before` (AUTO: wherever autoSpot puts
     // it; a pinned one always goes there), or into a matching card next to that spot.
     const add = (c, before) => {
@@ -328,7 +356,7 @@
   }
 
   function deleteCard() {
-    if (!S.editing) return;
+    if (!S.editing || S.editing.readonly) return;
     const { key, id } = S.editing;
     closeEditor();
     removeCard(key, id);
@@ -336,10 +364,10 @@
 
   // Deletes a card (from its editor, Alt+click on it, or another app's card
   // dropped back in Tasks: its need waits there again). Cards inside it stay
-  // on the day, on their own.
+  // on the day, on their own. Never a card set in its app (changed there).
   function removeCard(key, id) {
     const list = A.listFor(key), card = list.cards.find(c => c.id === id);
-    if (card) {
+    if (card && !A.isFixed(card)) {
       const inner = A.innerCards(list, card);
       list.cards = list.cards.filter(c => c !== card);
       inner.forEach(c => { c.parentId = null; A.settle(list, c); });
@@ -349,8 +377,8 @@
   }
 
   Object.assign(A, {
-    defineCardOverlay, openCardEditor, onDayPill, applyPreset, clearDays, renderColors, typedKey, cardOwn, renderCardColors,
-    onColorClick, HOUR_RANGES, readHours, tidyHours, readClock, renderPinField, renderInnerNote,
+    defineCardOverlay, changeHTML, openCardEditor, onDayPill, applyPreset, clearDays, renderColors, typedKey, cardOwn, renderCardColors,
+    colorPicked, onColorClick, HOUR_RANGES, readHours, tidyHours, readClock, renderPinField, renderInnerNote,
     saveCard, deleteCard, removeCard
   });
 })(Kyoshi, Kyoshi.apps.momo);

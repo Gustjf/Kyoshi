@@ -4,8 +4,8 @@
  * the board's (times.js): a card with cards inside it shows in its parts around them, and other apps'
  * events (agenda.js) sit at their times, with free time split around them. A card holding something late
  * is red-edged and says "Late", as on the board. Tapping a card shows its pop-up (#detailOverlay): when,
- * and what fills it (inbox.js fromHTML) with "Open in <App>", and a way to edit it; tapping an event opens
- * its own (triage.js). Nothing here is stored. */
+ * and what fills it (inbox.js fromHTML) with "Open in <App>", and a way to edit it (a card set in its app:
+ * "Change it in <App>" instead); tapping an event opens its own (triage.js). Nothing here is stored. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -194,7 +194,11 @@
       (inner.length ? `, with ${A.names(inner)} inside` : parent ? `, inside ${parent.title}` : "");
     $("detailFrom").hidden = !needs.length;
     $("detailFrom").innerHTML = A.fromHTML(needs);
-    $("detailEditBtn").hidden = !!list.closed;
+    // A card set in its app (a meal at its time) isn't edited here: where to change it instead.
+    const P = A.isFixed(card) && K.apps[card.app];
+    $("detailEditBtn").hidden = !!list.closed || A.isFixed(card);
+    $("detailChange").hidden = !P;
+    $("detailChange").innerHTML = P ? A.changeHTML(card, needs, P) : "";
     K.modal.open(overlay());
   }
 
@@ -215,14 +219,17 @@
     K.modal.define(overlay(), { dismiss: closeDetail });
     $("detailEditBtn").addEventListener("click", editDetail);
     $("detailCloseBtn").addEventListener("click", closeDetail);
-    // "Open in Appa" (or any app): the pop-up closes on the way, and the app shows what it needs (core/inbox.js).
-    $("detailFrom").addEventListener("click", e => {
+    // "Open in Appa" (or any app), and "Change it in <App>": the pop-up closes on the way, and the app shows what it
+    // needs (core/inbox.js).
+    const openApp = e => {
       const link = e.target.closest("a[data-app]");
       if (!link) return;
       e.preventDefault();
       closeDetail();
       K.inbox.open(link.dataset.app, link.dataset.id);
-    });
+    };
+    $("detailFrom").addEventListener("click", openApp);
+    $("detailChange").addEventListener("click", openApp);
   }
 
   Object.assign(A, { isPhone, renderToday, tickToday, initToday });

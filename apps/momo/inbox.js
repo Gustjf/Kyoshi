@@ -2,11 +2,13 @@
  * each app says what. Momo asks from this Monday, so this week's past days show what was done on them.
  * A need for a card of its own (fill "card": an errand, a call, a workout, a meal, a job) goes on the card made
  * for it (model.js need "<app>:<id>": drawn from its task, or placed by Momo for one with a day, place.js), or,
- * done, on the one it completes (its of); one card each, on any day this week and next, nothing else in it. One
- * without such a card waits in Tasks (tasks.js), unless it's done or on a day gone by; a card on a day gone by
- * holding an open one without a day of its own is missed (red-edged: drag it to a day ahead).
- * The other needs fill your blocks: a block is any card on a day this week and next (but another app's own); a
- * need fills the soonest one with the title it asks for (its block, any case): a need with a day first, on that
+ * done, on the one it completes (its of); one naming a slot of its app's routine goes on that slot's card on its
+ * date first (model.js slot, routine.js: a week's copy of the baseline's); one card each, on any day this week and
+ * next, nothing else in it. One without such a card waits in Tasks (tasks.js), unless it's done, on a day gone by
+ * or set by its app (fixed: Momo places its card, place.js); a card on a day gone by holding an open one without a
+ * day of its own is missed (red-edged: drag it to a day ahead).
+ * The other needs fill your blocks: a block is any card on a day this week and next (but another app's own or a
+ * slot's); a need fills the soonest one with the title it asks for (its block, any case): a need with a day first, on that
  * day (a past day too: done there); one due by a day, on or before it (once overdue, the soonest), and not before
  * its from day if it has one (a meeting goes in the week before it's due); any other in the order its app lists
  * them. Open needs without a day start today. "One per block" needs take an empty block each;
@@ -49,15 +51,20 @@
     return out;
   }
 
-  // Which card each need for a card of its own goes on (fill "card"), dated ones first: the first not taken whose
-  // need is its own ("<app>:<id>"), else the one it completes (of); of those, one on its day first, else the soonest
-  // (all: the blocks, as blocks() gives them). A Map need -> block; one with none waits in Tasks, or with a day gets a
-  // card (place.js).
+  // Which card each need for a card of its own goes on (fill "card"), dated ones first: the first not taken that's its
+  // slot's card on its date ("<app>:<slot>": a need of its app's routine; that way a card Momo placed for it before it
+  // had a slot holds nothing and goes), else whose need is its own ("<app>:<id>"), else the one it completes (of); of
+  // those, one on its day first, else the soonest (all: the blocks, as blocks() gives them). A Map need -> block; one
+  // with none waits in Tasks, or with a day gets a card (place.js).
   function assign(needs, all) {
     const out = new Map(), taken = new Set(), keyed = new Map(), mine = needs.filter(n => n.fill === "card");
-    all.forEach(b => { if (b.card.need) (keyed.get(b.card.need) || keyed.set(b.card.need, []).get(b.card.need)).push(b); });
+    const put = (k, b) => (keyed.get(k) || keyed.set(k, []).get(k)).push(b);
+    all.forEach(b => {
+      if (b.card.need) put(b.card.need, b);
+      if (b.card.slot) put(`slot|${b.card.slot}|${b.date}`, b);
+    });
     mine.filter(n => n.date).concat(mine.filter(n => !n.date)).forEach(n => {
-      for (const key of [`${n.app}:${n.id}`, n.of ? `${n.app}:${n.of}` : null]) {
+      for (const key of [n.slot ? `slot|${n.app}:${n.slot}|${n.date}` : null, `${n.app}:${n.id}`, n.of ? `${n.app}:${n.of}` : null]) {
         const free = (keyed.get(key) || []).filter(b => !taken.has(b)), b = free.find(x => x.date === n.date) || free[0];
         if (b) { taken.add(b); out.set(n, b); return; }
       }
@@ -70,15 +77,17 @@
   // missed: its cards on a day gone by holding an open need without a day (ids) }.
   function fill() {
     const needs = readNeeds(), all = blocks(), today = todayStr(), short = [], mine = assign(needs, all);
-    // Each need for a card of its own on its card, alone; what has none goes to Tasks.
+    // Each need for a card of its own on its card, alone; what has none goes to Tasks (but not one its app sets: Momo
+    // places its card, or its week is closed).
     needs.filter(n => n.fill === "card").forEach(n => {
       const b = mine.get(n);
       if (b) return Object.assign(b, { needs: [n], whole: true, used: b.room });
-      if (!n.done && !(n.date && n.date < today)) short.push(n); // a day gone by has nothing left to plan
+      if (!n.done && !n.fixed && !(n.date && n.date < today)) short.push(n); // a day gone by has nothing left to plan
     });
     // A need with a day goes on that day's block; any other on one from today on, not before its from day, and on or
-    // before its due day while that's still to come. Never in another app's card.
-    const fits = (n, b) => !b.card.need && b.title === blockKey(n) && (n.date ? b.date === n.date : !b.past && (!n.from || b.date >= n.from) && (!n.due || n.due < today || b.date <= n.due));
+    // before its due day while that's still to come. Never in another app's card, nor a slot's.
+    const yours = b => !b.card.need && !b.card.slot;
+    const fits = (n, b) => yours(b) && b.title === blockKey(n) && (n.date ? b.date === n.date : !b.past && (!n.from || b.date >= n.from) && (!n.due || n.due < today || b.date <= n.due));
     const rest = needs.filter(n => n.fill !== "card");
     rest.filter(n => n.date).concat(rest.filter(n => !n.date)).forEach(n => {
       if (n.fill === "ongoing") return all.forEach(b => { if (!b.past && fits(n, b)) b.needs.push(n); });
@@ -93,7 +102,7 @@
           return m > 0;
         };
         all.forEach(b => {
-          const ok = b.past ? !b.card.need && !!n.from && b.title === blockKey(n) && b.date >= n.from && (!n.due || b.date <= n.due) : !b.whole && fits(n, b);
+          const ok = b.past ? yours(b) && !!n.from && b.title === blockKey(n) && b.date >= n.from && (!n.due || b.date <= n.due) : !b.whole && fits(n, b);
           if (take(b, ok)) b.needs.push(n);
         });
         if (left > 0 && !n.done) short.push({ ...n, minutes: left });
@@ -102,7 +111,7 @@
       const whole = n.fill === "block", m = needMinutes(n);
       const b = all.find(x => fits(n, x) && !x.whole && (whole ? !x.used : x.used + m <= x.room));
       if (!b) {
-        if (!n.done && !(n.date && n.date < today)) short.push(n); // a day gone by has nothing left to plan
+        if (!n.done && !n.fixed && !(n.date && n.date < today)) short.push(n); // a day gone by has nothing left to plan
         return;
       }
       b.needs.push(n);
@@ -117,7 +126,8 @@
   }
 
   // What fills a card on the board on screen (as last drawn); and whether it holds a need with a day of its own (a
-  // meal, a trip, something done: its app sets that day, so it isn't deleted or put back in Tasks here).
+  // meal, a trip, something done: its app sets that day, so it isn't deleted or put back in Tasks here). A card its
+  // app sets altogether (model.js isFixed: a slot's, a fixed need's) goes by its own field, so it's right before any fill.
   const cardNeeds = card => (S.fill && S.fill.shown.get(card.id)) || [];
   const isDated = card => !!card.need && cardNeeds(card).some(n => n.date);
 

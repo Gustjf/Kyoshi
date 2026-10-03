@@ -18,7 +18,7 @@
     if (!cardEl) return;
     if (e.target.classList.contains("grip")) return A.startResize(e, cardEl);
     if (e.target.closest(".pin")) return;
-    if (cardEl.classList.contains("pinned")) { // it stays put: a click opens it, a drag wiggles its pin
+    if (cardEl.classList.contains("pinned") || cardEl.classList.contains("set")) { // it stays put (set in its app, too): a click opens it, a drag wiggles its pin
       if (e.pointerType !== "mouse") return;
       e.preventDefault();
       S.stuck = { el: cardEl, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
@@ -67,9 +67,9 @@
     else cancelPress();
   }
 
-  // Wiggles a pinned card's pin when it's dragged: it stays where it's pinned.
+  // Wiggles a pinned card's pin when it's dragged (or cut, when it's set in its app): it stays where it's pinned.
   function nudgePin(cardEl) {
-    const pin = cardEl.querySelector(".pin");
+    const pin = cardEl.querySelector(".pin, .set-pin");
     if (!pin) return;
     pin.classList.remove("nudge");
     void pin.offsetWidth; // restarts the animation
@@ -180,14 +180,14 @@
   // would merge into, or Tasks, taking it off its day (another app's card goes,
   // and its need waits there again). Neither a group drag nor a card drawn from
   // a task can go into Tasks, nor another app's card whose day its app sets (a
-  // meal, something done), and nothing on the baseline can (its cards are all on
-  // days). A group drag's cards don't merge on the way: the spot is mirrored
-  // onto each one's day.
+  // meal, something done, one set in its app), and nothing on the baseline can
+  // (its cards are all on days). A group drag's cards don't merge on the way:
+  // the spot is mirrored onto each one's day.
   function findTarget() {
     const drag = S.drag, list = A.readList(drag.key), card = drag.draw || list.cards.find(c => c.id === drag.id);
     const el = document.elementFromPoint(drag.x, drag.y);
     const col = el && el.closest("#board .col");
-    const park = !col && !drag.group && !drag.draw && drag.key !== "base" && !(card && A.isDated(card)) && el && el.closest("#tasks");
+    const park = !col && !drag.group && !drag.draw && drag.key !== "base" && !(card && (A.isDated(card) || A.isFixed(card))) && el && el.closest("#tasks");
     let t = null;
     if (card && col) {
       const day = +col.dataset.day;
@@ -283,7 +283,7 @@
   }
 
   Object.assign(A, {
-    onBoardPointerDown, onPointerMove, onPointerUp, onPointerCancel, cancelPress, swallowClick,
+    onBoardPointerDown, onPointerMove, onPointerUp, onPointerCancel, cancelPress, swallowClick, nudgePin,
     setGroup, isMoving, findTarget, groupMoves
   });
 })(Kyoshi, Kyoshi.apps.momo);

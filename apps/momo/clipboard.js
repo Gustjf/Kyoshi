@@ -6,8 +6,9 @@
  * several days in a row. The shading clears on Esc or CLIP_MS after the last copy,
  * cut or paste, and then there's nothing left to paste. A card with others inside
  * it takes them along. A copy of another app's card keeps its app (its icon and
- * colour) but holds no need (model.js); one cut and pasted is that card, moved
- * (yours from then on), and never goes into Tasks. */
+ * colour) but holds no need nor slot, and isn't set in that app (model.js); one cut
+ * and pasted is that card, moved (yours from then on), and never goes into Tasks. A
+ * card set in its app (fixed: a meal at its time) can't be cut: its pin wiggles. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -28,6 +29,7 @@
     if (!cardEl || S.press || S.drag || S.resize || (cut && A.isLocked())) return false;
     const card = A.shownList().cards.find(c => c.id === cardEl.dataset.id);
     if (!card) return false;
+    if (cut && A.isFixed(card)) { A.nudgePin(cardEl); return true; } // it stays: its app sets it
     holdClip(A.shownKey(), card.id, cut);
     paintClip();
     return true;
@@ -116,7 +118,7 @@
     const clip = S.clip, at = clip && !S.press && !S.drag && !S.resize && !A.isLocked() && pointedAt();
     if (!at) return false;
     const from = A.readList(clip.key), card = from.cards.find(c => c.id === clip.id);
-    if (!card || (clip.cut && clip.key !== "base" && from.closed)) {
+    if (!card || (clip.cut && ((clip.key !== "base" && from.closed) || A.isFixed(card)))) {
       clearClip();
       return false;
     }
@@ -134,7 +136,7 @@
       card.auto = false;
       into = placeCard(list, group, spot);
     } else {
-      placeCard(list, A.copyCards(group, { base: false, need: null, auto: false }), spot);
+      placeCard(list, A.copyCards(group, { base: false, need: null, auto: false, slot: null, fixed: false }), spot);
     }
     if (!clip.cut) holdClip(clip.key, clip.id, false);
     else if (into) clearClip();

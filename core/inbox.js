@@ -1,7 +1,7 @@
 /* Kyoshi · core/inbox.js — what apps need done this week and next, as K.inbox (Momo makes cards of it, or fills blocks).
  * An app with work for the user (Appa's maintenance, …) lists it in A.inbox(from, to): what's needed
  * between `from` and `to` ("YYYY-MM-DD", both included), as copies, in the order it should happen, each
- *   { id, title, block, details, fill, minutes, date, due, from, overdue, done, of, time }
+ *   { id, title, block, details, fill, minutes, date, due, from, overdue, done, of, time, slot, fixed }
  * id: the same for the same need every time (unique within the app); title: what it is ("Oil change");
  * block: the title of the cards it fills in Momo ("Car maintenance"), its title if left out; details: a few
  * short lines for its pop-up; fill: "card" (a card of its own in Momo, titled by its title: its block is
@@ -21,12 +21,17 @@
  * its date shows ✓ on its card, placed on that day if it has none. of: for a done need, the id of the open
  * need it completes (a session for "this week's workout 2"): the card made for that one shows ✓. time:
  * "HH:MM", where in its day Momo puts the card it makes for a dated need (else at the day's end).
+ * A dated "card" need may also carry slot: the id of the app's routine slot it fills on its date (core/routine.js:
+ * "dinner:3"; its block then names the slot's title, "Dinner"), so it goes on that slot's card; and fixed: true when
+ * the app sets its day, time and length (Momo pins its card at its time and won't let it be moved, resized or
+ * deleted there).
  * K.inbox(from, to) gathers every started app's, checked and tagged with the app's id (app), each app's in
  * its own order, then the apps' meetings (core/meetings.js: ids "meeting:…", never an app's own, filling
  * "Meeting" blocks); an id listed twice counts once, and one dated outside from–to is left out. An app whose
  * list fails is left out.
- * K.inbox.open(app, id) shows that app and its need (its A.open(id), if it has one; a meeting, its line).
- * No app changes another's data. */
+ * K.inbox.open(app, id) shows that app and its need (its A.open(id), if it has one; a meeting, its line); id may
+ * also be one of its routine slots' ids (an empty slot's card: where it's set).
+ * No app changes another's data: an app asks another for a change only through a function that one offers. */
 (function (K) {
   "use strict";
   const { isObj, isDate, isTime } = K.util;
@@ -41,7 +46,7 @@
     if (!isObj(n)) return null;
     const id = text(n.id, 80), title = text(n.title, 60), date = isDate(n.date) ? n.date : null;
     if (!id || !title || (date && (date < from || date > to))) return null;
-    const fill = FILLS.includes(n.fill) ? n.fill : "time";
+    const fill = FILLS.includes(n.fill) ? n.fill : "time", card = fill === "card" && !!date; // slot and fixed: a dated card's only
     return {
       app: A.id, id, title,
       block: text(n.block, 60) || title,
@@ -54,7 +59,9 @@
       overdue: n.overdue === true,
       done: n.done === true,
       of: text(n.of, 80) || null,
-      time: isTime(n.time) ? n.time : null
+      time: isTime(n.time) ? n.time : null,
+      slot: (card && text(n.slot, 80)) || null,
+      fixed: card && n.fixed === true
     };
   }
 

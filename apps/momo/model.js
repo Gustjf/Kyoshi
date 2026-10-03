@@ -11,7 +11,8 @@
  *           over its cards (Iroh's) — by title (any case once), on the 15-minute grid; {} when
  *           none was done; none on a week closed quietly (no goals) or before the close-out
  *           logged hours. Iroh reads it (hoursSpent). Reopening the week takes it off.
- * baseline: { cards, u } — the default week, loaded into weeks in one click
+ * baseline: { cards, u } — the default week, loaded into weeks in one click; with a card of its own for each slot of
+ *           the apps' routines (routine.js: Turtleduck's meals at their times, its weekly trips), kept by Momo
  * asks:     { "YYYY-MM-DD" (Monday): { by: { "<app>|<block title>": minutes }, u } } — what the apps asked of
  *           that week, as last seen while it was this week (truecost.js), for the true cost; "<app>|" (no
  *           title) is that app's own cards (its fill "card" needs), all together. A week Momo wasn't opened
@@ -23,12 +24,17 @@
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
  * colors:   { key: { c, u } } — each title's colour (see colors.js)
- * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin, need, app, auto }
+ * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin, need, app, auto, slot, fixed }
  *           — goalId: the old goal it was for, kept as it was; nothing sets one any more
  *           — need: "<app>:<need id>" on a card of its own for another app's need (fill "card", core/inbox.js:
  *           an errand, a meal…), else null; app: that app's id (its icon, and its colour: colors.js), else
  *           null — a pasted copy keeps app but not need; auto: true while Momo placed it (place.js: a need
- *           with a day) and you haven't moved, resized, pinned or edited it since, else false
+ *           with a day; routine.js: a slot) and you haven't moved, resized, pinned or edited it since, else false
+ *           — slot: "<app>:<routine id>" on a slot's card (routine.js: in the baseline, and its copies in the weeks
+ *           it's loaded into), else null; it never folds into another card, and the need naming its slot fills it
+ *           on its date (inbox.js) — fixed: true when its app sets its day, time and length (a slot's card, and
+ *           a card Momo placed for a fixed need: a cooking session at its time), so it can't be dragged, resized,
+ *           pinned, cut or deleted here, nor hold another card ("Change it in <App>"), else false
  * A day's cards show in the order they're listed, which sets their times
  * (see times.js). `u` is when that week, baseline, goal, colour, week's asks or weekend's plan
  * last changed, which is how sync combines two devices' edits.
@@ -54,10 +60,17 @@
   const listFor = key => (key === "base" ? S.data.baseline : ensureWeek(key)); // for changing
   const shownList = () => readList(shownKey());
   const isLocked = () => S.view !== "base" && shownList().closed;
-  const hasData = d => d.goals.length > 0 || d.baseline.cards.length > 0 || Object.values(d.weeks).some(w => w.cards.length > 0) ||
+  // Whether there's anything of yours: the cards Momo keeps or places by itself (the apps' slots, their dated needs'
+  // cards) don't count, so a new device that just made them still takes a sync folder's data whole (core/sync.js).
+  const yours = c => !c.slot && !c.auto;
+  const hasData = d => d.goals.length > 0 || d.baseline.cards.some(yours) || Object.values(d.weeks).some(w => w.cards.some(yours)) ||
     Object.values(d.weekends).some(w => w.plan);
+  // A week is planned once it has a card on a day besides the ones Momo placed by itself for the apps' needs.
+  const isPlanned = list => list.cards.some(c => c.day !== null && !(c.auto && c.need));
 
   const pinned = c => typeof c.pin === "number";
+  // A card its app sets (a slot's, a fixed need's: model.js header), changed in that app only.
+  const isFixed = c => !!c && c.fixed === true;
   const dayTotal = (list, d) => sum(list.cards.filter(c => c.day === d).map(c => c.hours));
   // The cards inside a card, and the hours of the whole block.
   const innerCards = (list, card) => list.cards.filter(c => c.parentId === card.id);
@@ -86,9 +99,9 @@
   // folds into it, unless that would make a card longer than a day. Apart
   // they stay apart (Sleep at both ends of a day), as do pinned and parked
   // cards. The spot on its own is before the card beforeId, else at the end.
-  // A card for another app's need is one of a kind: it never folds, nor is it
-  // any card's twin (drag.js, card-editor.js).
-  const sameKind = (a, b) => !a.need && !b.need && a.title.toLowerCase() === b.title.toLowerCase();
+  // A card for another app's need, or for a slot of its routine, is one of a kind:
+  // it never folds, nor is it any card's twin (drag.js, card-editor.js).
+  const sameKind = (a, b) => !a.need && !b.need && !a.slot && !b.slot && a.title.toLowerCase() === b.title.toLowerCase();
   const inPlace = (c, day, parentId, pos) => c.day === day && c.parentId === parentId && (!parentId || c.pos === pos);
   function mergeTarget(list, card, day, parentId = null, pos = "bottom", beforeId = null) {
     if (day === null || pinned(card)) return null;
@@ -116,9 +129,9 @@
     });
   }
 
-  // What can hold a card: one on its own that isn't the same kind, while the
-  // card has nothing inside it (one level deep).
-  const canHold = (list, parent, card) => !!parent && parent !== card && !parent.parentId && !sameKind(parent, card) && !innerCards(list, card).length;
+  // What can hold a card: one on its own that isn't the same kind, nor set in
+  // another app, while the card has nothing inside it (one level deep).
+  const canHold = (list, parent, card) => !!parent && parent !== card && !parent.parentId && !isFixed(parent) && !sameKind(parent, card) && !innerCards(list, card).length;
 
   // Keeps nesting sound after anything that could break it (a card taken
   // away, a damaged file): a card inside another must be on the same day as
@@ -184,8 +197,8 @@
   }
 
   Object.assign(A, {
-    emptyData, blankWeek, weekOf, ensureWeek, viewKey, shownKey, readList, listFor, shownList, isLocked, hasData,
-    pinned, dayTotal, innerCards, blockHours, budgetOf,
+    emptyData, blankWeek, weekOf, ensureWeek, viewKey, shownKey, readList, listFor, shownList, isLocked, hasData, isPlanned,
+    pinned, isFixed, dayTotal, innerCards, blockHours, budgetOf,
     sameKind, inPlace, mergeTarget, neighbours, absorb, canHold, tidyNesting, insertCard, moveCard, settle
   });
 })(Kyoshi, Kyoshi.apps.momo);

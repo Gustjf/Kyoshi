@@ -123,8 +123,13 @@
 .app-momo .board.locked .pin { cursor: default; }
 .app-momo .board.locked .pin:not(.on) { display: none; }
 .app-momo .card.pinned { cursor: pointer; }
-/* Trying to drag a pinned card wiggles its pin. */
-.app-momo .pin.nudge { animation: momo-nudge .16s ease-in-out 3 alternate; }
+/* A card set in its app (a meal at its time, a slot of its routine: fixed) stays put too: no grip, and its pin is only
+   a sign, muted and always shown (phones too). */
+.app-momo .card.set { cursor: pointer; }
+.app-momo .set-pin { display: inline-flex; margin: -2px 0 -2px 1px; padding: 2px; color: var(--muted); opacity: .75; }
+.app-momo .set-pin .pin-icon { fill: currentColor; }
+/* Trying to drag a pinned card wiggles its pin (cutting a card set in its app too). */
+.app-momo :is(.pin, .set-pin).nudge { animation: momo-nudge .16s ease-in-out 3 alternate; }
 @keyframes momo-nudge { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
 .app-momo .card.dragging { opacity: .3; }
 /* A card copied (Ctrl+C) or cut (Ctrl+X) is shaded while it waits to be pasted: blue for a copy, amber for a cut.
@@ -270,6 +275,8 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo button.col-plan:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* --- Pop-up fields: steppers, day pills, presets, colours, close-out rows --- */
+/* A card set in its app shows its fields greyed out: only looked at here. */
+.app-momo .modal :is(input, select):disabled { opacity: .6; cursor: default; }
 .app-momo .stepper { display: flex; }
 .app-momo .stepper input { min-width: 0; text-align: center; border-radius: 0; }
 .app-momo .step-btn { flex: 0 0 34px; padding: 0; border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font-size: 1.1em; line-height: 1; }
@@ -306,7 +313,7 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .from-done { color: var(--good); font-weight: 700; }
 .app-momo .from-late { color: var(--bad); font-weight: 700; }
 .app-momo .from-detail { display: block; }
-/* In place of Delete on a card whose day its app sets (a meal, something done): where to change it. */
+/* In place of Delete on a card whose day its app sets (a meal, something done), or set there altogether: where to change it. */
 .app-momo .card-change { align-self: center; font-size: .86em; color: var(--muted); }
 .app-momo .card-change a { color: inherit; font-weight: 600; }
 .app-momo .event-clash { margin: 0 0 14px; padding: 9px 11px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); font-size: .86em; font-weight: 600; line-height: 1.4; }
