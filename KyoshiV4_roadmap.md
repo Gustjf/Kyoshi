@@ -47,8 +47,10 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Comments (verbatim)
 - 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: (from Hawky) 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
+- 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 ### Keep
 ### Change
+- 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 ### Add
 - 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
@@ -163,9 +165,17 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Pabu
 ### Comments (verbatim)
+- 2026-10-03: I want to make sure that these people can be edited at once and they all connect to the same name. For instance, if I enter somebodies first name before I know their last name, currently I'd have to go and change every instance. I'd like a roster of people and then all of the communication frequencies I have per person, and a central spot for me to store their likes/dislikes/what we recently spoke about. Make this minimal and unobstrusive. For the momo link - I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu. I really just need to know the next interactions for the week in a pane, and then a database of people to manage. Also, I would like to add grouping to this. so I can keep people separate per job and per place that I move.
 ### Keep
 ### Change
+- 2026-10-03: I want to make sure that these people can be edited at once and they all connect to the same name. For instance, if I enter somebodies first name before I know their last name, currently I'd have to go and change every instance.
+- 2026-10-03: Make this minimal and unobstrusive.
+- 2026-10-03: I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
+- 2026-10-03: I really just need to know the next interactions for the week in a pane, and then a database of people to manage.
 ### Add
+- 2026-10-03: I'd like a roster of people and then all of the communication frequencies I have per person,
+- 2026-10-03: and a central spot for me to store their likes/dislikes/what we recently spoke about.
+- 2026-10-03: Also, I would like to add grouping to this. so I can keep people separate per job and per place that I move.
 ### Remove
 ### Bugs
 ### Open questions
