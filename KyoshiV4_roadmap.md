@@ -45,9 +45,13 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Momo
 ### Comments (verbatim)
+- 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 ### Keep
 ### Change
 ### Add
+- 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
+- 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
+- 2026-10-03: (from Hawky) I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab
 ### Remove
 ### Bugs
 ### Open questions
@@ -82,6 +86,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Hawky
 ### Comments (verbatim)
 - 2026-10-03: Purpose: Update this to accumulate shopping lists. not grocery lists thought as that is handled by turtleduck.  I want to have individual shopping lists that I can use instead of  keeping it in random websites shopping carts. The purpose of this portion is to have a 30 day cooling off period before purchasing anything non-essential. I'd like the functionality to say clearly which vendor it is, add the items needed (with price (assuming normal sales tax)) and then after adding all the items needed, i can lock it for 30 days. while locked it should only have the ability to remove items. after 30 days then it will let me check it off.  Combine Later and Some day into just Later. Ensure items have how long they have been pending on there. I don't like having a generic errands card. I want every individual errand to have their own card with the amount of time that it takes them to do it, and it should be under the hawky tab in momo. errands are always whole, never split. Change the fact that momo decides when - i would like hawky to start to schedule things and put it into momo.  this would only be for upcoming events. also put upcoming events into hawky. make the quick add more simple. Today, pick a day, or none. dration chips are fine. 15 is the right default. add a spot for notes. i would like to add recurring items to here. hawky is going to be where my firmed up for sure travel plans, etc. are going to live. in text form. it should also house all of my upcoming weekends for the rest of the season and have a view to go to the next season as well.
+- 2026-10-03: 1. Errands are a part of hawky, and shopping lists too. The goal is to get out short notes, tasks, things i promised people to do out of my head. its also a place to jot down any products that i see while scrolling, talking to people, remebering that i need. 2. I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab 3. i want hawky to plop down events onto momo. ok i see where you are going on hawky, remove the recurring stuff. make there be some sort of early unlock with a warning. amber if you could. sales tax is just for estimation. use average usa sales tax. 7. i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands. push that to the roadmap
 ### Keep
 - 2026-10-03: dration chips are fine. 15 is the right default.
 - 2026-10-03: errands are always whole, never split.
@@ -91,6 +96,12 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: I don't like having a generic errands card. I want every individual errand to have their own card with the amount of time that it takes them to do it, and it should be under the hawky tab in momo.
 - 2026-10-03: Change the fact that momo decides when - i would like hawky to start to schedule things and put it into momo.  this would only be for upcoming events.
 - 2026-10-03: make the quick add more simple. Today, pick a day, or none.
+- 2026-10-03: Errands are a part of hawky, and shopping lists too. The goal is to get out short notes, tasks, things i promised people to do out of my head. its also a place to jot down any products that i see while scrolling, talking to people, remebering that i need.
+- 2026-10-03: I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab
+- 2026-10-03: i want hawky to plop down events onto momo.
+- 2026-10-03: make there be some sort of early unlock with a warning. amber if you could.
+- 2026-10-03: sales tax is just for estimation. use average usa sales tax.
+- 2026-10-03: the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 ### Add
 - 2026-10-03: I want to have individual shopping lists that I can use instead of  keeping it in random websites shopping carts. The purpose of this portion is to have a 30 day cooling off period before purchasing anything non-essential. I'd like the functionality to say clearly which vendor it is, add the items needed (with price (assuming normal sales tax)) and then after adding all the items needed, i can lock it for 30 days. while locked it should only have the ability to remove items. after 30 days then it will let me check it off.
 - 2026-10-03: Ensure items have how long they have been pending on there.
@@ -100,8 +111,11 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: hawky is going to be where my firmed up for sure travel plans, etc. are going to live. in text form.
 - 2026-10-03: it should also house all of my upcoming weekends for the rest of the season and have a view to go to the next season as well.
 ### Remove
+- 2026-10-03: remove the recurring stuff.
+- 2026-10-03: the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 ### Bugs
 ### Open questions
+- 2026-10-03: (answers to Claude's 7 questions) 1. Errands are a part of hawky, and shopping lists too. The goal is to get out short notes, tasks, things i promised people to do out of my head. its also a place to jot down any products that i see while scrolling, talking to people, remebering that i need. 2. I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab 3. i want hawky to plop down events onto momo. ok i see where you are going on hawky, remove the recurring stuff. make there be some sort of early unlock with a warning. amber if you could. sales tax is just for estimation. use average usa sales tax. 7. i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands. push that to the roadmap
 
 ## Iroh
 ### Comments (verbatim)
