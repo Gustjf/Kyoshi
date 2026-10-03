@@ -52,12 +52,14 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task. birthday stays as board events
 - 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
+- 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 ### Change
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task.
 - 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
+- 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
 ### Add
 - 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
@@ -193,16 +195,20 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Turtleduck
 ### Comments (verbatim)
 - 2026-10-03: 1, - often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure. 4. include support for plurals. 5. let me enter units in any unit and then let me change between output units in the grocery output.
+- 2026-10-03: 1. yes, each meal or cooking task becomes its own card. 2. they are fine
 ### Keep
+- 2026-10-03: 2. they are fine (items 2, 3, 6, 7, 8 and 9 of Claude's list)
 ### Change
 - 2026-10-03: include support for plurals.
 - 2026-10-03: let me enter units in any unit and then let me change between output units in the grocery output.
+- 2026-10-03: yes, each meal or cooking task becomes its own card.
 ### Add
 - 2026-10-03: often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure.
 ### Remove
 ### Bugs
 ### Open questions
 - 2026-10-03: (answers to Claude's questions 1, 4 and 5) 1, - often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure. 4. include support for plurals. 5. let me enter units in any unit and then let me change between output units in the grocery output.
+- 2026-10-03: (answers to Claude's follow-up questions) 1. yes, each meal or cooking task becomes its own card. 2. they are fine
 
 ## Pabu
 ### Comments (verbatim)
