@@ -233,4 +233,10 @@ Push Phase 6. Done.
 | 4 | | | +1 | | | | | | |
 | 5 | | | | +1 | | | | | |
 | 6 | | | | | | +0.100 | | | |
+| 7 | +0.100 | +1 | | | | +1 | | | |
 Bosco: untouched throughout.
+
+---
+
+## Phase 7 — Turtleduck sets the times, Momo's baseline holds the slots
+Planned 2026-10-03: see `KyoshiV4_phase7_plan.md` (its own decisions and three pushes; end-to-end tests are back on for it, overriding the no-tests rule above).
