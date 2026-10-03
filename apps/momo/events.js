@@ -84,6 +84,7 @@
     A.defineEventOverlay();
     A.defineCloseOutOverlay();
     A.initToday(); // Today, its buttons and its card pop-up; on a phone Momo opens on it
+    A.initWeekends(); // a weekend's pop-up, opened from Upcoming weekends or the board's Saturday
 
     $("cardSaveBtn").addEventListener("click", A.saveCard);
     $("cardDeleteBtn").addEventListener("click", A.deleteCard);
@@ -157,6 +158,7 @@
       const top = K.modal.top(A.root);
       if (top === $("cardOverlay")) { e.preventDefault(); A.saveCard(); return true; }
       if (top === $("eventOverlay")) { e.preventDefault(); A.onEventTime(true); A.moveEvent(); return true; }
+      if (top === $("weekendOverlay")) { e.preventDefault(); A.saveWeekend(); return true; }
     }
     return false;
   };
@@ -227,6 +229,7 @@
       `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => !t.ongoing).length} short, ${tasks.filter(t => t.ongoing).length} ongoing; from ${A.appsIn(tasks).join(", ") || "no app"}); late needs: ${f.needs.filter(n => A.isLate(n)).length}`,
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}${A.laterToday() ? " (put off until tomorrow)" : ""}`,
+      `- Weekends: ${A.upcomingWeekends().filter(A.planOf).length} of the next ${A.WEEKENDS} planned; plans kept: ${Object.values(data.weekends).filter(w => w.plan).length} (${Object.values(data.weekends).filter(w => !w.plan).length} cleared)`,
       `- Undo steps: ${S.undoStack.length}`
     ];
   };

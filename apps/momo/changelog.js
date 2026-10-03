@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "9.064", date: "2026-10-03", changes: [
+      "Upcoming weekends: a folded line under the board and under Today shows how many of the next 13 weekends have a plan; open it to see each and type a brief plan, so weekends get spent on purpose. Reload Momo on every device.",
+      "This week's and next week's Saturday on the board shows its weekend's plan too: tap it to change it."
+    ] },
     { version: "8.964", date: "2026-10-03", changes: [
       "Each app's errand, call, workout, meal, cooking session, grocery trip and maintenance job is now a card of its own, titled by it, as long as it takes, with its app's icon and colour (one colour per app: change it in any of its cards' pop-up).",
       "Tasks list them one by one: drag one onto a day (or click it and pick the day); drag its card back into Tasks to take it off again.",

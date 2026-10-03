@@ -16,6 +16,9 @@
  *           that week, as last seen while it was this week (truecost.js), for the true cost; "<app>|" (no
  *           title) is that app's own cards (its fill "card" needs), all together. A week Momo wasn't opened
  *           has none. Kept apart from the weeks, so recording it never touches a week's cards or their sync.
+ * weekends: { "YYYY-MM-DD" (Saturday): { plan, u } } — a weekend's plan (weekends.js): a brief note on one line, at most
+ *           PLAN_MAX characters; "" once cleared, kept so the clearing wins when two devices combine. Past weekends'
+ *           stay. Apart from the weeks too; it takes no hours.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
@@ -27,7 +30,7 @@
  *           null — a pasted copy keeps app but not need; auto: true while Momo placed it (place.js: a need
  *           with a day) and you haven't moved, resized, pinned or edited it since, else false
  * A day's cards show in the order they're listed, which sets their times
- * (see times.js). `u` is when that week, baseline, goal, colour or week's asks
+ * (see times.js). `u` is when that week, baseline, goal, colour, week's asks or weekend's plan
  * last changed, which is how sync combines two devices' edits.
  * A card on its own on a day can be pinned: pin is the time it starts, in
  * hours after midnight (23.5 is 2330). Otherwise pin is null.
@@ -41,7 +44,7 @@
   const { sum } = K.util;
   const { DAY_HOURS, DAYS, AUTO, thisWeekKey, nextWeekKey, firstDay } = A;
 
-  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {} }; }
+  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {}, weekends: {} }; }
   const blankWeek = () => ({ cards: [], closed: false, u: 0 });
   const weekOf = key => S.data.weeks[key] || blankWeek(); // for reading: a week not planned yet reads as empty
   const ensureWeek = key => S.data.weeks[key] || (S.data.weeks[key] = blankWeek());
@@ -51,7 +54,8 @@
   const listFor = key => (key === "base" ? S.data.baseline : ensureWeek(key)); // for changing
   const shownList = () => readList(shownKey());
   const isLocked = () => S.view !== "base" && shownList().closed;
-  const hasData = d => d.goals.length > 0 || d.baseline.cards.length > 0 || Object.values(d.weeks).some(w => w.cards.length > 0);
+  const hasData = d => d.goals.length > 0 || d.baseline.cards.length > 0 || Object.values(d.weeks).some(w => w.cards.length > 0) ||
+    Object.values(d.weekends).some(w => w.plan);
 
   const pinned = c => typeof c.pin === "number";
   const dayTotal = (list, d) => sum(list.cards.filter(c => c.day === d).map(c => c.hours));

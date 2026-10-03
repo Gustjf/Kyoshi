@@ -37,6 +37,8 @@
     DRAW_HOURS: 1,     // a card drawn from a task in Tasks that doesn't say how long (tasks.js)
     COST_WEEKS: 13,    // the true cost averages the apps' asks over the weeks kept among this many, this one too (truecost.js)
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
+    WEEKENDS: 13,      // the weekends Upcoming weekends shows, this one first: about three months (weekends.js)
+    PLAN_MAX: 120,     // a weekend's plan, in characters
     YEAR_MIN: 2000, YEAR_MAX: 2999, // the old goals' finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.
@@ -86,7 +88,7 @@
   // STATE
   // ==========================================================================
   Object.assign(A.S, {
-    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks } (model.js)
+    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks, weekends } (model.js)
     view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
     today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
@@ -108,6 +110,7 @@
     agendaKey: "",         // their events this week and next as last drawn, to notice them changing
     triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }
     detail: null,          // a card's pop-up on Today (today.js): { key: its week, id }
+    weekend: null,         // the weekend in its pop-up (weekends.js): its Saturday
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
 
@@ -120,8 +123,9 @@
   const fmtH = h => (h > 0 && h < 1 ? `${Math.round(h * 60)}m` : `${fmtNum(h)}h`);
   // A share of the 168-hour week, e.g. "56%"; only none or all of it shows as 0% or 100%.
   const fmtPct = h => { const p = Math.round(h / (7 * A.DAY_HOURS) * 100); return `${h > 0 && h < 7 * A.DAY_HOURS ? Math.min(99, Math.max(1, p)) : p}%`; };
-  // Titles and names: runs of spaces become one, and a long one is cut without splitting an emoji.
-  const cleanText = s => [...String(s).replace(/\s+/g, " ").trim()].slice(0, A.MAX_TITLE).join("").trim();
+  // Titles and names (and a weekend's plan, up to PLAN_MAX): runs of spaces become one, and a long one is cut without
+  // splitting an emoji.
+  const cleanText = (s, max = A.MAX_TITLE) => [...String(s).replace(/\s+/g, " ").trim()].slice(0, max).join("").trim();
   // A time of day, in hours after midnight, on the 24-hour clock: 7.5 is
   // "0730". Past midnight it keeps counting ("2430").
   const fmtClock = h => `${pad2(Math.floor(h))}${pad2(Math.round(h % 1 * 60))}`;

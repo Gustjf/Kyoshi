@@ -1,6 +1,6 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Pop-up fields · Phones */
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Upcoming weekends · Pop-up fields · Phones */
 
 /* --- Tokens --- */
 /* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
@@ -245,6 +245,29 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .t-empty p { margin: 0 0 12px; font-size: 1.1em; }
 /* A card's pop-up on Today: a dot in its colour by its title. */
 .app-momo .detail-dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+
+/* --- Upcoming weekends (weekends.js) --- */
+/* Folded under the board and under Today, muted and small: not the focus. Open, a tile per weekend: its days, then
+   its plan in green, or "No plan" in red. The board's Saturday heading shows the plan as a muted line (tap: its
+   pop-up); the other days get an empty line as tall, so every day's cards still start level. */
+.app-momo .weekends { margin: 0 0 14px; font-size: .82em; color: var(--muted); }
+.app-momo .weekends > summary { display: inline-block; max-width: 100%; padding: 2px 4px 2px 0; cursor: pointer; user-select: none; -webkit-user-select: none; line-height: 1.4; }
+.app-momo .weekends > summary::-webkit-details-marker { display: none; }
+.app-momo .weekends > summary::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 9px 2px 2px; vertical-align: middle; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+.app-momo .weekends[open] > summary::before { transform: rotate(45deg); }
+.app-momo .weekends > summary:hover { color: var(--text); }
+.app-momo .weekends > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.app-momo .we-head { font-weight: 600; }
+.app-momo .weekend-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin-top: 8px; }
+.app-momo .weekend { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; padding: 5px 9px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 1em; line-height: 1.3; text-align: left; }
+.app-momo .weekend:hover { background: var(--ring); border-color: var(--accent); }
+.app-momo .weekend:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.app-momo .we-days { font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-momo .we-plan { max-width: 100%; color: var(--good); overflow-wrap: anywhere; }
+.app-momo .we-plan.none { color: var(--bad); }
+.app-momo .col-plan { display: block; width: 100%; height: 1.4em; margin: 4px 0 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--muted); font-size: .76em; line-height: 1.4em; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-momo button.col-plan:hover { background: none; color: var(--text); text-decoration: underline; }
+.app-momo button.col-plan:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* --- Pop-up fields: steppers, day pills, presets, colours, close-out rows --- */
 .app-momo .stepper { display: flex; }

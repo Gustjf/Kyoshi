@@ -1,8 +1,8 @@
 /* Momo · render.js — draws the board from A.S: renderAll, then the week tabs (a week is all assigned
  * once every hour has a job and its Tasks are empty), the To Be Budgeted bank (with Tasks, see tasks.js)
  * and the board's days and cards (sized to the ruler, see times.js; filled with what other apps need, see
- * inbox.js, red-edged while that holds something late; other apps' events over them, see agenda.js); then
- * Today, when it's on screen (today.js). */
+ * inbox.js, red-edged while that holds something late; other apps' events over them, see agenda.js; Saturday's
+ * heading with its weekend's plan, see weekends.js); then Upcoming weekends, and Today when it's on screen (today.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -24,6 +24,7 @@
     A.renderCloseOutControls();
     A.refreshDev(); // the undo count in Developer Mode
     A.paintClip();
+    A.renderWeekends(); // under the board and under Today (weekends.js)
     A.renderToday();
   }
 
@@ -185,7 +186,7 @@
         <div class="col-head">
           <div class="col-day"><span>${DAY_NAMES[d]}</span>${A.headEventsHTML(d, locked)}<span class="col-date">${date}</span></div>
           <div class="col-total">Total: <span class="col-sum">${fmtNum(total)}</span>/24</div>
-          <div class="col-bar"><span style="width:${Math.min(100, total / DAY_HOURS * 100)}%"></span></div>
+          <div class="col-bar"><span style="width:${Math.min(100, total / DAY_HOURS * 100)}%"></span></div>${A.headPlanHTML(key, d)}
         </div>
         <div class="col-body">${dayHTML(list, d, plans[d], total, locked)}</div>
       </div>`;

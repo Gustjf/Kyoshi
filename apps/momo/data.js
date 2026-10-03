@@ -7,9 +7,9 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isNum, isPos, isObj, newId } = K.util;
-  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION,
-    snap, clampHours, cleanText, isDueDate, isWeekKey, thisWeekKey, nextWeekKey } = A;
+  const { isNum, isPos, isObj, isDate, newId } = K.util;
+  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION, PLAN_MAX,
+    snap, clampHours, cleanText, isDueDate, isWeekKey, dayIndex, thisWeekKey, nextWeekKey } = A;
 
   const STANDALONE_KEY = "momoData_v1"; // the standalone Momo's data: read (never changed) on the first open in Kyoshi
   const APP_ID = /^[a-z][a-z0-9]{0,30}$/; // an app's id, as Kyoshi.register takes it
@@ -20,7 +20,7 @@
     S.lastSaved = JSON.parse(S.lastSavedJSON);
   }
 
-  // Stamps each week, the baseline, each goal, each colour and each week's asks that
+  // Stamps each week, the baseline, each goal, each colour, each week's asks and each weekend's plan that
   // changed since the last save with the time, so sync knows which side's copy is newer.
   function stampChanges(prev) {
     if (!prev) return;
@@ -33,6 +33,8 @@
     Object.keys(data.colors).forEach(k => { if (!same(data.colors[k], had[k])) data.colors[k].u = now; });
     const asked = prev.asks || {};
     Object.keys(data.asks).forEach(k => { if (!same(data.asks[k], asked[k])) data.asks[k].u = now; });
+    const planned = prev.weekends || {};
+    Object.keys(data.weekends).forEach(k => { if (!same(data.weekends[k], planned[k])) data.weekends[k].u = now; });
   }
 
   // Keeps a change made on this device, with colours for any new titles: the
@@ -168,6 +170,16 @@
     });
     return out;
   }
+  // Each weekend's plan by its Saturday (see model.js), in key order: one line, at most PLAN_MAX characters; "" once
+  // cleared (with its time, so the clearing wins over an older copy's plan). Older files simply have none.
+  function cleanWeekends(raw) {
+    const out = {};
+    if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
+      const w = raw[k], plan = isObj(w) && typeof w.plan === "string" ? cleanText(w.plan, PLAN_MAX) : "";
+      if (isDate(k) && dayIndex(k) === 5 && isObj(w) && (plan || isPos(w.u))) out[k] = { plan, u: cleanU(w.u) };
+    });
+    return out;
+  }
   function normalizeData(raw) {
     const out = A.emptyData();
     if (!isObj(raw)) return out;
@@ -182,6 +194,7 @@
     out.goals = (Array.isArray(raw.goals) ? raw.goals : []).map(cleanGoal).filter(g => g && !ids.has(g.id) && ids.add(g.id));
     out.colors = isObj(raw.colors) ? cleanColors(raw.colors) : oldColors(raw, out);
     out.asks = cleanAsks(raw.asks);
+    out.weekends = cleanWeekends(raw.weekends);
     return out;
   }
   // Colours as saved (a title's, an old goal's or an app's: colors.js), in key order; ensureColors sorts out any two keys
@@ -264,7 +277,8 @@
       baseline: S.data.baseline,
       goals: S.data.goals,
       colors: S.data.colors,
-      asks: S.data.asks
+      asks: S.data.asks,
+      weekends: S.data.weekends
     };
   }
 
@@ -278,7 +292,7 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks and baseline — with this backup?")) return;
+    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline and weekend plans — with this backup?")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];
@@ -295,9 +309,9 @@
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
   // Combines two versions changed separately: every week, the baseline, every
-  // goal, every title's colour and every week's asks is taken from whichever side
-  // changed it last, and goal hours logged on either side are all kept. Gives the same
-  // result on every device, so two devices combining at once still agree.
+  // goal, every title's colour, every week's asks and every weekend's plan is taken from
+  // whichever side changed it last, and goal hours logged on either side are all kept. Gives
+  // the same result on every device, so two devices combining at once still agree.
   function mergeVersions(a, b) {
     const [older, newer] = a.savedAt + a.device > b.savedAt + b.device ? [b, a] : [a, b];
     const pick = (o, n) => (!o ? n : !n ? o : o.u > n.u ? o : n); // a tie goes to the newer save
@@ -311,9 +325,11 @@
     });
     const colors = {};
     [older.colors, newer.colors].forEach(side => Object.keys(side).forEach(k => { colors[k] = pick(colors[k], side[k]); }));
-    return { weeks: byKey(older.weeks, newer.weeks), baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors, asks: byKey(older.asks || {}, newer.asks || {}) };
+    return { weeks: byKey(older.weeks, newer.weeks), baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors, asks: byKey(older.asks || {}, newer.asks || {}),
+      weekends: byKey(older.weekends || {}, newer.weekends || {}) };
   }
-  const dataKey = d => JSON.stringify([Object.keys(d.weeks).sort().map(k => [k, d.weeks[k]]), d.baseline, d.goals, d.colors, Object.keys(d.asks).sort().map(k => [k, d.asks[k]])]);
+  const sorted = o => Object.keys(o).sort().map(k => [k, o[k]]);
+  const dataKey = d => JSON.stringify([sorted(d.weeks), d.baseline, d.goals, d.colors, sorted(d.asks), sorted(d.weekends)]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -326,7 +342,7 @@
       same: dataKey(next) === theirKey,
       apply() {
         if (dataKey(next) === dataKey(S.data)) return false; // nothing new here
-        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks };
+        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks, weekends: next.weekends };
         return true;
       }
     };

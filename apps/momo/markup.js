@@ -1,6 +1,6 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
- * with Tasks, a chunk per app, the board) or Today's, and its pop-ups (card editor, an event, a card on
- * Today, close-out).
+ * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends folded at its bottom, and
+ * its pop-ups (card editor, an event, a card on Today, a weekend's plan, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -22,6 +22,7 @@ Kyoshi.apps.momo.markup = `
       <button class="secondary" id="weekBtn">Week</button>
     </div>
     <div id="todayBody"></div>
+    <details class="weekends"><summary></summary><div class="weekend-list"></div></details>
   </div>
 
   <div id="boardView">
@@ -68,6 +69,8 @@ Kyoshi.apps.momo.markup = `
   <div class="board-wrap" id="boardWrap">
     <div class="board" id="board"></div>
   </div>
+  <!-- Upcoming weekends (weekends.js), folded: also at the bottom of Today. -->
+  <details class="weekends"><summary></summary><div class="weekend-list"></div></details>
   </div>
 
   <section data-kyoshi="backup"></section>
@@ -178,6 +181,24 @@ Kyoshi.apps.momo.markup = `
         <button id="detailCloseBtn">Close</button>
         <span class="spacer"></span>
         <button class="secondary" id="detailEditBtn">Edit card</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- A weekend's plan (weekends.js): a brief note, kept by its Saturday. -->
+  <div class="overlay" id="weekendOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="weekendTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="weekendTitle"></h3>
+      <div class="field">
+        <label for="weekendPlan">Plan</label>
+        <input type="text" id="weekendPlan" maxlength="120" placeholder="Camping with …, or Rest" autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button id="weekendSaveBtn">Save</button>
+        <button class="secondary" id="weekendCancelBtn">Cancel</button>
+        <span class="spacer"></span>
+        <button class="secondary" id="weekendClearBtn">Clear</button>
       </div>
     </div>
   </div>
