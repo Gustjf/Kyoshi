@@ -69,7 +69,9 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Bosco
 ### Comments (verbatim)
+- 2026-10-03: I really like Bosco. This was the first application, even before Kyoshi and served as the inspiration for everything else. Don't change this - I think it is as good as I can get it for now.
 ### Keep
+- 2026-10-03: Don't change this - I think it is as good as I can get it for now.
 ### Change
 ### Add
 ### Remove
