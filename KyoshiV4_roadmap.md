@@ -28,16 +28,12 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Cross-cutting (anything not tied to one app)
 ### Comments (verbatim)
 - 2026-10-03: (from Badgermole) I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
-- 2026-10-03: (from Momo) I want it to function closely to this...Momo takes care of the baseline daily schedule and then the other apps can send "meeting invites" like outlook each week to be on momos schedule. if the time is free, it will accept, if not, some sort of scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that. i want to have reoccuring preferred meeting times. i think that will help me bring the events back to the apps and have more per app control. i want to try that out, i know it is different than before.
 ### Keep
 ### Change
-- 2026-10-03: (from Momo) I want it to function closely to this...Momo takes care of the baseline daily schedule and then the other apps can send "meeting invites" like outlook each week to be on momos schedule. if the time is free, it will accept, if not, some sort of scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that.
-- 2026-10-03: (from Momo) i think that will help me bring the events back to the apps and have more per app control. i want to try that out, i know it is different than before.
 ### Add
 - 2026-10-03: (from Badgermole) I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
 ### Remove
 ### Bugs
-- 2026-10-03: (from Momo) i think that problem was within hawky? because i didnt enter momo to experience it. just in hawky upcoming tasks. (the Erika/Erica problem; earlier logged under Pabu)
 ### Open questions
 
 ## Core
@@ -57,28 +53,24 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task. birthday stays as board events
 - 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 - 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
-- 2026-10-03: 3. i think that problem was within hawky? because i didnt enter momo to experience it. just in hawky upcoming tasks. yes that summary makes sense. I had an idea.....I want it to function closely to this...Momo takes care of the baseline daily schedule and then the other apps can send "meeting invites" like outlook each week to be on momos schedule. if the time is free, it will accept, if not, some sort of scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that. i want to have reoccuring preferred meeting times. i think that will help me bring the events back to the apps and have more per app control. i want to try that out, i know it is different than before.
+- 2026-10-03: sorry about the erika/erica problem being in hawky - it was in pabu - my bad. remove that. ok, that makes sense about the conflicting reply. The prime directive is that it is still a 168 hour budget, true cost tab and close out should remain. Remove my current input about the meeting invites/et. bad idea.
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 - 2026-10-03: yes that summary makes sense. (the summary: each app puts its own individual, correctly sized card/task into Momo, labelled by its app, instead of Momo filling generic title-matched blocks)
+- 2026-10-03: The prime directive is that it is still a 168 hour budget, true cost tab and close out should remain.
 ### Change
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task.
 - 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 - 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
-- 2026-10-03: I want it to function closely to this...Momo takes care of the baseline daily schedule and then the other apps can send "meeting invites" like outlook each week to be on momos schedule. if the time is free, it will accept, if not, some sort of scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that.
-- 2026-10-03: i think that will help me bring the events back to the apps and have more per app control. i want to try that out, i know it is different than before.
 ### Add
 - 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
 - 2026-10-03: (from Hawky) I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab
 - 2026-10-03: (from Hawky) 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
-- 2026-10-03: i want to have reoccuring preferred meeting times.
-- 2026-10-03: the other apps can send "meeting invites" like outlook each week ... a scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that.
 ### Remove
 ### Bugs
 ### Open questions
-- 2026-10-03: (answers to Claude's Momo questions) 3. i think that problem was within hawky? because i didnt enter momo to experience it. just in hawky upcoming tasks. yes that summary makes sense. I had an idea.....I want it to function closely to this...Momo takes care of the baseline daily schedule and then the other apps can send "meeting invites" like outlook each week to be on momos schedule. if the time is free, it will accept, if not, some sort of scheduling resolution window like microsoft outlook will pop up so i can see what hours are busy and then schedule on that. i want to have reoccuring preferred meeting times. i think that will help me bring the events back to the apps and have more per app control. i want to try that out, i know it is different than before.
 
 ## Bosco
 ### Comments (verbatim)
@@ -226,6 +218,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: I want to make sure that these people can be edited at once and they all connect to the same name. For instance, if I enter somebodies first name before I know their last name, currently I'd have to go and change every instance. I'd like a roster of people and then all of the communication frequencies I have per person, and a central spot for me to store their likes/dislikes/what we recently spoke about. Make this minimal and unobstrusive. For the momo link - I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu. I really just need to know the next interactions for the week in a pane, and then a database of people to manage. Also, I would like to add grouping to this. so I can keep people separate per job and per place that I move.
 - 2026-10-03: 1. No, I had trouble editing one task of "Erika" to "Erica" when I remember that i misspelled the name. I meant that momo no longer fills a keep in touch block and directly fills in the individual task. no, keep them in one group at a time. birthday stays as board events
 - 2026-10-03: to go back to pabu, the erica to erika thing is within the pabu app itself not just momo. mark that and i will continue to iroh: the rest in iroh sounds good. Include minimal guidance to make SMART goals when setting up goals with the acryonym defined in a minimal way.
+- 2026-10-03: (from Momo) it [the erika/erica problem] was in pabu - my bad.
 ### Keep
 - 2026-10-03: birthday stays as board events
 ### Change
