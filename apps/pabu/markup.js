@@ -1,9 +1,18 @@
-/* Pabu · markup.js — the page (A.markup): quick add (the name and Add, then the how-often and how chips), the
- * Birthdays strip (shown when one is coming up), the list (its groups filled in by render.js), Backup & sync, and the
- * person pop-up (the name, how often and how, minutes, the birthday as month, day and an optional year, a note, and the
- * days you talked). The shell supplies the header, footer, Developer Mode and bug reports; core/backup.js fills
- * [data-kyoshi="backup"]. Ids only need to be unique within the app (look them up with A.$). */
+/* Pabu · markup.js — the page (A.markup): This week (filled in by render.js; hidden while no one has a call, text or
+ * visit), quick add (the name and Add, then the how-often and how chips), the Birthdays strip (shown when one is coming
+ * up), People (the group chips and the list, filled in by render.js), Backup & sync, and the person pop-up (the name and
+ * group, the birthday as month, day and an optional year, notes, their calls, texts and visits — filled in by
+ * editor.js — then the line saying what stopped Save, and Save, Cancel and Delete, kept in view at its foot). The shell
+ * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only
+ * need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.pabu.markup = `
+  <section id="weekSection" hidden>
+    <h2>This week <span class="count" id="weekCount"></span></h2>
+    <div id="weekEmpty" class="empty-msg">No one's due this week.</div>
+    <ul class="week" id="weekList"></ul>
+    <div class="footnote">Tap ✓ once you've talked: it stays ticked until the week ends (tap it again to undo). Tap a name to change it. Each one due is a card of its own in Momo too: it waits in Momo's Tasks, up to 6 days early, until you drag it onto a day.</div>
+  </section>
+
   <section class="quick-add">
     <form id="addForm" novalidate autocomplete="off">
       <div class="add-line">
@@ -34,45 +43,28 @@ Kyoshi.apps.pabu.markup = `
 
   <section>
     <h2>People <span class="count" id="peopleCount"></span></h2>
+    <div class="chips groups" id="groupChips" role="group" aria-label="Show a group" hidden></div>
     <div id="listEmpty" class="empty-msg">No one yet. Add the people you want to stay close to above.</div>
-    <div id="groups"></div>
-    <div class="footnote">Tap ✓ once you've talked, or the name to change or delete. Each one due is a card of its own in Momo: it waits in Momo's Tasks, up to 6 days early, until you drag it onto a day.</div>
+    <ul class="roster" id="roster"></ul>
+    <div class="footnote">Tap someone to change their calls, texts and visits, group, notes or birthday, or to delete them.</div>
   </section>
 
   <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="personOverlay">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="personModalTitle">
+    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="personModalTitle">
       <button type="button" class="modal-close" aria-label="Close">&times;</button>
       <h3 id="personModalTitle">Person</h3>
       <form id="personForm" novalidate autocomplete="off">
-        <div class="field">
-          <label for="personName">Name</label>
-          <input type="text" id="personName" maxlength="40">
-        </div>
         <div class="field-row">
           <div class="field">
-            <label for="personEvery">How often</label>
-            <select id="personEvery">
-              <option value="week">Every week</option>
-              <option value="2weeks">Every 2 weeks</option>
-              <option value="month">Every month</option>
-              <option value="quarter">Every quarter</option>
-              <option value="year">Every year</option>
-              <option value="none">Birthday only</option>
-            </select>
+            <label for="personName">Name</label>
+            <input type="text" id="personName" maxlength="40">
           </div>
           <div class="field">
-            <label for="personHow">How</label>
-            <select id="personHow">
-              <option value="call">Call</option>
-              <option value="text">Text</option>
-              <option value="visit">Visit</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="personMinutes">Minutes</label>
-            <input type="number" id="personMinutes" min="5" max="480" step="5" inputmode="numeric">
+            <label for="personGroup">Group (optional)</label>
+            <input type="text" id="personGroup" maxlength="30" list="personGroupList" placeholder="Family, Work…">
+            <datalist id="personGroupList"></datalist>
           </div>
         </div>
         <div class="field">
@@ -98,23 +90,23 @@ Kyoshi.apps.pabu.markup = `
           </div>
         </div>
         <div class="field">
-          <label for="personNote">Note (optional)</label>
-          <textarea id="personNote" rows="3" maxlength="300" placeholder="What to ask about next time"></textarea>
+          <label for="personNote">Notes: likes, dislikes, what you talked about</label>
+          <textarea id="personNote" rows="4" maxlength="1000"></textarea>
         </div>
         <div class="field">
-          <label for="personTalkDate">Talked on</label>
-          <ul class="talks" id="personTalks"></ul>
-          <div class="talk-add">
-            <input type="date" id="personTalkDate" aria-label="A day you talked">
-            <button type="button" class="secondary" id="personTalkAdd">Add a day</button>
-          </div>
+          <div class="field-label">Calls, texts and visits</div>
+          <div class="cadences" id="personCadences"></div>
+          <p class="cadences-none" id="personNoCadence">Birthday only: no calls, texts or visits.</p>
+          <button type="button" class="secondary" id="personCadenceAdd">+ Add a call, text or visit</button>
         </div>
-        <p class="modal-hint" id="personHint" role="status" hidden></p>
-        <div class="modal-actions">
-          <button type="submit">Save</button>
-          <button type="button" class="secondary" id="personCancelBtn">Cancel</button>
-          <span class="spacer"></span>
-          <button type="button" class="danger" id="personDeleteBtn">Delete</button>
+        <div class="modal-foot">
+          <p class="modal-hint" id="personHint" role="status" hidden></p>
+          <div class="modal-actions">
+            <button type="submit">Save</button>
+            <button type="button" class="secondary" id="personCancelBtn">Cancel</button>
+            <span class="spacer"></span>
+            <button type="button" class="danger" id="personDeleteBtn">Delete</button>
+          </div>
         </div>
       </form>
     </div>

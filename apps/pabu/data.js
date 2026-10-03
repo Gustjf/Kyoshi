@@ -5,7 +5,7 @@
   "use strict";
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId, daysInMonth } = K.util;
-  const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_NOTE, MAX_TALKS, DEFAULT_EVERY, DEFAULT_HOW, cleanLine, cleanText, cleanMinutes, plural } = A;
+  const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_GROUP, MAX_NOTE, MAX_CADENCES, MAX_TALKS, DEFAULT_EVERY, DEFAULT_HOW, cleanLine, cleanText, cleanMinutes, plural } = A;
 
   const MAX_MS = 8.64e15; // the last moment a date can hold
   const persist = () => A.store.set("people", JSON.stringify(S.people));
@@ -17,7 +17,7 @@
   }
 
   // How often and how as kept: any short id, so a newer version's own survives a round trip through this one (everyOf and
-  // howOf read it as every month and a call), else the defaults.
+  // howOf read it as every month and a call), else the defaults. A call, text or visit's own id is one too.
   const isKey = v => typeof v === "string" && /^[a-z0-9]{1,12}$/.test(v);
 
   // The days you talked: real days only, each once, newest first, at most MAX_TALKS. Days after today are kept (another
@@ -31,23 +31,47 @@
     return month >= 1 && month <= 12 && +m[2] >= 1 && +m[2] <= daysInMonth(2000, month) ? b : ""; // 2000: a leap year
   }
 
+  const cleanAt = v => (isPos(v) && v < MAX_MS ? v : 0);
+
+  // A person's calls, texts and visits: at most MAX_CADENCES, each with an id of its own (one missing, or already
+  // used, gets the first free of c1, c2…: the same on every device). Before there were several (schemaVersion 1),
+  // a person had one, its how often, how, minutes and days at the top: that one becomes their only one, "c1" (none
+  // when it was birthday only).
+  function cleanCadences(p, at) {
+    const list = Array.isArray(p.cadences) ? p.cadences.filter(c => isObj(c) && c.every !== "none")
+      : p.cadences !== undefined || p.every === "none" ? [] : [{ id: "c1", every: p.every, how: p.how, minutes: p.minutes, talks: p.talks }];
+    const own = new Set(list.map(c => c.id).filter(isKey)), ids = new Set();
+    return list.slice(0, MAX_CADENCES).map(c => {
+      let id = isKey(c.id) && !ids.has(c.id) ? c.id : "";
+      for (let n = 1; !id; n++) if (!own.has(`c${n}`) && !ids.has(`c${n}`)) id = `c${n}`;
+      ids.add(id);
+      const how = isKey(c.how) ? c.how : DEFAULT_HOW;
+      return {
+        id,
+        every: isKey(c.every) ? c.every : DEFAULT_EVERY,
+        how,
+        minutes: cleanMinutes(c.minutes, how),
+        talks: cleanTalks(c.talks),
+        at: cleanAt(c.at) || at // when it was added: due that day until you first talk (the person's, carried over)
+      };
+    });
+  }
+
   // Saved or imported people in the current shape; anything unusable is dropped, so a damaged file
   // can't break the app. A deleted one keeps only what sync needs.
   function cleanPeople(list) {
     const ids = new Set();
     return (Array.isArray(list) ? list : []).filter(isObj).map(p => {
-      const gone = p.deleted === true, how = isKey(p.how) ? p.how : DEFAULT_HOW;
+      const gone = p.deleted === true, at = cleanAt(p.at);
       return {
         id: typeof p.id === "string" && p.id ? p.id.slice(0, 40) : newId(),
         name: gone ? "" : cleanLine(p.name, MAX_NAME),
-        every: isKey(p.every) ? p.every : DEFAULT_EVERY,
-        how,
-        minutes: cleanMinutes(p.minutes, how),
-        talks: gone ? [] : cleanTalks(p.talks),
+        group: gone ? "" : cleanLine(p.group, MAX_GROUP),
         note: gone ? "" : cleanText(p.note, MAX_NOTE),
         birthday: gone ? "" : cleanBirthday(p.birthday),
+        cadences: gone ? [] : cleanCadences(p, at),
         deleted: gone,
-        at: isPos(p.at) && p.at < MAX_MS ? p.at : 0, // when they were added: due that day until you first talk
+        at, // when they were added
         u: isPos(p.u) ? p.u : 0
       };
     }).filter(p => (p.name || p.deleted) && !ids.has(p.id) && ids.add(p.id));

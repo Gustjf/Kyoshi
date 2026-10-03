@@ -1,6 +1,6 @@
 /* Pabu · pabu.css — the app's own styles, every selector under .app-pabu.
  * Shared components (buttons, inputs, sections, pop-ups…) are in core/kyoshi.css.
- * Sections: Quick add · Birthdays · The list · The pop-up · Phones */
+ * Sections: Quick add · Birthdays · This week · People · The pop-up · Phones */
 
 /* --- Quick add: the field and Add, then the chips (core's .mode-btn, smaller): how often six to a line (three on a
    phone), how three --- */
@@ -21,14 +21,11 @@
 .app-pabu .bday.today .bday-name { font-weight: 600; }
 .app-pabu .bday.today .bday-when { color: var(--text); }
 
-/* --- The list: its groups, each person a line with their ✓ (a big target around a small circle) --- */
+/* --- This week: each one due a line with its ✓ (a big target around a small circle); ticked ones muted --- */
 .app-pabu h2 .count { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
-.app-pabu .group { margin-top: 12px; }
-.app-pabu .group-head { display: flex; align-items: baseline; gap: 8px; font-size: .78em; color: var(--muted); }
-.app-pabu .group-title { font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-.app-pabu .people { list-style: none; margin: 2px 0 0; padding: 0; }
-.app-pabu .person { display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); border-radius: 4px; }
-.app-pabu .person:first-child { border-top: none; }
+.app-pabu .week { list-style: none; margin: 4px 0 0; padding: 0; }
+.app-pabu .due-row { display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); border-radius: 4px; }
+.app-pabu .due-row:first-child { border-top: none; }
 .app-pabu .tick { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-left: -9px; padding: 0; background: none; color: transparent; }
 .app-pabu .tick:hover { background: none; }
 .app-pabu .tick:focus-visible { outline: none; }
@@ -36,36 +33,67 @@
 .app-pabu .tick svg { width: 13px; height: 13px; }
 .app-pabu .tick:hover .box { border-color: var(--good); color: var(--good); }
 .app-pabu .tick:focus-visible .box { outline: 2px solid var(--accent); outline-offset: 2px; }
-.app-pabu .person.done .tick .box { background: var(--good); border-color: var(--good); color: #fff; }
-.app-pabu .person-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 6px 0; }
-.app-pabu .person-name, .app-pabu .bday-name { padding: 2px 0; background: none; color: var(--text); font-size: .95em; text-align: left; overflow-wrap: anywhere; border-radius: 3px; }
-.app-pabu .person-name:hover, .app-pabu .bday-name:hover { background: none; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
-.app-pabu .person-name:focus-visible, .app-pabu .bday-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.app-pabu .person-meta { font-size: .8em; color: var(--muted); }
-.app-pabu .person.overdue .person-due { color: var(--bad); }
-.app-pabu .person-bday { flex-basis: 100%; font-size: .8em; color: var(--muted); }
-.app-pabu .person.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
+.app-pabu .due-row.done .tick .box { background: var(--good); border-color: var(--good); color: #fff; }
+.app-pabu .row-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 6px 0; }
+.app-pabu .row-title, .app-pabu .bday-name { padding: 2px 0; background: none; color: var(--text); font-size: .95em; text-align: left; overflow-wrap: anywhere; border-radius: 3px; }
+.app-pabu .row-title:hover, .app-pabu .bday-name:hover { background: none; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+.app-pabu .row-title:focus-visible, .app-pabu .bday-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-pabu .due-row.done .row-title { color: var(--muted); }
+.app-pabu .row-meta { font-size: .8em; color: var(--muted); }
+.app-pabu .due-row.overdue .row-when { color: var(--bad); }
+.app-pabu .due-row.flash, .app-pabu .person.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
 
-/* --- The pop-up: the birthday's three fields on one line; the days you talked, each with ✕, then Add a day --- */
+/* --- People: the group chips (as many to a line as fit), then one line per person, the whole line a button --- */
+.app-pabu .chips.groups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.app-pabu .chips.groups .chip { flex: 0 0 auto; min-height: 32px; padding: 4px 12px; }
+.app-pabu .roster { list-style: none; margin: 6px 0 0; padding: 0; }
+.app-pabu .person { border-top: 1px solid var(--border); border-radius: 4px; }
+.app-pabu .person:first-child { border-top: none; }
+.app-pabu .person-row { display: block; width: calc(100% + 12px); margin: 0 -6px; padding: 7px 6px; background: none; color: var(--text); font-size: 1em; text-align: left; border-radius: 4px; }
+.app-pabu .person-row:hover { background: var(--card-bg); }
+.app-pabu .person-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.app-pabu .person-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.app-pabu .person-name { font-size: .95em; overflow-wrap: anywhere; }
+.app-pabu .person-group { padding: 0 7px; border: 1px solid var(--border); border-radius: 10px; font-size: .72em; color: var(--muted); overflow-wrap: anywhere; }
+.app-pabu .person-meta, .app-pabu .person-bday { display: block; margin-top: 1px; font-size: .8em; color: var(--muted); }
+.app-pabu .person.overdue .person-due { color: var(--bad); }
+
+/* --- The pop-up: the birthday's three fields on one line; each call, text or visit a box (how, how often, ✕; minutes
+   and the last talk; its days, each with ✕; Talked on and Add); Save's line and buttons kept in view at its foot --- */
 .app-pabu .bday-fields { display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 8px; }
-.app-pabu .talks { list-style: none; margin: 0 0 8px; padding: 0; max-height: 10em; overflow-y: auto; }
+.app-pabu .field-label { margin-bottom: 3px; font-size: .85em; color: var(--muted); }
+.app-pabu .cadences { display: flex; flex-direction: column; gap: 8px; }
+.app-pabu .cadences:not(:empty) { margin-bottom: 8px; }
+.app-pabu .cadences-none { margin: 0 0 8px; font-size: .9em; color: var(--muted); }
+.app-pabu .cadence { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); }
+.app-pabu .cadence-head { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: 6px; }
+.app-pabu .cadence-x, .app-pabu .talk-x { flex: 0 0 auto; padding: 4px 10px; background: none; color: var(--muted); }
+.app-pabu .cadence-x:hover, .app-pabu .talk-x:hover { background: var(--border); color: var(--bad); }
+.app-pabu .cadence-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 6px; }
+.app-pabu .cadence-sub .c-minutes { width: 4.6em; }
+.app-pabu .c-unit { margin-right: 6px; font-size: .85em; color: var(--muted); }
+.app-pabu .cadence-last { font-size: .8em; color: var(--muted); }
+.app-pabu .talks { list-style: none; margin: 6px 0 0; padding: 0; max-height: 7.6em; overflow-y: auto; }
 .app-pabu .talks li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; border-top: 1px solid var(--border); font-size: .9em; }
 .app-pabu .talks li:first-child { border-top: none; }
-.app-pabu .talks-none { color: var(--muted); }
-.app-pabu .talk-x { flex: 0 0 auto; padding: 4px 10px; background: none; color: var(--muted); }
-.app-pabu .talk-x:hover { background: var(--border); color: var(--bad); }
-.app-pabu .talk-add { display: flex; gap: 8px; }
+.app-pabu .talk-add { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.app-pabu .talk-label { flex: 0 0 auto; font-size: .85em; color: var(--muted); }
 .app-pabu .talk-add input { flex: 1; min-width: 0; }
 .app-pabu .talk-add button { flex: 0 0 auto; }
-.app-pabu #personHint { margin: -4px 0 12px; color: var(--bad); }
+.app-pabu .talk-hint { margin: 4px 0 0; font-size: .82em; color: var(--bad); }
+.app-pabu #personOverlay [aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad-bg); }
+.app-pabu .modal-foot { position: sticky; bottom: 0; z-index: 1; margin: 4px -18px -16px; padding: 10px 18px 16px; background: var(--panel); border-top: 1px solid var(--border); }
+.app-pabu .modal-foot .modal-actions { margin-top: 0; }
+.app-pabu #personHint { margin: 0 0 8px; color: var(--bad); }
+.app-pabu #personHint.saved { color: var(--text); }
 
 /* --- Phones: taller field, Add, chips and ✕ for a thumb; how often three to a line --- */
 @media (max-width: 640px) {
   .app-pabu .add-line input, .app-pabu .add-line button { height: 46px; }
   .app-pabu .chips { grid-template-columns: repeat(3, 1fr); }
   .app-pabu .chip { min-height: 42px; }
-  .app-pabu .person-name, .app-pabu .bday-name { font-size: 1em; }
-  .app-pabu .talk-x { padding: 8px 14px; }
+  .app-pabu .row-title, .app-pabu .bday-name, .app-pabu .person-name { font-size: 1em; }
+  .app-pabu .talk-x, .app-pabu .cadence-x { padding: 8px 14px; }
 }
 /* Narrow phones: the chips a little tighter. */
 @media (max-width: 400px) {

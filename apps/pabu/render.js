@@ -1,16 +1,16 @@
-/* Pabu · render.js — draws the page from A.S: quick add's chips, the Birthdays strip (those in the next 30 days, hidden
- * when none), and the list in its groups: Due now, Coming up (within 14 days) and Later (birthday-only people at its
- * end, by name), each with how many and their time. Each person: ✓ (filled once you've talked today), their name, how
- * and how often, the last talk, when they're due, and their next birthday. */
+/* Pabu · render.js — draws the page from A.S: This week (each call, text or visit due by Sunday or overdue, soonest
+ * first: ✓, "Call Mom", "due Thu · 30m"; ticked ones stay, ✓, until the week ends; hidden while no one has any),
+ * quick add's chips, the Birthdays strip (those in the next 30 days, hidden when none), and People: the group chips
+ * (All, each group in use, No group; none without groups) and one line per person, A to Z: name and group, "Call
+ * monthly · Text weekly" and the next due, their next birthday. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, sum, addDays, daysBetween, fmtShort, todayStr } = K.util;
-  const { HOW, BIRTHDAY_DAYS, fmtMinutes } = A;
+  const { esc, addDays, daysBetween, fmtShort, todayStr } = K.util;
+  const { BIRTHDAY_DAYS, fmtMinutes } = A;
 
   // The "check" icon from Lucide (ISC license), in the ✓ button's circle.
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-  const GROUPS = [["due", "Due now"], ["soon", "Coming up"], ["later", "Later"]];
 
   // Quick add's chips as picked.
   function renderAdd() {
@@ -20,6 +20,33 @@
     });
     pressed($("addEvery"), "every", S.add.every);
     pressed($("addHow"), "how", S.add.how);
+  }
+
+  // A day this week in words: "today", "yesterday", "tomorrow", else its name ("Thu").
+  function dayWords(d, today) {
+    const n = daysBetween(today, d);
+    return n === 0 ? "today" : n === -1 ? "yesterday" : n === 1 ? "tomorrow" : A.weekdayOf(d);
+  }
+
+  // One line of This week: ✓ (filled once you've talked this week; tapping it again takes that day off), "Call Mom"
+  // (opens the pop-up), then "due Thu · 30m", "overdue 4 days · 30m" or "talked today · 30m".
+  function rowHTML({ p, c, due, done, title }, today) {
+    const late = !done && due < today;
+    const when = done ? `talked ${dayWords(done, today)}` : late ? `overdue ${A.plural(daysBetween(due, today), "day")}` : `due ${dayWords(due, today)}`;
+    const tick = done ? `Not talked ${dayWords(done, today)}` : "Talked today";
+    return `<li class="due-row${late ? " overdue" : ""}${done ? " done" : ""}" data-id="${esc(p.id)}" data-cid="${esc(c.id)}">` +
+      `<button type="button" class="tick" data-act="${done ? "untick" : "tick"}" data-id="${esc(p.id)}" data-cid="${esc(c.id)}" title="${esc(tick)}" aria-label="${esc(`${tick}: ${title}`)}"><span class="box">${CHECK}</span></button>` +
+      `<div class="row-main"><button type="button" class="row-title" data-act="edit" data-id="${esc(p.id)}">${esc(title)}</button>` +
+      `<span class="row-meta"><span class="row-when">${esc(when)}</span> · ${fmtMinutes(c.minutes)}</span></div></li>`;
+  }
+
+  // This week: how many, and how many done ("2 of 5 done").
+  function renderWeek(today) {
+    const rows = A.thisWeek(today), done = rows.filter(r => r.done).length;
+    $("weekSection").hidden = !A.live().some(p => p.cadences.length);
+    $("weekCount").textContent = !rows.length ? "" : done ? `${done} of ${rows.length} done` : rows.length;
+    $("weekEmpty").hidden = rows.length > 0;
+    $("weekList").innerHTML = rows.map(r => rowHTML(r, today)).join("");
   }
 
   // Birthdays in the next BIRTHDAY_DAYS, soonest first: the name (opens the pop-up), then "Oct 12 · in 12 days · turns 60".
@@ -35,40 +62,48 @@
     }).join("");
   }
 
-  // One person: ✓ (filled once you've talked today, and tapping it again undoes), the name (opens the pop-up), then
-  // "Call · every month · last talked 5 weeks ago · overdue 4 days", and their next birthday when it's known.
-  function personHTML(p, today) {
-    const last = A.lastTalk(p, today), due = A.dueOf(p, today), talked = last === today, bday = A.fmtBirthday(p, today);
-    const tick = talked ? "Not talked today" : "Talked today";
-    const meta = esc([HOW[A.howOf(p)].label, A.everyWords(p), A.talkedWords(last, today)].join(" · ")) +
-      (due ? ` · <span class="person-due">${esc(A.dueWords(due, today))}</span>` : "");
-    return `<li class="person${due && due < today ? " overdue" : ""}${talked ? " done" : ""}" data-id="${esc(p.id)}">` +
-      `<button type="button" class="tick" data-act="${talked ? "untick" : "tick"}" data-id="${esc(p.id)}" title="${tick}" aria-label="${tick}: ${esc(p.name)}"><span class="box">${CHECK}</span></button>` +
-      `<div class="person-main"><button type="button" class="person-name" data-act="edit" data-id="${esc(p.id)}">${esc(p.name)}</button>` +
-      `<span class="person-meta">${meta}</span>${bday ? `<span class="person-bday">${esc(bday)}</span>` : ""}</div></li>`;
+  // Whether someone's on the People list as the chips stand: everyone (All), those without a group (No group), or
+  // those in the group picked (any case).
+  const shown = p => S.filter === null || p.group.toLowerCase() === S.filter.toLowerCase();
+
+  // The chips: All, each group in use (A to Z), then No group when some have none; no chips at all without groups. A
+  // chip whose group is gone goes back to All.
+  function renderChips(people) {
+    const groups = A.groupsInUse(), none = people.some(p => !p.group);
+    if (S.filter !== null && !(S.filter ? groups.some(g => g.toLowerCase() === S.filter.toLowerCase()) : none && groups.length)) S.filter = null;
+    const chips = groups.length ? [[null, "All"], ...groups.map(g => [g, g]), ...(none ? [["", "No group"]] : [])] : [];
+    $("groupChips").hidden = !chips.length;
+    $("groupChips").innerHTML = chips.map(([group, label]) => {
+      const on = group === null ? S.filter === null : S.filter !== null && group.toLowerCase() === S.filter.toLowerCase();
+      return `<button type="button" class="mode-btn chip${on ? " active" : ""}" data-act="filter"${group === null ? "" : ` data-group="${esc(group)}"`} aria-pressed="${on}">${esc(label)}</button>`;
+    }).join("");
   }
 
-  // Everyone in their groups (only those with anyone), soonest due first; birthday-only people at the end of Later, by
-  // name. Each group: how many, and the time of those Momo fits in (birthday-only people send it nothing).
-  function renderList(today) {
-    const people = A.live(), groups = { due: [], soon: [], later: [] };
-    A.byDue(people.filter(p => A.everyOf(p) !== "none"), today).forEach(p => groups[A.groupOf(p, today)].push(p));
-    groups.later.push(...people.filter(p => A.everyOf(p) === "none").sort(A.byName));
+  // One person, a line that opens the pop-up: the name and group, then "Call monthly · Text weekly · due tomorrow" (or
+  // "Birthday only"), and their next birthday when it's known.
+  function personHTML(p, today) {
+    const due = A.nextDueOf(p, today), bday = A.fmtBirthday(p, today);
+    const ways = p.cadences.length ? p.cadences.map(A.cadenceWords).join(" · ") : "Birthday only";
+    return `<li class="person${due && due < today ? " overdue" : ""}" data-id="${esc(p.id)}"><button type="button" class="person-row" data-act="edit" data-id="${esc(p.id)}">` +
+      `<span class="person-line"><span class="person-name">${esc(p.name)}</span>${p.group ? `<span class="person-group">${esc(p.group)}</span>` : ""}</span>` +
+      `<span class="person-meta">${esc(ways)}${due ? ` · <span class="person-due">${esc(A.dueWords(due, today))}</span>` : ""}</span>` +
+      `${bday ? `<span class="person-bday">${esc(bday)}</span>` : ""}</button></li>`;
+  }
+
+  function renderPeople(today) {
+    const people = A.live();
+    renderChips(people);
     $("listEmpty").hidden = people.length > 0;
     $("peopleCount").textContent = people.length || "";
-    $("groups").innerHTML = GROUPS.map(([key, title]) => {
-      const list = groups[key], minutes = sum(list.filter(p => A.everyOf(p) !== "none").map(p => p.minutes));
-      return list.length ? `<div class="group ${key}"><div class="group-head"><span class="group-title">${title}</span>` +
-        `<span class="group-sum">${list.length}${minutes ? ` · ${fmtMinutes(minutes)}` : ""}</span></div>` +
-        `<ul class="people">${list.map(p => personHTML(p, today)).join("")}</ul></div>` : "";
-    }).join("");
+    $("roster").innerHTML = people.filter(shown).sort(A.byName).map(p => personHTML(p, today)).join("");
   }
 
   function renderAll() {
     const today = S.knownToday = todayStr();
+    renderWeek(today);
     renderAdd();
     renderBirthdays(today);
-    renderList(today);
+    renderPeople(today);
   }
 
   Object.assign(A, { renderAll, renderAdd });

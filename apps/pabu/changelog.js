@@ -5,6 +5,14 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.110", date: "2026-10-03", changes: [
+      "One person, several calls, texts and visits: each on its own schedule, with its own minutes and days you talked (a ✓ counts for that one only), and each its own card in Momo (“Call Mom”, “Text Mom”).",
+      "This week at the top: every call, text or visit due by Sunday or overdue, soonest first, with ✓; ticked ones stay until the week ends.",
+      "A group for each person, with chips to show one group at a time, and notes up to 1,000 characters (likes, dislikes, what you talked about).",
+      "The People list: one line per person, A to Z, with their calls, texts and visits, when the next is due, and their birthday.",
+      "Renaming is one edit: Save keeps the whole person at once and says what's wrong right above it instead of stopping quietly; an unfinished “Talked on” day is left out, with a note.",
+      "Older backups still import: each person's call, text or visit carries over, with its days."
+    ] },
     { version: "1.110", date: "2026-10-03", changes: [
       "Each call, text or visit due is its own card in Momo (“Call Mom”), as long as it takes: it waits in Momo's Tasks until you drag it onto a day, and shows ✓ once you've talked."
     ] },

@@ -1,10 +1,11 @@
 /* Pabu · app.js — registers Pabu with Kyoshi, plus its constants (limits, how often and how, Momo's window), state
- * (A.S) and small helpers: text and minutes, the days you talked and when each person is due, the list's groups, days in
- * words, and birthdays. Loads first of the app's files: the others destructure what's here at the top, and call
- * functions from each other as A.name(). File map and data model: apps/pabu/CLAUDE.md. */
+ * (A.S) and small helpers: text and minutes, each person's calls, texts and visits (the days you talked, when each is
+ * due, this week's), the groups in use, days in words, and birthdays. Loads first of the app's files: the others
+ * destructure what's here at the top, and call functions from each other as A.name(). File map and data model:
+ * apps/pabu/CLAUDE.md. */
 (function (K) {
   "use strict";
-  const { isNum, readNumber, pad2, addDays, addMonths, daysBetween, daysInMonth, localDate, fmtDate, fmtShort, todayStr } = K.util;
+  const { isNum, readNumber, pad2, addDays, addMonths, daysBetween, daysInMonth, dateMs, localDate, fmtDate, fmtShort, todayStr } = K.util;
 
   const A = K.register({
     id: "pabu",
@@ -23,15 +24,21 @@
   // CONSTANTS
   // ==========================================================================
   Object.assign(A, {
-    // Backup file format. Bump only when import has to migrate the data.
-    DATA_SCHEMA_VERSION: 1,
+    // Backup file format. Bump only when import has to migrate the data (2: each person's calls, texts and visits, a
+    // list; 1 had one, at the top).
+    DATA_SCHEMA_VERSION: 2,
     MAX_NAME: 40,           // a name: "Visit " and a name stay within Momo's 60 for a need's title
-    MAX_NOTE: 300,
+    MAX_GROUP: 30,
+    MAX_NOTE: 1000,
+    MAX_CADENCES: 6,        // the calls, texts and visits one person can have (none: birthday only)
     MIN_MINUTES: 5,
     MAX_MINUTES: 480,
-    MAX_TALKS: 200,         // the days you talked kept for each person, the newest
-    // How often, in the chips' and the pop-up's order, with its words. "none" is birthday only: never due.
+    MAX_TALKS: 200,         // the days you talked kept for each call, text or visit, the newest
+    // How often, in the chips' and the pop-up's order, with its words. "none" is birthday only (quick add's chip: no
+    // call, text or visit at all).
     EVERY: [["week", "every week"], ["2weeks", "every 2 weeks"], ["month", "every month"], ["quarter", "every quarter"], ["year", "every year"], ["none", "birthday only"]],
+    // How often as the People list says it: "Call monthly · Text every 2 weeks".
+    OFTEN: { week: "weekly", "2weeks": "every 2 weeks", month: "monthly", quarter: "quarterly", year: "yearly" },
     // How, with its word and its minutes until changed.
     HOW: { call: { label: "Call", minutes: 30 }, text: { label: "Text", minutes: 10 }, visit: { label: "Visit", minutes: 120 } },
     DEFAULT_EVERY: "month",
@@ -49,12 +56,13 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    // Everyone: { id, name, every, how, minutes, talks, note, birthday, deleted, at, u } (CLAUDE.md has the details).
-    // Deleted ones stay as markers so sync can't bring them back.
+    // Everyone: { id, name, group, note, birthday, cadences: [{ id, every, how, minutes, talks, at }], deleted, at, u }
+    // (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
     people: [],
     // Quick add's chips: how often and how. Back to every month and a call after each add.
     add: { every: A.DEFAULT_EVERY, how: A.DEFAULT_HOW },
-    editing: null,  // the person pop-up: { id, talks (as shown there), how (as last picked), start and startTalks (as opened), snapshot }
+    filter: null,   // the People list's chip: null for All, "" for No group, else a group (any case)
+    editing: null,  // the person pop-up: { id, at, birthday and bday (as opened), cadences (as shown there), snapshot }
     knownToday: ""  // today as of the last draw, to redraw when the date changes
   });
 
@@ -68,11 +76,14 @@
   // Text that keeps its lines (a note): each line's spaces tidied, at most one empty line in a row, cut the same way.
   const cleanText = (v, max) => (typeof v === "string"
     ? [...v.replace(/\r\n?/g, "\n").split("\n").map(l => l.replace(/[^\S\n]+/g, " ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim()].slice(0, max).join("").trim() : "");
-  // How often and how, read: one this version doesn't know (a newer version's, kept as it is) counts as every month and
-  // a call.
-  const everyOf = p => (Object.hasOwn(EVERY_WORDS, p.every) ? p.every : A.DEFAULT_EVERY);
-  const howOf = p => (Object.hasOwn(A.HOW, p.how) ? p.how : A.DEFAULT_HOW);
-  const everyWords = p => EVERY_WORDS[everyOf(p)];
+  // A call, text or visit's how often and how, read: one this version doesn't know (a newer version's, kept as it is)
+  // counts as every month and a call.
+  const everyOf = c => (Object.hasOwn(A.OFTEN, c.every) ? c.every : A.DEFAULT_EVERY);
+  const howOf = c => (Object.hasOwn(A.HOW, c.how) ? c.how : A.DEFAULT_HOW);
+  const everyWords = c => EVERY_WORDS[everyOf(c)];
+  const howLabel = c => A.HOW[howOf(c)].label;
+  // "Call monthly", "Text every 2 weeks".
+  const cadenceWords = c => `${howLabel(c)} ${A.OFTEN[everyOf(c)]}`;
   // Minutes as kept: a whole number from MIN_MINUTES to MAX_MINUTES, else how's usual length.
   const cleanMinutes = (m, how) => (isNum(m) && m >= A.MIN_MINUTES && m <= A.MAX_MINUTES ? Math.round(m) : A.HOW[howOf({ how })].minutes);
   // A minutes field's value, or 0 when it's empty or out of range.
@@ -88,6 +99,10 @@
   // --- Days ---
   // A day, with its year only when it isn't this year: "Sep 28", "Mar 3, 2025".
   const fmtDay = (d, today = todayStr()) => (d.slice(0, 4) === today.slice(0, 4) ? fmtShort(d) : fmtDate(d));
+  // A day this week by its name: "Thu".
+  const weekdayOf = d => fmtDate(d, { weekday: "short" });
+  // The Monday of a day's week: weeks run Monday to Sunday, as Momo's.
+  const mondayOf = d => addDays(d, -((new Date(dateMs(d)).getUTCDay() + 6) % 7));
   // The day a moment fell on, on this device ("" for none).
   const dayOf = ms => (ms ? localDate(new Date(ms)) : "");
   // Whole months from one day to a later one (Aug 26 to Sep 30 is 1).
@@ -116,29 +131,48 @@
   // --- Who's who ---
   const live = () => S.people.filter(p => !p.deleted);
   const personById = id => (id && S.people.find(p => p.id === id && !p.deleted)) || null;
+  const cadenceById = (p, id) => (p && p.cadences.find(c => c.id === id)) || null;
   const byName = (p, q) => p.name.localeCompare(q.name) || (p.id < q.id ? -1 : p.id > q.id ? 1 : 0);
+  // "Call Mom", "Text Sam", "Visit Gran": This week's lines and Momo's cards, at most 6 + 40 characters (Momo's 60).
+  const needTitle = (p, c) => `${howLabel(c)} ${p.name}`;
+  // The groups in use, A to Z, each once whatever its case (the first spelling met); but the one person's own (the
+  // pop-up's, so their group's spelling can still be changed).
+  function groupsInUse(except = "") {
+    const seen = new Map();
+    live().forEach(p => { if (p.group && p.id !== except && !seen.has(p.group.toLowerCase())) seen.set(p.group.toLowerCase(), p.group); });
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  }
 
-  // --- When each is due ---
+  // --- When each call, text or visit is due ---
   // The last day you talked: the newest kept that isn't after today (a day ahead, from a device whose clock was wrong,
   // is kept but never counts), else "".
-  const lastTalk = (p, today = todayStr()) => p.talks.find(d => d <= today) || "";
-  // The day after a talk on `day` that the next one's due ("" for birthday only); months stop at the month's end.
-  const nextDue = (day, every) => (every === "week" ? addDays(day, 7) : every === "2weeks" ? addDays(day, 14) : MONTHS[every] ? addMonths(day, MONTHS[every]) : "");
-  // When someone's due: their last talk and how often; never talked, the day they were added (today without one). ""
-  // for birthday only: never due.
-  function dueOf(p, today = todayStr()) {
-    const every = everyOf(p), last = lastTalk(p, today);
-    return every === "none" ? "" : last ? nextDue(last, every) : dayOf(p.at) || today;
+  const lastTalk = (c, today = todayStr()) => c.talks.find(d => d <= today) || "";
+  // The day after a talk on `day` that the next one's due; months stop at the month's end.
+  const nextDue = (day, every) => (every === "week" ? addDays(day, 7) : every === "2weeks" ? addDays(day, 14) : addMonths(day, MONTHS[every] || 1));
+  // The day a call, text or visit was added ("" if unknown): the person's, for one carried over from before there were
+  // several.
+  const addedDay = (p, c) => dayOf(c.at || p.at);
+  // When it's due: its last talk and how often; never talked, the day it was added (today without one).
+  function dueOf(p, c, today = todayStr()) {
+    const last = lastTalk(c, today);
+    return last ? nextDue(last, everyOf(c)) : addedDay(p, c) || today;
   }
-  // Where someone is on the list: "due" (today or before: Due now), "soon" (within SOON_DAYS: Coming up), "later", or
-  // "none" (birthday only, at the end of Later).
-  function groupOf(p, today = todayStr()) {
-    const due = dueOf(p, today);
-    return !due ? "none" : due <= today ? "due" : due <= addDays(today, A.SOON_DAYS) ? "soon" : "later";
+  const byDue = (a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+  // Everyone's calls, texts and visits with when each is due, soonest first, then by title: [{ p, c, due, title, key }].
+  // Due as the day before `upTo` began, when given: its talks before that day only.
+  function allDue(today = todayStr(), upTo = "") {
+    const asOf = upTo ? addDays(upTo, -1) : today;
+    return live().flatMap(p => p.cadences.map(c => ({ p, c, due: dueOf(p, c, asOf), title: needTitle(p, c), key: `${p.id}:${c.id}` }))).sort(byDue);
   }
-  // Soonest due first, then by name: as [person, due] pairs, or the people alone.
-  const withDue = (list, today = todayStr()) => list.map(p => [p, dueOf(p, today)]).sort(([p, a], [q, b]) => a.localeCompare(b) || byName(p, q));
-  const byDue = (list, today = todayStr()) => withDue(list, today).map(([p]) => p);
+  // A person's next due: the soonest of their calls, texts and visits ("" for birthday only: never due).
+  const nextDueOf = (p, today = todayStr()) => p.cadences.map(c => dueOf(p, c, today)).sort()[0] || "";
+  // This week (Monday to Sunday): every call, text or visit due by Sunday, or overdue, as the week began (its talks
+  // before Monday), soonest first; each with done: the last day you talked this week ("" for none yet). So one you
+  // ticked stays, ✓, until the week ends.
+  function thisWeek(today = todayStr()) {
+    const monday = mondayOf(today), sunday = addDays(monday, 6);
+    return allDue(today, monday).filter(r => r.due <= sunday).map(r => ({ ...r, done: r.c.talks.find(d => d >= monday && d <= today) || "" }));
+  }
 
   // --- Birthdays: kept as "MM-DD", or "YYYY-MM-DD" with the year born ---
   function parseBirthday(b) {
@@ -167,10 +201,13 @@
     const next = nextBirthday(p, today), age = next && ageOn(p, next);
     return next ? `🎂 ${next === today ? "today" : fmtShort(next)}${age ? ` · turns ${age}` : ""}` : "";
   }
+  // Whether you talked on a day, by any call, text or visit.
+  const talkedOn = (p, day) => p.cadences.some(c => c.talks.includes(day));
 
   Object.assign(A, {
-    MONTH_NAMES, cleanLine, cleanText, everyOf, howOf, everyWords, cleanMinutes, readMinutes, fmtMinutes, plural, cap,
-    fmtDay, dayOf, agoWords, talkedWords, dueWords, live, personById, byName, lastTalk, nextDue, dueOf, groupOf, withDue, byDue,
-    parseBirthday, birthdayIn, nextBirthday, ageOn, fmtBirthday
+    MONTH_NAMES, cleanLine, cleanText, everyOf, howOf, everyWords, howLabel, cadenceWords, cleanMinutes, readMinutes,
+    fmtMinutes, plural, cap, fmtDay, weekdayOf, mondayOf, dayOf, agoWords, talkedWords, dueWords, live, personById,
+    cadenceById, byName, needTitle, groupsInUse, lastTalk, nextDue, addedDay, dueOf, allDue, nextDueOf, thisWeek,
+    parseBirthday, birthdayIn, nextBirthday, ageOn, fmtBirthday, talkedOn
   });
 })(Kyoshi);
