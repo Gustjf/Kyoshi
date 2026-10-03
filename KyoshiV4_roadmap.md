@@ -38,8 +38,11 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Core
 ### Comments (verbatim)
+- 2026-10-03: Make the bug reports more information dense for the AI - optimize for tokens. everything else sounds good.
 ### Keep
+- 2026-10-03: everything else sounds good.
 ### Change
+- 2026-10-03: Make the bug reports more information dense for the AI - optimize for tokens.
 ### Add
 ### Remove
 ### Bugs
