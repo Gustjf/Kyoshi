@@ -7,7 +7,7 @@
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MIN_SCALE, MAX_SCALE,
-    MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, cleanLine, cleanText, clampInt, numIn, plural, own } = A;
+    MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, cleanLine, cleanText, clampInt, numIn, plural, own } = A;
   const LISTS = ["recipes", "plan", "trips", "manual", "templates"];
   const MAPS = ["checked", "sections"];
   const KEYS = LISTS.concat(MAPS, "settings");
@@ -132,12 +132,14 @@
     return out;
   }
 
-  // The day's targets, each optional (null: none).
+  // The day's targets, each optional (null: none); how the grocery lists show amounts (units: "entered" when a file
+  // has none, as before 1.300).
   const target = (v, max) => (isNum(v) && v > 0 ? Math.min(max, Math.round(v)) : null);
   const cleanSettings = s => {
     const t = isObj(s) && isObj(s.targets) ? s.targets : {};
     return {
       targets: { kcal: target(t.kcal, 4 * MAX_KCAL), protein: target(t.protein, 2 * MAX_GRAMS), carbs: target(t.carbs, 2 * MAX_GRAMS), fat: target(t.fat, 2 * MAX_GRAMS), fiber: target(t.fiber, 2 * MAX_GRAMS) },
+      units: isObj(s) && UNIT_MODES.some(([k]) => k === s.units) ? s.units : UNIT_MODES[0][0],
       u: isObj(s) ? uOf(s) : 0
     };
   };

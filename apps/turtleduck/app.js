@@ -56,6 +56,8 @@
     RESTAURANT_MINUTES: 60,    // eating out takes longer
     SHELF_DAYS: 28,            // a batch's portions wait on the shelf this long after it's cooked
     SECTIONS: ["Produce", "Meat & fish", "Dairy & eggs", "Bakery", "Frozen", "Pantry", "Drinks", "Other"],
+    // How the grocery lists show amounts (Groceries → Settings): the first is the default.
+    UNIT_MODES: [["entered", "As entered"], ["metric", "Metric"], ["us", "US"]],
     // Per serving, typed in: [key, short label, word] ("P 45", "45 g protein").
     NUTRIENTS: [["kcal", "kcal", "kcal"], ["protein", "P", "protein"], ["carbs", "C", "carbs"], ["fat", "F", "fat"], ["fiber", "Fi", "fiber"]],
     CLIP_MS: 5000,             // a copied or cut meal waits this long for Ctrl+V (each paste gives another)
@@ -70,9 +72,9 @@
   const S = Object.assign(A.S, {
     // Saved and synced (CLAUDE.md has their shapes). Deleted items stay as markers so sync can't bring them back.
     recipes: [], plan: [], trips: [], manual: [], templates: [],
-    checked: {},   // "<name>|<unit>" -> { until, u }: bought for every planned use up to until
+    checked: {},   // "<name>|<unit>" -> { ranges, u }: bought for every planned use in those days
     sections: {},  // "<name>" -> { section, u }: set by hand in the grocery list
-    settings: { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, u: 0 },
+    settings: { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, units: "entered", u: 0 },
     version: 0,    // counts every change to the stored data, so what's worked out is worked out again (remember)
     // On screen (this device only)
     view: "plan",  // "plan" | "recipes" | "groceries" | "cook"

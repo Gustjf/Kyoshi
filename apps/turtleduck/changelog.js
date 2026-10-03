@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.300", date: "2026-10-03", changes: [
+      "Plurals add up in the grocery lists: “1 onion” and “2 onions” make one row, “3 onions” (tomatoes with tomato, berries with berry, leaves with leaf).",
+      "Any unit adds up: oz and lb with g and kg; fl oz, pints, quarts and gallons with ml, l, spoons and cups; sticks of butter as their own. Groceries → Settings shows the amounts as entered, metric or US (rounded to a neat amount); the cook view stays as typed."
+    ] },
     { version: "1.200", date: "2026-10-03", changes: [
       "Each meal, cooking session and grocery trip is its own card in Momo (“Dinner: Chili + Salad”, “Cook: Curry ×1½ · Chili”, “Groceries”) that lands on its day by itself, near its usual time (breakfast 7:30, lunch 12:00, cooking 16:00, dinner 18:00, trips 10:00), to move as you like."
     ] },

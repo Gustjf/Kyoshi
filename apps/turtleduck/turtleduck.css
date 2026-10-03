@@ -159,7 +159,8 @@
 .app-turtleduck .g-remove { width: 34px; height: 34px; }
 .app-turtleduck .g-bought { margin-top: 10px; }
 .app-turtleduck .g-bought > summary { padding: 6px 0; font-size: .85em; color: var(--muted); }
-.app-turtleduck .settings .own-nums { max-width: 520px; }
+.app-turtleduck .settings .own-nums, .app-turtleduck .settings .amounts { max-width: 520px; }
+.app-turtleduck .settings .targets-head { margin-top: 18px; }
 
 /* --- The cook view: big type, room to breathe, the width of a page --- */
 .app-turtleduck .cook-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; max-width: 780px; margin: 0 auto 8px; }

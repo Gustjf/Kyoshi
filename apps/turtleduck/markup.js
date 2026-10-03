@@ -6,7 +6,7 @@
  * [data-kyoshi="backup"]. Ids only need to be unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES } = A;
+  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES, UNIT_MODES } = A;
   // Five number fields: kcal, then protein, carbs, fat and fiber in grams (ids prefix + Kcal, Protein…).
   const nums = (prefix, max = [MAX_KCAL, MAX_GRAMS]) => [["Kcal", "kcal", max[0]], ["Protein", "Protein (g)", max[1]], ["Carbs", "Carbs (g)", max[1]], ["Fat", "Fat (g)", max[1]], ["Fiber", "Fiber (g)", max[1]]]
     .map(([id, label, top]) => `<label class="own-num"><span>${label}</span><input type="number" id="${prefix}${id}" min="0" max="${top}" step="any" inputmode="decimal"></label>`).join("");
@@ -88,7 +88,10 @@ Season to taste.`;
     <section class="settings">
       <details id="settingsBox">
         <summary><h2>Settings</h2></summary>
-        <div class="subhead">A day's targets (each optional)</div>
+        <div class="subhead">Amounts</div>
+        <div class="mode-toggle amounts" id="unitsToggle" role="group" aria-label="Amounts">${UNIT_MODES.map(([k, t]) => `<button type="button" class="mode-btn" data-units="${k}">${t}</button>`).join("")}</div>
+        <div class="footnote">As entered: in the recipes' own unit when they agree (cups, oz…), the US way when they all use US units, else metric. US: ounces and pounds, spoons, cups, quarts and gallons, rounded to a neat amount.</div>
+        <div class="subhead targets-head">A day's targets (each optional)</div>
         <div class="own-nums targets">${nums("target", [4 * MAX_KCAL, 2 * MAX_GRAMS])}</div>
         <div class="footnote">A day's totals on the plan turn amber past a target: kcal, carbs and fat above theirs, protein and fiber below.</div>
       </details>
@@ -171,7 +174,7 @@ Season to taste.`;
         <div class="field">
           <label for="recipeIngredients">Ingredients, one a line</label>
           <textarea id="recipeIngredients" rows="7" placeholder="200 g rice&#10;1 can beans, drained&#10;salt"></textarea>
-          <div class="hint">Like “200 g rice”, “1 can beans, drained” or “salt”: the grocery list adds them up (g with kg, ml with l).</div>
+          <div class="hint">Like “200 g rice”, “1 can beans, drained” or “salt”: the grocery list adds them up (g/kg/oz/lb together, ml/l/tsp/tbsp/cup together, onions with onion).</div>
         </div>
         <div class="field"><label for="recipeSteps">Steps</label><textarea id="recipeSteps" rows="7" maxlength="${MAX_STEPS}" placeholder="As you like: a paragraph, or a line each (start one with - for a bullet)"></textarea></div>
         <div class="field"><label for="recipeLink">Link (optional)</label><input type="text" id="recipeLink" maxlength="${MAX_LINK}" inputmode="url" placeholder="https://…"></div>

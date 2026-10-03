@@ -1,27 +1,37 @@
 /* Turtleduck · groceries.js — shopping. Trips are placed on the plan's days (the cart toggle; one a day at most), and each
  * has its grocery list, worked out from the plan: every recipe cooked from that trip's day up to the day before the next
- * trip (the last one through next Sunday), its ingredient lines scaled and merged by name and unit (kg with g, l with
- * ml; a line with no amount is a row with none), in store sections. A tick is "bought" for every planned use in that
+ * trip (the last one through next Sunday), its ingredient lines scaled and merged by name (plurals too: "onions" with
+ * "onion") and unit (every weight together, every volume together; a line with no amount is a row with none), in store
+ * sections, the amounts shown as entered, metric or US (Settings). A tick is "bought" for every planned use in that
  * list's days, so a meal added later past them brings the item back; a tick on one list leaves the others as they were.
  * The Now list is what's needed before the first trip (normally empty); groceries added by hand ("running out of…") ride
  * on it when it has anything, else on the first trip's. A past trip is gone from the screen: what it left unbought shows
  * up in Now. Also here: each ingredient's section (guessed, or set with a tap and remembered by name), the Groceries
- * view, and Settings (the day's targets). */
+ * view, and Settings (how amounts show, the day's targets). Ticks and sections set before 1.300 merged plurals and
+ * units are found under the keys the lines had then, until the new key gets its own. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, newId, addDays, todayStr, readNumber } = K.util;
-  const { SECTIONS, MAX_MANUAL, MAX_KCAL, MAX_GRAMS, NUTRIENTS, cleanLine, own, kept, fmtRange, fmtFull, fmtWd } = A;
+  const { SECTIONS, UNIT_MODES, MAX_MANUAL, MAX_KCAL, MAX_GRAMS, NUTRIENTS, cleanLine, own, kept, fmtRange, fmtFull, fmtWd } = A;
 
   // ==========================================================================
   // THE LISTS
   // ==========================================================================
-  const sectionOf = norm => (own(S.sections, norm) ? S.sections[norm].section : A.guessSection(norm));
-  // Bought: a tick's days cover every use of it in the list.
-  const isTicked = row => own(S.checked, row.key) && S.checked[row.key].ranges.some(([a, b]) => a <= row.first && row.last <= b);
+  // A row's section: set by hand under its name, or else under a name its lines had before 1.300; else guessed.
+  function sectionOf(row) {
+    const set = [row.norm, ...[...row.olds.keys()].map(k => k.slice(0, k.lastIndexOf("|")))].find(n => own(S.sections, n));
+    return set === undefined ? A.guessSection(row.norm) : S.sections[set].section;
+  }
+  // Bought: a tick's days cover every use of it in the list. A key never ticked since 1.300 goes by its lines' old
+  // keys: bought when each of them is, for its own days.
+  const covers = (key, a, b) => own(S.checked, key) && S.checked[key].ranges.some(([x, y]) => x <= a && b <= y);
+  const isTicked = row => (own(S.checked, row.key) ? covers(row.key, row.first, row.last) : [...row.olds].every(([k, [a, b]]) => covers(k, a, b)));
 
-  // The rows for the recipes cooked from–through: { key, norm, name (the first spelling), unit and qty (base units; qty
-  // null when no line gave one), recipes (names), first and last (the days needing it), section, ticked }, by section.
+  // The rows for the recipes cooked from–through: { key, norm, name (the first spelling), many (the first plural
+  // spelling, "" when none), unit and qty (base units; qty null when no line gave one), units (the units its amounts
+  // were typed in), recipes (names), first and last (the days needing it), olds (its lines' keys before 1.300, each
+  // with its first and last day), section, ticked }, by section.
   function rowsFor(from, through) {
     const rows = new Map();
     A.liveEntries().filter(e => A.isCooked(e) && e.date >= from && e.date <= through).sort((a, b) => a.date.localeCompare(b.date) || A.byAdded(a, b)).forEach(e => {
@@ -30,13 +40,19 @@
       r.ingredients.forEach(line => {
         const p = A.parseLine(line), b = A.toBase(p);
         let row = rows.get(p.key);
-        if (!row) rows.set(p.key, row = { key: p.key, norm: p.norm, name: p.name, unit: b.unit, qty: null, recipes: [], first: e.date, last: e.date });
-        if (b.qty !== null) row.qty = (row.qty || 0) + b.qty * e.scale;
+        if (!row) rows.set(p.key, row = { key: p.key, norm: p.norm, name: p.name, many: "", unit: b.unit, qty: null, units: [], recipes: [], first: e.date, last: e.date, olds: new Map() });
+        if (b.qty !== null) {
+          row.qty = (row.qty || 0) + b.qty * e.scale;
+          if (!row.units.includes(p.unit)) row.units.push(p.unit);
+        }
+        if (p.plural && !row.many) row.many = p.name;
         if (!row.recipes.includes(r.name)) row.recipes.push(r.name);
+        const old = row.olds.get(p.oldKey);
+        if (old) old[1] = e.date; else row.olds.set(p.oldKey, [e.date, e.date]);
         row.last = e.date;
       });
     });
-    return [...rows.values()].map(row => ({ ...row, section: sectionOf(row.norm), ticked: isTicked(row) }))
+    return [...rows.values()].map(row => ({ ...row, section: sectionOf(row), ticked: isTicked(row) }))
       .sort((a, b) => SECTIONS.indexOf(a.section) - SECTIONS.indexOf(b.section) || a.norm.localeCompare(b.norm));
   }
 
@@ -86,10 +102,15 @@
     a < from ? [a, b < from ? b : addDays(from, -1)] : null,
     b > through ? [a > through ? a : addDays(through, 1), b] : null
   ].filter(Boolean);
+  // A key never ticked since 1.300 starts from the lists showing it bought (by its lines' old keys), so they stay so.
+  function shownBought(key) {
+    const { now, trips } = lists();
+    return [now, ...trips].filter(l => l && l.rows.some(r => r.key === key && r.ticked)).map(l => [l.from, l.through]);
+  }
   function tick(key, on, listId) {
     const l = listById(listId);
     if (!l || !key.includes("|")) return;
-    const today = todayStr(), was = (own(S.checked, key) ? S.checked[key].ranges : []).filter(([, b]) => b >= today);
+    const today = todayStr(), was = (own(S.checked, key) ? S.checked[key].ranges : shownBought(key)).filter(([, b]) => b >= today);
     const ranges = on ? joined(was.concat([[l.from, l.through]])) : was.flatMap(r => without(r, l.from, l.through));
     S.checked[key] = { ranges, u: Date.now() };
     kept();
@@ -117,8 +138,15 @@
 
   // An ingredient's section, set by hand: remembered by its name, on every list from now on.
   function setSection(norm, section) {
-    if (!SECTIONS.includes(section) || !norm || norm === "__proto__" || sectionOf(norm) === section) return;
+    if (!SECTIONS.includes(section) || !norm || norm === "__proto__" || (own(S.sections, norm) && S.sections[norm].section === section)) return;
     S.sections[norm] = { section, u: Date.now() };
+    kept();
+  }
+
+  // Settings: how the lists show amounts ("entered", "metric" or "us").
+  function setUnits(mode) {
+    if (!UNIT_MODES.some(([k]) => k === mode) || mode === S.settings.units) return;
+    S.settings = { ...S.settings, units: mode, u: Date.now() };
     kept();
   }
 
@@ -135,7 +163,7 @@
       targets[k] = v === null ? null : Math.round(v);
     }
     if (JSON.stringify(targets) === JSON.stringify(S.settings.targets)) return;
-    S.settings = { targets, u: Date.now() };
+    S.settings = { ...S.settings, targets, u: Date.now() };
     kept();
   }
 
@@ -147,7 +175,7 @@
   const sectionPick = row => `<select class="g-sec" data-section="${esc(row.norm)}" aria-label="${esc(`Store section for ${row.name}`)}">` +
     SECTIONS.map(s => `<option${s === row.section ? " selected" : ""}>${esc(s)}</option>`).join("") + `</select>`;
   function rowHTML(l, row) {
-    const what = A.fmtLine(row);
+    const what = A.fmtLine(row, S.settings.units);
     return `<div class="g-row${row.ticked ? " ticked" : ""}" data-key="${esc(row.key)}"><label class="g-main">${box(`data-tick="${esc(row.key)}" data-list="${esc(l.id)}"`, row.ticked, what)}` +
       `<span class="g-text"><span class="g-what">${esc(what)}</span><span class="g-for">${esc(row.recipes.join(", "))}</span></span></label>${sectionPick(row)}</div>`;
   }
@@ -181,6 +209,10 @@
     if (now && (now.total || !trips.length)) out.push(listHTML(now, trips[0]));
     trips.forEach(l => out.push(listHTML(l)));
     $("lists").innerHTML = out.join("");
+    $("unitsToggle").querySelectorAll(".mode-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.units === S.settings.units);
+      b.setAttribute("aria-pressed", String(b.dataset.units === S.settings.units));
+    });
     NUTRIENTS.forEach(([k]) => { const el = $(TARGET_IDS[k]); if (document.activeElement !== el) el.value = S.settings.targets[k] === null ? "" : S.settings.targets[k]; });
   }
 
@@ -210,6 +242,7 @@
       const d = e.target;
       if (d.matches && d.matches("details.g-bought")) S.boughtOpen[d.open ? "add" : "delete"](d.dataset.list);
     }, true);
+    $("unitsToggle").addEventListener("click", e => { const b = e.target.closest("[data-units]"); if (b) setUnits(b.dataset.units); });
     Object.values(TARGET_IDS).forEach(id => $(id).addEventListener("change", setTargets));
   }
 
