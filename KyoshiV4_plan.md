@@ -1,0 +1,229 @@
+# Kyoshi v4 — implementation plan
+Built 2026-10-03 from `KyoshiV4_roadmap.md` (the owner's feedback) and the owner's answers to the planning questions.
+
+**How to use this file (you, the executing model):**
+- Read the root `CLAUDE.md` first; at each phase read `apps/<id>/CLAUDE.md` for the apps it names, then the files the tasks name (every file's header says what it holds). Don't scan the workspace.
+- Do the phases in order. Each phase is one unit: build it, check it, then commit and push to `main` (the owner reloads the site between phases). Never start the next phase before the previous one is pushed.
+- **Ask the owner when unsure.** Stop and ask in plain, non-technical terms (the owner is a layman) whenever a choice would change what they see or how their data is kept and this plan doesn't settle it. Don't guess.
+- Keep every change targeted. Don't rewrite files, don't rename or move things that work, don't touch apps a phase doesn't name.
+
+## Open questions for the owner
+None blocking. Assumptions I made that the owner may overrule (say so if wrong; each is one line to change):
+1. Momo colours **one colour per app** for the apps' cards (changeable in the card pop-up; it changes all of that app's cards).
+2. Meal cards are titled with the meal: "Dinner: Chili + salad", "Cook: Curry ×1½ · Chili"; Momo places them at 07:30 / 12:00 / 18:00 / 16:00 (cook) / 10:00 (grocery trip), movable.
+3. Turtleduck's grocery amounts get three modes: **As entered** (default: today's look) · Metric · US.
+4. Hawky's quick add gets a small "+ Note" that reveals one note line; the full note lives in the errand pop-up.
+5. Badgermole's weight − / + in a session also steps by the exercise's progression step.
+6. Switching Badgermole programs: "Next up" resumes where that program left off (worked out from its own routines' sessions).
+7. Pabu groups are filter chips above the roster (All · Work · Denver · …), one group per person.
+8. Version per phase: one new version per app touched, bumped by the **largest** tier among that app's changes in the phase (Momo 7.964 precedent), with one changelog line per change.
+
+## Decisions (what the owner settled; newest comment wins)
+Conflicts in the roadmap, resolved by the later comment:
+1. Hawky recurring items: asked for, then "remove the recurring stuff" → **none**.
+2. Hawky placing events into Momo / "hawky schedules things" / "upcoming events into hawky": then "no, hawky does not place events" → **Hawky sends no events; Momo still decides when (you drag).**
+3. Weekend and travel plans in Hawky ("in text form", "upcoming weekends for the rest of the season"): then "weekend plans should be in momo", "firmed up travel plans should move to momo" → **in Momo**.
+4. Momo travel plans: "input any upcoming travel plans" then "Hold off on the upcoming trips portion" → **weekends only**; a trip is just a weekend's plan text.
+5. Hawky shopping price and sales tax: then "Remove cost entirely" → **no price, no tax**.
+6. Hawky "multiple lists per topic": then "one list per topic … grouped by vendors, then by topic … lock the list per topic" → **vendor → topic (one list) → items; lock per topic list**.
+7. Appa checklists: then "the checklists seem like a burden. remove that" → **Appa's own features unchanged**.
+8. Momo "meeting invites": "Remove my current input about the meeting invites. bad idea" → nothing recorded, **nothing built**.
+9. Erika/Erica rename trouble: "it was in pabu" → **fixed in Pabu** (Phase 5).
+10. Badgermole "to failure": "lock the minimum good sets" then "i actually meant … 4 good REPS and 5 half reps … count the 4 good reps" → **reps interpretation**.
+11. Badgermole kg/lb: roadmap "global flag … per application … specifically this one"; planning answer: **keep it inside Badgermole** (no Kyoshi-wide flag; progression steps stay in pounds).
+12. Wan Shi Tong: "I like how the up next one was purple" + "Remove up next" → **the whole Active media section is purple**.
+13. Weekend horizon: "rest of the season + next season" → "further than 2 weeks" → **next 3 months (13 weekends)**.
+14. Hawky "under the hawky tab in momo": "I meant … their own cards" → **one card per errand, in Hawky's Tasks chunk**.
+15. Pabu grouping "per job and per place": "keep them in one group at a time" → **one group per person**.
+
+Planning answers (2026-10-03):
+- **Momo:** each need is its **own card** (title, minutes, app icon, app colour); generic blocks (Errands, Workout, Keep in touch, Breakfast…) are no longer filled. Dated needs (meals, cook rows, grocery trips, logged workouts/talks/errands/records) **land on their day by themselves**; undated ones wait in Tasks, one each. **No app room in the baseline**: the true cost shows each app's average weekly ask and whether the baseline leaves enough free hours. **Appa's jobs become their own cards too** (a small change in `apps/appa/share.js` only; nothing else in Appa changes). Meeting, Iroh's goals (hours) and Wan Shi Tong (ongoing) keep working as today. Bosco unchanged.
+- **Weekends:** a folded line below the board **and** below Today ("Upcoming weekends · 4 of 13 planned"), closed by default, opening into the 13 weekends; the board and Today stay the focus.
+- **Hawky:** lists stay in Hawky (never sent to Momo); an item is text plus an optional note or link; after the lock, tick items as bought, with "Tick all" for the whole list.
+- **Pabu:** no real data yet: reshape freely (no same-name merging); a ✓ counts for **that cadence only**.
+- **Badgermole:** in a superset, ✓ **alternates automatically** between the pair.
+- Keep Momo's 168-hour budget, true cost tab and close-out. No tests, no test plans, no branches: everything straight to `main` (this overrides the testing and branch rules in `CLAUDE.md`).
+
+## Rules for every phase
+- `CLAUDE.md` holds: vanilla HTML/CSS/JS, plain `<script src>` tags, **no frameworks, no CDN, no modules, no fetch of own files**; relative lowercase paths; many small files (≤ ~400 lines, a header comment saying what the file owns); icons only Lucide SVG inline. **Never rename or drop a stored key**: add keys, carry data over, and keep accepting every older `schemaVersion` in `importBackup`. **No personal data** in the repo (no real names, lists, plans in code, comments or changelogs).
+- Every app file is `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<id>)`; `A.$`/`A.root.querySelector`, never `document.getElementById`; page-wide listeners through `A.listen`; pop-ups as `.overlay > .modal` + `K.modal`; styles under `.app-<id>` in `apps/<id>/<id>.css`.
+- Time: `K.util.todayStr()` / `K.util.now()`; `Date.now()` only for `at`/`u` stamps.
+- New file → a `<script src>` tag in `index.html` at the right place in load order (apps: `app.js` first, `events.js` last).
+- **Every phase, before pushing:** (1) a changelog entry per change in each touched app's `changelog.js` and/or `core/changelog.js`, newest first, version bumped (tiers: +0.001 fix · +0.010 tiny tweak · +0.100 small feature · +1 large feature; one version per app per phase, largest tier); (2) new build stamp: `sed -i "s/?v=[0-9][0-9-]*/?v=$(date -u +%Y%m%d-%H%M)/g" index.html`; (3) update the touched app's `CLAUDE.md` (file map, state, storage, shared, invariants) and the root `CLAUDE.md` contract table when core's contract changes; (4) check by opening `index.html` from disk: switch to every touched app, console clean, phone width, Developer Mode time travel a day and a week; Export then Import JSON for each app whose data shape changed (an old backup must import). (5) commit with a clear message, push to `main`. Don't check the live site.
+- Don't touch `tests/` or `roadmap.md` (historical; the owner isn't running tests). Don't add tests.
+- Bug reports and console messages never hold the user's words (names, titles, plans): counts only.
+
+---
+
+## Phase 0 — small independent items (Iroh, Wan Shi Tong, core bug reports)
+Warm-up: three self-contained changes, no shared code.
+
+### 0.1 Iroh: SMART hint in the goal pop-up (Iroh +0.010)
+Files: `apps/iroh/markup.js` (goal pop-up, under `#goalTitle`/`#goalTitleHint`), `apps/iroh/goal-editor.js` (`showFields` keeps it visible for season and year goals), `apps/iroh/changelog.js`, `apps/iroh/CLAUDE.md` (one line).
+- Add one muted `div.hint` (Iroh's `.app-iroh .hint` style exists) in the goal pop-up, shown for both goal kinds: `SMART: Specific · Measurable (your "done when") · Achievable · Relevant (your "why") · Time-bound (this season or year)`. Nothing else changes.
+Changelog: "The goal pop-up gives a one-line SMART reminder."
+
+### 0.2 Wan Shi Tong: Active media, no Up next, distinct backlog sections, Available now (WST +0.100)
+Files: `apps/wanshitong/markup.js`, `render.js`, `editor.js`, `events.js`, `app.js`, `data.js` (only `HAVE` handling), `wanshitong.css`, `changelog.js`, `CLAUDE.md`.
+- **Active media:** rename every "In progress" in the UI to "Active media" (`section.spot.now` h2, `renderSpots` texts, `editor.whereIs`, confirm texts in `events.js`, `#backlogHint`, `bugState`). `inbox()` details: "Active · <Kind>". Behaviour of the three spots stays (`NOW_SPOTS`, swap pop-up, `freeSpot`).
+- **Remove Up next from the UI only:** delete `section.spot.next` from the markup; `.spots` becomes one column (`.spot.now` full width); `renderSpots` no longer fills `#nextBody`; `itemRow` loses the "Up next" button and `ACTS.next`/`upNext` go; `done()` just frees the spot (confirm text updated); `startIn` keeps clearing `slots.next` if it held the started item (harmless). **Keep `"next"` in `SLOTS`** so `cleanSlots`, backups and sync keep `slots.next` (never drop the key). Change `backlog()` so an item sitting in `slots.next` (old data) is **not** excluded any more (it shows in the backlog). `nextItem` may stay for `bugState` or go.
+- **Purple section:** `.spot.now` takes the purple (`--next-color`, light `#7c3aed` / dark `#a78bfa`; rename the CSS var to `--active-color` if you like, CSS only): heading, 4px top border, plus a light tint background (`color-mix(in srgb, var(--active-color) 8%, var(--card-bg))` or an rgba) and a 1px border in the colour. Drop the `.spot.next` rules.
+- **Distinct backlog subsections:** each `details.group[data-cat]` gets its own left border colour and summary band: 5 CSS vars (book, movie, tv, game, other) in `.app-wanshitong`, `summary` with padding, background tint of that colour, the count as a badge; 10–12px gap between groups. Keep the `<details>` folding (`S.folded`). No icons.
+- **Available to me now:** label "Available to me now"; `renderCatFields` draws two pills Yes (`data-have="yes"`) / No (`data-have=""`); `renderHave` marks Yes when `have` is any non-empty value; saving writes `"yes"` or `""`. `HAVE` keeps the old keys and gains `yes` (all labelled "Available now") so `cleanItems` keeps old values and shows them as Yes; `metaLine` badge "Available now" for any non-empty `have`.
+Changelog lines: Active media replaces In progress (same three spots) and is purple; Up next is gone (anything parked there waits in the backlog); backlog sections are told apart; "Have it?" became "Available to me now" yes/no.
+CLAUDE.md: `have` "" | "yes" (older values downloaded/borrowed/owned read as yes); `slots.next` kept in storage, unused.
+
+### 0.3 Core: denser bug reports (Kyoshi +0.010)
+File: `core/bugs.js` (`build(A, description)`), `core/changelog.js`. Format, no markdown headers, no blank lines, one fact per line:
+```
+Kyoshi <K.VERSION> · <App> <A.VERSION> · schema <n> · <YYYY-MM-DD HH:MM> · app day <todayStr>[ · travel +N days][ · test mode]
+<description or (none)>
+env: <browser/version and OS pulled from the user agent, e.g. Chrome/130 Android 14> · <W>x<H> · <theme> · <lang>[ · offline] · store <backend> · sync <state|unsupported> · dev <on|off> · unsaved <yes|no>
+failed to start: <app names>            (only when any)
+state: <A.bugState() lines stripped of their leading "- ", joined " | "> | meetings: <K.meetings.bugLine(A)>
+console (<n>): <HH:MM:SS> <E|W|I> <message>   one line each; identical consecutive messages collapsed with " ×N"; stacks cut to 3 frames with the page origin and "?v=…" removed
+versions: <App> <v> (<date>), <v>, <v> · Kyoshi <v> (<date>), <v>, <v>      (no changelog prose)
+```
+Keep the stored record shape `{ id, timestamp, app, description, markdown }` and Copy all / Download as they are. Aim: a third of today's size with an empty console.
+Changelog: "Bug reports are denser: one fact per line, no prose, for an AI reader."
+
+Push Phase 0.
+
+---
+
+## Phase 1 — Momo receives individual cards from the apps
+Shared change: the inbox contract (core), Momo's mechanism, and each feeder flipping to it. One push.
+
+### 1.1 Core contract (Kyoshi +0.100)
+File: `core/inbox.js` (`FILLS`, `clean`, the header comment), root `CLAUDE.md` (the `A.inbox` row).
+- `FILLS` gains `"card"`: **one card of its own per need**; its `block` is ignored (Momo uses the need's `title`).
+- `clean` keeps two new optional fields: `of` (string ≤ 80: for a done need, the id of the open need it completes — Momo's card holding that one shows ✓), `time` (`isTime`, "HH:MM": where in the day Momo puts the card it makes for a dated need).
+- Header: document `card`, `of`, `time`, and that a card need carries `minutes` (60 when missing) and may carry `date` (lands on that day), `due`/`from` (waits in Tasks), `done` + `date` (✓ on its card; placed on that day if none).
+Changelog: "Apps can ask Momo for a card of their own per need (`fill: "card"`), say which need a done one completes (`of`) and hint at a time (`time`)."
+
+### 1.2 Momo (Momo +1)
+Read `apps/momo/CLAUDE.md`, then `model.js` header, `inbox.js`, `tasks.js`, `truecost.js`, `colors.js`, `data.js` (`cleanCard`, `normalizeData`), `card-editor.js` (`newCard`, `saveCard`), `drag.js`/`drop.js` (`startDrag`, `endDrag`), `clipboard.js`, `render.js` (`cardHTML`, `renderAll`), `events.js` (`onShow`, `onTick`, `onReload`, `checkTasks`).
+
+**Card fields** (`model.js` header + `data.js cleanCard` + `card-editor.js newCard` + `tasks.js drawCard`): add `need` ("<app>:<need id>" | null), `app` (app id | null), `auto` (true while Momo placed it and the user hasn't touched it). `cleanCard` whitelists them (strings ≤ 100 for `need`, a known-looking id for `app`, boolean `auto`), so load/import/sync keep them.
+- `sameKind(a, b)`: **false when either card has `need`** (a card for a need never folds with another). Exclude cards with `need` from group drag `twinsOf` (drag.js) and `twinOn` (card-editor.js).
+- `clipboard.js`: a pasted copy keeps `app` (colour) and drops `need` and `auto`.
+- Any user move/resize/edit/pin of a card sets `auto = false` (`moveCard` callers in drop.js, the grip resize, `saveCard`, pin toggles).
+
+**Fill** (`inbox.js fill()`): before the other kinds, for each need with `fill === "card"`: find the block (a card on a day this week or next, both weeks, any day) whose `card.need === "<app>:<id>"`, or, when the need has `of`, `=== "<app>:<of>"`. Found → `b.needs = [n]`, `b.whole = true`, `b.used = b.room` (nothing else fills it). Not found → if `n.done` or (`n.date` and `n.date < today`) drop quietly; else `short.push(n)` (Tasks). `fillParts`: treat the need's title as the card's when `cleanText(n.title) === card.title` (no duplicate name). `isLate`, `fromHTML` unchanged.
+
+**Auto-place** — new file `apps/momo/place.js` (header: "cards Momo places by itself for dated needs, and takes back"), script tag after `truecost.js`:
+- `A.placeCards()`: runs only when `K.ready && A.isActive()` (Momo on screen), called from `onShow`, `onTick`, `onReload` and where `checkTasks` sees the inbox change, **before** `renderAll`; never from `A.init`. For every card need with a `date` from this Monday to next Sunday (done or not) with no card keyed to it (by `need` or `of`, both weeks): make `{ id: newId(), title: cleanText(n.title), hours: upHours(n.minutes || 60), day, need, app, auto: true, goalId: null, base: false, parentId: null, pos: "bottom", pin: null }` in `weekOf(that week)` (make the week like a Tasks drop does), inserted on its day: if `n.time`, before the first card whose start time (times.js `startTimes`) is after it; else at the day's end. Then **take back** stale auto cards: a card with `auto === true` on today or a later day whose `need` matches no current need (by key or `of`) is removed (past days stay: the record of the week). If anything changed: `save({ quiet: true })` (Momo's own bookkeeping, as `recordAsks`); confirm in `core/backup.js`/`sync.js` that a quiet change still syncs (asks do).
+- Card editor: for a card whose need is dated (an auto-placed meal, trip, logged session), hide Delete and show "Change it in <App>" with the existing "Open in <App>" link; Delete stays for other cards (an undated need goes back to Tasks).
+
+**Tasks** (`tasks.js`): a short card need becomes **one task each**: `{ key: "n:<app>:<id>", app, title: cleanText(n.title), hours: upHours(n.minutes || 60), needs: [n], due, overdue, need: "<app>:<id>" }` (no `label`); block/time/hours/ongoing tasks as today. `drawCard(t)` adds `need: t.need || null, app: t.need ? t.app : null`. `taskHTML` colours with `A.cardColor({ title, app })`. `openTask` → the editor's `newCard` copies `need`/`app` from `from`. `canGo`, `toPlace`, `placeSum`, chunks unchanged.
+
+**Colours** (`colors.js`, `app.js`): `cardKey(c)` = `"a:" + c.app` when `c.app`, else as today; `colorKeys` includes `a:<app>` for shown cards with `app`. `APP_COLORS` in `app.js`: a preferred `PALETTE` entry per app (teal-ish Hawky, rose Pabu, green Badgermole, amber Turtleduck, brown Appa) tried first when the key is new, else `freeColor`. The editor's swatches on such a card change the `a:<app>` key; `#cardColorNote` says "All <App> cards share this colour."
+
+**Labels** (`render.js cardHTML`, `today.js about`): a card with `app` shows its app's icon (`K.apps[app].meta.icon`) before the title even when no need fills it; filled cards keep `fill.icons`, ✓, late as today.
+
+**True cost** (`truecost.js`, `render.js`/`baseline.js` for the Baseline tab): `weekAsk` records a card need under `"<app>|"` (the app's total, done ones too, never ongoing); `asks` shape and sync unchanged (`model.js` comment: `"<app>|"` = the app's own cards). `trueCost()`: `cardApps` = apps whose current needs are all `card`; fold any old record `"<app>|<title>"` of such an app into `"<app>|"` (so last month's "Errands"/"<Thing> maintenance" rows don't linger). Return `{ rows (block rows as today: Meeting, Iroh's goals), apps: [{ id, minutes: average }], total, free: 168×60 − the baseline's cards' minutes (Free time cards count as free) }`. `costTasks` = block rows only. `renderCost` first draws one summary line: "Your apps ask about Xh a week — Hawky 1.4h · Pabu 1h · Badgermole 3h · Turtleduck 5h · Appa 0.5h. The baseline leaves Yh free ✓" (or "short Zh" in amber), then the block chunks as today. The baseline bank's "short" wording includes the apps' total when short.
+
+**Unchanged:** close-out (`fill: "hours"` only), `hoursSpent`, events/agenda, Today's structure, 168h, tabs' "all assigned ✓" (card tasks count in `toPlace`).
+
+Changelog (Momo): each app's errand, call, workout, meal, cook row, grocery trip and maintenance job is now a card of its own in Momo, titled by it, sized to its minutes, with its app's icon and colour; Tasks list them one by one; meals, cook rows, trips and things already done land on their day by themselves and leave again if the app drops them (unless you moved them); generic blocks are no longer filled; the true cost shows what each app asks of an average week against the free hours the baseline leaves. Reload Momo on every device.
+CLAUDE.md (Momo): rewrite the Blocks/Tasks invariants and "What fills it" around card needs, auto-placement (`place.js`), colours by app, true cost per app; add the card fields to the data model line; file map gains `place.js`.
+
+### 1.3 Feeders flip to `fill: "card"` (each +0.100: "Each <thing> is its own card in Momo")
+Each: `apps/<id>/share.js` only (plus the `BLOCK`/block-title constants in `app.js`, now unused: remove them), `changelog.js`, `CLAUDE.md` "Shared with other apps".
+- **Hawky:** `fill: "card"`, no `block`; done errands keep their id (no `of`). Title = the errand text.
+- **Pabu:** `fill: "card"`, no `block`; done talk needs (`p:<id>:<day>`) carry `of: "p:<id>"`.
+- **Badgermole:** `fill: "card"` on both kinds; a done session carries `of: "next:<Monday>:<k>"` where k is that session's rank (1-based, by `started`) among the week's sessions (planned slots are numbered from `weekCount + 1`, so the k-th session consumed slot k), and `time` = its start clock "HH:MM" (local, from `started`).
+- **Turtleduck:** `fill: "card"` on meals, cook rows, trips and the Now list; titles "Breakfast: …" / "Lunch: …" / "Dinner: …" (names joined, cut to 60), "Cook: …", "Groceries"; `time` hints 07:30 / 12:00 / 18:00 / 16:00 / 10:00 (trip); minutes as today.
+- **Appa (owner's choice, Appa's share.js only):** `fill: "card"` on job and reading needs, no `block` (the `momoTitle` helper goes if nothing else uses it); a done record `done:<recordId>:<jobId>` carries `of: "<jobId>"`.
+- Wan Shi Tong (ongoing), Iroh (hours), core meetings (Meeting block) and Bosco unchanged.
+
+Push Phase 1 (core, Momo, five feeders; one build stamp).
+
+---
+
+## Phase 2 — Momo: upcoming weekends (Momo +0.100)
+Read `apps/momo/data.js` (how `asks` is carried: `emptyData`, `normalizeData`/`cleanAsks`, `stampChanges`, `build`, `mergeVersions`, `dataKey`, `combine.apply`), `markup.js`, `render.js` (`renderBoard` day headings), `today.js` (`renderToday`), `events.js`.
+- **Data:** `data.weekends: { "<Saturday YYYY-MM-DD>": { plan: ≤ 120 chars, u } }`, added exactly like `asks` (every place listed above, plus `model.js` header; no schema bump; older copies drop it → the changelog says reload Momo everywhere). Merged key by key by `u`.
+- **UI** — new file `apps/momo/weekends.js` (script tag before `events.js`): `A.renderWeekends()` fills two `details.weekends` folds, one at the bottom of `#boardView` (after `.board-wrap`) and one at the bottom of `#todayView`, both closed by default, summary "Upcoming weekends · 4 of 13 planned" (plus "· next without a plan: Oct 18" when any). Inside: 13 `button.weekend` chips from this weekend (the Saturday on or before today when today is Sat/Sun, else the coming Saturday) through +12 weeks: "Oct 11–12" and the plan (cut to 40) in green, or "No plan" in red (`--bad`). Muted, small type: not the focus. Tap → pop-up `#weekendOverlay` (markup.js, the usual `.overlay > .modal`, `K.modal.define` in `A.init`): heading "Sat Oct 11 – Sun Oct 12", `#weekendPlan` (maxlength 120, placeholder "Camping with …, or Rest"), Save / Clear / Cancel; Save writes `data.weekends[sat] = { plan, u }` through `save()`; Clear removes the key. The board's Saturday heading for the two shown weeks adds a muted line with the plan when there is one. Time travel aware. Nothing counts toward the 168h.
+Changelog: "Upcoming weekends: a folded line under the board and under Today shows how many of the next 13 weekends have a plan; open it to see each and type a brief plan, so weekends get spent on purpose. Reload Momo on every device."
+CLAUDE.md: file map, state/storage (`weekends`), invariants.
+
+Push Phase 2.
+
+---
+
+## Phase 3 — Badgermole: programs, progression step, to failure, supersets (Badgermole +1)
+Read `apps/badgermole/CLAUDE.md`, `app.js`, `data.js`, `stats.js`, `editors.js`, `session.js`, `render.js`, `markup.js`, `events.js`. Units stay Badgermole's own (`settings.unit`, `#unitToggle`); progression steps are in pounds and shown converted when the unit is kg.
+
+**a) Programs.** New stored key `programs`: `[{ id, name ≤ 30, order: [routineId…] ≤ 50 (repeats allowed), deleted, at, u }]`, merged item by item (add to the merged lists in `data.js`; keep `hasData` as is; `build`/import carry it). `program` keeps `{ order, u }` and gains `active` (a program id or ""); `cleanProgram` keeps it. Migration in `cleanAll`/`load`: no live program and `program.order` non-empty → create `{ id: "main", name: "Program", order: program.order, at, u }` and `program.active = "main"` (a fixed id, so two devices migrating apart agree). `liveOrder()` = the active program's live order (fallback: `program.order`). Every program edit also writes `program.order` = the active order (older copies keep working). `nextIndex` stays as is (it already filters sessions to the program's routines), so switching back resumes where that program left off. UI (`renderProgram`, program fold markup, `editors.js`, `ACTS`): a row of program chips (name; active ✓; tap = make active), "New program" and "Rename" via a small `#programOverlay` (name; Save / Delete / Cancel; deleting the active one makes the first remaining active), and the existing ↑ ↓ ✕ list + `#programSelect`/`#programAddBtn` editing the active program; `#programNote` names the active program. `share.js` unchanged (reads `liveOrder`/`upNext`). `bugState`: programs count and active index.
+
+**b) Progression step per exercise.** Exercise gains `step` ∈ {2.5, 5, 7.5, 10} (pounds; default 5; `cleanExercises` keeps/defaults it). Exercise pop-up: a chip row `#exerciseStep` "+2.5 · +5 · +7.5 · +10 lb" (in kg mode labelled with `inUnit(step, "lb")`: "+1 · +2.5 · +3.5 · +4.5 kg"), hidden for bodyweight exercises; `saveExercise` writes it. `stats.js prefill`: the step up is `inUnit(ex.step, "lb")` for `ex = exerciseById(item.exerciseId)` (5 when missing), replacing `STEP[unit()]`; `#upNote` says "↑ +5 lb from last time". `session.js step()`: the weight − / + uses the same per-exercise step; `STEP` stays for the routine editor's fields.
+
+**c) To failure after a minimum.** Routine line gains `toFailure` (bool, default false); `cleanItems`, `routineItems`, `cleanLive` items keep it. Routine pop-up: per line a small toggle pill "to failure" (title: "the reps are the minimum; keep going to failure and log the good reps"); `readLines`/`saveRoutine` write it. Session: `#setNo`/reps label "Set 2 of 3 · 8+ reps, to failure"; reps prefilled as today; the logged `reps` is what you type (good reps only). The step-up rule (`reps >= item.reps` on every planned set) is unchanged. Routines list line shows "8+".
+
+**d) Supersets (per routine).** Routine line gains `pair` (1–9, 0/absent = none; exactly two adjacent lines share a number — `cleanItems` zeroes anything else). `routineItems`/`cleanLive` keep it. Routine pop-up: between consecutive lines a small link toggle ("⛓ superset" / "unlink") giving both lines the next free number; moving a paired line up/down unlinks the pair (say so in a hint). Colours: `.pair-1 … .pair-5` in `badgermole.css` (number mod 5), a left border on the lines and a dot on the session chips. Session: `#exName` gets the pair's colour band and "Superset with <partner>"; `#exList` chips show the colour. **After ✓ (`logSet`, not Log all): if the current exercise has a partner with planned sets left, `jumpTo(partner)`; if the partner is done, stay.** The one exception to "✓ never moves on"; everything else (Next/Back, held sets, Finish, day pop-up) unchanged.
+
+Changelog (one +1 version): several programs with one active, chosen by hand; a progression step per exercise (+2.5/+5/+7.5/+10 lb); a line can be "to failure" after its minimum reps, logging the good reps; supersets pair two exercises in a routine with a colour and alternate automatically in a session.
+CLAUDE.md: state (`programs`, `program.active`, `exercise.step`, `item.toFailure`, `item.pair`), storage keys, invariants, "Not now" minus supersets.
+
+Push Phase 3.
+
+---
+
+## Phase 4 — Hawky: errands simplified, shopping lists with a cooling-off lock (Hawky +1)
+Read `apps/hawky/CLAUDE.md` and all its files (small). Hawky keeps its one storage key `items` and gains `lists`; `DATA_SCHEMA_VERSION` → 2 (import accepts 1: no `lists`). `looksLike` as today (items with `text`); `hasData`: items or lists.
+
+**a) Errands.**
+- Groups: `GROUPS` → Overdue · Today · This week · Later; `groupOf` puts undated errands in Later (dated after this week first, by due; then undated by `at`). `bugState` keys follow.
+- Quick add: day chips **Today · Pick a day · No day** (drop Tomorrow: markup, `chipDay`, the `#addDays` grid → 3 columns); minutes chips unchanged, 15 default; a small "+ Note" button reveals `#addNote` (one line, maxlength 200) and `add()` stores it.
+- Item gains `note` (≤ 200; `cleanItems` keeps it; a `cleanText` like Pabu's); editor pop-up gets `#errandNote` (textarea), `FIELDS`, `saveEditor`; the row shows the note's first line muted. Open undated errands show their age ("12 days"). `share.js` details add the note's first line.
+
+**b) Shopping lists.** New files `apps/hawky/lists.js` (model, states, actions) and `apps/hawky/lists-view.js` (render, pop-up), script tags after `share.js`; markup in `markup.js`.
+- Data key `lists`: `[{ id, vendor ≤ 40, topic ≤ 40, items: [{ id, text ≤ 100, note ≤ 300 (a note or a URL), at, bought: "" | day, deleted }], lock: null | { at: day, days: 7 | 30 }, unlocked: "" | day (an early unlock), done: "" | day, deleted, at, u }]`. One list per vendor + topic (case-insensitive). Merged list by list by `u` (whole list wins, like Pabu's people). Backup `{ schemaVersion: 2, appVersion, items, lists }`.
+- `stateOf(list)`: `done` → done; no lock → **open** (add/edit/remove items; "Lock 30 days" / "Lock 7 days"); lock set, `today < addDays(lock.at, lock.days)` and not `unlocked` → **locked** (items can only be removed; shows "Locked · unlocks Nov 2 · 18 days"; an **amber** "Unlock early" button (`--warn`) asks "This list cools off until Nov 2. Unlock it anyway?" → `unlocked = today`); else → **ready** (each item gets ✓ bought; "Tick all"; items can still be added or removed). `done` = today when every live item is bought or Tick all is pressed → the list folds into a Done fold (newest first).
+- Every item shows how long it has been pending ("12 days", from `at`); a URL in `note` is rendered as a safe link (Appa's `safeLink` pattern), other notes as muted text.
+- UI: a nav with two views, `S.view` "errands" | "lists" (device only; opens on errands). Shopping view: an add row (vendor with a `<datalist>` of vendors, topic with a datalist of that vendor's topics, item text, optional note, Add → into the matching list or a new one), then vendors as sections, each topic list as a card: "Topic · 3 items · open | locked · 18 days | ready", its items (✓ when ready, ✕ remove, age), the state's actions, "Rename" (pop-up `#listOverlay`: vendor, topic; Delete list), then the Done fold. Phone-first (big tap targets).
+- Not sent to Momo. `attention` unchanged (errands). `bugState`: list counts by state, counts only.
+Changelog (+1): Later and Someday are one Later; quick add is Today, a day or none, with a note; shopping lists by vendor and topic with a 30- or 7-day cooling-off lock (early unlock with a warning), items showing how long they've waited, ticked off once unlocked.
+CLAUDE.md: rewrite purpose, files, state, storage, invariants.
+
+Push Phase 4.
+
+---
+
+## Phase 5 — Pabu: a roster of people with several cadences, groups, notes, a this-week pane (Pabu +1)
+Read `apps/pabu/CLAUDE.md` and all its files. The owner has no real Pabu data: reshape freely, but old backups must still import. `DATA_SCHEMA_VERSION` → 2.
+- **Data:** person `{ id, name ≤ 40, group ≤ 30, note ≤ 1000, birthday, cadences: [{ id, every, how, minutes, talks }] (≤ 6; none = birthday only), deleted, at, u }`. `cleanPeople`: when `cadences` is missing, build one from the old `every/how/minutes/talks` (none when `every === "none"`); the old top-level keys are no longer written (their data is carried into the cadence). Markers as today; sync merges whole people by `u` as today.
+- **Due per cadence:** `dueOf(p, c)` = last talk in `c.talks` on or before today + `every` (as today's `nextDue`), never talked → the day added. Groups and ✓ work per cadence.
+- **Page:** quick add as today (name + every + how → a person with one cadence); **This week pane** at the top: every cadence due by this Sunday or overdue, soonest first: "Call Mom · due Thu · 30m" with ✓ (adds today to that cadence's talks; ✓ again removes it); Birthdays strip as today; **People** roster below: filter chips (All · each group in use · No group), one row per person (name, group, "Call monthly · Text weekly", next due, 🎂), tap → pop-up.
+- **Pop-up:** name, group (input + datalist of groups), birthday (as today), notes textarea (`#personNote`, maxlength 1000, label "Notes: likes, dislikes, what you talked about"), the cadences (each: how · every · minutes · last talked · "Talked on" date + Add · its days · ✕), "+ Add a cadence", Save / Cancel / Delete. **Save writes the whole person** (no more field-by-field diff) and **never stops silently**: a half-typed "Talked on" day is ignored with a visible hint, minutes/birthday problems show in `#personHint` instead of `alert`. This closes the rename trouble: one person, one name, one Save.
+- **share.js:** open cadence `{ id: "p:<pid>:<cid>", title: "<How> <name>", fill: "card", minutes, due, from (6 days before due; null once overdue), overdue, details: ["Every month · last talked 5 weeks ago", the note's first line] }`; a talk `{ id: "p:<pid>:<cid>:<day>", of: "p:<pid>:<cid>", date, done: true, … }`; `agenda` (birthdays, `bday:<pid>:<year>`) unchanged; `open(id)` reads the person id from the second segment. `attention`: cadences overdue. `bugState`: counts only.
+Changelog (+1): one person with several cadences, a group each, notes, a this-week pane; renaming is one edit.
+CLAUDE.md: rewrite state, storage, shared, invariants.
+
+Push Phase 5.
+
+---
+
+## Phase 6 — Turtleduck: plurals and units in the grocery lists (Turtleduck +0.100)
+Read `apps/turtleduck/ingredients.js`, `groceries.js` (`rowsFor`, `lists`, ticks, `setSection`), `markup.js` (Groceries Settings), `data.js` (`cleanSettings`, `cleanChecked`, `cleanSections`), `app.js` settings shape.
+- **Plurals:** `singular(word)` applied to the last word of the name for `norm`: "ies"→"y" (berries), "oes"→"o" (tomatoes), "ves"→"f" (leaves, loaves), "ches/shes/sses/xes" → drop "es", else drop a trailing "s" unless the word ends in "ss" or is in a short mass-noun list (hummus, couscous, asparagus, molasses). Rows merge by the singular `norm`; the row keeps the first spelling seen. Keep looking ticks (`S.checked`) and hand-set sections (`S.sections`) up under the **old** key when the new one has none; new writes use the new key.
+- **Units:** `UNIT_WORDS` gains oz (ounce/ounces), lb (lbs/pound/pounds), fl oz (also "fl. oz", "fluid ounce(s)": parse the two-word unit), pint (pt), quart (qt), gallon (gal); `BASE` maps every mass unit to g (oz 28.3495, lb 453.592) and every volume unit to ml (tsp 4.929, tbsp 14.787, fl oz 29.5735, cup 236.588, pint 473.176, quart 946.353, gallon 3785.41), so rows merge within a family (`norm|g`, `norm|ml`); count units (clove, can, slice, bunch, head, pkg, pinch, piece, stick) stay their own. `fmtAmount(q, baseUnit, mode, enteredUnit)`: **"entered"** (default): when every line of the row used one unit, show in it; else metric; **"metric"**: g→kg and ml→l from 1000 (as today); **"us"**: mass in oz below 16 then lb; volume tsp < 3 tsp, tbsp < 4 tbsp, cups up to 4 (neat fractions ¼ ⅓ ½ ⅔ ¾), then qt, gal from 4 qt. Rows carry the set of entered units. `settings.units` ∈ "entered" | "metric" | "us" (`cleanSettings` keeps it, default "entered"); Groceries → Settings gets a `.mode-toggle` "Amounts: As entered · Metric · US" (`setUnits()` in groceries.js, `S.version++`). The cook view stays as typed. Update the recipe hint ("the grocery list adds them up: g/kg/oz/lb together, ml/l/tsp/tbsp/cup together, onions with onion").
+Changelog: plurals fold together; any unit, with the list shown as entered, metric or US.
+CLAUDE.md: ingredients line, invariants, "Not now".
+
+Push Phase 6. Done.
+
+---
+
+## Versions at a glance (tiers; compute from each changelog's top entry when you get there)
+| Phase | Kyoshi | Momo | Hawky | Pabu | Badgermole | Turtleduck | Appa | Wan Shi Tong | Iroh |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | +0.010 | | | | | | | +0.100 | +0.010 |
+| 1 | +0.100 | +1 | +0.100 | +0.100 | +0.100 | +0.100 | +0.100 | | |
+| 2 | | +0.100 | | | | | | | |
+| 3 | | | | | +1 | | | | |
+| 4 | | | +1 | | | | | | |
+| 5 | | | | +1 | | | | | |
+| 6 | | | | | | +0.100 | | | |
+Bosco: untouched throughout.
