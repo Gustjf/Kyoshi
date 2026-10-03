@@ -1,14 +1,19 @@
 /* Kyoshi · core/bugs.js — bug reports, as K.bugs.
- * "Report a bug" (footer) opens #kBugOverlay for the app on screen; Submit saves a Markdown
- * report to a local log (K.store "bugReports", kept until cleared in Developer Mode) and copies it.
- * A report holds the environment, the app's own state lines (A.bugState()), recent console
- * activity and changelogs — never personal data (no names, weights, card titles…). */
+ * "Report a bug" (footer) opens #kBugOverlay for the app on screen; Submit saves a report to a local
+ * log (K.store "bugReports", kept until cleared in Developer Mode) and copies it.
+ * A report is dense plain text for an AI to read, one fact per line: versions and build, the
+ * description, the browser and device, the app's own state lines (A.bugState()), recent console
+ * errors and warnings, and the latest version numbers — never personal data (no names, weights, card titles…). */
 (function (K) {
   "use strict";
   const { copyText, downloadBlob, todayStr } = K.util;
   const $ = id => document.getElementById(id);
   const BUG_REPORTS_MAX = 20;
-  let reports = []; // { id, timestamp, app, description, markdown }
+  const STACK_FRAMES = 3, CONSOLE_LINE_MAX = 600;
+  // The page's build stamp (index.html's "?v=…" on every file): which deploy this is.
+  const BUILD = ((document.currentScript && document.currentScript.src.match(/[?&]v=([\w-]+)/)) || [])[1] || "none";
+  let reports = []; // { id, timestamp, app, description, markdown (the report's text: Markdown before Kyoshi 3.440, plain since) }
+  let systemVersion = ""; // the system's real version where the browser tells it (Chromium, asked at init): its user agent's is frozen
 
   function load() {
     const r = K.store.json("bugReports");
@@ -16,40 +21,74 @@
   }
   const store = () => K.store.set("bugReports", JSON.stringify(reports));
 
-  // Markdown meant to be pasted into Claude Code: the description, then what's needed to diagnose it.
+  // --- What a report says about the device ---
+  const pad = n => String(n).padStart(2, "0");
+  const clock = d => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const minute = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  // This device's time zone, which every date in Kyoshi follows: "UTC-6", "UTC+5:30".
+  function zone(d) {
+    const m = -d.getTimezoneOffset(), a = Math.abs(m);
+    return `UTC${m < 0 ? "-" : "+"}${Math.floor(a / 60)}${a % 60 ? `:${pad(a % 60)}` : ""}`;
+  }
+  // The browser and its major version, from the user agent: "Chrome/130", "Safari/17.5".
+  function browser(ua) {
+    const known = [[/Edg(?:A|iOS)?\/(\d+)/, "Edge"], [/OPR\/(\d+)/, "Opera"], [/SamsungBrowser\/(\d+)/, "Samsung"], [/(?:Firefox|FxiOS)\/(\d+)/, "Firefox"],
+      [/(?:Chrome|CriOS)\/(\d+)/, "Chrome"], [/Version\/(\d+(?:\.\d+)?).*Safari\//, "Safari"]];
+    for (const [re, name] of known) { const m = ua.match(re); if (m) return `${name}/${m[1]}`; }
+    return "unknown browser";
+  }
+  // The system: "Android 14", "iOS 17.5", "Windows 11", "macOS 14.5" (an iPad asking for desktop sites says it's a Mac).
+  function system(ua) {
+    const v = systemVersion.split(".").map(Number);
+    let m;
+    if ((m = ua.match(/(?:iPhone|iPad|iPod).*? OS (\d+)_(\d+)/))) return `iOS ${m[1]}.${m[2]}`;
+    if ((m = ua.match(/Android (\d+)/))) return `Android ${v[0] || m[1]}`;
+    if (/CrOS/.test(ua)) return "ChromeOS";
+    if (/Windows/.test(ua)) return v[0] >= 13 ? "Windows 11" : v[0] ? "Windows 10" : "Windows";
+    if (/Mac OS X/.test(ua)) return navigator.maxTouchPoints > 1 ? "iPadOS" : `macOS${v[0] ? ` ${v[0]}.${v[1] || 0}` : ""}`;
+    return /Linux/.test(ua) ? "Linux" : navigator.platform || "unknown system";
+  }
+
+  // --- Console lines: each on one line, without the page's own address (shorter, and a file:// path can hold
+  // the user's name) or build stamps, stacks cut to their first frames, repeats counted ---
+  function tidy(message) {
+    const folder = location.href.replace(/[?#].*$/, "").replace(/[^/]*$/, "");
+    const [head, ...rest] = String(message).split(folder).join("").replace(/\?v=[\w-]+/g, "").split("\n");
+    const frames = rest.map(l => l.trim()).filter(l => /^at\s|@.*:\d+:\d+$/.test(l)).slice(0, STACK_FRAMES);
+    const line = [head.trim()].concat(frames).join(" | ");
+    return line.length > CONSOLE_LINE_MAX ? `${line.slice(0, CONSOLE_LINE_MAX)}…` : line;
+  }
+  function consoleLines() {
+    const out = [];
+    K.debugLog.forEach(l => {
+      const text = `${l.level === "error" ? "E" : l.level === "warn" ? "W" : "I"} ${tidy(l.message)}`, last = out[out.length - 1];
+      if (last && last.text === text) last.times++;
+      else out.push({ time: clock(new Date(l.time)), text, times: 1 });
+    });
+    return out.map(o => `${o.time} ${o.text}${o.times > 1 ? ` ×${o.times}` : ""}`);
+  }
+
+  // The report, meant to be pasted into Claude Code: one fact per line, no prose.
   function build(A, description) {
-    const recent = log => log.slice(0, 3).map(c => `- v${c.version} (${c.date}): ${c.changes.join(" ")}`);
-    let appLines;
-    try { appLines = A.bugState ? A.bugState() : []; } catch (err) { appLines = [`- (couldn't read the app's state: ${err.message})`]; }
+    const now = new Date(), ua = navigator.userAgent || "";
+    const recent = (name, log) => `${name} ${log.slice(0, 3).map((c, n) => (n ? c.version : `${c.version} (${c.date})`)).join(", ") || "?"}`;
+    const failed = K.order.filter(id => !K.apps[id].started).map(id => K.apps[id].meta.name);
+    let state;
+    try {
+      state = (A.bugState ? A.bugState() : []).map(l => String(l).replace(/^\s*-\s*/, "")).concat(`meetings: ${K.meetings.bugLine(A)}`).join(" | ");
+    } catch (err) { state = `(couldn't read the app's state: ${err.message})`; }
+    const lines = consoleLines();
     return [
-      `# Bug Report — ${A.meta.name} (Kyoshi)`, "",
-      `**Reported:** ${new Date().toISOString()}`,
-      `**App Version:** ${A.VERSION}`,
-      `**Kyoshi Version:** ${K.VERSION}`,
-      `**Data Schema Version:** ${A.data ? A.data.schemaVersion : "n/a"}`, "",
-      "## Description", description || "_(no description provided)_", "",
-      "## Environment",
-      `- Platform: ${navigator.platform || "unknown"}`,
-      `- User agent: ${navigator.userAgent}`,
-      `- Viewport: ${window.innerWidth}x${window.innerHeight}`,
-      `- Theme: ${document.documentElement.dataset.theme}`,
-      `- Language: ${navigator.language}`,
-      `- Online: ${navigator.onLine}`,
-      `- Apps: ${K.order.map(id => `${K.apps[id].meta.name} ${K.apps[id].VERSION}${K.apps[id].started ? "" : " (failed to start)"}`).join(", ")}`, "",
-      "## App State",
-      ...appLines,
-      `- Meetings: ${K.meetings.bugLine(A)}`,
-      `- Unsaved changes since last export: ${K.backup.isUnsaved(A)}`,
-      `- Folder sync: ${K.sync.supported ? K.sync.state() : "unsupported"}`,
-      `- Storage: ${K.storage.backend()}`,
-      `- App date: ${todayStr()}${K.testMode ? ` (time travel +${K.dayOffset} days, test mode)` : ""}`,
-      `- Dev mode: ${K.dev.isOn()}`, "",
-      "## Recent Console Activity",
-      ...(K.debugLog.length ? ["```", ...K.debugLog.map(l => `[${l.time}] ${l.level.toUpperCase()}: ${l.message}`), "```"] : ["_(none captured this session)_"]), "",
-      `## Recent Changelog — ${A.meta.name}`,
-      ...recent(A.CHANGELOG || []), "",
-      "## Recent Changelog — Kyoshi",
-      ...recent(K.CHANGELOG)
+      `Kyoshi ${K.VERSION} (build ${BUILD}) · ${A.meta.name} ${A.VERSION} · schema ${A.data ? A.data.schemaVersion : "n/a"} · ${minute(now)} ${zone(now)} · app day ${todayStr()}` +
+        `${K.dayOffset ? ` · travel ${K.dayOffset > 0 ? "+" : ""}${K.dayOffset} days` : ""}${K.testMode ? " · test mode" : ""}`,
+      (description || "(none)").replace(/\n\s*\n/g, "\n"),
+      `env: ${browser(ua)} ${system(ua)} · ${window.innerWidth}x${window.innerHeight} · ${document.documentElement.dataset.theme} · ${navigator.language}` +
+        `${navigator.onLine ? "" : " · offline"} · ${location.protocol === "file:" ? "file://" : location.host} · store ${K.storage.backend()}` +
+        ` · sync ${K.sync.supported ? K.sync.state() : "unsupported"} · dev ${K.dev.isOn() ? "on" : "off"} · unsaved ${K.backup.isUnsaved(A) ? "yes" : "no"}`,
+      ...(failed.length ? [`failed to start: ${failed.join(", ")}`] : []),
+      `state: ${state}`,
+      `console (${K.debugLog.length})${lines.length ? ":" : ""}`, ...lines,
+      `versions: ${recent(A.meta.name, A.CHANGELOG || [])} · ${recent("Kyoshi", K.CHANGELOG)}`
     ].join("\n");
   }
 
@@ -100,6 +139,8 @@
 
   function init() {
     load();
+    const uad = navigator.userAgentData;
+    if (uad && uad.getHighEntropyValues) uad.getHighEntropyValues(["platformVersion"]).then(v => { systemVersion = v.platformVersion || ""; }, () => {});
     K.modal.define($("kBugOverlay"), { pending: () => $("kBugText").value.trim() !== "", ask: "Discard this bug report? It hasn't been submitted." });
     $("kReportBug").addEventListener("click", e => { e.preventDefault(); open(); });
     $("kBugSubmit").addEventListener("click", submit);

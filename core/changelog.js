@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.440", date: "2026-10-03", changes: [
+      "Bug reports are denser: one fact per line, no prose, for an AI reader.",
+      "They also tell the build, the time zone and whether Kyoshi was opened from a file, and keep each error's message on Safari and Firefox."
+    ] },
     { version: "3.430", date: "2026-10-02", changes: [
       "Iroh's meetings only start counting once you've added a goal or an area, so an Iroh you haven't used asks Momo for nothing and puts no dot on its icon.",
       "Importing a backup (an app's Import JSON, or Import all) says when the backup was made and how much newer what's here is, before replacing anything; backups now carry their date."

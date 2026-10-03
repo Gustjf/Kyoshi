@@ -19,13 +19,19 @@
     K.debugLog.push({ time: new Date().toISOString(), level, message: String(message) });
     if (K.debugLog.length > DEBUG_LOG_MAX) K.debugLog.shift();
   };
+  // An error as its name, message and stack (Safari's and Firefox's stacks leave the message out); anything else as it is.
+  const describe = a => {
+    if (!a || typeof a !== "object" || !a.message) return (a && a.stack) || a;
+    const head = `${a.name || "Error"}: ${a.message}`;
+    return !a.stack ? head : String(a.stack).includes(a.message) ? a.stack : `${head}\n${a.stack}`;
+  };
   ["error", "warn"].forEach(level => {
     const native = console[level].bind(console);
     console[level] = (...args) => {
-      K.logDebug(level, args.map(a => (a && a.stack) || a).join(" "));
+      K.logDebug(level, args.map(describe).join(" "));
       native(...args);
     };
   });
-  window.addEventListener("error", e => K.logDebug("error", `${e.message} (${e.filename}:${e.lineno})`));
-  window.addEventListener("unhandledrejection", e => K.logDebug("error", `Unhandled rejection: ${(e.reason && e.reason.message) || e.reason}`));
+  window.addEventListener("error", e => K.logDebug("error", `${e.message} (${e.filename}:${e.lineno})${e.error && e.error.stack ? `\n${e.error.stack}` : ""}`));
+  window.addEventListener("unhandledrejection", e => K.logDebug("error", `Unhandled rejection: ${describe(e.reason)}`));
 })();

@@ -1,11 +1,11 @@
-/* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, info, Have it?,
- * why it's here and, when editing, its dates. Add, Add another (keeps the
+/* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, info, Available
+ * to me now (yes or no), why it's here and, when editing, its dates. Add, Add another (keeps the
  * pop-up open for the next one), Save and Delete. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, isDate, todayStr, newId } = K.util;
-  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, catOf, haveChoices, fmtDay } = A;
+  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, catOf, fmtDay } = A;
 
   const overlay = () => $("itemOverlay");
   const FIELDS = ["itemName", "itemInfo", "itemWhy", "itemAdded", "itemDone"];
@@ -27,31 +27,26 @@
     $("itemStatus").className = `modal-status${text ? " good" : ""}`;
   }
 
-  // The "Have it?" choice, if the category offers it (switching categories keeps the pick for when it's back).
-  const offered = e => (haveChoices(e.cat).some(([h]) => h === e.have) ? e.have : "");
-
-  // Everything that depends on the category: its pill, what the info field asks for, the
-  // "Have it?" choices.
+  // Everything that depends on the category: its pill and what the info field asks for.
   function renderCatFields() {
     const e = S.editing, c = catOf(e.cat);
     $("itemCats").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === e.cat));
     $("itemInfoLabel").textContent = c.info;
     $("itemName").placeholder = c.nameEg ? `e.g. ${c.nameEg}` : "";
     $("itemInfo").placeholder = c.infoEg ? `e.g. ${c.infoEg}` : "";
-    $("itemHave").innerHTML = [["", "Not yet"]].concat(haveChoices(e.cat))
-      .map(([h, label]) => `<button type="button" class="pill" data-have="${h}">${esc(label)}</button>`).join("");
     renderHave();
   }
+  // Available to me now: Yes ("yes") or No ("").
   const renderHave = () => {
-    const have = offered(S.editing);
-    $("itemHave").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.have === have));
+    $("itemHave").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.have === S.editing.have));
   };
 
-  // Opens the pop-up to add a recommendation (id null), or to edit one.
+  // Opens the pop-up to add a recommendation (id null), or to edit one. An older "how" (downloaded,
+  // borrowed, owned) opens as Yes, and is saved as "yes".
   function openEditor(id) {
     const i = id ? A.itemById(id) : null;
     if (id && !i) return;
-    S.editing = { id: i ? i.id : null, cat: i ? i.cat : S.lastCat || CATS[0].id, have: i ? i.have : "" };
+    S.editing = { id: i ? i.id : null, cat: i ? i.cat : S.lastCat || CATS[0].id, have: i && i.have ? "yes" : "" };
     $("itemModalTitle").textContent = i ? "Edit recommendation" : "Add a recommendation";
     $("itemName").value = i ? i.name : "";
     $("itemInfo").value = i ? i.info : "";
@@ -67,13 +62,12 @@
     renderCatFields();
     S.editing.snapshot = formState();
     K.modal.open(overlay());
-    if (!i) $("itemName").focus(); // editing is often just a tap on "Have it?", so no keyboard popping up
+    if (!i) $("itemName").focus(); // editing is often just a tap on "Available to me now", so no keyboard popping up
   }
 
   // Where a recommendation already on the list is, for the "already there" question.
   function whereIs(i) {
-    if (A.spotOf(i)) return "in progress";
-    if (i === A.nextItem()) return "up next";
+    if (A.spotOf(i)) return "in Active media";
     if (i.done) return `finished ${fmtDay(i.done)}`;
     return `in the backlog${i.added ? `, added ${fmtDay(i.added)}` : ""}`;
   }
@@ -94,7 +88,7 @@
     }
     if (i && !isDate(added)) { $("itemAdded").focus(); return alert("Enter the day it was added."); }
     if (i && i.done && !isDate(done)) { $("itemDone").focus(); return alert("Enter the day you finished it."); }
-    const fields = { cat: e.cat, name, info: A.cleanLine($("itemInfo").value, MAX_INFO), have: offered(e), why: A.cleanText($("itemWhy").value, MAX_WHY) };
+    const fields = { cat: e.cat, name, info: A.cleanLine($("itemInfo").value, MAX_INFO), have: e.have ? "yes" : "", why: A.cleanText($("itemWhy").value, MAX_WHY) };
     if (i) {
       Object.assign(i, fields, { added, done: i.done ? done : "", u: Date.now() });
     } else {
@@ -149,7 +143,7 @@
     $("itemHave").addEventListener("click", e => {
       const btn = e.target.closest("button[data-have]");
       if (!btn || !S.editing) return;
-      S.editing.have = btn.dataset.have;
+      S.editing.have = btn.dataset.have ? "yes" : "";
       renderHave();
     });
     $("itemSaveBtn").addEventListener("click", () => saveItem(true));

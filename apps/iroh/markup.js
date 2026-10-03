@@ -54,6 +54,7 @@ Kyoshi.apps.iroh.markup = `
           <label for="goalTitle">Goal</label>
           <input type="text" id="goalTitle" maxlength="40" enterkeyhint="done">
           <div class="hint" id="goalTitleHint">Your cards in Momo with this title get its hours.</div>
+          <div class="hint">SMART: Specific · Measurable · Achievable · Relevant · Time-bound</div>
         </div>
         <div class="field" id="goalParentField">
           <label for="goalParent">The year goal it serves</label>

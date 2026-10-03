@@ -1,6 +1,6 @@
 /* Wan Shi Tong · app.js — registers Wan Shi Tong with Kyoshi, plus its constants (categories,
- * "Have it?" choices, In progress's spots, limits), state (A.S) and small helpers (formatting,
- * Google links, and which recommendation is where: In progress, Up next, the backlog or Finished).
+ * "Available to me now" values, Active media's spots, limits), state (A.S) and small helpers (formatting,
+ * Google links, and which recommendation is where: Active media, the backlog or Finished).
  * Loads first of the app's files: the others destructure what's here at the top, and call
  * functions from each other as A.name(). File map and data model: apps/wanshitong/CLAUDE.md. */
 (function (K) {
@@ -11,7 +11,7 @@
     id: "wanshitong",
     name: "Wan Shi Tong",
     title: "Wan Shi Tong — Media Tracker",
-    subtitle: "Every recommendation in one place, and always something worthwhile up next.",
+    subtitle: "Recommended books, movies, TV/anime and games, in one place.",
     width: 780,
     backupNote: "Your list lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
@@ -25,9 +25,8 @@
   // ==========================================================================
   // What a recommendation can be, in the order they're listed. Ids are what backups store; add
   // more here and they show up everywhere. info: what the second field asks for (just enough to
-  // find it again); search: added to its Google search, so "Dune" finds the right Dune;
-  // have / haveLabels: the "Have it?" choices it offers
-  // (default: all of HAVE) and any it names its own way. Old ids: see OLD_CATS in data.js.
+  // find it again); search: added to its Google search, so "Dune" finds the right Dune.
+  // Old ids: see OLD_CATS in data.js.
   const CATS = [
     { id: "book", label: "Book", group: "Books", info: "Author or edition", nameEg: "Piranesi", infoEg: "Susanna Clarke", search: "book" },
     { id: "movie", label: "Movie", group: "Movies", info: "Year or director", nameEg: "Spirited Away", infoEg: "Miyazaki, 2001", search: "movie" },
@@ -36,15 +35,16 @@
   ];
   // A category from a newer version (kept as it is) shows as Other.
   const OTHER = { id: "other", label: "Other", group: "Other", info: "Details", nameEg: "", infoEg: "", search: "" };
-  // In progress's spots, in order: this many things can be going at once, of any kind. Ids are what
+  // Active media's spots, in order: this many things can be going at once, of any kind. Ids are what
   // backups store; "now" was the only one before 2.000, so older data and backups fill the first.
   const NOW_SPOTS = ["now", "now2", "now3"];
-  // Every spot: In progress's, and Up next.
+  // Every spot: Active media's, and "next" (Up next's until 2.362: unused, but kept in storage, backups and sync).
   const SLOTS = NOW_SPOTS.concat("next");
   Object.assign(A, {
     CATS, OTHER, NOW_SPOTS, SLOTS,
-    // "Have it?": already at hand, so it can be started right away. Not yet is "".
-    HAVE: { downloaded: "Downloaded", borrowed: "Borrowed", owned: "Owned" },
+    // "Available to me now": at hand, so it can be started right away. "yes", or "" (not yet); older
+    // versions said how (downloaded, borrowed, owned), kept as they are and shown as yes.
+    HAVE: { yes: "Available now", downloaded: "Available now", borrowed: "Available now", owned: "Available now" },
     MAX_NAME: 120,
     MAX_INFO: 120,
     MAX_WHY: 500,
@@ -59,12 +59,12 @@
     // Every recommendation: { id, cat, name, info, have, why, added, started, done, deleted, at, u }
     // (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
     items: [],
-    // In progress's spots (now, now2, now3) and Up next (next): the item each holds ("" when empty),
-    // u = when that was set.
+    // Active media's spots (now, now2, now3) and next (the old Up next's, unused): the item each holds
+    // ("" when empty), u = when that was set.
     slots: Object.fromEntries(SLOTS.map(k => [k, { id: "", u: 0 }])),
     folded: [],     // backlog groups folded away on this device (category ids)
     editing: null,  // the add / edit pop-up: { id (null when adding), cat, have, snapshot }
-    swapping: null, // the "In progress is full" pop-up: the id of the one to start
+    swapping: null, // the "Active media is full" pop-up: the id of the one to start
     lastCat: "",    // the category last added, where the next add starts
     knownToday: ""  // today as of the last draw, to redraw when the date changes
   });
@@ -75,12 +75,6 @@
   const catOf = id => CATS.find(c => c.id === id) || OTHER;
   // The backlog group an item goes in: its category, or Other.
   const groupOf = id => catOf(id).id;
-  // The "Have it?" choices a category offers, as [value, label].
-  function haveChoices(id) {
-    const c = catOf(id);
-    return (c.have || Object.keys(A.HAVE)).map(h => [h, (c.haveLabels && c.haveLabels[h]) || A.HAVE[h]]);
-  }
-  const haveLabel = (catId, have) => (haveChoices(catId).find(([h]) => h === have) || [have, A.HAVE[have] || ""])[1];
   // A day, with its year only when it isn't this year: "Sep 28", "Mar 3, 2025".
   const fmtDay = d => (d.slice(0, 4) === todayStr().slice(0, 4) ? fmtShort(d) : fmtDate(d));
   // A Google search for it: its name and info, plus what it is.
@@ -91,7 +85,7 @@
   // --- Where each recommendation is ---
   const live = () => S.items.filter(i => !i.deleted);
   const itemById = id => (id && S.items.find(i => i.id === id && !i.deleted)) || null;
-  // In progress's spots, in order, and the item each holds while it's there and not finished (null:
+  // Active media's spots, in order, and the item each holds while it's there and not finished (null:
   // the spot is free). Two devices can leave one item in two spots; the first has it.
   function nowSpots() {
     const seen = new Set();
@@ -101,28 +95,26 @@
       return { spot, item: ok ? i : null, u: S.slots[spot].u };
     });
   }
-  // What's in progress, in the order it went in.
+  // What's active, in the order it went in.
   const nowItems = () => nowSpots().filter(s => s.item).sort((a, b) => a.u - b.u).map(s => s.item);
-  const spotOf = i => (nowSpots().find(s => s.item === i) || { spot: "" }).spot; // "" when it isn't in progress
+  const spotOf = i => (nowSpots().find(s => s.item === i) || { spot: "" }).spot; // "" when it isn't active
   const freeSpot = () => (nowSpots().find(s => !s.item) || { spot: "" }).spot;   // "" when all are taken
-  // Up next: its item, unless In progress has it too (two devices can leave them that way).
-  const nextItem = () => { const i = itemById(S.slots.next.id); return i && !i.done && !spotOf(i) ? i : null; };
-  // The backlog: everything not finished, in progress or up next.
-  const backlog = () => { const busy = nowItems().concat(nextItem() || []); return live().filter(i => !i.done && !busy.includes(i)); };
+  // The backlog: everything not finished or active (one the old Up next still holds included).
+  const backlog = () => { const busy = nowItems(); return live().filter(i => !i.done && !busy.includes(i)); };
   const finished = () => live().filter(i => i.done).sort((a, b) => b.done.localeCompare(a.done) || b.at - a.at);
-  // Puts an item's id in a spot (one of In progress's, or "next"), or "" to empty it.
+  // Puts an item's id in a spot (one of Active media's, or "next"), or "" to empty it.
   const setSlot = (slot, id) => { S.slots[slot] = { id, u: Date.now() }; };
   // Empties every spot holding it: back in the backlog (or finished, or deleted).
   const unslot = id => SLOTS.forEach(k => { if (S.slots[k].id === id) setSlot(k, ""); });
 
-  // --- Shared with other apps, read-only (Momo, through K.inbox: core/inbox.js): what's in progress, in
+  // --- Shared with other apps, read-only (Momo, through K.inbox: core/inbox.js): what's active, in
   // the order it went in, as copies, each ongoing (never used up: Momo's Tasks keep it to draw from, and
   // its cards show it); "Open in Wan Shi Tong" calls open(id), which shows it in its pop-up. ---
-  const inbox = () => nowItems().map(i => ({ id: i.id, title: i.name, fill: "ongoing", details: [`${catOf(i.cat).label} in progress`] }));
+  const inbox = () => nowItems().map(i => ({ id: i.id, title: i.name, fill: "ongoing", details: [`Active · ${catOf(i.cat).label}`] }));
   const open = id => { if (itemById(id)) A.openEditor(id); };
 
   Object.assign(A, {
-    catOf, groupOf, haveChoices, haveLabel, fmtDay, searchUrl, byNewest,
-    live, itemById, nowSpots, nowItems, spotOf, freeSpot, nextItem, backlog, finished, setSlot, unslot, inbox, open
+    catOf, groupOf, fmtDay, searchUrl, byNewest,
+    live, itemById, nowSpots, nowItems, spotOf, freeSpot, backlog, finished, setSlot, unslot, inbox, open
   });
 })(Kyoshi);

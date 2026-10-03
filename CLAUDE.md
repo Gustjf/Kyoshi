@@ -61,7 +61,7 @@ core/                 the shared DNA — K = window.Kyoshi
 apps/<id>/            one folder per app — its CLAUDE.md has its file map and data model
   bosco/              weight tracker with projections & GLP-1 dosing
   momo/               weekly time budget (YNAB for hours)
-  wanshitong/         media tracker for recommendations (In progress, Up next, the backlog)
+  wanshitong/         media tracker for recommendations (Active media, the backlog)
   appa/               preventive maintenance & records (jobs to Momo, PDF reports with proof)
   hawky/              errands & pop-up tasks (quick add on the phone, into Momo's Errands cards)
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)

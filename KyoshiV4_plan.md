@@ -56,6 +56,7 @@ Planning answers (2026-10-03):
 ---
 
 ## Phase 0 — small independent items (Iroh, Wan Shi Tong, core bug reports)
+Done 2026-10-03: owner's answers: SMART line spelled out only ("SMART: Specific · Measurable · Achievable · Relevant · Time-bound"), Movies blue and TV/Anime pink (Books amber, Games teal, Other grey; no purple, no green), WST tagline "Recommended books, movies, TV/anime and games, in one place.", and bug reports must keep all a fix needs; so they also carry the build stamp, the time zone, file:// or the host and the real OS version where Chromium gives it, and `core/base.js` now keeps an error's message where Safari/Firefox stacks drop it. Also: tints mix with `--panel` (the section's own background); an old "how" opens as Yes and saves as "yes"; the WST editor's Yes/No pills are static markup; `nextItem` removed (`bugState` reads `slots.next` directly).
 Warm-up: three self-contained changes, no shared code.
 
 ### 0.1 Iroh: SMART hint in the goal pop-up (Iroh +0.010)

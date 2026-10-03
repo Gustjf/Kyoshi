@@ -5,6 +5,13 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.362", date: "2026-10-03", changes: [
+      "In progress is now Active media (the same three spots), all in purple.",
+      "Up next is gone: anything waiting there is back in the backlog, and finishing something just frees its spot.",
+      "Each backlog group has its own colour: a stripe, a tinted heading and its count in a bubble.",
+      "\"Have it?\" is now \"Available to me now\", Yes or No; anything marked Downloaded, Borrowed or Owned shows as Available now.",
+      "The line under its name says plainly what it holds."
+    ] },
     { version: "2.262", date: "2026-10-02", changes: [
       "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
     ] },

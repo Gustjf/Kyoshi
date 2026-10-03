@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.210", date: "2026-10-03", changes: [
+      "The goal pop-up gives a one-line SMART reminder."
+    ] },
     { version: "1.200", date: "2026-10-02", changes: [
       "A dot on Iroh's icon while a goal is more than a week's hours behind, as well as for an overdue meeting.",
       "Its meetings only start counting once you've added a goal or an area.",

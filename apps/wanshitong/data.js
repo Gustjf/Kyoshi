@@ -40,7 +40,7 @@
         cat: typeof i.cat === "string" && /^[a-z0-9-]{1,20}$/.test(i.cat) ? (Object.hasOwn(OLD_CATS, i.cat) ? OLD_CATS[i.cat] : i.cat) : A.OTHER.id,
         name: gone ? "" : cleanLine(i.name, MAX_NAME),
         info: gone ? "" : cleanLine(i.info, MAX_INFO),
-        have: !gone && Object.hasOwn(HAVE, i.have) ? i.have : "",
+        have: !gone && Object.hasOwn(HAVE, i.have) ? i.have : "", // "yes", or an older version's how (shown as yes)
         why: gone ? "" : cleanText(i.why, MAX_WHY),
         added: isDate(i.added) ? i.added : "",
         started: !gone && isDate(i.started) ? i.started : "",
@@ -52,8 +52,8 @@
     }).filter(i => (i.name || i.deleted) && !ids.has(i.id) && ids.add(i.id));
   }
 
-  // In progress's spots and Up next from storage or a backup: { id, u } each. Data from before
-  // 2.000 has only now and next, so the other spots start out free.
+  // Active media's spots and next (the old Up next's: unused, kept) from storage or a backup: { id, u }
+  // each. Data from before 2.000 has only now and next, so the other spots start out free.
   const cleanSlot = s => ({ id: isObj(s) && typeof s.id === "string" ? s.id.slice(0, 40) : "", u: isObj(s) && isPos(s.u) ? s.u : 0 });
   const cleanSlots = s => Object.fromEntries(SLOTS.map(k => [k, cleanSlot(isObj(s) && s[k])]));
 

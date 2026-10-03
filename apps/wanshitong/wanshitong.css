@@ -1,21 +1,19 @@
 /* Wan Shi Tong · wanshitong.css — the app's own styles, every selector under .app-wanshitong.
  * Shared components (buttons, inputs, sections, badges, pop-ups…) are in core/kyoshi.css.
- * Sections: Tokens · In progress & Up next · Backlog & Finished · Pop-ups · Phones */
+ * Sections: Tokens · Active media · Backlog & Finished · Pop-ups · Phones */
 
-/* --- Tokens: Up next's violet (the owl's), and the "Have it?" badges, in both themes --- */
+/* --- Tokens: Active media's violet (the owl's), each backlog group's colour, and the "Available now" badge, in both themes --- */
 .app-wanshitong {
-  --next-color: #7c3aed;
-  --owned-bg: #dcfce7; --owned-text: #166534;
-  --downloaded-bg: #dbeafe; --downloaded-text: #1e40af;
-  --borrowed-bg: #fef3c7; --borrowed-text: #92400e;
+  --active-color: #7c3aed;
+  --book-color: #d97706; --movie-color: #2563eb; --tv-color: #db2777; --game-color: #0d9488; --other-color: #64748b;
+  --have-bg: #dcfce7; --have-text: #166534;
 }
 [data-theme="dark"] .app-wanshitong {
-  --next-color: #a78bfa;
-  --owned-bg: rgba(34, 197, 94, .16); --owned-text: #86efac;
-  --downloaded-bg: rgba(59, 130, 246, .2); --downloaded-text: #93c5fd;
-  --borrowed-bg: rgba(245, 158, 11, .18); --borrowed-text: #fcd34d;
+  --active-color: #a78bfa;
+  --book-color: #fbbf24; --movie-color: #60a5fa; --tv-color: #f472b6; --game-color: #2dd4bf; --other-color: #94a3b8;
+  --have-bg: rgba(34, 197, 94, .16); --have-text: #86efac;
 }
-.app-wanshitong h2 .count, .app-wanshitong .group .count { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.app-wanshitong h2 .count { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
 
 /* A name that opens the editor, its info, and the Google link after them. */
 .app-wanshitong .name-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
@@ -29,41 +27,40 @@
 .app-wanshitong .item-meta .sep { margin: 0 .5em; }
 .app-wanshitong .item-meta .badge { padding: 1px 7px; font-size: .92em; }
 .app-wanshitong .item-why { margin-top: 3px; font-size: .85em; font-style: italic; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
-.app-wanshitong .badge.have-owned { background: var(--owned-bg); color: var(--owned-text); }
-.app-wanshitong .badge.have-downloaded { background: var(--downloaded-bg); color: var(--downloaded-text); }
-.app-wanshitong .badge.have-borrowed { background: var(--borrowed-bg); color: var(--borrowed-text); }
+.app-wanshitong .badge.have { background: var(--have-bg); color: var(--have-text); }
 .app-wanshitong .badge.cat { background: var(--card-bg); border: 1px solid var(--border); color: var(--muted); font-weight: 400; }
 
-/* --- In progress (up to three, one under the other) & Up next: side by side, colored along the top --- */
-.app-wanshitong .spots { display: grid; grid-template-columns: 3fr 2fr; align-items: start; gap: 14px; margin-bottom: 14px; }
-.app-wanshitong .spot { min-width: 0; margin-bottom: 0; border-top: 4px solid var(--spot-color); }
-.app-wanshitong .spot.now { --spot-color: var(--accent); }
-.app-wanshitong .spot.next { --spot-color: var(--next-color); }
-.app-wanshitong .spot h2 { color: var(--spot-color); }
+/* --- Active media (up to three, one under the other): violet along the top and around, lightly inside --- */
+.app-wanshitong .spots { margin-bottom: 14px; }
+.app-wanshitong .spot { min-width: 0; margin-bottom: 0; border: 1px solid var(--active-color); border-top-width: 4px; background: color-mix(in srgb, var(--active-color) 7%, var(--panel)); }
+.app-wanshitong .spot h2 { color: var(--active-color); }
 .app-wanshitong .spot h2 .count { color: var(--muted); }
 .app-wanshitong .spot-body { margin-top: 8px; }
-.app-wanshitong .spot-body .empty-msg { padding: 2px 0; line-height: 1.45; }
 .app-wanshitong .now-item + .now-item { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
 .app-wanshitong .free-spots { padding: 9px 12px; border: 1px dashed var(--border); border-radius: 6px; color: var(--muted); font-size: .85em; line-height: 1.45; }
 .app-wanshitong .now-item + .free-spots { margin-top: 14px; }
 .app-wanshitong .spot-cat { font-size: .72em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .app-wanshitong .spot-body .name-line { margin-top: 2px; }
 .app-wanshitong .spot-name { font-size: 1.2em; font-weight: 700; line-height: 1.25; }
-.app-wanshitong .spot.next .spot-name { font-size: 1.1em; }
 .app-wanshitong .spot-body .item-meta { margin-top: 6px; }
 .app-wanshitong .spot-body .item-why { margin-top: 6px; }
 .app-wanshitong .spot-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
 
-/* --- Backlog (fold-away groups) & Finished --- */
+/* --- Backlog (fold-away groups, each in its category's colour: a stripe, a tinted band, the count as a badge) & Finished --- */
 .app-wanshitong summary { display: flex; align-items: center; gap: 2px; list-style: none; cursor: pointer; user-select: none; }
 .app-wanshitong summary::-webkit-details-marker { display: none; }
 .app-wanshitong summary::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 8px 0 2px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
 .app-wanshitong details[open] > summary::before { transform: rotate(45deg); }
 .app-wanshitong summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-.app-wanshitong .group { margin-top: 12px; }
-.app-wanshitong .group:first-child { margin-top: 2px; }
-.app-wanshitong .group-title { font-size: .78em; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.app-wanshitong .group .count { font-size: .78em; color: var(--muted); }
+.app-wanshitong #backlogGroups { display: flex; flex-direction: column; gap: 12px; margin-top: 2px; }
+.app-wanshitong .group { --cat-color: var(--other-color); border-left: 4px solid var(--cat-color); border-radius: 4px; }
+.app-wanshitong .group[data-cat="book"] { --cat-color: var(--book-color); }
+.app-wanshitong .group[data-cat="movie"] { --cat-color: var(--movie-color); }
+.app-wanshitong .group[data-cat="tv"] { --cat-color: var(--tv-color); }
+.app-wanshitong .group[data-cat="game"] { --cat-color: var(--game-color); }
+.app-wanshitong .group > summary { padding: 7px 10px 7px 6px; border-radius: 0 6px 6px 0; background: color-mix(in srgb, var(--cat-color) 13%, var(--panel)); }
+.app-wanshitong .group-title { font-size: .78em; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .05em; }
+.app-wanshitong .group .count { margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: .75em; font-weight: 600; color: var(--text); background: color-mix(in srgb, var(--cat-color) 30%, var(--panel)); }
 .app-wanshitong .items { list-style: none; margin: 4px 0 0; padding: 0; }
 .app-wanshitong .item { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 6px 12px; padding: 8px 0 8px 18px; border-top: 1px solid var(--border); }
 .app-wanshitong .item:first-child { border-top: none; }
@@ -72,7 +69,7 @@
 .app-wanshitong #finishedList { margin-top: 8px; }
 .app-wanshitong #finishedList .item { padding-left: 0; }
 
-/* --- Pop-ups: add / edit, and In progress is full --- */
+/* --- Pop-ups: add / edit, and Active media is full --- */
 .app-wanshitong .choice-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .app-wanshitong .choice-pills .pill { padding: 5px 10px; font-size: .85em; }
 .app-wanshitong #itemCats { display: grid; grid-template-columns: repeat(4, 1fr); } /* the seven categories in two rows */
@@ -82,10 +79,10 @@
 .app-wanshitong .swap-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 9px 12px; text-align: left; }
 .app-wanshitong .swap-name { font-weight: 600; overflow-wrap: anywhere; }
 
-/* --- Phones: In progress above Up next --- */
+/* --- Phones: items closer to the edge --- */
 @media (max-width: 640px) {
-  .app-wanshitong .spots { grid-template-columns: 1fr; }
   .app-wanshitong .item { padding-left: 0; }
+  .app-wanshitong .group .item { padding-left: 10px; }
 }
 /* The smallest phones: the categories in three columns, so each name fits */
 @media (max-width: 360px) {

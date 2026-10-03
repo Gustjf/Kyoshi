@@ -1,6 +1,6 @@
 /* Wan Shi Tong · events.js — loads last: wires the page (A.init), moves recommendations between
- * the backlog, Up next, In progress and Finished (with the pop-up asking what makes room when
- * In progress is full), and the hooks Kyoshi calls: onTick (a new day), onKeydown (Enter in the
+ * the backlog, Active media and Finished (with the pop-up asking what makes room when
+ * Active media is full), and the hooks Kyoshi calls: onTick (a new day), onKeydown (Enter in the
  * pop-up), onReload (another tab saved) and bugState. */
 (function (K, A) {
   "use strict";
@@ -12,7 +12,7 @@
   const kept = () => { A.save(); A.renderAll(); };
   const startable = i => !!i && !i.done && !A.spotOf(i);
 
-  // Start: in progress from today, in a free spot. With none free, asks which one makes room.
+  // Start: active from today, in a free spot. With none free, asks which one makes room.
   function start(id) {
     const i = A.itemById(id), spot = A.freeSpot();
     if (!startable(i)) return;
@@ -21,11 +21,11 @@
   function startIn(spot, i) {
     touch(i, { started: todayStr() });
     setSlot(spot, i.id);
-    if (S.slots.next.id === i.id) setSlot("next", "");
+    if (S.slots.next.id === i.id) setSlot("next", ""); // the old Up next let go of it too
     kept();
   }
 
-  // --- In progress is full: pick one to go back to the backlog; the new one takes its spot ---
+  // --- Active media is full: pick one to go back to the backlog; the new one takes its spot ---
   const swapOverlay = () => $("swapOverlay");
   function openSwap(i) {
     S.swapping = i.id;
@@ -43,31 +43,17 @@
     startIn(spot, i);
   }
 
-  // Up next: what was there goes back to the backlog.
-  function upNext(id) {
-    const i = A.itemById(id);
-    if (!startable(i) || i === A.nextItem()) return;
-    setSlot("next", i.id);
-    kept();
-  }
-
-  // Done: on to the Finished list, and Up next takes its spot.
+  // Done: on to the Finished list, and its spot is free.
   function done(id) {
-    const i = A.itemById(id), spot = i && A.spotOf(i), next = A.nextItem();
-    if (!spot) return;
-    if (!confirm(`Finished “${i.name}”? It goes to your Finished list${next ? `, and “${next.name}” moves up from Up next` : ""}.`)) return;
-    const today = todayStr();
-    touch(i, { done: today });
+    const i = A.itemById(id);
+    if (!i || !A.spotOf(i)) return;
+    if (!confirm(`Finished “${i.name}”? It goes to your Finished list.`)) return;
+    touch(i, { done: todayStr() });
     A.unslot(i.id);
-    if (next) {
-      touch(next, { started: today });
-      setSlot(spot, next.id);
-      setSlot("next", "");
-    }
     kept();
   }
 
-  // Back to backlog: out of In progress or Up next.
+  // Back to backlog: out of Active media.
   function unload(id) {
     if (!A.itemById(id)) return;
     A.unslot(id);
@@ -88,7 +74,6 @@
     edit: btn => A.openEditor(btn.dataset.id),
     start: btn => start(btn.dataset.id),
     swap: btn => swap(btn.dataset.id),
-    next: btn => upNext(btn.dataset.id),
     done: btn => done(btn.dataset.id),
     unload: btn => unload(btn.dataset.id),
     putback: btn => putBack(btn.dataset.id)
@@ -128,9 +113,9 @@
     return [
       `- Recommendations: ${live.length} (${A.backlog().length} in the backlog, ${A.finished().length} finished; +${S.items.length - live.length} deleted)`,
       `- By category: ${A.CATS.concat(A.OTHER).map(c => `${c.id} ${count(c.id)}`).join(", ")}`,
-      `- In progress / Up next: ${A.nowItems().length} of ${A.NOW_SPOTS.length} / ${A.nextItem() ? "set" : "empty"}`,
+      `- Active media: ${A.nowItems().length} of ${A.NOW_SPOTS.length} (old Up next slot ${S.slots.next.id ? "set" : "empty"})`,
       `- Folded groups: ${S.folded.join(", ") || "none"}`,
-      `- Pop-up: ${S.editing ? (S.editing.id ? "editing" : "adding") : S.swapping ? "In progress is full" : "closed"}`
+      `- Pop-up: ${S.editing ? (S.editing.id ? "editing" : "adding") : S.swapping ? "Active media is full" : "closed"}`
     ];
   };
 })(Kyoshi, Kyoshi.apps.wanshitong);
