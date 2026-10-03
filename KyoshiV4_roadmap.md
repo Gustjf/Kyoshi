@@ -177,6 +177,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Bugs
 ### Open questions
 - 2026-10-03: (answers to Claude's 4 questions) For number one, I want the active program to follow what I put in manually. For number two, I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application. Uh, specifically, this one. For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine - local to routine., uh, specifically this one. For number three, per failure, should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine.
+
 ## Turtleduck
 ### Comments (verbatim)
 ### Keep
