@@ -1,12 +1,12 @@
-/* Hawky · events.js — loads last: wires the page (A.init): quick add (Enter or Add adds the errand,
- * clears the field and keeps its focus; tapping a chip leaves the phone's keyboard up), ✓ and its undo,
- * and the Done fold's Show more; and the hooks Kyoshi calls: onTick (a new day), onReload (another tab
- * saved), attention (overdue errands) and bugState. */
+/* Hawky · events.js — loads last: wires the page (A.init): the nav, quick add (Enter or Add adds the errand,
+ * clears the field and keeps its focus; tapping a chip or + Note leaves the phone's keyboard up), ✓ and its undo,
+ * and the Done fold's Show more (the Shopping view wires itself: lists-view.js); and the hooks Kyoshi calls: onTick
+ * (a new day), onReload (another tab saved), attention (overdue errands) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { newId, isDate, addDays, todayStr } = K.util;
-  const { MAX_TEXT, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
+  const { newId, isDate, todayStr } = K.util;
+  const { MAX_TEXT, MAX_NOTE, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
 
   const kept = () => { A.save(); A.renderAll(); };
 
@@ -39,17 +39,23 @@
 
   // The day the chips give: "YYYY-MM-DD", "" for no day, or null while Pick a day has none.
   function chipDay() {
-    const today = todayStr(), picked = $("addDate").value;
-    if (S.add.day === "today") return today;
-    if (S.add.day === "tomorrow") return addDays(today, 1);
+    const picked = $("addDate").value;
+    if (S.add.day === "today") return todayStr();
     if (S.add.day === "pick") return isDate(picked) ? picked : null;
     return "";
   }
 
-  // Quick add: the errand, with the chips' day and estimate. Then the field clears and keeps its focus for
-  // the next one, and the chips go back to no day and 15 minutes.
+  // + Note: the note line, for a word more than the errand's text.
+  function showNote() {
+    S.add.note = true;
+    A.renderAdd();
+    $("addNote").focus();
+  }
+
+  // Quick add: the errand, with the chips' day and estimate, and the note if one was typed. Then the field clears
+  // and keeps its focus for the next one, and the chips go back to no day, 15 minutes and no note.
   function add() {
-    const text = A.cleanLine($("addText").value, MAX_TEXT), due = chipDay();
+    const text = A.cleanLine($("addText").value, MAX_TEXT), due = chipDay(), note = S.add.note ? A.cleanText($("addNote").value, MAX_NOTE) : "";
     const minutes = S.add.minutes === "other" ? A.readMinutes($("addOther")) : S.add.minutes;
     if (!text) return $("addText").focus();
     if (due === null) {
@@ -61,10 +67,10 @@
       return $("addOther").focus();
     }
     const now = Date.now();
-    S.items.push({ id: newId(), text, due, minutes, done: "", deleted: false, at: now, u: now });
+    S.items.push({ id: newId(), text, note, due, minutes, done: "", deleted: false, at: now, u: now });
     A.save();
-    S.add = { day: "none", minutes: DEFAULT_MINUTES };
-    ["addText", "addDate", "addOther"].forEach(id => { $(id).value = ""; });
+    S.add = { day: "none", minutes: DEFAULT_MINUTES, note: false };
+    ["addText", "addDate", "addOther", "addNote"].forEach(id => { $(id).value = ""; });
     A.renderAll();
     setStatus(`Added “${text}”${due ? ` for ${dayWords(due)}` : ""}, ${fmtMinutes(minutes)}.`);
     $("addText").focus();
@@ -87,11 +93,14 @@
 
   A.init = () => {
     A.wireEditor();
+    A.wireLists();
+    $("nav").addEventListener("click", e => { const b = e.target.closest("button[data-view]"); if (b && b.dataset.view !== S.view) A.showView(b.dataset.view); });
     $("addForm").addEventListener("submit", e => { e.preventDefault(); add(); });
-    // Tapping a chip or Add doesn't take the focus, so the phone's keyboard stays up while typing.
+    // Tapping a chip, + Note or Add doesn't take the focus, so the phone's keyboard stays up while typing.
     $("addForm").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
     $("addDays").addEventListener("click", e => { const b = e.target.closest("button[data-day]"); if (b) pickDay(b.dataset.day); });
     $("addMinutes").addEventListener("click", e => { const b = e.target.closest("button[data-minutes]"); if (b) pickMinutes(b.dataset.minutes); });
+    $("addNoteBtn").addEventListener("click", showNote);
     $("addText").addEventListener("input", () => setStatus(""));
     A.root.addEventListener("click", e => {
       const btn = e.target.closest("[data-act]");
@@ -104,7 +113,8 @@
     A.renderAll();
   };
 
-  // Every minute, and whenever the page is back in view: at a new day, errands move between the groups.
+  // Every minute, and whenever the page is back in view: at a new day, errands move between the groups, waits grow
+  // and locks run out.
   A.onTick = () => { if (todayStr() !== S.knownToday) A.renderAll(); };
 
   // Another tab saved (A.load has read it): show it.
@@ -116,13 +126,16 @@
     return n ? `${n} errand${n === 1 ? "" : "s"} overdue` : "";
   };
 
-  // Bug reports: counts and settings only — never the errands' text.
+  // Bug reports: counts and settings only — never the errands' or the lists' words.
   A.bugState = () => {
     const open = A.openItems(), groups = A.GROUPS.map(([key]) => `${key} ${open.filter(i => A.groupOf(i) === key).length}`);
+    const lists = A.liveLists(), states = ["open", "locked", "ready", "done"].map(s => `${s} ${lists.filter(l => A.stateOf(l) === s).length}`);
+    const items = lists.flatMap(A.liveItemsOf), popup = S.editing ? "errand" : S.listEditing ? "list" : S.itemEditing ? "item" : "none";
     return [
-      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done; +${S.items.length - A.live().length} deleted`,
-      `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}`,
-      `- Pop-up: ${S.editing ? "open" : "closed"}; done shown: ${S.doneShown}`
+      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note; +${S.items.length - A.live().length} deleted`,
+      `- Lists: ${lists.length} (${states.join(", ")}), ${items.length} items (${items.filter(i => i.bought).length} bought, ${items.filter(i => i.note).length} with a note); +${S.lists.length - lists.length} deleted`,
+      `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}, note ${S.add.note ? "shown" : "hidden"}`,
+      `- View: ${S.view}; pop-up: ${popup}; done shown: ${S.doneShown} errands, ${S.listsDoneShown} lists`
     ];
   };
 })(Kyoshi, Kyoshi.apps.hawky);

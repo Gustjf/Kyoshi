@@ -4,15 +4,16 @@
  * card of its own in Momo (fill "card"), titled by its text and as long as it takes: an open one waits in
  * Momo's Tasks until you place it; a done one (the same id) shows ✓ on its card, or gets one on the day it
  * was ticked. Momo's "Open in Hawky" calls open(id), which brings the errand into view and flashes it. The
- * needs' ids are the errands' own: change open() along with them (apps/hawky/CLAUDE.md). */
+ * needs' ids are the errands' own: change open() along with them (apps/hawky/CLAUDE.md). Shopping lists
+ * are never shared. */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { localDate, todayStr } = K.util;
-  const { DONE_PAGE, fmtDay } = A;
+  const { DONE_PAGE, fmtDay, firstLine } = A;
 
-  // A need's one line of details: "Due Oct 7", or "No date · added Sep 30".
-  const details = i => [i.due ? `Due ${fmtDay(i.due)}` : `No date${i.at ? ` · added ${fmtDay(localDate(new Date(i.at)))}` : ""}`];
+  // A need's details: "Due Oct 7", or "No date · added Sep 30"; then the note's first line, if it has one.
+  const details = i => [i.due ? `Due ${fmtDay(i.due)}` : `No date${i.at ? ` · added ${fmtDay(localDate(new Date(i.at)))}` : ""}`, firstLine(i.note)].filter(Boolean);
   const need = (i, today) => ({
     id: i.id, title: i.text, fill: "card", details: details(i), minutes: i.minutes, due: i.due || null,
     overdue: !i.done && !!i.due && i.due < today, done: !!i.done, date: i.done || null
@@ -26,16 +27,16 @@
     return A.openItems().filter(i => !i.due || i.due <= to).concat(done).map(i => need(i, today));
   }
 
-  // From Momo's "Open in Hawky" (core/inbox.js puts Hawky on screen first): the errand comes into view and
-  // flashes, a done one in the Done fold (opened, showing enough to reach it); nothing once it's deleted.
+  // From Momo's "Open in Hawky" (core/inbox.js puts Hawky on screen first): Errands comes on screen, and the errand
+  // comes into view and flashes, a done one in the Done fold (opened, showing enough to reach it); nothing once it's
+  // deleted.
   function open(id) {
     const i = A.itemById(id);
     if (!i) return;
-    if (i.done) {
-      S.doneShown = Math.max(S.doneShown, Math.ceil((A.doneItems().indexOf(i) + 1) / DONE_PAGE) * DONE_PAGE);
-      A.renderAll();
-      A.$("doneBox").open = true;
-    }
+    S.view = "errands";
+    if (i.done) S.doneShown = Math.max(S.doneShown, Math.ceil((A.doneItems().indexOf(i) + 1) / DONE_PAGE) * DONE_PAGE);
+    A.renderAll();
+    if (i.done) A.$("doneBox").open = true;
     const row = A.root.querySelector(`.errand[data-id="${CSS.escape(i.id)}"]`);
     if (!row) return;
     row.scrollIntoView({ block: "center", behavior: "smooth" });

@@ -1,11 +1,12 @@
-/* Hawky · render.js — draws the page from A.S: quick add's chips (and the field the picked one asks
- * for), the list in its groups (each errand: ✓, its text, when it's due and how long; each group's
- * total time), and the Done fold (newest first, DONE_PAGE at a time). */
+/* Hawky · render.js — draws the page from A.S: the nav and the view on screen (showView; the Shopping view is
+ * lists-view.js's), quick add's chips (and the field the picked one asks for, and the note line), the list in its
+ * groups (each errand: ✓, its text, when it's due or how long it has waited, how long it takes, its note's first
+ * line; each group's total time), and the Done fold (newest first, DONE_PAGE at a time). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, sum, todayStr } = K.util;
-  const { GROUPS, DONE_PAGE, fmtMinutes, dayWords, groupOf } = A;
+  const { GROUPS, DONE_PAGE, fmtMinutes, dayWords, waited, firstLine, groupOf } = A;
 
   // The "check" icon from Lucide (ISC license), in the ✓ button's circle.
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -23,17 +24,21 @@
     $("addDate").hidden = S.add.day !== "pick";
     $("addDate").min = todayStr();
     $("addOther").hidden = S.add.minutes !== "other";
+    $("addNote").hidden = !S.add.note;
+    $("addNoteBtn").hidden = S.add.note;
   }
 
   // One errand: ✓ (filled once done, and tapping it again undoes), its text (opens its pop-up), then
-  // when (the day it's due, but today's, or the day it was done) and how long.
+  // when (the day it's due, but today's; how long an undated one has waited; or the day it was done), how
+  // long it takes, and its note's first line.
   function errandHTML(i, today) {
-    const when = i.done ? `Done ${dayWords(i.done, today)}` : i.due && i.due !== today ? cap(dayWords(i.due, today)) : "";
-    const tick = i.done ? "Not done yet" : "Done";
+    const when = i.done ? `Done ${dayWords(i.done, today)}` : i.due ? (i.due !== today ? cap(dayWords(i.due, today)) : "") : cap(waited(i.at, today));
+    const tick = i.done ? "Not done yet" : "Done", note = firstLine(i.note);
     return `<li class="errand${i.done ? " done" : ""}" data-id="${esc(i.id)}">` +
       `<button type="button" class="tick" data-act="${i.done ? "undo" : "tick"}" data-id="${esc(i.id)}" title="${tick}" aria-label="${tick}: ${esc(i.text)}"><span class="box">${CHECK}</span></button>` +
       `<div class="errand-main"><button type="button" class="errand-text" data-act="edit" data-id="${esc(i.id)}">${esc(i.text)}</button>` +
-      `<span class="errand-meta">${esc([when, fmtMinutes(i.minutes)].filter(Boolean).join(" · "))}</span></div></li>`;
+      `<span class="errand-meta">${esc([when, fmtMinutes(i.minutes)].filter(Boolean).join(" · "))}</span>` +
+      (note ? `<span class="errand-note">${esc(note)}</span>` : "") + `</div></li>`;
   }
 
   // The open errands, in their groups (only those with any), each with its total time.
@@ -58,12 +63,33 @@
     $("doneMore").textContent = `Show ${Math.min(DONE_PAGE, done.length - shown.length)} more`;
   }
 
+  // The nav (Shopping says how many lists are ready to buy) and the view it shows.
+  function renderNav(today) {
+    const ready = A.activeLists().filter(l => A.stateOf(l, today) === "ready").length;
+    $("errandsView").hidden = S.view !== "errands";
+    $("listsView").hidden = S.view !== "lists";
+    $("nav").querySelectorAll("button[data-view]").forEach(b => {
+      b.classList.toggle("active", b.dataset.view === S.view);
+      b.setAttribute("aria-pressed", String(b.dataset.view === S.view));
+    });
+    $("navReady").textContent = ready ? ` · ${ready} ready` : "";
+  }
+
   function renderAll() {
     const today = S.knownToday = todayStr();
+    renderNav(today);
     renderAdd();
     renderList(today);
     renderDone(today);
+    A.renderLists(today);
   }
 
-  Object.assign(A, { renderAll, renderAdd });
+  // Puts a view on screen: "errands" or "lists" (Shopping).
+  function showView(view) {
+    S.view = view === "lists" ? "lists" : "errands";
+    renderAll();
+    window.scrollTo(0, 0);
+  }
+
+  Object.assign(A, { renderAll, renderAdd, showView });
 })(Kyoshi, Kyoshi.apps.hawky);

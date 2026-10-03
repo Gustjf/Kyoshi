@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.110", date: "2026-10-03", changes: [
+      "Shopping lists, on a tab of their own: items by store and topic, one list per topic (both suggested as you type), each item with a note or a web link and how long it has waited.",
+      "Lock a list for 30 or 7 days to cool off: until then items can only come off (or unlock it early, after an amber warning); then tick each item as you buy it, or Tick all, and the done list folds away.",
+      "Later and Someday are one Later: dated errands first, then the undated, oldest first, each showing how long it has waited.",
+      "Quick add's days are Today, Pick a day or No day, and + Note adds a note (in the errand's pop-up too): its first line shows under the errand and on its card in Momo."
+    ] },
     { version: "1.110", date: "2026-10-03", changes: [
       "Each errand is its own card in Momo, titled by it and as long as it takes: it waits in Momo's Tasks until you drag it onto a day, and shows ✓ once you tick it off here."
     ] },
