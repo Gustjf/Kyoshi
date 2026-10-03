@@ -141,9 +141,12 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Iroh
 ### Comments (verbatim)
+- 2026-10-03: the rest in iroh sounds good. Include minimal guidance to make SMART goals when setting up goals with the acryonym defined in a minimal way.
 ### Keep
+- 2026-10-03: the rest in iroh sounds good.
 ### Change
 ### Add
+- 2026-10-03: Include minimal guidance to make SMART goals when setting up goals with the acryonym defined in a minimal way.
 ### Remove
 ### Bugs
 ### Open questions
@@ -170,6 +173,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Comments (verbatim)
 - 2026-10-03: I want to make sure that these people can be edited at once and they all connect to the same name. For instance, if I enter somebodies first name before I know their last name, currently I'd have to go and change every instance. I'd like a roster of people and then all of the communication frequencies I have per person, and a central spot for me to store their likes/dislikes/what we recently spoke about. Make this minimal and unobstrusive. For the momo link - I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu. I really just need to know the next interactions for the week in a pane, and then a database of people to manage. Also, I would like to add grouping to this. so I can keep people separate per job and per place that I move.
 - 2026-10-03: 1. No, I had trouble editing one task of "Erika" to "Erica" when I remember that i misspelled the name. I meant that momo no longer fills a keep in touch block and directly fills in the individual task. no, keep them in one group at a time. birthday stays as board events
+- 2026-10-03: to go back to pabu, the erica to erika thing is within the pabu app itself not just momo. mark that and i will continue to iroh: the rest in iroh sounds good. Include minimal guidance to make SMART goals when setting up goals with the acryonym defined in a minimal way.
 ### Keep
 - 2026-10-03: birthday stays as board events
 ### Change
@@ -186,5 +190,6 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Remove
 ### Bugs
 - 2026-10-03: I had trouble editing one task of "Erika" to "Erica" when I remember that i misspelled the name.
+- 2026-10-03: the erica to erika thing is within the pabu app itself not just momo.
 ### Open questions
 - 2026-10-03: (answers to Claude's follow-up questions) 1. No, I had trouble editing one task of "Erika" to "Erica" when I remember that i misspelled the name. I meant that momo no longer fills a keep in touch block and directly fills in the individual task. no, keep them in one group at a time. birthday stays as board events
