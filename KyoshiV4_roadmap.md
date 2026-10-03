@@ -159,6 +159,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Comments (verbatim)
 - 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc. I like the way the excercises, routinesand settings are set up now. I don' always want to progress by 5lb, sometimes (like for OHP or deadlift) I'd like to progress more or less. maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step. for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole. Also have a way to mark that the excercise should be done until failure after a certain number of minimum reps. Add the ability for superset, how hevy does it, which is pairs two excercises together and has a color associated with the pair to highlight they belong to the superset pair. Make the superset setup minimal and intuitive.
 - 2026-10-03: For number one, I want the active program to follow what I put in manually. For number two, I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application. Uh, specifically, this one. For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine - local to routine., uh, specifically this one. For number three, per failure, should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine.
+- 2026-10-03: For a supset running in a session, I will do one rep of each set until they are done to minimize downtime and reading a - but i actually meant if i do 4 good REPS and 5 half reps until failure, i'd only count the 4 good reps. not the set interpretation
 ### Keep
 - 2026-10-03: I like the way the excercises, routinesand settings are set up now.
 ### Change
@@ -168,16 +169,18 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
 - 2026-10-03: For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do.
 - 2026-10-03: And supersets are per routine - local to routine.
+- 2026-10-03: i actually meant if i do 4 good REPS and 5 half reps until failure, i'd only count the 4 good reps. not the set interpretation
 ### Add
 - 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc.
 - 2026-10-03: maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step.
 - 2026-10-03: Also have a way to mark that the excercise should be done until failure after a certain number of minimum reps.
 - 2026-10-03: Add the ability for superset, how hevy does it, which is pairs two excercises together and has a color associated with the pair to highlight they belong to the superset pair. Make the superset setup minimal and intuitive.
+- 2026-10-03: For a supset running in a session, I will do one rep of each set until they are done to minimize downtime and reading a
 ### Remove
 ### Bugs
 ### Open questions
 - 2026-10-03: (answers to Claude's 4 questions) For number one, I want the active program to follow what I put in manually. For number two, I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application. Uh, specifically, this one. For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine - local to routine., uh, specifically this one. For number three, per failure, should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine.
-
+- 2026-10-03: (answers to Claude's follow-up questions) For a supset running in a session, I will do one rep of each set until they are done to minimize downtime and reading a - but i actually meant if i do 4 good REPS and 5 half reps until failure, i'd only count the 4 good reps. not the set interpretation
 ## Turtleduck
 ### Comments (verbatim)
 ### Keep
