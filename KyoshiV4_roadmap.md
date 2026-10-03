@@ -60,6 +60,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: momo is fine continue to core
 - 2026-10-03: weekend and travel plans in momo - i want them to be close to the board so that i can see the upcoming weekends so that i can ensure that i have a plan for each weekend - it needs to look further than 2 weeks ahead because sometimes plans need to be confirmed ahead of time outside of the 2 week window.
 - 2026-10-03: (answers to Claude's open items) I want momo to allow me to input any upcoming travel plans and have a status of my weekends for the next 3 months which very clearly indicates if i have made plans or not. the intent is for me to start spending my weekends purposefully. Hold off on the upcoming trips portion and focus on the upcoming weekends portion. I think that will cover it.
+- 2026-10-03: Marking the weekend as plan with a brief description of the plan.
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 - 2026-10-03: yes that summary makes sense. (the summary: each app puts its own individual, correctly sized card/task into Momo, labelled by its app, instead of Momo filling generic title-matched blocks)
@@ -79,10 +80,12 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: it needs to look further than 2 weeks ahead because sometimes plans need to be confirmed ahead of time outside of the 2 week window.
 - 2026-10-03: I want momo to allow me to input any upcoming travel plans and have a status of my weekends for the next 3 months which very clearly indicates if i have made plans or not.
 - 2026-10-03: the intent is for me to start spending my weekends purposefully.
+- 2026-10-03: Marking the weekend as plan with a brief description of the plan.
 ### Remove
 - 2026-10-03: Hold off on the upcoming trips portion and focus on the upcoming weekends portion.
 ### Bugs
 ### Open questions
+- 2026-10-03: (answer to Claude's question) I want one list per topic. I want to have them grouped by vendors, then by topic and then multiple items in the topic. and then lock the list per topic. Marking the weekend as plan with a brief description of the plan.
 
 ## Bosco
 ### Comments (verbatim)
@@ -136,6 +139,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: 1. Errands are a part of hawky, and shopping lists too. The goal is to get out short notes, tasks, things i promised people to do out of my head. its also a place to jot down any products that i see while scrolling, talking to people, remebering that i need. 2. I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab 3. i want hawky to plop down events onto momo. ok i see where you are going on hawky, remove the recurring stuff. make there be some sort of early unlock with a warning. amber if you could. sales tax is just for estimation. use average usa sales tax. 7. i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands. push that to the roadmap
 - 2026-10-03: 1.no, hawky does not place events. 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
 - 2026-10-03: (answers to Claude's open items) Remove cost entirely from hawkys shopping list. 30 day lock covers the whole list. I want to be able to make multiple lists per topic. Also include a 7 day lock option for when i dont have 30 days.
+- 2026-10-03: I want one list per topic. I want to have them grouped by vendors, then by topic and then multiple items in the topic. and then lock the list per topic.
 ### Keep
 - 2026-10-03: dration chips are fine. 15 is the right default.
 - 2026-10-03: errands are always whole, never split.
@@ -153,6 +157,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: sales tax is just for estimation. use average usa sales tax.
 - 2026-10-03: the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: 1.no, hawky does not place events.
+- 2026-10-03: I want one list per topic. I want to have them grouped by vendors, then by topic and then multiple items in the topic. and then lock the list per topic. (replaces: "I want to be able to make multiple lists per topic.")
 ### Add
 - 2026-10-03: I want to have individual shopping lists that I can use instead of  keeping it in random websites shopping carts. The purpose of this portion is to have a 30 day cooling off period before purchasing anything non-essential. I'd like the functionality to say clearly which vendor it is, add the items needed (with price (assuming normal sales tax)) and then after adding all the items needed, i can lock it for 30 days. while locked it should only have the ability to remove items. after 30 days then it will let me check it off.
 - 2026-10-03: Ensure items have how long they have been pending on there.
@@ -173,6 +178,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (answers to Claude's 7 questions) 1. Errands are a part of hawky, and shopping lists too. The goal is to get out short notes, tasks, things i promised people to do out of my head. its also a place to jot down any products that i see while scrolling, talking to people, remebering that i need. 2. I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab 3. i want hawky to plop down events onto momo. ok i see where you are going on hawky, remove the recurring stuff. make there be some sort of early unlock with a warning. amber if you could. sales tax is just for estimation. use average usa sales tax. 7. i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands. push that to the roadmap
 - 2026-10-03: (answers to Claude's follow-up questions) 1.no, hawky does not place events. 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
 - 2026-10-03: (answers to Claude's open items) 1. Remove cost entirely from hawkys shopping list. 30 day lock covers the whole list. I want to be able to make multiple lists per topic. Also include a 7 day lock option for when i dont have 30 days. I think the cook row already covers prepping. I want momo to allow me to input any upcoming travel plans and have a status of my weekends for the next 3 months which very clearly indicates if i have made plans or not. the intent is for me to start spending my weekends purposefully. Hold off on the upcoming trips portion and focus on the upcoming weekends portion. I think that will cover it.
+- 2026-10-03: (answer to Claude's question) I want one list per topic. I want to have them grouped by vendors, then by topic and then multiple items in the topic. and then lock the list per topic. Marking the weekend as plan with a brief description of the plan.
 
 ## Iroh
 ### Comments (verbatim)
