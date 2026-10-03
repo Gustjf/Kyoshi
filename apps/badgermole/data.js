@@ -1,14 +1,15 @@
 /* Badgermole · data.js — the saved data: cleaning, loading, saving, backups, and combining with other devices'
  * saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js (folder sync) use. Storage keys
- * (A.store): exercises, routines, program, sessions, settings; live (this device's session in progress: never
- * synced, backed up, combined or counted); sync and meetings (core's). */
+ * (A.store): exercises, routines, sessions, programs, program, settings; live (this device's session in progress:
+ * never synced, backed up, combined or counted); sync and meetings (core's). */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_EXERCISE, MAX_ROUTINE, MAX_LINES, MAX_SETS, MAX_REPS, MAX_WEIGHT, MAX_TARGET,
-    DEFAULT_TARGET, MAX_PROGRAM, MAX_SESSION_SETS, cleanLine, clampInt, plural, round2, numbered } = A;
-  const LISTS = ["exercises", "routines", "sessions"];
+    DEFAULT_TARGET, MAX_PROGRAM, MAX_PROGRAM_NAME, MAIN_PROGRAM, MAX_SESSION_SETS, STEPS, DEFAULT_STEP, MAX_PAIR,
+    cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
+  const LISTS = ["exercises", "routines", "sessions", "programs"];
   const MAX_MS = 8.64e15; // the last moment a date can hold
 
   // ==========================================================================
@@ -21,6 +22,8 @@
   const unitOf = u => (u === "kg" ? "kg" : "lb");
   const cleanWeight = w => (isNum(w) && w > 0 ? Math.min(MAX_WEIGHT, round2(w)) : 0);
   const uOf = x => (isPos(x.u) ? x.u : 0);
+  const pairOf = v => (Number.isInteger(v) && v >= 1 && v <= MAX_PAIR ? v : 0);
+  const orderOf = v => (Array.isArray(v) ? v : []).map(idOf).filter(Boolean).slice(0, MAX_PROGRAM);
   // Keeps the first of each id, and those still worth keeping.
   const unique = (list, keep) => { const ids = new Set(); return list.filter(x => keep(x) && !ids.has(x.id) && ids.add(x.id)); };
   const objects = list => (Array.isArray(list) ? list : []).filter(isObj);
@@ -30,20 +33,24 @@
       id: idOf(e.id) || newId(),
       name: cleanLine(e.name, MAX_EXERCISE),
       bodyweight: e.bodyweight === true, // reps and an added weight, rather than a weight
+      step: STEPS.includes(e.step) ? e.step : DEFAULT_STEP, // its progression step, in lb
       deleted: false, at: msOf(e.at), u: uOf(e)
     })), e => e.deleted || e.name);
   }
 
-  // A routine's lines: each exercise once, the same reps for every set, its weight in the unit it was typed in.
+  // A routine's lines: each exercise once, the same reps for every set (a minimum when it goes to failure: the good
+  // reps are logged), its weight in the unit it was typed in, and a superset's number shared with the line next to it.
   function cleanItems(list) {
     const seen = new Set();
-    return objects(list).map(x => ({
+    return fixPairs(objects(list).map(x => ({
       exerciseId: idOf(x.exerciseId),
       sets: clampInt(x.sets, 1, MAX_SETS, 3),
       reps: clampInt(x.reps, 1, MAX_REPS, 5),
       weight: cleanWeight(x.weight),
-      unit: unitOf(x.unit)
-    })).filter(x => x.exerciseId && !seen.has(x.exerciseId) && seen.add(x.exerciseId)).slice(0, MAX_LINES);
+      unit: unitOf(x.unit),
+      toFailure: x.toFailure === true,
+      pair: pairOf(x.pair)
+    })).filter(x => x.exerciseId && !seen.has(x.exerciseId) && seen.add(x.exerciseId)).slice(0, MAX_LINES));
   }
 
   function cleanRoutines(list) {
@@ -55,10 +62,20 @@
     })), r => r.deleted || r.name);
   }
 
-  const cleanProgram = p => ({
-    order: (isObj(p) && Array.isArray(p.order) ? p.order : []).map(idOf).filter(Boolean).slice(0, MAX_PROGRAM),
-    u: isObj(p) ? uOf(p) : 0
-  });
+  // The programs: each a rotation of routines (repeats allowed), one followed at a time (program.active).
+  function cleanPrograms(list) {
+    return unique(objects(list).map(p => (p.deleted === true ? { id: idOf(p.id) || newId(), deleted: true, at: msOf(p.at), u: uOf(p) } : {
+      id: idOf(p.id) || newId(),
+      name: cleanLine(p.name, MAX_PROGRAM_NAME),
+      order: orderOf(p.order),
+      deleted: false, at: msOf(p.at), u: uOf(p)
+    })), p => p.deleted || p.name);
+  }
+
+  // Which program is followed (active: its id, "" for none) and since when (only sessions from then on place its next
+  // routine, so picking one starts it from its first), its rotation again in order (older copies read only that).
+  const cleanProgram = p => (isObj(p) ? { order: orderOf(p.order), active: idOf(p.active), since: msOf(p.since), u: uOf(p) }
+    : { order: [], active: "", since: 0, u: 0 });
 
   const cleanSettings = s => (isObj(s) ? {
     unit: unitOf(s.unit),
@@ -101,10 +118,11 @@
   // unless it's logged again). null when there's none, or it can't be used.
   function cleanLive(l) {
     if (!isObj(l) || !isDate(l.date) || !idOf(l.id)) return null;
-    const items = objects(l.items).map(x => ({
+    const items = fixPairs(objects(l.items).map(x => ({
       exerciseId: idOf(x.exerciseId), name: cleanLine(x.name, MAX_EXERCISE) || "Exercise", bodyweight: x.bodyweight === true,
-      sets: clampInt(x.sets, 1, MAX_SETS, 3), reps: clampInt(x.reps, 1, MAX_REPS, 5), weight: cleanWeight(x.weight), unit: unitOf(x.unit)
-    })).filter(x => x.exerciseId).slice(0, MAX_LINES);
+      sets: clampInt(x.sets, 1, MAX_SETS, 3), reps: clampInt(x.reps, 1, MAX_REPS, 5), weight: cleanWeight(x.weight), unit: unitOf(x.unit),
+      toFailure: x.toFailure === true, pair: pairOf(x.pair)
+    })).filter(x => x.exerciseId).slice(0, MAX_LINES));
     if (!items.length) return null;
     const numOrNull = v => (isNum(v) ? v : null), s = l.show, h = isObj(l.held) && cleanSets([l.held.set])[0];
     return {
@@ -116,15 +134,25 @@
     };
   }
 
-  const cleanAll = raw => ({
-    exercises: cleanExercises(raw.exercises), routines: cleanRoutines(raw.routines), sessions: cleanSessions(raw.sessions),
-    program: cleanProgram(raw.program), settings: cleanSettings(raw.settings)
-  });
+  // From before programs, the one rotation becomes the program "Program", followed with every session counting (so
+  // its next routine stays): its id fixed and its stamps the rotation's, so two devices doing this apart agree.
+  function cleanAll(raw) {
+    const out = {
+      exercises: cleanExercises(raw.exercises), routines: cleanRoutines(raw.routines), sessions: cleanSessions(raw.sessions),
+      programs: cleanPrograms(raw.programs), program: cleanProgram(raw.program), settings: cleanSettings(raw.settings)
+    };
+    const p = out.program;
+    if (p.order.length && !out.programs.some(x => !x.deleted)) {
+      out.programs = out.programs.filter(x => x.id !== MAIN_PROGRAM).concat({ id: MAIN_PROGRAM, name: "Program", order: p.order.slice(), deleted: false, at: p.u, u: p.u });
+      out.program = { ...p, active: MAIN_PROGRAM };
+    }
+    return out;
+  }
 
   // ==========================================================================
   // STORING
   // ==========================================================================
-  // The five keys as stored, to tell whether another tab changed them or only its session in progress.
+  // The six keys as stored, to tell whether another tab changed them or only its session in progress.
   const KEYS = LISTS.concat("program", "settings");
   const storedKey = () => KEYS.map(k => A.store.get(k)).join("\n");
   let loadedKey = "";
@@ -147,7 +175,7 @@
     else A.store.remove("live");
   }
 
-  // Reads everything from storage (at start, and when another tab saved): the five only when they changed (a tab
+  // Reads everything from storage (at start, and when another tab saved): the six only when they changed (a tab
   // logging sets stores just its session in progress). The session's steppers as typed in this tab stay.
   function load() {
     const key = storedKey();
@@ -164,16 +192,17 @@
   }
 
   // ==========================================================================
-  // BACKUPS (Export / Import JSON): the five, never the session in progress
+  // BACKUPS (Export / Import JSON): the six, never the session in progress
   // ==========================================================================
   // No other app keeps both lists (Appa: things and jobs; Iroh: areas and goals; Hawky and Wan Shi Tong: items).
   const looksLike = raw => Array.isArray(raw.exercises) && Array.isArray(raw.sessions);
 
+  // A backup from before programs (no programs in it) imports as it is: cleanAll makes its rotation a program.
   function buildBackup() {
-    return { schemaVersion: DATA_SCHEMA_VERSION, appVersion: A.VERSION, exercises: S.exercises, routines: S.routines, program: S.program, sessions: S.sessions, settings: S.settings };
+    return { schemaVersion: DATA_SCHEMA_VERSION, appVersion: A.VERSION, exercises: S.exercises, routines: S.routines, programs: S.programs, program: S.program, sessions: S.sessions, settings: S.settings };
   }
 
-  // Replaces the five with the backup's, after checking it has exercises or sessions in it (so a bad file never
+  // Replaces the six with the backup's, after checking it has exercises or sessions in it (so a bad file never
   // changes anything) and asking first (unless ask is false: Import all already did) if there's anything to lose.
   // A session in progress stays. True once it's in.
   function importBackup(raw, ask = true) {
@@ -202,7 +231,8 @@
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
   // A save from the sync folder: taken whole, or combined with ours item by item (list by list), the later change
-  // winning, and the program and settings whole by their u. The same on every device, so two combining at once agree.
+  // winning (programs too), and the program followed and settings whole by their u. The same on every device, so two
+  // combining at once agree.
   const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const orderKey = x => (x.started !== undefined ? x.started : x.at);
   const inOrder = list => list.slice().sort((a, b) => orderKey(a) - orderKey(b) || (a.id < b.id ? -1 : 1));
@@ -240,8 +270,8 @@
   A.load = load;
   A.data = {
     schemaVersion: DATA_SCHEMA_VERSION, build: buildBackup, looksLike,
-    hasData: () => LISTS.some(k => S[k].length > 0),
+    hasData: () => ["exercises", "routines", "sessions"].some(k => S[k].length > 0), // programs alone don't count
     importBackup, combine, afterSync
   };
-  Object.assign(A, { cleanExercises, cleanRoutines, cleanSessions, cleanLive, cleanWeight, save, persist, storeLive });
+  Object.assign(A, { cleanExercises, cleanRoutines, cleanPrograms, cleanSessions, cleanLive, cleanWeight, save, persist, storeLive });
 })(Kyoshi, Kyoshi.apps.badgermole);

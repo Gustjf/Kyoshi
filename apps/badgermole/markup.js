@@ -1,11 +1,12 @@
 /* Badgermole · markup.js — the page (A.markup): two views, one on screen at a time (render.js) — Home (Next up, this
- * week and the streak, the calendar, the setup folds: Exercises, Routines, Program, Settings; Backup & sync) and the
- * session (session.js: the exercise, its steppers, ✓, the exercise list and the sticky Back · Next · Finish) — and
- * the pop-ups: exercise, routine, day and Pick a routine. The shell supplies the header, footer, Developer Mode and
- * bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only need to be unique within the app (A.$). */
+ * week and the streak, the calendar, the setup folds: Exercises, Routines, Program (the programs, then the rotation
+ * followed), Settings; Backup & sync) and the session (session.js: the exercise, its steppers, ✓, the exercise list
+ * and the sticky Back · Next · Finish) — and the pop-ups: exercise, routine, program, day and Pick a routine. The shell
+ * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only
+ * need to be unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_EXERCISE, MAX_ROUTINE, MAX_REPS, MAX_WEIGHT, MAX_TARGET } = A;
+  const { MAX_EXERCISE, MAX_ROUTINE, MAX_PROGRAM_NAME, MAX_REPS, MAX_WEIGHT, MAX_TARGET } = A;
   // Icons from Lucide (ISC license): chevrons for the calendar's months.
   const icon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const fold = (id, title, body) => `
@@ -53,6 +54,7 @@
         <div class="rows" id="routinesList"></div>
         <div class="toolbar"><button type="button" id="addRoutineBtn">+ Add routine</button></div>`)}
     ${fold("program", "Program", `
+        <div class="prog-chips" id="programChips" role="group" aria-label="Programs"></div>
         <div id="programEmpty" class="empty-msg">Nothing in the program yet: add your routines in the order you do them.</div>
         <ol class="program" id="programList"></ol>
         <div class="program-add">
@@ -86,6 +88,7 @@
         <span class="session-pos" id="sesPos"></span>
       </div>
       <div class="ex-name" id="exName"></div>
+      <div class="ex-pair" id="exPair" hidden></div>
       <div class="set-no" id="setNo"></div>
       <div class="steppers">
         ${stepper("weight", "Weight", "decimal", "Less weight", "More weight")}
@@ -119,6 +122,11 @@
           <input type="text" id="exerciseName" maxlength="${MAX_EXERCISE}" placeholder="e.g. Bench press">
         </div>
         <label class="check"><input type="checkbox" id="exerciseBodyweight"> Bodyweight exercise (reps, plus any added weight)</label>
+        <div class="field" id="exerciseStepField">
+          <label id="exerciseStepLabel">Progression step</label>
+          <div class="mode-toggle" id="exerciseStep" role="group" aria-labelledby="exerciseStepLabel"></div>
+          <p class="modal-hint step-hint">Added to its weight once every set reached its reps; − / + move by it too.</p>
+        </div>
         <p class="modal-hint" id="exerciseUse" hidden></p>
         <div class="modal-actions">
           <button type="submit">Save</button>
@@ -142,11 +150,33 @@
         <div class="subhead">Exercises, in order</div>
         <div class="lines" id="routineLines"></div>
         <button type="button" class="secondary small" id="routineAddLineBtn">+ Add exercise</button>
+        <p class="modal-hint line-hint" id="routineHint" hidden>“to failure”: the reps are a minimum; keep going, and log only the good reps.
+          Superset links two exercises next to each other: the workout goes back and forth between them. Moving a linked one up or down unlinks it.</p>
         <div class="modal-actions">
           <button type="submit">Save</button>
           <button type="button" class="secondary" id="routineCancelBtn">Cancel</button>
           <span class="spacer"></span>
           <button type="button" class="danger" id="routineDeleteBtn">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="programOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="programTitle">
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="programTitle">Program</h3>
+      <form id="programForm" novalidate autocomplete="off">
+        <div class="field">
+          <label for="programName">Name</label>
+          <input type="text" id="programName" maxlength="${MAX_PROGRAM_NAME}" placeholder="e.g. Upper/Lower">
+        </div>
+        <p class="modal-hint" id="programHint">It starts empty, and you follow it once it's saved: add its routines with “Add to program”.</p>
+        <div class="modal-actions">
+          <button type="submit">Save</button>
+          <button type="button" class="secondary" id="programCancelBtn">Cancel</button>
+          <span class="spacer"></span>
+          <button type="button" class="danger" id="programDeleteBtn">Delete</button>
         </div>
       </form>
     </div>

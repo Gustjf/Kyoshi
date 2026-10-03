@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.201", date: "2026-10-03", changes: [
+      "Several programs, one followed at a time: tap one to switch to it (it starts from its first routine), make a new one (it starts empty), or rename or delete the one you follow; your rotation so far is now the program “Program”.",
+      "Each exercise has its own progression step (+2.5, +5, +7.5 or +10 lb, shown in kg when you use kg): its weight goes up by that much, and − / + move by it during a workout.",
+      "An exercise in a routine can go “to failure”: its reps become a minimum (“Set 2 of 3 · 8+ reps, to failure”), and you log the good reps.",
+      "Supersets: link two exercises next to each other in a routine; they share a colour, and ✓ takes you back and forth between them during a workout."
+    ] },
     { version: "1.201", date: "2026-10-03", changes: [
       "Each workout is its own card in Momo, titled by its routine: the week's planned ones wait in Momo's Tasks until you drag them onto a day, and a logged one ticks off the planned one it stands for, or lands on its day at the time you started, as long as it took."
     ] },

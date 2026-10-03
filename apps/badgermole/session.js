@@ -1,18 +1,21 @@
-/* Badgermole · session.js — the session screen, made for a glance between sets: the exercise big, "Set 2 of 3", the
- * weight and reps (number fields with − / + beside them, prefilled: stats.js prefill), ✓ Log set and Log all sets
- * (neither moves on: the extra sets are "Set 4", "Set 5"…), the sets logged (a PR badge the moment one beats the
- * exercise's best; tap one to change it: it waits in the steppers, and goes back as it was unless it's logged again),
- * the routine's exercise list (tap to jump), and the sticky Back · Next · Finish. The session in progress is this
- * device's own (A.S.live, stored as "live": a reload resumes it), and the screen stays on while it runs (A.awake in
- * events.js; core/wakelock.js). */
+/* Badgermole · session.js — the session screen, made for a glance between sets: the exercise big (a superset's colour
+ * beside it, and its partner), "Set 2 of 3" ("· 8+ reps, to failure" when its reps are a minimum), the weight and reps
+ * (number fields with − / + beside them, prefilled: stats.js prefill), ✓ Log set and Log all sets (neither moves on:
+ * the extra sets are "Set 4", "Set 5"…; but for ✓ in a superset, which goes to the partner while it has planned sets
+ * left), the sets logged (a PR badge the moment one beats the exercise's best; tap one to change it: it waits in the
+ * steppers, and goes back as it was unless it's logged again), the routine's exercise list (tap to jump), and the
+ * sticky Back · Next · Finish. The session in progress is this device's own (A.S.live, stored as "live": a reload
+ * resumes it), and the screen stays on while it runs (A.awake in events.js; core/wakelock.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, isNum, newId, readNumber, todayStr, now } = K.util;
-  const { STEP, MAX_REPS, MAX_WEIGHT, MAX_SESSION_SETS, STALE_HOURS, plural, round2, fmtMinutes, fmtSet, inUnit, unit } = A;
+  const { MAX_REPS, MAX_WEIGHT, MAX_SESSION_SETS, STALE_HOURS, plural, round2, fmtMinutes, fmtSet, inUnit, unit, stepOf, pairClass } = A;
 
   const current = () => S.live.items[S.live.pos.item];
   const setsOf = (l, exerciseId) => l.sets.filter(s => s.exerciseId === exerciseId);
+  // Its superset partner's place in the session (-1 without one).
+  const partnerOf = (l, j) => { const p = l.items[j].pair; return p ? l.items.findIndex((x, k) => k !== j && x.pair === p) : -1; };
   // "23 min" since it started.
   const elapsedText = () => { const m = S.live ? Math.floor((now() - S.live.started) / 60000) : 0; return m > 0 ? fmtMinutes(m) : "Just started"; };
   const pickOverlay = () => $("pickOverlay");
@@ -40,16 +43,22 @@
     if (!l) return;
     ensureShow();
     const item = current(), logged = setsOf(l, item.exerciseId), held = l.held && l.held.set.exerciseId === item.exerciseId;
-    const n = held ? heldN(l) : logged.length + 1, last = l.pos.item === l.items.length - 1;
+    const n = held ? heldN(l) : logged.length + 1, last = l.pos.item === l.items.length - 1, p = partnerOf(l, l.pos.item);
     $("sesName").textContent = l.name;
     $("sesElapsed").textContent = elapsedText();
     $("sesPos").textContent = `Exercise ${l.pos.item + 1} of ${l.items.length}`;
     $("exName").textContent = item.name;
-    $("setNo").textContent = n <= item.sets ? `Set ${n} of ${item.sets}` : `Set ${n}`;
+    $("exName").className = `ex-name${p < 0 ? "" : pairClass(item.pair)}`;
+    $("exPair").className = `ex-pair${p < 0 ? "" : pairClass(item.pair)}`;
+    $("exPair").textContent = p < 0 ? "" : `Superset with ${l.items[p].name}`;
+    $("exPair").hidden = p < 0;
+    $("setNo").textContent = n <= item.sets ? `Set ${n} of ${item.sets}${item.toFailure ? ` · ${item.reps}+ reps, to failure` : ""}` : `Set ${n}`;
     $("sessionBox").classList.toggle("bw", item.bodyweight);
     $("weightLabel").textContent = `${item.bodyweight ? "Added weight" : "Weight"} (${unit()})`;
+    $("repsLabel").textContent = item.toFailure ? "Good reps" : "Reps";
     $("weightInput").value = isNum(l.show.weight) ? l.show.weight : "";
     $("repsInput").value = isNum(l.show.reps) ? l.show.reps : "";
+    $("upNote").textContent = `↑ +${item.bodyweight ? "1 rep" : `${stepOf(item.exerciseId)} ${unit()}`} from last time`;
     $("upNote").hidden = !l.show.up;
     $("logAllBtn").disabled = !held && logged.length >= item.sets;
     if (held) setStatus(`Set ${n} (${fmtSet(l.held.set)}) is in the steppers: change it and log it again, or it stays as it was.`);
@@ -61,8 +70,8 @@
       `${prs.has(i) ? `<span class="badge pr">PR</span>` : ""}</button></li>`).join("");
     $("exList").innerHTML = l.items.map((it, j) => {
       const c = setsOf(l, it.exerciseId).length + (l.held && l.held.set.exerciseId === it.exerciseId ? 1 : 0), done = c >= it.sets;
-      return `<button type="button" class="ex-chip${j === l.pos.item ? " current" : ""}${done ? " done" : ""}" data-act="jump" data-i="${j}"${j === l.pos.item ? ' aria-current="true"' : ""}>` +
-        `<span class="ex-chip-name">${esc(it.name)}</span><span class="ex-chip-count">${c}/${it.sets}${done ? " &#10003;" : ""}</span></button>`;
+      return `<button type="button" class="ex-chip${pairClass(it.pair)}${j === l.pos.item ? " current" : ""}${done ? " done" : ""}" data-act="jump" data-i="${j}"${j === l.pos.item ? ' aria-current="true"' : ""}>` +
+        `${it.pair ? `<span class="pair-dot" aria-hidden="true"></span>` : ""}<span class="ex-chip-name">${esc(it.name)}</span><span class="ex-chip-count">${c}/${it.sets}${done ? " &#10003;" : ""}</span></button>`;
     }).join("");
     $("backBtn").disabled = l.pos.item === 0;
     $("nextBtn").disabled = last;
@@ -135,16 +144,18 @@
     if (store) A.storeLive();
   }
 
-  // − / +: a step of weight (5 lb or 2.5 kg) or one rep.
+  // − / +: the exercise's step of weight (its progression step: +5 lb, +2.5 kg…) or one rep.
   function step(field, dir) {
+    if (!S.live) return;
     const el = field === "weight" ? $("weightInput") : $("repsInput"), v = readNumber(el), base = isNum(v) ? v : 0;
-    el.value = field === "weight" ? Math.min(MAX_WEIGHT, Math.max(0, round2(base + dir * STEP[unit()]))) : Math.min(MAX_REPS, Math.max(1, Math.round(base) + dir));
+    el.value = field === "weight" ? Math.min(MAX_WEIGHT, Math.max(0, round2(base + dir * stepOf(current().exerciseId)))) : Math.min(MAX_REPS, Math.max(1, Math.round(base) + dir));
     keepShown(true);
   }
 
   // ✓: count sets as shown (Log all sets: the planned ones still to do). A set tapped to change goes back in its place
-  // (its weight and unit as they were, if its weight wasn't changed); the others go last. Neither moves on.
-  function log(count) {
+  // (its weight and unit as they were, if its weight wasn't changed); the others go last. Neither moves on, but for a
+  // new set from ✓ (alternate) in a superset: on to the partner while it has planned sets left (back and forth).
+  function log(count, alternate = false) {
     const l = S.live;
     if (!l) return;
     const v = readShown();
@@ -161,11 +172,17 @@
     l.sets = A.numbered(sets);
     l.show = { item: l.pos.item, weight: v.weight, reps: v.reps, unit: unit(), up: false };
     A.storeLive();
-    const prs = A.livePRs(), numbers = at.map(i => l.sets[i].n);
+    const prs = A.livePRs(), numbers = at.map(i => l.sets[i].n), pr = at.some(i => prs.has(i));
+    const what = `${count > 1 ? `Sets ${numbers[0]}–${numbers[numbers.length - 1]}` : `Set ${numbers[0]}`} logged: ${fmtSet(set)}`;
+    const p = alternate && !h ? partnerOf(l, l.pos.item) : -1;
+    if (p >= 0 && setsOf(l, l.items[p].exerciseId).length < l.items[p].sets) {
+      jumpTo(p);
+      return setStatus(`${item.name} · ${what}`, pr);
+    }
     renderSession();
-    setStatus(`${count > 1 ? `Sets ${numbers[0]}–${numbers[numbers.length - 1]}` : `Set ${numbers[0]}`} logged: ${fmtSet(set)}`, at.some(i => prs.has(i)));
+    setStatus(what, pr);
   }
-  const logSet = () => log(1);
+  const logSet = () => log(1, true);
   function logAll() {
     const l = S.live;
     if (!l) return;

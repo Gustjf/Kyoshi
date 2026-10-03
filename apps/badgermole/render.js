@@ -1,7 +1,8 @@
 /* Badgermole · render.js — draws what's on screen from A.S: one view at a time (showView) — Home or the session
  * (session.js) — and Home itself: Next up (or the session in progress), this week and the streak, the calendar (a
- * month a time, ‹ ›), and the setup folds: Exercises (each with its best set), Routines, Program (the rotation, the
- * next one marked) and Settings. reveal(el) brings something into view with core's flash. */
+ * month a time, ‹ ›), and the setup folds: Exercises (each with its best set), Routines, Program (the programs, the
+ * one followed ✓, and its rotation, the next one marked) and Settings. reveal(el) brings something into view with
+ * core's flash. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -104,10 +105,16 @@
     }).join("");
   }
 
-  // The rotation, each with ↑ ↓ ✕, the next workout marked; Add to program takes any routine, as often as you like.
+  // The programs (the one followed ✓; tap another to follow it, from its first routine), Rename (the one followed) and
+  // New program; then the rotation followed, each with ↑ ↓ ✕, the next workout marked; Add to program takes any
+  // routine, as often as you like.
   function renderProgram() {
-    const order = A.liveOrder(), next = A.nextIndex(), routines = A.liveRoutines();
+    const order = A.liveOrder(), next = A.nextIndex(), routines = A.liveRoutines(), active = A.activeProgram();
     const btn = (act, i, label, text, ok = true) => `<button type="button" class="icon-btn" data-act="${act}" data-i="${i}" aria-label="${esc(label)}"${ok ? "" : " disabled"}>${text}</button>`;
+    $("programChips").innerHTML = A.livePrograms().map(p => `<button type="button" class="pill${p === active ? " active" : ""}" data-act="prog-pick" data-id="${esc(p.id)}" aria-pressed="${p === active}">` +
+      `${p === active ? "&#10003; " : ""}${esc(p.name)}</button>`).join("") +
+      (active ? `<button type="button" class="more-link" data-act="prog-rename">Rename</button>` : "") +
+      `<button type="button" class="more-link" data-act="prog-new">+ New program</button>`;
     $("programEmpty").hidden = order.length > 0;
     $("programList").innerHTML = order.map((id, i) => {
       const name = A.routineById(id).name;
@@ -120,7 +127,7 @@
     $("programSelect").innerHTML = routines.map(r => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("");
     if (routines.some(r => r.id === picked)) $("programSelect").value = picked;
     $("programSelect").disabled = $("programAddBtn").disabled = !routines.length;
-    $("programNote").textContent = `Workouts go in this order, round and round. Momo asks for ${plural(S.settings.weeklyTarget, "workout")} a week in it.`;
+    $("programNote").textContent = `${active ? `You follow “${active.name}”: its workouts` : "Workouts"} go in this order, round and round. Momo asks for ${plural(S.settings.weeklyTarget, "workout")} a week in it.`;
   }
 
   function renderSettings() {

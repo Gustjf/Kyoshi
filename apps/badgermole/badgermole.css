@@ -1,6 +1,6 @@
 /* Badgermole · badgermole.css — the app's own styles, every selector under .app-badgermole.
  * Shared components (buttons, inputs, sections, stats, pop-ups…) are in core/kyoshi.css.
- * Sections: Home (Next up, the calendar, the setup folds) · The session · Pop-ups · Phones */
+ * Sections: Home (Next up, the calendar, the setup folds) · The session · Pop-ups · Supersets · Phones */
 
 /* --- Home: Next up --- */
 .app-badgermole .next-label { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
@@ -53,6 +53,9 @@
 .app-badgermole .program-add { display: flex; gap: 8px; margin-top: 10px; }
 .app-badgermole .program-add select { flex: 1; min-width: 0; }
 .app-badgermole .program-add button { flex: 0 0 auto; }
+.app-badgermole .prog-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.app-badgermole .prog-chips .pill { min-height: 34px; padding: 5px 12px; border-radius: 17px; font-size: .88em; font-weight: 600; overflow-wrap: anywhere; }
+.app-badgermole .prog-chips .more-link { margin-left: 6px; }
 .app-badgermole .unit-toggle { max-width: 240px; }
 .app-badgermole .target-field input { max-width: 120px; }
 
@@ -63,6 +66,7 @@
 .app-badgermole .session-name { font-weight: 600; color: var(--text); }
 .app-badgermole .session-time { font-variant-numeric: tabular-nums; }
 .app-badgermole .ex-name { margin-top: 10px; font-size: 1.9em; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.app-badgermole .ex-pair { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: .9em; font-weight: 600; color: var(--muted); }
 .app-badgermole .set-no { margin-top: 2px; font-size: 1.1em; color: var(--muted); font-weight: 600; }
 .app-badgermole .steppers { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
 .app-badgermole .bw #weightRow { order: 2; }
@@ -108,6 +112,13 @@
 .app-badgermole .line-field input { width: 74px; }
 .app-badgermole .line-btns { display: flex; gap: 4px; margin-left: auto; }
 .app-badgermole .line-gone { font-size: .88em; color: var(--muted); font-style: italic; }
+.app-badgermole .line-nums .pill { min-height: 32px; padding: 4px 10px; border-radius: 16px; }
+.app-badgermole .line-link { padding: 0 0 6px; }
+.app-badgermole .link-btn { display: inline-flex; align-items: center; gap: 4px; padding: 2px 0; background: none; color: var(--accent); font-size: .8em; font-weight: 600; }
+.app-badgermole .link-btn:hover { background: none; text-decoration: underline; }
+.app-badgermole .link-btn svg { width: 14px; height: 14px; }
+.app-badgermole .line-hint { margin: 10px 0 0; }
+.app-badgermole .step-hint { margin: 6px 0 0; }
 .app-badgermole .pick-list { display: flex; flex-direction: column; gap: 8px; }
 .app-badgermole .pick-btn { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 52px; padding: 10px 14px; border-radius: 8px; font-size: 1.05em; font-weight: 600; text-align: left; }
 .app-badgermole .pick-meta { font-size: .8em; font-weight: 400; opacity: .85; }
@@ -126,6 +137,19 @@
 .app-badgermole .day-unit, .app-badgermole .day-x { font-size: .85em; color: var(--muted); }
 .app-badgermole .day-remove { margin-left: auto; }
 .app-badgermole .day-actions { margin-top: 8px; }
+
+/* --- Supersets: a colour per pair (its number: pair-1 to pair-5, then round again) down the side of a routine's lines,
+ * beside the session's exercise, and as a dot on its exercise list --- */
+.app-badgermole .pair-1 { --pair: #ea580c; }
+.app-badgermole .pair-2 { --pair: #a855f7; }
+.app-badgermole .pair-3 { --pair: #0d9488; }
+.app-badgermole .pair-4 { --pair: #db2777; }
+.app-badgermole .pair-5 { --pair: #65a30d; }
+.app-badgermole .line.paired, .app-badgermole .line-link.paired { padding-left: 10px; border-left: 4px solid var(--pair); }
+.app-badgermole .line-link.paired + .line { border-top: none; }
+.app-badgermole .ex-name.paired { padding-left: 10px; border-left: 6px solid var(--pair); }
+.app-badgermole .ex-pair::before { content: ""; flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--pair); }
+.app-badgermole .pair-dot { align-self: center; flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--pair); }
 
 /* --- Phones: Next up and the bar for a thumb --- */
 @media (max-width: 640px) {

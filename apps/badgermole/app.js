@@ -1,7 +1,8 @@
 /* Badgermole · app.js — registers Badgermole with Kyoshi, plus its constants (limits, steps, minutes,
- * the starter exercises), state (A.S) and small helpers: text, minutes, days and weeks, units, and lookups (which
- * exercise, routine or session is which). Loads first of the app's files: the others destructure what's here at
- * the top, and call functions from each other as A.name(). File map and data model: apps/badgermole/CLAUDE.md. */
+ * the starter exercises), state (A.S) and small helpers: text, minutes, days and weeks, units, an exercise's step,
+ * supersets, and lookups (which exercise, routine, program or session is which, the rotation followed). Loads first of
+ * the app's files: the others destructure what's here at the top, and call functions from each other as A.name().
+ * File map and data model: apps/badgermole/CLAUDE.md. */
 (function (K) {
   "use strict";
   const { addDays, dateMs, fmtDate, fmtShort, fmtNum, todayStr } = K.util;
@@ -33,9 +34,15 @@
     MAX_WEIGHT: 2000,         // in either unit, up to 2 decimals
     MAX_TARGET: 14,           // workouts a week
     DEFAULT_TARGET: 3,
-    MAX_PROGRAM: 50,          // routines in the rotation, repeats allowed
+    MAX_PROGRAM: 50,          // routines in a program's rotation, repeats allowed
+    MAX_PROGRAMS: 20,         // programs, one followed at a time
+    MAX_PROGRAM_NAME: 30,
+    MAIN_PROGRAM: "main",     // the first program's id (the rotation from before programs): two devices making it agree
     MAX_SESSION_SETS: 200,
-    STEP: { lb: 5, kg: 2.5 }, // − / + on a weight, and the progression step
+    STEPS: [2.5, 5, 7.5, 10], // an exercise's progression step, in lb (shown converted in kg)
+    DEFAULT_STEP: 5,
+    STEP: { lb: 5, kg: 2.5 }, // − / + on a weight whose exercise is gone (each exercise has its own step)
+    MAX_PAIR: 9,              // supersets in a routine: each pair of lines shares a number
     LB_PER_KG: 2.2046226218,
     DEFAULT_MINUTES: 60,      // a routine's length before it's been done
     ESTIMATE_RUNS: 5,         // its usual length is the average of this many latest sessions
@@ -50,8 +57,8 @@
   // ==========================================================================
   const S = Object.assign(A.S, {
     // Saved and synced (CLAUDE.md has their shapes). Deleted items stay as markers so sync can't bring them back.
-    exercises: [], routines: [], sessions: [],
-    program: { order: [], u: 0 },                   // the rotation: routine ids, repeats allowed
+    exercises: [], routines: [], sessions: [], programs: [],
+    program: { order: [], active: "", since: 0, u: 0 }, // the program followed since when, its rotation again in order
     settings: { unit: "lb", weeklyTarget: 3, u: 0 },
     live: null,       // this device's session in progress (session.js) — never synced or backed up
     version: 0,       // counts every change to the stored data, so the worked-out stats are redone (stats.js)
@@ -115,19 +122,36 @@
   // A set as words: "135 lb × 5"; a bodyweight one "12 reps" or "12 reps +25 lb".
   const fmtSet = s => (s.bodyweight ? `${plural(s.reps, "rep")}${s.weight > 0 ? ` +${fmtWeight(s.weight, s.unit)}` : ""}` : `${fmtWeight(s.weight, s.unit)} × ${s.reps}`);
 
-  // --- Which exercise, routine or session is which (deleted ones are only markers) ---
+  // --- Which exercise, routine, program or session is which (deleted ones are only markers) ---
   const live = list => list.filter(x => !x.deleted);
   const byAdded = (a, b) => a.at - b.at || (a.id < b.id ? -1 : 1);
   const liveExercises = () => live(S.exercises).sort(byAdded);
   const liveRoutines = () => live(S.routines).sort(byAdded);
+  const livePrograms = () => live(S.programs).sort(byAdded);
   const exerciseById = id => (id && S.exercises.find(e => e.id === id && !e.deleted)) || null;
   const routineById = id => (id && S.routines.find(r => r.id === id && !r.deleted)) || null;
+  const programById = id => (id && S.programs.find(p => p.id === id && !p.deleted)) || null;
   const sessionById = id => (id && S.sessions.find(s => s.id === id && !s.deleted)) || null;
-  // The rotation, its deleted routines skipped (sync can bring back an id another device still had).
-  const liveOrder = () => S.program.order.filter(id => routineById(id));
-  // A routine's lines with their exercise's name and kind, those whose exercise is gone left out.
-  const routineItems = r => (r ? r.items : []).map(x => ({ x, e: exerciseById(x.exerciseId) })).filter(({ e }) => e)
-    .map(({ x, e }) => ({ exerciseId: e.id, name: e.name, bodyweight: e.bodyweight, sets: x.sets, reps: x.reps, weight: x.weight, unit: x.unit }));
+  // The program followed (null with none: then program.order, as older copies keep it, is the rotation).
+  const activeProgram = () => programById(S.program.active);
+  // The rotation followed, its deleted routines skipped (sync can bring back an id another device still had).
+  const liveOrder = () => { const p = activeProgram(); return (p ? p.order : S.program.order).filter(id => routineById(id)); };
+  // An exercise's progression step in the unit shown (+5 lb is +2.5 kg): its step up, and − / + on its weight.
+  const stepOf = id => { const e = exerciseById(id); return e ? inUnit(e.step, "lb") : A.STEP[unit()]; };
+
+  // --- Supersets: two lines next to each other share a number (1–9); any other number is cleared, in place. Its
+  // colour is the class pair-1 to pair-5 (the number, round again after 5). ---
+  function fixPairs(list) {
+    const at = new Map();
+    list.forEach((x, i) => { if (x.pair) at.set(x.pair, (at.get(x.pair) || []).concat(i)); });
+    list.forEach(x => { const i = x.pair ? at.get(x.pair) : null; if (i && !(i.length === 2 && i[1] === i[0] + 1)) x.pair = 0; });
+    return list;
+  }
+  const pairClass = n => (n ? ` paired pair-${(n - 1) % 5 + 1}` : "");
+
+  // A routine's lines with their exercise's name and kind, those whose exercise is gone left out (and a superset with them).
+  const routineItems = r => fixPairs((r ? r.items : []).map(x => ({ x, e: exerciseById(x.exerciseId) })).filter(({ e }) => e)
+    .map(({ x, e }) => ({ exerciseId: e.id, name: e.name, bodyweight: e.bodyweight, sets: x.sets, reps: x.reps, weight: x.weight, unit: x.unit, toFailure: x.toFailure, pair: x.pair })));
   // Sessions in the order they happened: by day, then when each started.
   const bySession = (a, b) => a.date.localeCompare(b.date) || a.started - b.started || (a.id < b.id ? -1 : 1);
   const sortedSessions = () => live(S.sessions).sort(bySession);
@@ -140,6 +164,7 @@
   Object.assign(A, {
     cleanLine, clampInt, plural, round2, fieldText, wholeIn, weightIn, fmtMinutes, niceMinutes, mondayOf, sundayOf, fmtDay,
     unit, toKg, fromKg, convert, roundHalf, inUnit, shownWeight, fmtWeight, fmtSet,
-    live, liveExercises, liveRoutines, exerciseById, routineById, sessionById, liveOrder, routineItems, bySession, sortedSessions, numbered
+    live, liveExercises, liveRoutines, livePrograms, exerciseById, routineById, programById, sessionById, activeProgram, liveOrder,
+    stepOf, fixPairs, pairClass, routineItems, bySession, sortedSessions, numbered
   });
 })(Kyoshi);

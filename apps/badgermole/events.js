@@ -20,6 +20,9 @@
     day: el => A.openDay(el.dataset.date),
     "edit-exercise": el => A.openExercise(el.dataset.id),
     "edit-routine": el => A.openRoutine(el.dataset.id),
+    "prog-pick": el => A.pickProgram(el.dataset.id),
+    "prog-rename": () => A.openProgram(false),
+    "prog-new": () => A.openProgram(true),
     "prog-up": el => A.moveInProgram(+el.dataset.i, -1),
     "prog-down": el => A.moveInProgram(+el.dataset.i, 1),
     "prog-remove": el => A.removeFromProgram(+el.dataset.i),
@@ -77,9 +80,9 @@
 
   // Bug reports: counts and settings only — never the names of exercises or routines.
   A.bugState = () => {
-    const l = S.live, deleted = ["exercises", "routines", "sessions"].map(k => S[k].filter(x => x.deleted).length).join("/");
+    const l = S.live, deleted = ["exercises", "routines", "sessions", "programs"].map(k => S[k].filter(x => x.deleted).length).join("/"), programs = A.livePrograms();
     return [
-      `- Exercises: ${A.liveExercises().length} (${A.liveExercises().filter(e => e.bodyweight).length} bodyweight); routines: ${A.liveRoutines().length}; program: ${A.liveOrder().length} (next ${A.nextIndex() + 1})`,
+      `- Exercises: ${A.liveExercises().length} (${A.liveExercises().filter(e => e.bodyweight).length} bodyweight); routines: ${A.liveRoutines().length}; programs: ${programs.length} (active ${programs.indexOf(A.activeProgram()) + 1}), rotation ${A.liveOrder().length} (next ${A.nextIndex() + 1})`,
       `- Sessions: ${A.sessions().length}; this week ${A.thisWeek()} of ${S.settings.weeklyTarget}; streak ${A.streak()}; deleted markers ${deleted}`,
       `- Session in progress: ${l ? `yes, ${l.sets.length} sets, exercise ${l.pos.item + 1} of ${l.items.length}` : "no"}; view: ${S.view}; unit: ${S.settings.unit}`,
       `- Pop-ups: ${S.editing ? `${S.editing.kind} editor` : "none"}${S.day ? ", day" : ""}`

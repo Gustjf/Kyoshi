@@ -7,7 +7,7 @@
   "use strict";
   const S = A.S;
   const { addDays, mean, todayStr } = K.util;
-  const { DEFAULT_MINUTES, ESTIMATE_RUNS, MAX_SESSION_MINUTES, STEP, MAX_REPS, MAX_WEIGHT, niceMinutes, mondayOf, toKg, convert, inUnit, unit } = A;
+  const { DEFAULT_MINUTES, ESTIMATE_RUNS, MAX_SESSION_MINUTES, MAX_REPS, MAX_WEIGHT, niceMinutes, mondayOf, toKg, convert, inUnit, unit, round2, stepOf } = A;
 
   let memoKey = "", memo = new Map();
   function remember(key, fn) {
@@ -58,13 +58,14 @@
   });
 
   // --- The rotation ---
-  // Where the next workout is in the program (-1 with none): the place whose run of routines, read backwards, best
-  // matches the latest sessions (ties: the first such place), plus one. Worked out, never stored, so it syncs by
-  // itself, copes with repeats (Upper, Lower, Upper, Lower) and sets itself right after a routine out of order.
+  // Where the next workout is in the program followed (-1 with none): the place whose run of routines, read backwards,
+  // best matches the latest sessions since it was picked (ties: the first such place), plus one; its first routine
+  // before any. Worked out, never stored, so it syncs by itself, copes with repeats (Upper, Lower, Upper, Lower) and
+  // sets itself right after a routine out of order.
   const nextIndex = () => remember("next", () => {
-    const order = A.liveOrder(), len = order.length, inProgram = new Set(order);
+    const order = A.liveOrder(), len = order.length, inProgram = new Set(order), since = S.program.since;
     if (!len) return -1;
-    const recent = sessions().map(s => s.routineId).filter(id => inProgram.has(id)).reverse().slice(0, len);
+    const recent = sessions().filter(s => s.started >= since).map(s => s.routineId).filter(id => inProgram.has(id)).reverse().slice(0, len);
     if (!recent.length) return 0;
     let best = 0, bestRun = 0;
     for (let p = 0; p < len; p++) {
@@ -127,9 +128,10 @@
 
   // --- Prefill: what the steppers start at for set n of an exercise in the session (item: its line), in the unit
   // shown: { weight, reps, up }. (1) This session's latest set of it (a change you typed carries on); else (2) the
-  // last session with it: its set n, else its last set of it, one step up (5 lb or 2.5 kg; a bodyweight exercise one
-  // rep) when every planned set of it reached the routine's reps ("↑ from last time"); else (3) the routine's line.
-  // Weights in another unit are converted and rounded to the nearest 0.5. ---
+  // last session with it: its set n, else its last set of it, one step up (the exercise's progression step: +5 lb is
+  // +2.5 kg; a bodyweight exercise one rep) when every planned set of it reached the routine's reps (its minimum, for
+  // one to failure: "↑ +5 lb from last time"); else (3) the routine's line. Weights in another unit are converted and
+  // rounded to the nearest 0.5. ---
   function prefill(item, n) {
     const mine = S.live ? S.live.sets.filter(s => s.exerciseId === item.exerciseId) : [];
     if (mine.length) { const s = mine[mine.length - 1]; return { weight: inUnit(s.weight, s.unit), reps: Math.max(1, s.reps), up: false }; }
@@ -139,7 +141,7 @@
     const up = sets.length >= item.sets && sets.slice(0, item.sets).every(x => x.reps >= item.reps);
     let weight = inUnit(s.weight, s.unit), reps = Math.max(1, s.reps);
     if (up && item.bodyweight) reps = Math.min(MAX_REPS, reps + 1);
-    else if (up) weight = Math.min(MAX_WEIGHT, weight + STEP[unit()]);
+    else if (up) weight = Math.min(MAX_WEIGHT, round2(weight + stepOf(item.exerciseId)));
     return { weight, reps, up };
   }
 
