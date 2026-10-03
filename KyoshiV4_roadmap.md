@@ -58,6 +58,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
 - 2026-10-03: sorry about the erika/erica problem being in hawky - it was in pabu - my bad. remove that. ok, that makes sense about the conflicting reply. The prime directive is that it is still a 168 hour budget, true cost tab and close out should remain. Remove my current input about the meeting invites/et. bad idea.
 - 2026-10-03: momo is fine continue to core
+- 2026-10-03: weekend and travel plans in momo - i want them to be close to the board so that i can see the upcoming weekends so that i can ensure that i have a plan for each weekend - it needs to look further than 2 weeks ahead because sometimes plans need to be confirmed ahead of time outside of the 2 week window.
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 - 2026-10-03: yes that summary makes sense. (the summary: each app puts its own individual, correctly sized card/task into Momo, labelled by its app, instead of Momo filling generic title-matched blocks)
@@ -73,6 +74,8 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
 - 2026-10-03: (from Hawky) I meant that I want it to become their own cards - they are currently being grouped per app in the momo tab
 - 2026-10-03: (from Hawky) 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
+- 2026-10-03: i want them to be close to the board so that i can see the upcoming weekends so that i can ensure that i have a plan for each weekend
+- 2026-10-03: it needs to look further than 2 weeks ahead because sometimes plans need to be confirmed ahead of time outside of the 2 week window.
 ### Remove
 ### Bugs
 ### Open questions
