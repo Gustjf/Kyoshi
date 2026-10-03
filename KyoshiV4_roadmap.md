@@ -27,9 +27,11 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Cross-cutting (anything not tied to one app)
 ### Comments (verbatim)
+- 2026-10-03: (from Badgermole) I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
 ### Keep
 ### Change
 ### Add
+- 2026-10-03: (from Badgermole) I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
 ### Remove
 ### Bugs
 ### Open questions
@@ -156,11 +158,16 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Badgermole
 ### Comments (verbatim)
 - 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc. I like the way the excercises, routinesand settings are set up now. I don' always want to progress by 5lb, sometimes (like for OHP or deadlift) I'd like to progress more or less. maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step. for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole. Also have a way to mark that the excercise should be done until failure after a certain number of minimum reps. Add the ability for superset, how hevy does it, which is pairs two excercises together and has a color associated with the pair to highlight they belong to the superset pair. Make the superset setup minimal and intuitive.
+- 2026-10-03: For number one, I want the active program to follow what I put in manually. For number two, I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application. Uh, specifically, this one. For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine - local to routine., uh, specifically this one. For number three, per failure, should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine.
 ### Keep
 - 2026-10-03: I like the way the excercises, routinesand settings are set up now.
 ### Change
 - 2026-10-03: I don' always want to progress by 5lb, sometimes (like for OHP or deadlift) I'd like to progress more or less.
 - 2026-10-03: for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
+- 2026-10-03: I want the active program to follow what I put in manually.
+- 2026-10-03: I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application.
+- 2026-10-03: For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do.
+- 2026-10-03: And supersets are per routine - local to routine.
 ### Add
 - 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc.
 - 2026-10-03: maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step.
@@ -169,7 +176,7 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ### Remove
 ### Bugs
 ### Open questions
-
+- 2026-10-03: (answers to Claude's 4 questions) For number one, I want the active program to follow what I put in manually. For number two, I want to keep the progression options in pounds, but have a global flag to switch between kilograms and pounds per application. Uh, specifically, this one. For number three, per failure should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine - local to routine., uh, specifically this one. For number three, per failure, should have I should lock the minimum good sets that I did, and then the other failure sets I will just do. And supersets are per routine.
 ## Turtleduck
 ### Comments (verbatim)
 ### Keep
