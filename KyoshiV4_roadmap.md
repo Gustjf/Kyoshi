@@ -49,11 +49,13 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Hawky) 2. firmed up travel plans should move to momo with the weekend plans. what i mean by that...is that i agree to go somewher ewith a friend in 4 months, etc...as a high level strategy...but dont have the hour by hour execution planned out. the date coming within the next planning period would be the trigger for me to plan the execution.
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task. birthday stays as board events
+- 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 ### Change
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task.
+- 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 ### Add
 - 2026-10-03: (from Hawky) i meant a spot to record weekend plans in a vauge way, and then can be used in momo as its time to plan the next two weeks...like...hey dude you said you were going to do this on this date...time to make actual plans for it. the more i type, the more i think weekend plans should be in momo and hawky should just be for shopping lists outside of grocery and one-off errands.
 - 2026-10-03: (from Hawky) i want hawky to plop down events onto momo.
@@ -153,9 +155,17 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Badgermole
 ### Comments (verbatim)
+- 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc. I like the way the excercises, routinesand settings are set up now. I don' always want to progress by 5lb, sometimes (like for OHP or deadlift) I'd like to progress more or less. maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step. for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole. Also have a way to mark that the excercise should be done until failure after a certain number of minimum reps. Add the ability for superset, how hevy does it, which is pairs two excercises together and has a color associated with the pair to highlight they belong to the superset pair. Make the superset setup minimal and intuitive.
 ### Keep
+- 2026-10-03: I like the way the excercises, routinesand settings are set up now.
 ### Change
+- 2026-10-03: I don' always want to progress by 5lb, sometimes (like for OHP or deadlift) I'd like to progress more or less.
+- 2026-10-03: for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 ### Add
+- 2026-10-03: I would like for there to be multiple programs. Sometimes I will change it to a travel program, bare mimimum program, etc.
+- 2026-10-03: maybe add a default of 5lb progression and then when setting up the excercie I can choose from +2.5lb and +7.5lb and +10lb as well default step.
+- 2026-10-03: Also have a way to mark that the excercise should be done until failure after a certain number of minimum reps.
+- 2026-10-03: Add the ability for superset, how hevy does it, which is pairs two excercises together and has a color associated with the pair to highlight they belong to the superset pair. Make the superset setup minimal and intuitive.
 ### Remove
 ### Bugs
 ### Open questions
