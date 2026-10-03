@@ -32,7 +32,7 @@ Kyoshi.apps.hawky.markup = `
     <h2>Errands <span class="count" id="openCount"></span></h2>
     <div id="listEmpty" class="empty-msg">Nothing to do. Add errands above as they come up.</div>
     <div id="groups"></div>
-    <div class="footnote">Tick ✓ once one's done, or tap it to change or delete it. Momo fits them into your “Errands” cards, soonest due first; what doesn't fit waits in its Tasks.</div>
+    <div class="footnote">Tick ✓ once one's done, or tap it to change or delete it. Each one is a card of its own in Momo: it waits in Momo's Tasks until you drag it onto a day.</div>
   </section>
 
   <section id="doneSection" hidden>

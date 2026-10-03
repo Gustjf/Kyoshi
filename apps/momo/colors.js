@@ -5,6 +5,10 @@
  * colours made up once the whole palette is on show. A title that's the name
  * of one of Momo's old goals (from before goals moved to Iroh) keeps that
  * goal's key instead, "g:" and its id, so its cards keep the colour they had.
+ * Another app's cards (model.js app: an errand, a meal…) share their app's key
+ * instead, "a:" and its id, whatever their titles: one colour per app, the
+ * one near its icon's first (APP_COLORS), else as any other key gets one; a
+ * task for one shows it before any of its cards is on show.
  * Free time is slate unless it's given a colour.
  * A key on show (on the baseline, this week or next) without a colour gets
  * the highlight least like the colours on show, else the least like them of
@@ -15,18 +19,21 @@
   "use strict";
   const S = A.S;
   const { addDays } = K.util;
-  const { PALETTE, HIGHLIGHTS, FREE_TIME, COLOR_WEEKS, thisWeekKey, nextWeekKey } = A;
+  const { PALETTE, HIGHLIGHTS, APP_COLORS, FREE_TIME, COLOR_WEEKS, thisWeekKey, nextWeekKey } = A;
 
   const PALETTE_HEX = new Map(PALETTE);
   const FREE_KEY = `t:${FREE_TIME.toLowerCase()}`;
   const goalKey = id => `g:${id}`;
+  const appKey = id => `a:${id}`;
   // A title's key; an old goal's name is that goal's, so a card called that keeps its colour.
   function titleKey(title, d = S.data) {
     const t = title.trim().toLowerCase(), g = d.goals.find(x => !x.deleted && x.name.toLowerCase() === t);
     return g ? goalKey(g.id) : `t:${t}`;
   }
-  // A card's key: its title's (an old goal's card too).
-  const cardKey = (c, d = S.data) => titleKey(c.title, d);
+  // A card's key: its app's, for another app's card; else its title's (an old goal's card too).
+  const cardKey = (c, d = S.data) => (c.app ? appKey(c.app) : titleKey(c.title, d));
+  // The colour an app's key tries first (APP_COLORS), or null.
+  const appColor = key => (key.startsWith("a:") && PALETTE_HEX.has(APP_COLORS[key.slice(2)]) ? APP_COLORS[key.slice(2)] : null);
   const isColor = c => PALETTE_HEX.has(c) || /^x\d{1,4}$/.test(c);
   // Made-up colours, in OKLCH: hues a golden angle apart, at two lightnesses.
   const extraLch = i => [i % 2 ? 0.74 : 0.64, 0.1, (i * 137.508 + 10) % 360];
@@ -37,8 +44,12 @@
     return `oklch(${l} ${ch} ${h.toFixed(1)})`;
   }
   const colorName = c => (c === "slate" ? "Slate" : PALETTE_HEX.has(c) ? c[0].toUpperCase() + c.slice(1) : `Extra colour ${+c.slice(1) + 1}`);
-  // What a key or a card shows: its colour, else slate (Free time's).
-  const keyColor = key => colorCss(S.data.colors[key] ? S.data.colors[key].c : "slate");
+  // What a key or a card shows: its colour, else slate (Free time's) — an app's without one yet (a task of it, before
+  // any of its cards is on show), the colour it tries first while no key has that.
+  function keyColor(key) {
+    const own = S.data.colors[key], first = !own && appColor(key);
+    return colorCss(own ? own.c : first && !Object.values(S.data.colors).some(e => e.c === first) ? first : "slate");
+  }
   const cardColor = c => keyColor(cardKey(c));
 
   // Where a colour sits in OKLab (Björn Ottosson's), where the distance
@@ -88,9 +99,16 @@
       if ((K.ready && !lately.has(k)) || taken.has(d.colors[k].c)) delete d.colors[k];
       else taken.add(d.colors[k].c);
     });
-    shown.forEach(k => { if (k !== FREE_KEY && !d.colors[k]) setColor(d, k, freeColor(d, shown)); });
+    shown.forEach(k => { if (k !== FREE_KEY && !d.colors[k]) setColor(d, k, spareAppColor(d, k, shown) || freeColor(d, shown)); });
     d.colors = Object.fromEntries(Object.keys(d.colors).sort().map(k => [k, d.colors[k]]));
     return JSON.stringify(d.colors) !== before;
+  }
+
+  // An app's key that needs a colour takes the one near its icon's (APP_COLORS) while no key on show has it (one off
+  // the boards gives it up); null otherwise.
+  function spareAppColor(d, key, shown) {
+    const c = appColor(key);
+    return c && !shown.some(k => k !== key && d.colors[k] && d.colors[k].c === c) ? c : null;
   }
 
   // The colour for a key on show that needs one: one no key has, else one
@@ -133,8 +151,10 @@
   const cardsOnShow = () => [S.data.baseline, A.weekOf(thisWeekKey()), A.weekOf(nextWeekKey())].flatMap(list => list.cards);
   const keyOnShow = (key, skip = null) => cardsOnShow().some(c => c !== skip && cardKey(c) === key);
 
-  // A key as it's known: its title as a card or event on show has it, else an old goal's name or the key's title.
+  // A key as it's known: an app's name; its title as a card or event on show has it, else an old goal's name or the
+  // key's title.
   function keyName(key) {
+    if (key.startsWith("a:")) return K.apps[key.slice(2)] ? K.apps[key.slice(2)].meta.name : key.slice(2);
     const tk = thisWeekKey(), c = cardsOnShow().find(x => cardKey(x) === key) || K.agenda(tk, addDays(tk, 13)).find(e => titleKey(e.title) === key);
     if (c) return c.title;
     const g = key.startsWith("g:") && S.data.goals.find(x => x.id === key.slice(2));
@@ -142,7 +162,7 @@
   }
 
   Object.assign(A, {
-    PALETTE_HEX, FREE_KEY, goalKey, titleKey, cardKey, isColor, colorCss, colorName, keyColor, cardColor,
+    PALETTE_HEX, FREE_KEY, goalKey, appKey, titleKey, cardKey, isColor, colorCss, colorName, keyColor, cardColor,
     colorKeys, ensureColors, freeColor, setColor, pickColor, cardsOnShow, keyOnShow, keyName
   });
 })(Kyoshi, Kyoshi.apps.momo);

@@ -1,14 +1,15 @@
 /* Pabu · share.js — what Pabu shares with other apps. Momo reads inbox() (core/inbox.js; read-only copies): everyone on
- * a schedule who's due by `to`, soonest due first, each filling Momo's cards titled "Keep in touch" whole, from 6 days
- * before they're due (any day once overdue); what doesn't fit is one Keep in touch task in Momo's Tasks. Then the days
- * you talked to them between from and to, done (✓ on that day's card). Birthday-only people send nothing there. Momo's
- * board reads agenda() (core/agenda.js): birthdays, at any time on their day, ✓ once you talked that day. Momo's "Open
- * in Pabu" calls open(id), which brings the person into view and flashes them. The ids: "p:<id>" (who's due),
+ * a schedule who's due by `to`, soonest due first, each a card of its own in Momo (fill "card": "Call Mom", as long as
+ * it takes), waiting in its Tasks from 6 days before they're due (any day once overdue) until you place it. Then the
+ * days you talked to them between from and to, done, each completing that person's (of "p:<id>"): ✓ on that card, or
+ * one of its own on that day. Birthday-only people send nothing there. Momo's board reads agenda() (core/agenda.js):
+ * birthdays, at any time on their day, ✓ once you talked that day. Momo's "Open in Pabu" calls open(id), which brings
+ * the person into view and flashes them. The ids: "p:<id>" (who's due),
  * "p:<id>:<day>" (a talk), "bday:<id>:<year>" (a birthday): change open() along with them (apps/pabu/CLAUDE.md). */
 (function (K, A) {
   "use strict";
   const { addDays, todayStr } = K.util;
-  const { HOW, BLOCK, WINDOW_DAYS } = A;
+  const { HOW, WINDOW_DAYS } = A;
 
   // "Call Mom", "Text Sam", "Visit Gran": at most 6 + 40 characters, within Momo's 60.
   const needTitle = p => `${HOW[A.howOf(p)].label} ${p.name}`;
@@ -22,14 +23,14 @@
     ].filter(Boolean);
   }
 
-  // [{ id, title, block: "Keep in touch", minutes, due, from, overdue, details }, then { id, …, date, done: true }]: made
+  // [{ id, title, fill: "card", minutes, due, from, overdue, details }, then { id, …, date, done: true, of }]: made
   // afresh on every call, so Momo can't change Pabu's data through them.
   function inbox(from, to) {
     const today = todayStr(), people = A.live().filter(p => A.everyOf(p) !== "none");
-    const base = p => ({ title: needTitle(p), block: BLOCK, minutes: p.minutes, details: details(p, today) });
+    const base = p => ({ title: needTitle(p), fill: "card", minutes: p.minutes, details: details(p, today) });
     const due = A.withDue(people, today).filter(([, d]) => d <= to)
       .map(([p, d]) => ({ id: `p:${p.id}`, ...base(p), due: d, from: d < today ? null : addDays(d, -WINDOW_DAYS), overdue: d < today }));
-    const talked = people.flatMap(p => p.talks.filter(d => d >= from && d <= to && d <= today).map(d => ({ id: `p:${p.id}:${d}`, ...base(p), date: d, done: true })))
+    const talked = people.flatMap(p => p.talks.filter(d => d >= from && d <= to && d <= today).map(d => ({ id: `p:${p.id}:${d}`, ...base(p), date: d, done: true, of: `p:${p.id}` })))
       .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title) || (a.id < b.id ? -1 : 1));
     return due.concat(talked);
   }

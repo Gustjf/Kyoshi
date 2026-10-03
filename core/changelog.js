@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.540", date: "2026-10-03", changes: [
+      "Apps can ask Momo for a card of their own per need (fill “card”), say which need a done one completes (of) and hint at a time of day (time)."
+    ] },
     { version: "3.440", date: "2026-10-03", changes: [
       "Bug reports are denser: one fact per line, no prose, for an AI reader.",
       "They also tell the build, the time zone and whether Kyoshi was opened from a file, and keep each error's message on Safari and Firefox."

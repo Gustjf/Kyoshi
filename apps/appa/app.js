@@ -40,7 +40,7 @@
     READING_MINUTES: 5,   // checking a meter, for Momo
     PAGE_SIZE: 8,         // History's rows per page
     RECENT: 5,            // records on the home page
-    MAX_THING: 28,        // a thing's name: short, so "<name> maintenance" fits Momo's 40-character cards
+    MAX_THING: 28,        // a thing's name: short, so "<name>: <job>" reads on Momo's 40-character cards
     MAX_TITLE: 60, MAX_ABOUT: 100, MAX_SERIAL: 40, MAX_NOTES: 4000, MAX_RECORD_NOTES: 2000, MAX_BY: 40,
     MAX_SOURCE: 60, MAX_WHERE: 60, MAX_LINK: 800, MAX_LABEL: 60, MAX_MINUTES: 7 * 24 * 60,
     PHOTO_MAX_PX: 2000, PHOTO_QUALITY: 0.82,
@@ -133,11 +133,8 @@
     const page = pageNumber(where);
     return page && /\.pdf($|[?#])/i.test(link) && !link.includes("#") ? `${link}#page=${page}` : link;
   }
-  // "Robot vacuum maintenance": what Momo calls a thing's jobs (fits its 40-character cards).
-  const momoTitle = thing => `${[...thing.name].slice(0, A.MAX_THING).join("")} maintenance`;
-
   Object.assign(A, {
     cleanText, cleanLine, niceMinutes, fmtMinutes, parseMinutes, meterOf, fmtReading, fmtMoney, parseMoney,
-    fmtDay, safeLink, pageNumber, sourceLink, momoTitle
+    fmtDay, safeLink, pageNumber, sourceLink
   });
 })(Kyoshi);

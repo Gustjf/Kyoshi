@@ -1,7 +1,10 @@
 /* Momo · card-editor.js — the card editor pop-up (#cardOverlay): new and existing cards,
  * the days they're on, pin time, which card they sit inside, and colour; saving, deleting,
  * and the colour swatches (renderColors, onColorClick). Hours fields and clock times are read
- * here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one. */
+ * here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one.
+ * Another app's card (model.js need: an errand, a meal…) goes on one day at a time, and its
+ * colour is its app's; one whose day its app sets (a meal, a trip, something done) has no
+ * Delete: "Change it in <App>" leads there. Editing one Momo placed makes it yours (auto). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -10,8 +13,9 @@
     snap, fmtH, cleanText, fmtClock, firstDay, thisWeekKey, nextWeekKey, readNumber } = A;
 
   const overlay = () => $("cardOverlay");
-  // What the editor holds, to tell whether closing it would lose changes.
-  const cardFormState = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort(), S.editing.pick]);
+  // What the editor holds for the card itself, and with the colour picked too, to tell whether closing it would lose changes.
+  const cardFields = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort()]);
+  const cardFormState = () => JSON.stringify([cardFields(), S.editing.pick]);
 
   // Esc, × and a click beside the editor ask first if it has unsaved changes (core/modal.js); Cancel doesn't.
   function defineCardOverlay() {
@@ -20,15 +24,17 @@
       pending: () => !!S.editing && cardFormState() !== S.editing.snapshot,
       ask: "Discard your changes to this card?"
     });
-    // "Open in Appa" (or any app): the editor closes on the way, asking first if it has changes (as × and Esc do), and
-    // the app shows what it needs (core/inbox.js). Kept open, nothing else happens.
-    $("cardFrom").addEventListener("click", e => {
+    // "Open in Appa" (or any app), and "Change it in <App>": the editor closes on the way, asking first if it has
+    // changes (as × and Esc do), and the app shows what it needs (core/inbox.js). Kept open, nothing else happens.
+    const openApp = e => {
       const link = e.target.closest("a[data-app]");
       if (!link) return;
       e.preventDefault();
       K.modal.requestDismiss(overlay());
       if (!K.modal.isOpen(overlay())) K.inbox.open(link.dataset.app, link.dataset.id);
-    });
+    };
+    $("cardFrom").addEventListener("click", openApp);
+    $("cardChange").addEventListener("click", openApp);
   }
 
   // A card other apps' needs fill, or a new one from a task of theirs, says what with, with a way there.
@@ -50,7 +56,8 @@
   // parked, in Tasks): before the card before on that day (null for last,
   // AUTO for wherever it fits), in free time of room hours; or, with noDay,
   // with no day picked yet. A new card from a task (from) starts as the ones
-  // it draws. Either one can be put on several days at once.
+  // it draws. Either one can be put on several days at once — but another
+  // app's card (need), on one day.
   function openCardEditor(id, { day = 0, noDay = false, before = AUTO, room = null, from = null } = {}) {
     if (A.isLocked()) return;
     const key = A.shownKey(), list = A.readList(key);
@@ -58,14 +65,17 @@
     if (id && !card) return;
     const free = day === null || noDay ? 0 : room !== null ? room : DAY_HOURS - A.dayTotal(list, day);
     const draft = card || from; // what the fields start from, if anything
-    const editing = S.editing = { key, id: card ? card.id : null, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, inner: card ? A.innerCards(list, card) : [] };
-    // Renamed to a new title, a card takes its colour along if no other card on show has its title.
+    const need = card ? card.need : from && from.need ? from.need : null, app = card ? card.app : need ? from.app : null;
+    const editing = S.editing = { key, id: card ? card.id : null, need, app, days: new Set(noDay ? [] : [card ? card.day : day]), at: { day: noDay ? undefined : day, before }, pick: null, oldKey: card ? A.cardKey(card) : null, carry: null, inner: card ? A.innerCards(list, card) : [] };
+    // Renamed to a new title, a card takes its colour along if no other card on show has its title (an app's card
+    // keeps its app's, whatever its title).
     const oldKey = editing.oldKey;
-    if (card && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
+    if (card && !app && S.data.colors[oldKey] && !A.keyOnShow(oldKey, card)) editing.carry = S.data.colors[oldKey].c;
     $("cardModalTitle").textContent = card ? "Edit card" : "New card";
     $("cardTitle").value = draft ? draft.title : "";
     $("cardHours").value = fmtNum(card ? card.hours : from ? from.hours || DRAW_HOURS : free > 0 && free < 1 ? free : 1);
-    renderFrom(card ? (S.fill && S.fill.shown.get(card.id)) || [] : (from && from.needs) || []);
+    const needs = card ? A.cardNeeds(card) : (from && from.needs) || [];
+    renderFrom(needs);
     // Inside: the cards on their own it could go inside, by title (on each day
     // picked, that day's one). A card with cards inside it stays on its own.
     const parent = card && card.parentId && list.cards.find(c => c.id === card.parentId);
@@ -88,18 +98,24 @@
     const noWeekdays = !presetDays(WEEKDAYS).length; // this week, on a weekend
     $("cardWeekdaysBtn").disabled = noWeekdays;
     $("cardWeekdaysBtn").title = noWeekdays ? "No weekdays left this week" : "";
-    $("cardDeleteBtn").hidden = !card;
+    ["cardDailyBtn", "cardWeekdaysBtn", "cardClearDaysBtn"].forEach(b => { $(b).hidden = !!need; }); // one day at a time
+    // A card whose day its app sets (a meal, a trip, something done) is changed there, not deleted here.
+    const fixed = card && A.isDated(card), P = fixed && K.apps[app];
+    $("cardDeleteBtn").hidden = !card || fixed;
+    $("cardChange").hidden = !P;
+    $("cardChange").innerHTML = P ? `Change it in <a href="#${esc(P.id)}" data-app="${esc(P.id)}" data-id="${esc(needs.find(n => n.date).id)}">${esc(P.meta.name)}</a>` : "";
     $("titleSuggestions").innerHTML = titleSuggestions().map(t => `<option value="${esc(t)}"></option>`).join("");
     renderDayPills();
     renderCardColors();
     editing.snapshot = cardFormState();
+    editing.fields = cardFields();
     K.modal.open(overlay());
     $("cardTitle").focus();
   }
 
   function renderDayPills() {
     const pills = DAYS.map(d => [d, DAY_NAMES[d]]);
-    if (S.editing.key !== "base") pills.push([null, "No day"]); // it waits in Tasks
+    if (S.editing.key !== "base" && !S.editing.need) pills.push([null, "No day"]); // it waits in Tasks (another app's goes back there by Delete)
     $("cardDays").innerHTML = pills.map(([d, name]) =>
       `<button type="button" class="day-pill${S.editing.days.has(d) ? " active" : ""}" data-day="${d === null ? "" : d}">${name}</button>`).join("");
   }
@@ -108,7 +124,9 @@
     const btn = e.target.closest(".day-pill"), editing = S.editing;
     if (!btn || !editing) return;
     const d = btn.dataset.day === "" ? null : +btn.dataset.day;
-    if (editing.days.has(d)) {
+    if (editing.need) {
+      editing.days = new Set([d]); // another app's card: one day, the one picked
+    } else if (editing.days.has(d)) {
       editing.days.delete(d); // saving asks for a day if none is left
     } else if (d === null) {
       editing.days = new Set([null]); // no day goes on its own
@@ -121,9 +139,10 @@
 
   // Daily and Weekdays pick those days; on this week only from today on, and
   // days already gone keep what they had, so nothing is added to the past.
+  // Not for another app's card, which goes on one day (they're hidden then).
   const presetDays = days => days.filter(d => d >= firstDay(S.editing.key));
   function applyPreset(days) {
-    if (!S.editing) return;
+    if (!S.editing || S.editing.need) return;
     const first = firstDay(S.editing.key);
     const picked = [...S.editing.days].filter(d => d !== null && d < first).concat(presetDays(days));
     if (!picked.length) return;
@@ -132,7 +151,7 @@
   }
   // Clear unpicks every day, to start the choice over.
   function clearDays() {
-    if (!S.editing) return;
+    if (!S.editing || S.editing.need) return;
     S.editing.days = new Set();
     renderDayPills();
   }
@@ -158,17 +177,18 @@
   }
 
   // The colour the card being edited has without one picked here: its
-  // title's, else (renamed to a new title) the one it takes along, else a new one.
-  const typedKey = () => A.titleKey(cleanText($("cardTitle").value));
+  // title's, else (renamed to a new title) the one it takes along, else a new
+  // one; another app's card, its app's (colors.js).
+  const typedKey = () => (S.editing.app ? A.appKey(S.editing.app) : A.titleKey(cleanText($("cardTitle").value)));
   function cardOwn(key) {
     if (S.data.colors[key]) return S.data.colors[key].c;
     if (key === A.FREE_KEY) return "slate";
     return S.editing.carry || A.freeColor(S.data, A.colorKeys(S.data).shown);
   }
   function renderCardColors() {
-    const editing = S.editing, title = cleanText($("cardTitle").value), key = A.titleKey(title), own = cardOwn(key);
+    const editing = S.editing, title = cleanText($("cardTitle").value), key = typedKey(), own = cardOwn(key);
     renderColors(key, own, editing.pick || own, !!(S.data.colors[key] || editing.carry), [key, editing.carry ? editing.oldKey : null],
-      title ? `Every “${title}” card is this colour.` : "Cards with the same title share a colour.");
+      editing.app ? `All ${A.keyName(key)} cards share this colour.` : title ? `Every “${title}” card is this colour.` : "Cards with the same title share a colour.");
   }
 
   // A colour clicked in the editor is picked, unless it's the one it has anyway.
@@ -227,7 +247,7 @@
     if (!title) { $("cardTitle").focus(); return alert("Give the card a name."); }
     if (!isNum(hours)) { $("cardHours").focus(); return alert("Enter how many hours, e.g. 1.5 (in 15-minute steps)."); }
     if (Number.isNaN(pinAt)) { $("cardPin").focus(); return alert("Enter the time it starts, like 2300 or 7:30 — or leave it empty."); }
-    if (!editing.days.size) return alert(editing.key === "base" ? "Pick at least one day." : "Pick at least one day, or No day to keep it in Tasks.");
+    if (!editing.days.size) return alert(editing.need ? "Pick a day." : editing.key === "base" ? "Pick at least one day." : "Pick at least one day, or No day to keep it in Tasks.");
     const list = A.listFor(editing.key), days = [...editing.days].sort((a, b) => a - b);
     const card = editing.id ? list.cards.find(c => c.id === editing.id) : null;
     if (editing.id && !card) {
@@ -249,7 +269,7 @@
     // keeps its own, and a new one has none. Only a card on its own on a day has one.
     const pin = setPin ? pinAt : card ? card.pin : null;
     const pinOn = d => (d === null || parentOn(d) ? null : pin);
-    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day) });
+    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false });
     // Adds a new card before the card `before` (AUTO: wherever autoSpot puts
     // it; a pinned one always goes there), or into a matching card next to that spot.
     const add = (c, before) => {
@@ -261,6 +281,7 @@
     if (card) {
       const wasPinned = A.pinned(card), orig = card.pin;
       Object.assign(card, { title, hours });
+      if (cardFields() !== editing.fields) card.auto = false; // edited: yours now, where Momo placed it (place.js)
       // The card stays where it is if its day is still picked, else moves to the
       // first picked day that doesn't have it yet. Each other picked day gets a
       // copy, unless it has the card already (in the same place, else anywhere
@@ -294,8 +315,8 @@
     }
     // Its title's colour: the one it had, when it's renamed to a new title and
     // no card on show keeps the old one; and one picked here, which swaps with
-    // the title that had it.
-    const key = A.titleKey(title), { oldKey, carry, pick } = editing, colors = S.data.colors;
+    // the title that had it. Another app's card: its app's.
+    const key = editing.app ? A.appKey(editing.app) : A.titleKey(title), { oldKey, carry, pick } = editing, colors = S.data.colors;
     if (carry && key !== oldKey && !colors[key] && colors[oldKey] && !A.keyOnShow(oldKey)) {
       colors[key] = colors[oldKey];
       delete colors[oldKey];
@@ -313,8 +334,9 @@
     removeCard(key, id);
   }
 
-  // Deletes a card (from its editor, or Alt+click on it). Cards inside it
-  // stay on the day, on their own.
+  // Deletes a card (from its editor, Alt+click on it, or another app's card
+  // dropped back in Tasks: its need waits there again). Cards inside it stay
+  // on the day, on their own.
   function removeCard(key, id) {
     const list = A.listFor(key), card = list.cards.find(c => c.id === id);
     if (card) {

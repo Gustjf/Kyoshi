@@ -53,7 +53,7 @@ core/                 the shared DNA — K = window.Kyoshi
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key
-  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings), filling Momo's blocks; K.inbox.open
+  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings): Momo's cards (one each, or filling blocks); K.inbox.open
   wakelock.js         K.wakeLock: keeps the screen on while the app on screen's A.awake() says so (a timer, a workout)
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
   shell.js            K.register, K.start (K.ready once every app has started), switcher menu, theme, keyboard, minute tick, other-tab reload
@@ -62,12 +62,12 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   bosco/              weight tracker with projections & GLP-1 dosing
   momo/               weekly time budget (YNAB for hours)
   wanshitong/         media tracker for recommendations (Active media, the backlog)
-  appa/               preventive maintenance & records (jobs to Momo, PDF reports with proof)
-  hawky/              errands & pop-up tasks (quick add on the phone, into Momo's Errands cards)
+  appa/               preventive maintenance & records (each job a card of its own in Momo, PDF reports with proof)
+  hawky/              errands & pop-up tasks (quick add on the phone, each errand a card of its own in Momo)
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
-  badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (sessions into Momo's Workout cards)
-  turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips with a grocery list each, a cook view (meals into Momo's Breakfast/Lunch/Dinner/Cooking cards, Groceries on trip days)
-  pabu/               keep in touch: who's due a call, a text or a visit, each on a cadence (into Momo's Keep in touch cards); birthdays as events on the board
+  badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (each workout a card of its own in Momo)
+  turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips with a grocery list each, a cook view (each meal, cooking session and trip a card of its own in Momo, on its day)
+  pabu/               keep in touch: who's due a call, a text or a visit, each on a cadence (each a card of its own in Momo); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js
   sim/                the flow simulator (testplan.md): made-up lives through the real page; `node tests/sim/run.js` writes report.md and bundles/
@@ -95,7 +95,7 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 | `A.bugState()` | lines (`"- Key: value"`) for bug reports — never personal data |
 | `A.data` | backup & sync adapter `{ schemaVersion, build(), looksLike(raw), hasData(), importBackup(raw, ask) → true once it's in, combine(raw, how), afterSync() }` — see `core/sync.js`, `apps/bosco/data.js`. importBackup asks with `K.backup.ask(A, raw, "Replace …?")` (it adds the backup's date and how much newer what's here is). With photos/documents, also `files()` → `{ live, gone }` and `afterFiles()` — see `core/files.js` |
 | `A.agenda(from, to)` | events at set times on those days, as copies `[{ id, title, date, time, minutes, note, done }]` for Momo's board — see `core/agenda.js` |
-| `A.inbox(from, to)` | what it needs done this week and next, as copies `[{ id, title, block, details, fill, minutes, date, due, from, overdue, done }]`, filling Momo's blocks (cards titled `block`) — see `core/inbox.js` (ids starting `meeting:` are core's) |
+| `A.inbox(from, to)` | what it needs done this week and next, as copies `[{ id, title, block, details, fill, minutes, date, due, from, overdue, done, of, time }]`: with `fill: "card"`, each a card of its own in Momo (titled `title`, `minutes` long; one with a `date` lands on that day by itself, near its `time`; a done one's `of` names the need it completes, whose card shows ✓), else filling Momo's blocks (cards titled `block`) — see `core/inbox.js` (ids starting `meeting:` are core's) |
 | `A.open(id)` | "Open in <App>" from Momo (after Kyoshi shows the app): show that need |
 | `A.CHANGELOG` / `A.VERSION` | changelog.js |
 

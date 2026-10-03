@@ -12,6 +12,7 @@
     snap, clampHours, cleanText, isDueDate, isWeekKey, thisWeekKey, nextWeekKey } = A;
 
   const STANDALONE_KEY = "momoData_v1"; // the standalone Momo's data: read (never changed) on the first open in Kyoshi
+  const APP_ID = /^[a-z][a-z0-9]{0,30}$/; // an app's id, as Kyoshi.register takes it
 
   const persist = () => A.store.set("data", JSON.stringify(S.data));
   function remember() {
@@ -73,6 +74,9 @@
     const onDay = Number.isInteger(c.day) && c.day >= 0 && c.day <= 6;
     if (!onDay && !allowParked) return null;
     const parentId = typeof c.parentId === "string" && c.parentId ? c.parentId.slice(0, 40) : null;
+    // Another app's card (model.js): its app's id, and the need it's for, which is that app's.
+    const app = typeof c.app === "string" && APP_ID.test(c.app) ? c.app : null;
+    const need = app && typeof c.need === "string" && c.need.startsWith(`${app}:`) && c.need.length > app.length + 1 ? c.need.slice(0, 100) : null;
     return {
       id: typeof c.id === "string" && c.id ? c.id.slice(0, 40) : newId(),
       title,
@@ -82,7 +86,10 @@
       base: c.base === true,
       parentId,
       pos: POSITIONS.includes(c.pos) ? c.pos : "bottom", // where cards inside one showed before positions
-      pin: onDay && !parentId && isNum(c.pin) && c.pin >= 0 && c.pin < DAY_HOURS ? Math.min(DAY_HOURS - STEP, snap(c.pin)) : null
+      pin: onDay && !parentId && isNum(c.pin) && c.pin >= 0 && c.pin < DAY_HOURS ? Math.min(DAY_HOURS - STEP, snap(c.pin)) : null,
+      need,
+      app,
+      auto: !!need && c.auto === true
     };
   }
   function cleanCards(list, allowParked) {
@@ -143,8 +150,8 @@
     return out;
   }
   // What the apps asked of each week, by app and block title (see model.js): minutes, each title once (any case, the
-  // first spelling kept), in key order; a week that asked nothing keeps its empty record (it counts 0 in the average).
-  // Older files simply have none.
+  // first spelling kept), "<app>|" (no title) for an app's own cards, in key order; a week that asked nothing keeps its
+  // empty record (it counts 0 in the average). Older files simply have none.
   function cleanAsks(raw) {
     const out = {};
     if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
@@ -152,7 +159,7 @@
       if (!isWeekKey(k) || !isObj(w) || !isObj(w.by)) return;
       Object.keys(w.by).forEach(ak => {
         const bar = ak.indexOf("|"), app = ak.slice(0, bar), title = cleanText(ak.slice(bar + 1)), m = w.by[ak], low = `${app}|${title.toLowerCase()}`;
-        if (!/^[a-z][a-z0-9]{0,30}$/.test(app) || !title || !isPos(m)) return;
+        if (!APP_ID.test(app) || (!title && ak !== `${app}|`) || !isPos(m)) return;
         if (!spelt.has(low)) spelt.set(low, `${app}|${title}`);
         const key = spelt.get(low);
         by[key] = Math.min(100000, (by[key] || 0) + Math.round(m));
@@ -177,12 +184,13 @@
     out.asks = cleanAsks(raw.asks);
     return out;
   }
-  // Colours as saved, in key order; ensureColors sorts out any two keys with the same one.
+  // Colours as saved (a title's, an old goal's or an app's: colors.js), in key order; ensureColors sorts out any two keys
+  // with the same one.
   function cleanColors(raw) {
     const out = {};
     Object.keys(raw).sort().forEach(k => {
       const e = raw[k];
-      if (/^[tg]:./.test(k) && k.length <= 200 && isObj(e) && A.isColor(e.c)) out[k] = { c: e.c, u: cleanU(e.u) };
+      if ((/^[tg]:./.test(k) || (k.startsWith("a:") && APP_ID.test(k.slice(2)))) && k.length <= 200 && isObj(e) && A.isColor(e.c)) out[k] = { c: e.c, u: cleanU(e.u) };
     });
     return out;
   }

@@ -1,4 +1,4 @@
-/* Hawky · app.js — registers Hawky with Kyoshi, plus its constants (limits, Momo's block title), state (A.S)
+/* Hawky · app.js — registers Hawky with Kyoshi, plus its constants (limits, the Done fold's page), state (A.S)
  * and small helpers: text and minutes, days in words, the list's groups and which errand is where.
  * Loads first of the app's files: the others destructure what's here at the top, and call
  * functions from each other as A.name(). File map and data model: apps/hawky/CLAUDE.md. */
@@ -29,7 +29,6 @@
     MIN_MINUTES: 5,
     MAX_MINUTES: 480,
     DEFAULT_MINUTES: 15,   // quick add's estimate until another chip is picked (one of its chips)
-    BLOCK: "Errands",      // the title of Momo's cards they fill
     DONE_PAGE: 50,         // done errands shown at a time
     DOT_WHEN_OVERDUE: true // a dot on Hawky's icon while an errand is overdue: false turns it off
   });

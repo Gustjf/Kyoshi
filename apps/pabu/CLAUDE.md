@@ -2,15 +2,15 @@
 The people you want to stay close to, each with how often you mean to reach them (every week, 2 weeks, month, quarter or
 year, or birthday only) and how (a call, a text, a visit, each with its minutes). The list shows who's due: Due now (due
 today or overdue), Coming up (within two weeks) and Later (birthday-only people at its end); ✓ says you talked today, and
-the days you talked are kept. A Birthdays strip shows those in the next 30 days. **Momo** decides when: whoever's due fills
-your "Keep in touch" cards there, soonest due first, each whole and up to 6 days early; what doesn't fit is one Keep in
-touch task in Momo's Tasks; birthdays are events on its board. Named after Bolin's fire ferret (the icon is Lucide's
+the days you talked are kept. A Birthdays strip shows those in the next 30 days. **Momo** decides when: whoever's due is a
+card of its own there ("Call Mom"), waiting in its Tasks up to 6 days early until you drag it onto a day, ✓ once you've
+talked; birthdays are events on its board. Named after Bolin's fire ferret (the icon is Lucide's
 heart-handshake, in rose). Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_NAME` 40, `MAX_NOTE` 300, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `HOW` with each one's minutes, `BLOCK` "Keep in touch", `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`, `lastTalk`, `nextDue`, `dueOf`, `groupOf`, `byDue`, the words for days, birthdays: `parseBirthday`, `birthdayIn`, `nextBirthday`, `ageOn`, `fmtBirthday`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_NAME` 40, `MAX_NOTE` 300, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `HOW` with each one's minutes, `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`, `lastTalk`, `nextDue`, `dueOf`, `groupOf`, `byDue`, the words for days, birthdays: `parseBirthday`, `birthdayIn`, `nextBirthday`, `ageOn`, `fmtBirthday`) |
 | `markup.js` | the page: quick add with its chips, the Birthdays strip, the list, Backup & sync, the person pop-up |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (`cleanPeople`, `cleanTalks`, `cleanBirthday`), backups and sync merge (`A.data`) |
@@ -44,12 +44,13 @@ round trip; `everyOf`/`howOf` read it as every month and a call, and the pop-up 
 
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies): everyone with a schedule who's due by `to`, soonest first, each
-`{ id: "p:<id>", title: "Call Mom", block: "Keep in touch", minutes, due, from (6 days before due; null once overdue),
+`{ id: "p:<id>", title: "Call Mom", fill: "card", minutes, due, from (6 days before due; null once overdue),
 overdue, details: ["Every month · last talked 5 weeks ago", the note's first line] }` ("never talked · added Sep 27" before
 the first talk); then their talk days between `from` and `to` (by day, then title), `{ id: "p:<id>:<day>", …, date, done:
-true }`. Birthday-only people send none. Momo fills its "Keep in touch" cards with them by time, each whole: on a day from
-`from` up to `due` (any day once overdue); what doesn't fit is one task; a talk takes its minutes on its day's card, with
-✓ (the card says done once everyone on it is) and never goes to Tasks.
+true, of: "p:<id>" }`. Birthday-only people send none. Each is a card of its own in Momo, as long as it takes: who's due
+waits in Momo's Tasks (from `from` up to `due`, any day once overdue) until you place it; a talk completes that person's
+(`of`), so ✓ shows on their card, or Momo places one on the talk's day; it never goes to Tasks. (A weekly person talked
+to this week can be due again next week: that's a new task, for a new card.)
 `A.agenda(from, to)` (core/agenda.js): each birthday in the range, `{ id: "bday:<id>:<year>", title: "Mom's birthday", date,
 time: null, minutes: 15, note: "Turns 60 · Call", done: talked that day }`: an icon in the day's heading on Momo's board, an
 "any time" row on Today.

@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.332", date: "2026-10-03", changes: [
+      "Each maintenance job is its own card in Momo, titled with its thing (“Car: Oil change”) and as long as it takes: it waits in Momo's Tasks until you drag it onto a day, and shows ✓ once you record it."
+    ] },
     { version: "1.232", date: "2026-10-02", changes: [
       "Momo gets only the jobs due by the end of next week, and a job recorded this week or next shows ✓ on that day's card there instead of vanishing (“Open in Appa” opens its record).",
       "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."

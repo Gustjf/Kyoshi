@@ -79,8 +79,11 @@
         ? `${DAY_LONG[late[0]]}'s cards don't fit around its pinned times — move one into free time or trim it.`
         : `The cards on ${late.map(d => DAY_NAMES[d]).join(", ")} don't fit around their pinned times — move some into free time or trim them.`;
     } else if (isBase) {
-      const short = A.tasks(S.fill, key).filter(t => t.cost).map(t => t.title);
-      msg = short.length ? `In an average week the apps ask for more than your baseline gives ${A.names(short.map(title => ({ title })))}: drag ${short.length === 1 ? "it" : "them"} from Tasks onto a day.`
+      // The true cost (truecost.js): the apps' own cards against the free time it leaves, and the blocks it gives too little.
+      const short = A.tasks(S.fill, key).filter(t => t.cost).map(t => t.title), apps = A.appsShort();
+      const names = A.names(short.map(title => ({ title }))), drag = `drag ${short.length === 1 ? "it" : "them"} from Tasks onto a day`;
+      msg = apps ? `In an average week ${apps}${short.length ? `, and more than it gives ${names}: ${drag}` : ": trim a card to make room"}.`
+        : short.length ? `In an average week the apps ask for more than your baseline gives ${names}: ${drag}.`
         : onDays ? "The hours that come around every week. Load them into any week with one click; what's left is yours to budget."
         : "Your default week: sleep, work, meals — the hours that come around every week. Build it once, then load it into any week with one click.";
     } else if (!list.cards.length) {
@@ -117,22 +120,25 @@
   // those at the bottom. Its own part is resized from its lower edge. On a
   // day each card shows when it starts (times, from startTimes), one on its
   // own has a pin, and each piece is sized to the ruler (styles, from
-  // pieceStyles).
+  // pieceStyles). Another app's card shows its app's icon, filled or not; one
+  // missed on a day gone by (inbox.js) is red-edged, as late ones are; one whose
+  // day its app sets (a meal, something done) can't be Alt+clicked away (fixed).
   function cardHTML(list, c, times = null, styles = null) {
     const inner = A.innerCards(list, c);
     const parent = c.parentId && list.cards.find(p => p.id === c.parentId);
     const when = times && times.get(c.id), pin = !!when && !parent && A.pinned(c);
     const needs = c.day !== null && S.fill && S.fill.shown.get(c.id), fill = needs ? A.fillParts(c, needs) : null;
-    const label = `${c.title}${fill ? ` (${fill.text})` : ""}, ${fmtH(c.hours)}` +
+    const missed = !!fill && !fill.done && S.fill.missed.has(c.id), icons = fill ? fill.icons : c.app ? A.iconsHTML([{ app: c.app }]) : "";
+    const label = `${c.title}${fill ? ` (${missed ? `${fill.what} — missed: drag it to a day ahead` : fill.text})` : ""}, ${fmtH(c.hours)}` +
       (inner.length ? ` + ${inner.map(x => `${x.title} ${fmtH(x.hours)}`).join(" + ")} = ${fmtH(A.blockHours(list, c))}` : parent ? `, ${POSITION_TEXT[c.pos]} ${parent.title}` : "") +
       (!when ? "" : `, ${pin ? `pinned at ${fmtClock(c.pin)}` : `from ${fmtClock(when.at)}`}${when.clash ? ` — the cards above run ${fmtH(when.clash)} into it` : when.at >= DAY_HOURS ? " — past midnight" : ""}`);
     const button = `role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}"`;
-    const own = `<span class="card-title">${fill ? fill.icons : ""}${esc(c.title)}${fill && fill.names ? `<span class="card-fill"> · ${esc(fill.names)}</span>` : ""}</span>` +
+    const own = `<span class="card-title">${icons}${esc(c.title)}${fill && fill.names ? `<span class="card-fill"> · ${esc(fill.names)}</span>` : ""}</span>` +
       (when ? timeHTML(c, when, !parent, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
     const grip = c.day === null ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
-    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}${fill && fill.late ? " late" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
+    return `<div class="card${inner.length ? " has-inner" : ""}${parent ? " inner" : ""}${pin ? " pinned" : ""}${when && when.clash ? " clashing" : ""}${c.day === null ? " parked" : ""}${fill && (fill.late || missed) ? " late" : ""}${A.isDated(c) ? " fixed" : ""}" data-id="${esc(c.id)}"${parent ? ` data-pos="${c.pos}"` : ""}${inner.length ? "" : ` ${button}`} style="${size(c.id)}--c:${A.cardColor(c)}">` +
       (inner.length ? `${at("top")}<div class="card-own" style="${size(`own:${c.id}`)}" ${button}>${own}${mid ? "" : grip}</div>` +
         (mid ? `${mid}<div class="card-own card-rest" style="${size(`rest:${c.id}`)}" aria-hidden="true">${grip}</div>` : "") + at("bottom") : own + grip) + `</div>`;
   }

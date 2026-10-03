@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.110", date: "2026-10-03", changes: [
+      "Each call, text or visit due is its own card in Momo (“Call Mom”), as long as it takes: it waits in Momo's Tasks until you drag it onto a day, and shows ✓ once you've talked."
+    ] },
     { version: "1.010", date: "2026-10-02", changes: [
       "A dot on Pabu's icon while anyone is overdue.",
       "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."

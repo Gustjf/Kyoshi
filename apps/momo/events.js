@@ -1,8 +1,8 @@
 /* Momo · events.js — loads last: wires Momo's buttons, board and pop-ups (A.init), and the
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
- * onHide (redraw; drop any drag), onTick (a new day or week; what other apps need; their events; Today), onReload
- * (another tab saved), attention (a week to close out, an event's conflict), renderDev (Undo in
- * Developer Mode) and bugState. */
+ * onHide (place other apps' dated cards, redraw; drop any drag), onTick (other apps' dated cards; a new day or
+ * week; what other apps need; their events; Today), onReload (another tab saved), attention (a week to close
+ * out, an event's conflict), renderDev (Undo in Developer Mode) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -162,6 +162,7 @@
   };
 
   A.onShow = () => {
+    A.placeCards(); // other apps' cards with a day of their own (place.js): never from A.init, as the other apps start after Momo
     A.renderAll(); // the ruler is measured on screen
     A.checkCloseOuts();
   };
@@ -174,11 +175,13 @@
     holdAlt(false);
   };
 
-  // Every minute, and whenever the page is back in view: a new day or week, what other apps
-  // need (blocks and Tasks), other apps' events, and Today's time left.
+  // Every minute, and whenever the page is back in view: other apps' cards with a day of their own
+  // (placed or taken back first), a new day or week, what other apps need (blocks and Tasks), other
+  // apps' events, and Today's time left.
   A.onTick = () => {
+    const placed = A.placeCards();
     A.checkRollover();
-    A.checkTasks();
+    A.checkTasks(placed);
     A.checkAgenda();
     A.tickToday();
   };
@@ -186,6 +189,7 @@
   // Another tab saved: its data is loaded (A.load); undo would step back over it, so it's cleared.
   A.onReload = () => {
     S.undoStack = [];
+    A.placeCards();
     A.renderAll();
     A.checkCloseOuts(false); // Iroh's goals may reload just after
   };
@@ -208,11 +212,13 @@
     const closed = Object.values(data.weeks).filter(w => w.closed);
     const placed = f.blocks.reduce((n, x) => n + x.needs.filter(nd => nd.fill !== "ongoing").length, 0);
     const evs = [tk, nk].map(k => A.weekAgenda(k)), all = evs.flat(), cost = A.trueCost();
+    const apps = [tk, nk].map(k => A.weekOf(k).cards.filter(c => c.need)), cardNeeds = f.needs.filter(n => n.fill === "card");
     return [
       `- View: ${S.today ? `today (board on ${S.view})` : S.view}`,
       `- Weeks stored: ${Object.keys(data.weeks).length} (${closed.length} closed, ${closed.filter(w => w.spent).length} with hours logged); weeks' asks kept: ${Object.keys(data.asks).length}`,
-      `- True cost: ${cost.rows.length} block titles over ${cost.weeks} week(s), ${cost.rows.filter(r => r.short > 7).length} short in the baseline`,
+      `- True cost: ${cost.rows.length} block titles over ${cost.weeks} week(s), ${cost.rows.filter(r => r.short > 7).length} short in the baseline; ${cost.apps.length} app(s) with cards of their own, ${Math.round(cost.total)} of ${Math.round(cost.free)} free min a week`,
       `- Cards this week / next week / baseline: ${A.weekOf(tk).cards.length} / ${A.weekOf(nk).cards.length} / ${data.baseline.cards.length}`,
+      `- Apps' own cards this week / next week: ${apps.map(l => l.length).join(" / ")} (${apps.flat().filter(c => c.auto).length} placed by Momo, untouched); card needs: ${cardNeeds.length} (${cardNeeds.filter(n => n.date).length} dated, ${f.short.filter(n => n.fill === "card").length} in Tasks); missed on screen: ${f.missed.size}`,
       `- Pinned this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.pinned).length).join(" / ")}`,
       `- Old goals kept (from before Iroh): ${data.goals.length}`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles on show)`,

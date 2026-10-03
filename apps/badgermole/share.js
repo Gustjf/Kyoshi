@@ -1,22 +1,24 @@
 /* Badgermole · share.js — what Badgermole shares with other apps. Momo reads inbox() (core/inbox.js; read-only
- * copies), filling your cards titled "Workout", one need a card: each session done between from and to, on its day
- * (✓ on that day's card), then — once a routine is in the program — for each week from from's to to's, the weekly
- * target less the sessions done that week, in program order from the next routine (by that week's Sunday); what
- * doesn't fit is a "Workout · Legs" task in Momo's Tasks. Momo's "Open in Badgermole" calls open(id): a done
- * session's day pop-up, or Home's Next up. The needs' ids are "session:<id>" and "next:<Monday>:<slot>": change
- * open() along with them (apps/badgermole/CLAUDE.md). */
+ * copies), each a card of its own in Momo (fill "card"): each session done between from and to, on its day, as long
+ * as it took, completing that week's planned workout of its rank (the week's 2nd session: of "next:<Monday>:2"), so ✓
+ * shows on that card, or on one of its own on that day at the time it started; then — once a routine is in the
+ * program — for each week from from's to to's, the weekly target less the sessions done that week, in program order
+ * from the next routine (by that week's Sunday), each waiting in Momo's Tasks ("Legs") until you place it. Momo's
+ * "Open in Badgermole" calls open(id): a done session's day pop-up, or Home's Next up. The needs' ids are
+ * "session:<id>" and "next:<Monday>:<slot>": change open() along with them (apps/badgermole/CLAUDE.md). */
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { addDays, todayStr } = K.util;
-  const { BLOCK, plural, fmtMinutes, fmtDay, mondayOf } = A;
+  const { addDays, todayStr, pad2 } = K.util;
+  const { plural, fmtMinutes, fmtDay, mondayOf } = A;
   const DONE = "session:";
 
-  // A done session: on its day, ✓.
-  const doneNeed = s => {
-    const m = A.sessionMinutes(s);
+  // A done session: on its day, ✓, the k-th of its week (the slot it took), from the time it started ("HH:MM", this device's clock).
+  const doneNeed = (s, k) => {
+    const m = A.sessionMinutes(s), at = s.started ? new Date(s.started) : null;
     return {
-      id: `${DONE}${s.id}`, title: s.name || BLOCK, block: BLOCK, fill: "block", date: s.date, done: true,
+      id: `${DONE}${s.id}`, title: s.name || "Workout", fill: "card", date: s.date, done: true, minutes: m,
+      of: `next:${mondayOf(s.date)}:${k}`, time: at ? `${pad2(at.getHours())}:${pad2(at.getMinutes())}` : null,
       details: [plural(A.exerciseCount(s), "exercise"), m ? fmtMinutes(m) : ""].filter(Boolean)
     };
   };
@@ -24,18 +26,19 @@
   const plannedNeed = (r, monday, n) => {
     const last = A.lastOf(r.id);
     return {
-      id: `next:${monday}:${n}`, title: r.name, block: BLOCK, fill: "block", minutes: A.usualMinutes(r.id),
+      id: `next:${monday}:${n}`, title: r.name, fill: "card", minutes: A.usualMinutes(r.id),
       from: monday, due: addDays(monday, 6),
       details: [plural(A.routineItems(r).length, "exercise"), last ? `Last: ${fmtDay(last.date)}` : "Not done yet"]
     };
   };
 
-  // [{ id, title, block: "Workout", fill: "block", … }]: made afresh on every call, so Momo can't change Badgermole's
-  // data through them. A week's slots keep their ids as sessions are logged (logging takes the lowest), and the
-  // rotation carries on from one week to the next.
+  // [{ id, title, fill: "card", … }]: made afresh on every call, so Momo can't change Badgermole's data through them.
+  // A week's slots keep their ids as sessions are logged (logging takes the lowest, and the k-th session done completes
+  // slot k), and the rotation carries on from one week to the next.
   function inbox(from, to) {
-    const today = todayStr(), target = S.settings.weeklyTarget;
-    const out = A.sessions().filter(s => s.date >= from && s.date <= to).map(doneNeed);
+    const today = todayStr(), target = S.settings.weeklyTarget, rank = new Map(), seen = new Map();
+    A.sessions().forEach(s => { const m = mondayOf(s.date), k = (seen.get(m) || 0) + 1; seen.set(m, k); rank.set(s, k); });
+    const out = A.sessions().filter(s => s.date >= from && s.date <= to).map(s => doneNeed(s, rank.get(s)));
     if (A.nextIndex() < 0) return out; // nothing planned until a routine is in the program
     let offset = 0;
     for (let monday = mondayOf(from); monday <= to; monday = addDays(monday, 7)) {

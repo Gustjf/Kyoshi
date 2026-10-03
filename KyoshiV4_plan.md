@@ -93,6 +93,7 @@ Push Phase 0.
 ---
 
 ## Phase 1 — Momo receives individual cards from the apps
+Done 2026-10-03: owner's answers — a card left undone on a day gone by stays there, red-edged as missed; Momo places a card as near its time as the day allows (before a card, in the middle of a long one such as Work, or at the end), not "after the card on at that time"; a week with no cards of yours isn't placed into (its dated needs wait in Tasks until Load baseline / Copy previous week, which place them; Load baseline re-places Momo's untouched cards); Appa's cards are "Thing: Job". Mine — an app's card goes on one day (no No day, no presets); dragged back into Tasks it's deleted and its need is a task again; a dated one (meal, trip, done) has no Delete, ignores Alt+click and can't go into Tasks; Copy previous week and Save as baseline leave apps' cards out; untouched (auto) cards follow their need's title and minutes; closed weeks are never placed into; placing saves quietly without an undo step (Load baseline / Copy previous week stay one undo); app colours Hawky teal, Pabu coral, Badgermole lime, Turtleduck mustard, Appa clay, and a task shows its app's colour before any of its cards is on show; a done Badgermole session carries its minutes; Cook's title shows a batch's × only when not 1; Turtleduck's time hints live in its share.js; Hawky's and Pabu's footnotes say each is a card of its own in Momo.
 Shared change: the inbox contract (core), Momo's mechanism, and each feeder flipping to it. One push.
 
 ### 1.1 Core contract (Kyoshi +0.100)

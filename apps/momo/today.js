@@ -76,7 +76,7 @@
     }
     const c = it.card, needs = fillsOf(day.key, c), fill = needs.length ? A.fillParts(c, needs) : null, done = !!fill && fill.done, late = !!fill && fill.late;
     return {
-      color: A.cardColor(c), title: `${fill ? fill.icons : ""}${esc(c.title)}`, done,
+      color: A.cardColor(c), title: `${fill ? fill.icons : c.app ? A.iconsHTML([{ app: c.app }]) : ""}${esc(c.title)}`, done,
       sub: `${late ? `<span class="t-late">Late</span>${fill.names ? " · " : ""}` : ""}${fill ? esc(fill.names) : ""}`,
       label: `${c.title}${fill ? ` (${fill.text})` : ""}, ${when}`, tap: `data-week="${day.key}" data-card="${esc(c.id)}"`, cls: done ? " done" : late ? " late" : ""
     };

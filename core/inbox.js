@@ -1,19 +1,26 @@
-/* Kyoshi · core/inbox.js — what apps need done this week and next, as K.inbox (Momo fills blocks with it).
+/* Kyoshi · core/inbox.js — what apps need done this week and next, as K.inbox (Momo makes cards of it, or fills blocks).
  * An app with work for the user (Appa's maintenance, …) lists it in A.inbox(from, to): what's needed
  * between `from` and `to` ("YYYY-MM-DD", both included), as copies, in the order it should happen, each
- *   { id, title, block, details, fill, minutes, date, due, from, overdue, done }
+ *   { id, title, block, details, fill, minutes, date, due, from, overdue, done, of, time }
  * id: the same for the same need every time (unique within the app); title: what it is ("Oil change");
  * block: the title of the cards it fills in Momo ("Car maintenance"), its title if left out; details: a few
- * short lines for its pop-up; fill: "time" (the default: blocks take as many as fit their hours), "block"
+ * short lines for its pop-up; fill: "card" (a card of its own in Momo, titled by its title: its block is
+ * ignored), "time" (the default: blocks take as many as fit their hours), "block"
  * (one per block, e.g. a workout), "ongoing" (never used up: it shows on every block with its title and
  * stays in Tasks to draw from) or "hours" (spread over the blocks with its title in turn, each taking the
  * room it has, until its minutes are used; the cards with its title on days before today, from its from day
  * on, count as done; what's left is one shortfall, for its week: Iroh's goals, a need a week); minutes: how
- * long (with "block" and "ongoing", just a drawn card's length; with "hours", up to a week's);
+ * long (a card's length, 60 when left out; with "block" and "ongoing", just a drawn card's length; with
+ * "hours", up to a week's);
  * date: that day only, else due: on or before that day (once it's passed, the soonest), else any day —
  * the first listed taking the soonest block (a sequence); from: not before that day (with or without due);
  * overdue: true when it's late though no date says so (a meter reading); done: true once done (✓ on its
  * block; give it its date, so it stays where it was). Only id and title are needed.
+ * A "card" need with a date lands on that day by itself (Momo places its card, and takes it back once the
+ * need is gone); one with due or from (or neither) waits in Momo's Tasks for you to place; a done one with
+ * its date shows ✓ on its card, placed on that day if it has none. of: for a done need, the id of the open
+ * need it completes (a session for "this week's workout 2"): the card made for that one shows ✓. time:
+ * "HH:MM", where in its day Momo puts the card it makes for a dated need (else at the day's end).
  * K.inbox(from, to) gathers every started app's, checked and tagged with the app's id (app), each app's in
  * its own order, then the apps' meetings (core/meetings.js: ids "meeting:…", never an app's own, filling
  * "Meeting" blocks); an id listed twice counts once, and one dated outside from–to is left out. An app whose
@@ -22,8 +29,8 @@
  * No app changes another's data. */
 (function (K) {
   "use strict";
-  const { isObj, isDate } = K.util;
-  const FILLS = ["time", "block", "ongoing", "hours"];
+  const { isObj, isDate, isTime } = K.util;
+  const FILLS = ["time", "block", "ongoing", "hours", "card"];
   const MAX_DETAILS = 8;
   const warned = new Set(); // apps whose list failed, said once
 
@@ -45,7 +52,9 @@
       due: !date && isDate(n.due) ? n.due : null,
       from: !date && isDate(n.from) ? n.from : null,
       overdue: n.overdue === true,
-      done: n.done === true
+      done: n.done === true,
+      of: text(n.of, 80) || null,
+      time: isTime(n.time) ? n.time : null
     };
   }
 

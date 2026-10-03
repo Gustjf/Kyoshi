@@ -1,4 +1,4 @@
-/* Pabu · app.js — registers Pabu with Kyoshi, plus its constants (limits, how often and how, Momo's block title), state
+/* Pabu · app.js — registers Pabu with Kyoshi, plus its constants (limits, how often and how, Momo's window), state
  * (A.S) and small helpers: text and minutes, the days you talked and when each person is due, the list's groups, days in
  * words, and birthdays. Loads first of the app's files: the others destructure what's here at the top, and call
  * functions from each other as A.name(). File map and data model: apps/pabu/CLAUDE.md. */
@@ -36,7 +36,6 @@
     HOW: { call: { label: "Call", minutes: 30 }, text: { label: "Text", minutes: 10 }, visit: { label: "Visit", minutes: 120 } },
     DEFAULT_EVERY: "month",
     DEFAULT_HOW: "call",
-    BLOCK: "Keep in touch", // the title of Momo's cards they fill
     WINDOW_DAYS: 6,         // Momo may place someone up to this many days before they're due (as core's meetings)
     SOON_DAYS: 14,          // Coming up: due within this many days
     BIRTHDAY_DAYS: 30,      // the Birthdays strip: those in the next this many days

@@ -1,8 +1,10 @@
 /* Momo · drop.js — the rest of working the board with a pointer: previewing where a dragged
  * card lands (drop lines, day totals), scrolling near the edges, committing the drop (a card
- * drawn from a task is added there), resizing a card from its bottom edge, and clicks and keys
- * on the board and Tasks (open a card, a task or an event, pin a card, add one in free time,
- * Alt+click to delete). drag.js picks cards up. */
+ * drawn from a task is added there; another app's card dropped in Tasks goes, its need back
+ * there), resizing a card from its bottom edge, and clicks and keys on the board and Tasks
+ * (open a card, a task or an event, pin a card, add one in free time, Alt+click to delete, but
+ * not a card whose day its app sets). A card Momo placed (model.js auto) that's moved, resized
+ * or pinned is yours from then on. drag.js picks cards up. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -139,12 +141,20 @@
       dropGroup(A.listFor(d.key), d.id, d.twins, d.target.spot);
       A.save();
     } else if (commit && d.target) {
-      const t = d.target, list = A.listFor(d.key);
+      const t = d.target, list = A.listFor(d.key), card = list.cards.find(c => c.id === d.id);
+      if (t.park && card && card.need) return A.removeCard(d.key, d.id); // another app's: its need waits in Tasks again
       if (d.draw) list.cards.push(d.draw); // drawn from a task: a new card, off any day until it moves onto this one
       A.moveCard(list, d.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos);
+      touch(list, d.id);
       A.save();
     }
     A.renderAll();
+  }
+
+  // A card you moved, resized or pinned is yours: Momo no longer moves it, nor takes it back (place.js).
+  function touch(list, id) {
+    const card = list.cards.find(c => c.id === id);
+    if (card) card.auto = false;
   }
 
   // Drops a group drag: each card goes to its spot on its own day.
@@ -196,7 +206,7 @@
     if (commit && r.hours !== r.h0) {
       const card = A.listFor(r.key).cards.find(c => c.id === r.id);
       if (card) {
-        card.hours = r.hours;
+        Object.assign(card, { hours: r.hours, auto: false });
         A.save();
       }
     }
@@ -215,8 +225,8 @@
     const ev = e.target.closest("[data-ev]");
     if (ev) return e.altKey ? undefined : A.openEvent(ev.dataset.ev);
     if (e.altKey) {
-      const cardEl = e.target.closest(".card");
-      if (cardEl && !cardEl.dataset.task) A.removeCard(A.shownKey(), cardEl.dataset.id);
+      const cardEl = e.target.closest(".card"), card = cardEl && A.shownList().cards.find(c => c.id === cardEl.dataset.id);
+      if (card && !cardEl.dataset.task && !A.isDated(card)) A.removeCard(A.shownKey(), card.id); // a meal's, say: changed in its app
       return;
     }
     const pin = e.target.closest(".pin");
@@ -240,6 +250,7 @@
     if (!card || card.day === null || card.parentId) return;
     const row = A.daySchedule(list, card.day).rows.find(r => r.card === card);
     card.pin = A.pinned(card) ? null : Math.min(DAY_HOURS - STEP, row.start);
+    card.auto = false;
     if (!A.pinned(card)) A.settle(list, card);
     A.save();
     A.renderAll();

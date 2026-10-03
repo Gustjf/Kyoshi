@@ -42,7 +42,7 @@
     $("addName").focus();
   }
 
-  // ✓: talked today (the next one's due from today; ✓ on today's Keep in touch card in Momo); ✓ again takes today off.
+  // ✓: talked today (the next one's due from today; ✓ on their card in Momo); ✓ again takes today off.
   function tick(id, on) {
     const p = A.personById(id), today = todayStr();
     if (!p || p.talks.includes(today) === on) return;

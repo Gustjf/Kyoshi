@@ -55,6 +55,8 @@
       ["indigo", "#6366f1"], ["peach", "#fb923c"], ["raspberry", "#db2777"], ["azure", "#0ea5e9"], ["bubblegum", "#f472b6"], ["gold", "#d4a017"]
     ],
     HIGHLIGHTS: 8,
+    // The colour each app's cards try first (colors.js), near its icon's; another app's get one as any title does.
+    APP_COLORS: { hawky: "teal", pabu: "coral", badgermole: "lime", turtleduck: "mustard", appa: "clay" },
     OLD_COLORS: ["blue", "violet", "pink", "orange", "yellow", "green", "teal"], // cards' colours 0–6 before titles had their own (7 was slate)
     COLOR_WEEKS: 8, // how long a title off the boards keeps its colour for when it's back
     UNDO_MAX: 40,

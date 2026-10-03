@@ -36,7 +36,7 @@ Kyoshi.apps.pabu.markup = `
     <h2>People <span class="count" id="peopleCount"></span></h2>
     <div id="listEmpty" class="empty-msg">No one yet. Add the people you want to stay close to above.</div>
     <div id="groups"></div>
-    <div class="footnote">Tap ✓ once you've talked, or the name to change or delete. Momo fits them into your “Keep in touch” cards, soonest due first and up to 6 days early; what doesn't fit waits in its Tasks.</div>
+    <div class="footnote">Tap ✓ once you've talked, or the name to change or delete. Each one due is a card of its own in Momo: it waits in Momo's Tasks, up to 6 days early, until you drag it onto a day.</div>
   </section>
 
   <section data-kyoshi="backup"></section>

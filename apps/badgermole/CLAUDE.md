@@ -4,14 +4,15 @@ repeats allowed: Upper, Lower, Upper, Lower). Home says what's next with a big S
 glance between sets: the exercise big, "Set 2 of 3", weight and reps prefilled from last time (a step heavier once every
 set hit its reps), − / + beside number fields, ✓ to log a set with one thumb, a PR badge the moment one beats the
 exercise's best. Then this week's count against the weekly target, the streak (weeks in a row that hit it), and a month
-calendar whose days open to fix what was logged. **Momo** decides when: the week's workouts fill your "Workout" cards in
-program order, one a card. Named after Toph's badgermoles (the icon is Lucide's dumbbell, in Earth Kingdom green).
+calendar whose days open to fix what was logged. **Momo** decides when: each of the week's workouts is a card of its own
+there, in program order, waiting in its Tasks until you drag it onto a day; a logged one shows ✓ on the card of the one it
+stands for. Named after Toph's badgermoles (the icon is Lucide's dumbbell, in Earth Kingdom green).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `STEP` 5 lb / 2.5 kg, `LB_PER_KG`, `BLOCK` "Workout", `DEFAULT_MINUTES` 60, `ESTIMATE_RUNS` 5, `MAX_SESSION_MINUTES` 300, `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; lookups: `liveExercises`, `liveRoutines`, `…ById`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `STEP` 5 lb / 2.5 kg, `LB_PER_KG`, `DEFAULT_MINUTES` 60, `ESTIMATE_RUNS` 5, `MAX_SESSION_MINUTES` 300, `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; lookups: `liveExercises`, `liveRoutines`, `…ById`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
 | `markup.js` | the page: Home (Next up, stats and calendar, the setup folds, Backup & sync), the session view, and the pop-ups (exercise, routine, day, Pick a routine) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too), `load`, `persist`/`save`, `storeLive`, backups and sync merge (`A.data`) |
@@ -56,14 +57,17 @@ item by item by `u` (Appa's merge) and `program` and `settings` whole, the later
 `meetings` in `app.js`: a 15-minute checkup, no schedule ("Last checkup: 12 days ago" with Done ✓; core/meetings.js).
 
 ## Shared with other apps
-`A.inbox(from, to)` (core/inbox.js; read-only copies), all `block: "Workout"`, `fill: "block"` (one need a card):
-- every session done between `from` and `to`, in order: `{ id: "session:<id>", title: its name, date, done: true, details:
-  ["6 exercises", "42 min"] }` → ✓ on that day's Workout card (dropped quietly when there's none: done needs never go to Tasks);
+`A.inbox(from, to)` (core/inbox.js; read-only copies), all `fill: "card"` (each a card of its own in Momo, titled by it):
+- every session done between `from` and `to`, in order: `{ id: "session:<id>", title: its name ("Workout" without one), date,
+  done: true, minutes: how long it took (when known), of: "next:<Monday>:<k>" (k: its rank, 1-based by `started`, among its
+  week's sessions — the k-th session takes slot k), time: when it started ("HH:MM", this device's clock), details: ["6
+  exercises", "42 min"] }` → ✓ on the card of the slot it took, else Momo places one on its day at that time (done needs
+  never go to Tasks);
 - once a routine is in the program, for each week from `from`'s to `to`'s (skipping weeks already over): the weekly target less
   the sessions done that week, in program order from the next routine, the rotation running on into next week:
   `{ id: "next:<Monday>:<slot>", title: the routine's name, minutes: its usual length (60 before any), from: Monday, due: Sunday,
   details: ["6 exercises", "Last: Sep 28" or "Not done yet"] }`. A week's slots keep their ids as sessions are logged (logging
-  takes the lowest); what no card covers is a "Workout · Legs" task in Momo.
+  takes the lowest, numbered from the week's count + 1); each waits in Momo's Tasks ("Legs") until you place it.
 `A.open(id)` (Momo's "Open in Badgermole"): a `session:` id opens Home and that day's pop-up on the session; a `next:` one
 shows Home with Next up flashing.
 

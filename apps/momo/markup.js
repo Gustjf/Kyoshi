@@ -133,6 +133,7 @@ Kyoshi.apps.momo.markup = `
         <button id="cardSaveBtn">Save</button>
         <button class="secondary" id="cardCancelBtn">Cancel</button>
         <span class="spacer"></span>
+        <span class="card-change" id="cardChange" hidden></span>
         <button class="danger" id="cardDeleteBtn">Delete</button>
       </div>
     </div>

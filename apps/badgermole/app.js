@@ -1,4 +1,4 @@
-/* Badgermole · app.js — registers Badgermole with Kyoshi, plus its constants (limits, steps, Momo's block title,
+/* Badgermole · app.js — registers Badgermole with Kyoshi, plus its constants (limits, steps, minutes,
  * the starter exercises), state (A.S) and small helpers: text, minutes, days and weeks, units, and lookups (which
  * exercise, routine or session is which). Loads first of the app's files: the others destructure what's here at
  * the top, and call functions from each other as A.name(). File map and data model: apps/badgermole/CLAUDE.md. */
@@ -26,7 +26,7 @@
     // Backup file format. Bump only when import has to migrate the data.
     DATA_SCHEMA_VERSION: 1,
     MAX_EXERCISE: 40,         // an exercise's name
-    MAX_ROUTINE: 30,          // a routine's name, which is its title in Momo ("Workout" is the block)
+    MAX_ROUTINE: 30,          // a routine's name, which is its card's title in Momo
     MAX_LINES: 20,            // exercises in a routine, each once
     MAX_SETS: 10,             // planned sets of a routine's line (more can be logged)
     MAX_REPS: 100,
@@ -37,7 +37,6 @@
     MAX_SESSION_SETS: 200,
     STEP: { lb: 5, kg: 2.5 }, // − / + on a weight, and the progression step
     LB_PER_KG: 2.2046226218,
-    BLOCK: "Workout",         // the title of Momo's cards they fill
     DEFAULT_MINUTES: 60,      // a routine's length before it's been done
     ESTIMATE_RUNS: 5,         // its usual length is the average of this many latest sessions
     MAX_SESSION_MINUTES: 300, // a forgotten session can't make its routine look longer than this

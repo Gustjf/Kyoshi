@@ -1,5 +1,5 @@
-/* Turtleduck · app.js — registers Turtleduck with Kyoshi, plus its constants (limits, the meals, Momo's block titles and
- * minutes, the store sections), state (A.S) and small helpers: text and numbers, days and weeks (the plan is this week
+/* Turtleduck · app.js — registers Turtleduck with Kyoshi, plus its constants (limits, the meals, the minutes Momo's cards
+ * take, the store sections), state (A.S) and small helpers: text and numbers, days and weeks (the plan is this week
  * and next, Monday to Sunday, as in Momo), nutrition and minutes as words, and lookups — which recipe, planned meal or
  * shopping trip is which, worked out once until the data or the day changes (remember): "last cooked" and "cooked N×",
  * a batch's portions left and the shelf of them, what a meal adds to its day and how long it takes. Loads first of the
@@ -50,8 +50,6 @@
     // A recipe's meal type, the only "tag": the sidebar and the recipe list group by it.
     TYPES: [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snack", "Snack"], ["any", "Any"]],
     MOMO_MEALS: ["breakfast", "lunch", "dinner"], // snacks never go to Momo
-    BLOCK_COOKING: "Cooking",  // the title of Momo's cards the Cook row fills
-    BLOCK_GROCERIES: "Groceries",
     GROCERY_MINUTES: 45,
     DEFAULT_COOK_MINUTES: 45,  // a meal cooked there, when its recipe gives no prep or cook minutes
     QUICK_MINUTES: 20,         // a leftover or a quick meal

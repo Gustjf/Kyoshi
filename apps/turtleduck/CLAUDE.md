@@ -5,14 +5,14 @@ plans. A recipe on a meal is cooked and eaten there, and its other portions wait
 later days. A recipe on the Cook row is cooked that day for later. Each day shows its kcal and macros against the
 targets. Shopping trips are placed on the days, each with its grocery list worked out from the meals until the next trip:
 merged by name and unit, in store sections, ticked on the phone (it opens on Groceries). The cook view is a phone stand
-that keeps the screen on. **Momo** decides when: the day's meals fill your "Breakfast", "Lunch", "Dinner" and "Cooking"
-cards, and each trip a "Groceries" card. Named after Zuko's turtleducks (the icon is Lucide's cooking-pot, in amber).
+that keeps the screen on. **Momo** shows the plan: each meal, cooking session and trip is a card of its own that lands on
+its day by itself, near its usual time, to move as you like. Named after Zuko's turtleducks (the icon is Lucide's cooking-pot, in amber).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide, backup note, its checkup); constants (limits, `MEALS` with Cook last, `TYPES`, `MOMO_MEALS`, Momo's block titles and minutes: `GROCERY_MINUTES` 45, `DEFAULT_COOK_MINUTES` 45, `QUICK_MINUTES` 20, `RESTAURANT_MINUTES` 60; `SHELF_DAYS` 28, `SECTIONS`, `NUTRIENTS`, `CLIP_MS` 5000, `PAGE` 30, `PLAN_PX` 900, `PHONE`); state `A.S`; helpers (text, numbers, days: `mondayOf`, `thisMonday`, `planEnd`, `inPlan`, formats); lookups remembered by `S.version` and the day (`remember`): recipes, entries, cells, trips, templates, `nameOf`, `lastCooked`/`cookedTimes`, `yieldOf`, `leftoversOf`, `portionsLeft`, `shelf`, `addUp` (nutrition), `fmtMacros`, `entryMinutes` |
+| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide, backup note, its checkup); constants (limits, `MEALS` with Cook last, `TYPES`, `MOMO_MEALS`, the minutes of Momo's cards: `GROCERY_MINUTES` 45, `DEFAULT_COOK_MINUTES` 45, `QUICK_MINUTES` 20, `RESTAURANT_MINUTES` 60; `SHELF_DAYS` 28, `SECTIONS`, `NUTRIENTS`, `CLIP_MS` 5000, `PAGE` 30, `PLAN_PX` 900, `PHONE`); state `A.S`; helpers (text, numbers, days: `mondayOf`, `thisMonday`, `planEnd`, `inPlan`, formats); lookups remembered by `S.version` and the day (`remember`): recipes, entries, cells, trips, templates, `nameOf`, `lastCooked`/`cookedTimes`, `yieldOf`, `leftoversOf`, `portionsLeft`, `shelf`, `addUp` (nutrition), `fmtMacros`, `entryMinutes` |
 | `markup.js` | the page: the nav, Plan (tabs and ⋯ menu, grid, sidebar, the phone's list), Recipes, Groceries (add by hand, the lists, Settings), the cook view, Backup & sync, and the pop-ups (picker, a meal's, recipe, Paste recipes, Save as template) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too), `load`, `persist`/`save` (each key only when changed), backups and sync merge (`A.data`) |
@@ -67,18 +67,19 @@ by `u`, and `settings` whole.
 `meetings` in `app.js`: a 15-minute checkup, no schedule ("Last checkup: 12 days ago" with Done ✓; core/meetings.js).
 
 ## Shared with other apps
-`A.inbox(from, to)` (core/inbox.js; read-only copies, made afresh each call), from `from` (Momo asks from this Monday, so this
-week's past meals fill their days' cards too, as the record of the week, and never go to its Tasks; meals carry no `done`: the
-plan is taken as eaten):
-- each day's breakfast, lunch and dinner with anything but skipped meals: `{ id: "meal:<date>:<meal>", title: the names
-  joined " + " (≤ 60), block: "Breakfast" | "Lunch" | "Dinner", fill: "block", date, minutes: the sum of `entryMinutes`,
-  details: [the slot's nutrition, a line per meal: "Cooked here · serves 4", "Leftovers of Mon's Chili", "Quick meal",
-  "Restaurant"] }`; snacks never. No card that day: a "Dinner · Chili" task in Momo.
-- each day's Cook row: `{ id: "cook:<date>", title: names joined, block: "Cooking", fill: "block", date, minutes, details:
-  ["2 recipes · 13 portions", "Curry ×1½ · Chili ×1"] }`.
-- each trip: `{ id: "groceries:<date>", title/block: "Groceries", minutes: 45, date, details: ["12 items", "for meals Oct 3 –
-  11"], done: nothing left to buy on its list }`; and while the Now list has something to buy: `{ id: "groceries:now", …,
-  due: the day before the first meal needing it (today once that's passed), overdue: that day is past }`.
+`A.inbox(from, to)` (core/inbox.js; read-only copies, made afresh each call), all `fill: "card"` (each a card of its own in
+Momo), from `from` (Momo asks from this Monday, so this week's past meals are on their days too, as the record of the week, and
+never go to its Tasks; meals carry no `done`: the plan is taken as eaten). A dated one lands on its day by itself, at its
+`time` (share.js `TIMES`) as near as the day's cards allow, once that week has cards of yours in Momo:
+- each day's breakfast, lunch and dinner with anything but skipped meals: `{ id: "meal:<date>:<meal>", title: "Dinner: " and
+  the names joined " + " (≤ 60), date, time: 07:30 / 12:00 / 18:00, minutes: the sum of `entryMinutes`, details: [the slot's
+  nutrition, a line per meal: "Cooked here · serves 4", "Leftovers of Mon's Chili", "Quick meal", "Restaurant"] }`; snacks never.
+- each day's Cook row: `{ id: "cook:<date>", title: "Cook: Curry ×1½ · Chili" (a batch's × when it isn't 1), date, time: 16:00,
+  minutes, details: ["2 recipes · 13 portions", "Curry ×1½ · Chili ×1"] }`.
+- each trip: `{ id: "groceries:<date>", title: "Groceries", minutes: 45, date, time: 10:00, details: ["12 items", "for meals Oct
+  3 – 11"], done: nothing left to buy on its list }`; and while the Now list has something to buy: `{ id: "groceries:now", …,
+  due: the day before the first meal needing it (today once that's passed), overdue: that day is past }`, waiting in Momo's
+  Tasks until you place it.
 `A.open(id)` (Momo's "Open in Turtleduck"): a meal's recipes (cooked or leftover) in the cook view (none: its cell on the
 plan, flashing); a Cook row's recipes in the cook view, paged; a Groceries need, its list on Groceries, flashing.
 

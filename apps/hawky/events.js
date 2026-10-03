@@ -70,7 +70,7 @@
     $("addText").focus();
   }
 
-  // ✓: done today (into the Done fold, and ✓ on that day's Errands block in Momo); ✓ again undoes it.
+  // ✓: done today (into the Done fold, and ✓ on its card in Momo); ✓ again undoes it.
   function tick(id, done) {
     const i = A.itemById(id);
     if (!i || !!i.done === done) return;

@@ -2,14 +2,14 @@
 Errands are jotted down the moment they come up, on the phone in seconds: the text, a tap for the day (Today, Tomorrow,
 Pick a day, or none) and one for how long (15 min, 30 min, 1 hour, Other). The list shows them by when they're due:
 Overdue, Today, This week (by Sunday), Later and Someday (no date); ✓ ticks one off, and the done ones fold away.
-**Momo** decides when: every open errand due by the end of next week (or undated) fills your "Errands" cards there,
-soonest due first, each one whole; what doesn't fit is one Errands task in Momo's Tasks. Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
+**Momo** decides when: every open errand due by the end of next week (or undated) is a card of its own there, waiting
+in its Tasks until you drag it onto a day; a ticked one shows ✓ on it. Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_TEXT` 60, minutes 5–480 with `DEFAULT_MINUTES` 15, `BLOCK` "Errands", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_TEXT` 60, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
 | `markup.js` | the page: quick add, the list, the Done fold, Backup & sync, the errand pop-up |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
@@ -32,12 +32,13 @@ Merged errand by errand by `u`, deleted ones kept as markers (the template's mer
 `looksLike` also checks that each live item has `text` (theirs have `name`), and Import JSON refuses a file with no errands in it.
 
 ## Shared with other apps
-`A.inbox(from, to)` (core/inbox.js; read-only copies): every open errand due by `to` (one due later takes none of Momo's room
-yet), soonest due first (so overdue ones lead), then the undated oldest first, then those done between `from` and `to`, each `{ id (the errand's), title (its text), block: "Errands",
+`A.inbox(from, to)` (core/inbox.js; read-only copies): every open errand due by `to` (one due later asks nothing of Momo
+yet), soonest due first (so overdue ones lead), then the undated oldest first, then those done between `from` and `to`, each `{ id (the errand's), title (its text), fill: "card",
 details: ["Due Oct 7"] or ["No date · added Sep 30"], minutes, due (or null), overdue (due before today), done, date (the day done;
-null while open) }`; "added" is the real day, from `at`. Momo fills its "Errands" cards with them by time, each whole, the
-soonest block on or before the due day with room; what doesn't fit is one task; a done one shows ✓ on that day's block and never
-goes to Tasks. `A.open(id)` (Momo's "Open in Hawky") scrolls to the errand and flashes it, opening the Done fold for a done one.
+null while open) }`; "added" is the real day, from `at`. Each is a card of its own in Momo, titled by its text and as long as
+it takes: an open one waits in Momo's Tasks (from today to its due day, any day once overdue) until you place it; a done one
+keeps the errand's id, so ✓ shows on its card, or Momo places one on the day it was ticked; it never goes to Tasks.
+`A.open(id)` (Momo's "Open in Hawky") scrolls to the errand and flashes it, opening the Done fold for a done one.
 
 ## Invariants
 - Groups, overdue and the words for days are worked out, never stored. "Today" is `K.util.todayStr()` (time travel works);

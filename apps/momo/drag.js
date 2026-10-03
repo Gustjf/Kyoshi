@@ -140,10 +140,11 @@
     return box.firstElementChild;
   }
 
-  // The same card on each of the board's other days (none for a parked card),
-  // leaving pinned ones where they are. Where a day has more than one, it's
-  // the one in the same kind of place: on its own, or inside a card like the
-  // one it's in, at the same position.
+  // The same card on each of the board's other days (none for a parked card,
+  // or another app's, which is one of a kind: model.js sameKind), leaving
+  // pinned ones where they are. Where a day has more than one, it's the one in
+  // the same kind of place: on its own, or inside a card like the one it's in,
+  // at the same position.
   function twinsOf(list, card) {
     if (!card || card.day === null) return [];
     const holder = c => c.parentId && list.cards.find(p => p.id === c.parentId);
@@ -176,15 +177,17 @@
 
   // Works out where the card would land: a spot in a day, a spot inside a card
   // (over the middle of it, or over a card already inside it), a card it
-  // would merge into, or Tasks, taking it off its day. Neither a group drag
-  // nor a card drawn from a task can go into Tasks, and nothing on the
-  // baseline can (its cards are all on days). A group drag's cards don't
-  // merge on the way: the spot is mirrored onto each one's day.
+  // would merge into, or Tasks, taking it off its day (another app's card goes,
+  // and its need waits there again). Neither a group drag nor a card drawn from
+  // a task can go into Tasks, nor another app's card whose day its app sets (a
+  // meal, something done), and nothing on the baseline can (its cards are all on
+  // days). A group drag's cards don't merge on the way: the spot is mirrored
+  // onto each one's day.
   function findTarget() {
     const drag = S.drag, list = A.readList(drag.key), card = drag.draw || list.cards.find(c => c.id === drag.id);
     const el = document.elementFromPoint(drag.x, drag.y);
     const col = el && el.closest("#board .col");
-    const park = !col && !drag.group && !drag.draw && drag.key !== "base" && el && el.closest("#tasks");
+    const park = !col && !drag.group && !drag.draw && drag.key !== "base" && !(card && A.isDated(card)) && el && el.closest("#tasks");
     let t = null;
     if (card && col) {
       const day = +col.dataset.day;

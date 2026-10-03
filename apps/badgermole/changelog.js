@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.201", date: "2026-10-03", changes: [
+      "Each workout is its own card in Momo, titled by its routine: the week's planned ones wait in Momo's Tasks until you drag them onto a day, and a logged one ticks off the planned one it stands for, or lands on its day at the time you started, as long as it took."
+    ] },
     { version: "1.101", date: "2026-10-02", changes: [
       "A dot on Badgermole's icon when today's workout is needed to keep the week's target; it clears once you've logged one today.",
       "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."

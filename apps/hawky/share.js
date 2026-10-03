@@ -1,24 +1,24 @@
 /* Hawky · share.js — what Hawky shares with other apps. Momo reads inbox() (core/inbox.js; read-only
- * copies): every open errand due by `to` (so one due in a month takes none of this week's room), soonest
- * due first, and the undated, oldest first, then those ticked between from and to (on their day, so ✓
- * shows on that day's block), all filling Momo's cards titled "Errands",
- * each errand whole; what doesn't fit is one Errands task in Momo's Tasks. Momo's "Open in Hawky" calls
- * open(id), which brings the errand into view and flashes it. The needs' ids are the errands' own:
- * change open() along with them (apps/hawky/CLAUDE.md). */
+ * copies): every open errand due by `to` (so one due in a month asks nothing of these weeks yet), soonest
+ * due first, and the undated, oldest first, then those ticked between from and to (on their day), each a
+ * card of its own in Momo (fill "card"), titled by its text and as long as it takes: an open one waits in
+ * Momo's Tasks until you place it; a done one (the same id) shows ✓ on its card, or gets one on the day it
+ * was ticked. Momo's "Open in Hawky" calls open(id), which brings the errand into view and flashes it. The
+ * needs' ids are the errands' own: change open() along with them (apps/hawky/CLAUDE.md). */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { localDate, todayStr } = K.util;
-  const { BLOCK, DONE_PAGE, fmtDay } = A;
+  const { DONE_PAGE, fmtDay } = A;
 
   // A need's one line of details: "Due Oct 7", or "No date · added Sep 30".
   const details = i => [i.due ? `Due ${fmtDay(i.due)}` : `No date${i.at ? ` · added ${fmtDay(localDate(new Date(i.at)))}` : ""}`];
   const need = (i, today) => ({
-    id: i.id, title: i.text, block: BLOCK, details: details(i), minutes: i.minutes, due: i.due || null,
+    id: i.id, title: i.text, fill: "card", details: details(i), minutes: i.minutes, due: i.due || null,
     overdue: !i.done && !!i.due && i.due < today, done: !!i.done, date: i.done || null
   });
 
-  // [{ id, title, block: "Errands", details, minutes, due (or null), overdue, done, date (done ones) }]: made
+  // [{ id, title, fill: "card", details, minutes, due (or null), overdue, done, date (done ones) }]: made
   // afresh on every call, so Momo can't change Hawky's data through them.
   function inbox(from, to) {
     const today = todayStr();

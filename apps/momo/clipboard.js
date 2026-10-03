@@ -5,7 +5,9 @@
  * another. Each paste gives another CLIP_MS for the next, so a card can go onto
  * several days in a row. The shading clears on Esc or CLIP_MS after the last copy,
  * cut or paste, and then there's nothing left to paste. A card with others inside
- * it takes them along. */
+ * it takes them along. A copy of another app's card keeps its app (its icon and
+ * colour) but holds no need (model.js); one cut and pasted is that card, moved
+ * (yours from then on), and never goes into Tasks. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -58,11 +60,12 @@
   // that can hold this one, else on its own. Over the rest of a day it goes
   // by height: at the top over its heading, at the end over its free time.
   // Over Tasks, last there, off any day (not on the baseline, whose cards are
-  // all on days). A card being moved on this board isn't one to go after,
+  // all on days, nor another app's card cut: it holds its need on a day). A
+  // card being moved on this board isn't one to go after,
   // and a pinned card keeps its time (moveCard and placeCard put it in time
   // order on that day). null when it points nowhere.
-  function pasteSpot(list, from, card, moving, at) {
-    if (at.el.closest("#tasks")) return A.shownKey() === "base" ? null : { day: null, parentId: null, pos: card.pos, beforeId: null };
+  function pasteSpot(list, from, card, moving, at, cut) {
+    if (at.el.closest("#tasks")) return A.shownKey() === "base" || (cut && card.need) ? null : { day: null, parentId: null, pos: card.pos, beforeId: null };
     const col = at.el.closest("#board .col");
     if (!col) return null;
     const day = +col.dataset.day, over = at.el.closest(".card");
@@ -118,18 +121,20 @@
       return false;
     }
     const key = A.shownKey(), moving = clip.cut && clip.key === key ? card : null;
-    const spot = pasteSpot(A.readList(key), from, card, moving, at);
+    const spot = pasteSpot(A.readList(key), from, card, moving, at, clip.cut);
     if (!spot) return false;
     const list = A.listFor(key), group = [card, ...A.innerCards(from, card)];
     let into = null;
     if (moving) {
       into = A.moveCard(list, card.id, spot.day, spot.beforeId, spot.parentId, spot.pos);
+      card.auto = false;
     } else if (clip.cut) {
       from.cards = from.cards.filter(c => !group.includes(c));
       group.forEach(c => { c.base = false; });
+      card.auto = false;
       into = placeCard(list, group, spot);
     } else {
-      placeCard(list, A.copyCards(group, { base: false }), spot);
+      placeCard(list, A.copyCards(group, { base: false, need: null, auto: false }), spot);
     }
     if (!clip.cut) holdClip(clip.key, clip.id, false);
     else if (into) clearClip();

@@ -13,15 +13,19 @@
  *           logged hours. Iroh reads it (hoursSpent). Reopening the week takes it off.
  * baseline: { cards, u } — the default week, loaded into weeks in one click
  * asks:     { "YYYY-MM-DD" (Monday): { by: { "<app>|<block title>": minutes }, u } } — what the apps asked of
- *           that week, as last seen while it was this week (truecost.js), for the true cost; a week
- *           Momo wasn't opened has none. Kept apart from the weeks, so recording it never touches a week's
- *           cards or their sync.
+ *           that week, as last seen while it was this week (truecost.js), for the true cost; "<app>|" (no
+ *           title) is that app's own cards (its fill "card" needs), all together. A week Momo wasn't opened
+ *           has none. Kept apart from the weeks, so recording it never touches a week's cards or their sync.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
  * colors:   { key: { c, u } } — each title's colour (see colors.js)
- * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin }
+ * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin, need, app, auto }
  *           — goalId: the old goal it was for, kept as it was; nothing sets one any more
+ *           — need: "<app>:<need id>" on a card of its own for another app's need (fill "card", core/inbox.js:
+ *           an errand, a meal…), else null; app: that app's id (its icon, and its colour: colors.js), else
+ *           null — a pasted copy keeps app but not need; auto: true while Momo placed it (place.js: a need
+ *           with a day) and you haven't moved, resized, pinned or edited it since, else false
  * A day's cards show in the order they're listed, which sets their times
  * (see times.js). `u` is when that week, baseline, goal, colour or week's asks
  * last changed, which is how sync combines two devices' edits.
@@ -78,7 +82,9 @@
   // folds into it, unless that would make a card longer than a day. Apart
   // they stay apart (Sleep at both ends of a day), as do pinned and parked
   // cards. The spot on its own is before the card beforeId, else at the end.
-  const sameKind = (a, b) => a.title.toLowerCase() === b.title.toLowerCase();
+  // A card for another app's need is one of a kind: it never folds, nor is it
+  // any card's twin (drag.js, card-editor.js).
+  const sameKind = (a, b) => !a.need && !b.need && a.title.toLowerCase() === b.title.toLowerCase();
   const inPlace = (c, day, parentId, pos) => c.day === day && c.parentId === parentId && (!parentId || c.pos === pos);
   function mergeTarget(list, card, day, parentId = null, pos = "bottom", beforeId = null) {
     if (day === null || pinned(card)) return null;

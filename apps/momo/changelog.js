@@ -5,6 +5,15 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.964", date: "2026-10-03", changes: [
+      "Each app's errand, call, workout, meal, cooking session, grocery trip and maintenance job is now a card of its own, titled by it, as long as it takes, with its app's icon and colour (one colour per app: change it in any of its cards' pop-up).",
+      "Tasks list them one by one: drag one onto a day (or click it and pick the day); drag its card back into Tasks to take it off again.",
+      "Meals, cooking sessions, trips and things already done (a logged workout, a call, an errand ticked off, a job recorded) land on their day by themselves, as near their time as your cards allow — once the week has cards of yours — and leave again if their app drops them, unless you moved them; their pop-up says “Change it in…” instead of Delete.",
+      "A card's ✓ shows once its app says it's done; one left on a day gone by without being done is red-edged as missed, to drag to a day ahead.",
+      "Generic blocks (Errands, Workout, Keep in touch, Breakfast, Lunch, Dinner, Cooking, Groceries, “… maintenance”) are no longer filled: take them out of your baseline to make room. Copy previous week and Save as baseline leave the apps' cards out: they belong to their week.",
+      "The true cost shows what each app asks of an average week against the free hours your baseline leaves (Free time counts as free).",
+      "Reload Momo on every device: an older copy would drop the new cards' details when it syncs."
+    ] },
     { version: "7.964", date: "2026-10-02", changes: [
       "Tasks come in a chunk per app, with its icon, how many and how long, so each app's part of your week is plain to see; they go as you plan them, and the week is “all assigned ✓” only once its Tasks are empty too.",
       "Each week's Tasks list only what can go on that week; something that could go on either shows on both.",
