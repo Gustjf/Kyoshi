@@ -101,12 +101,15 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Appa
 ### Comments (verbatim)
 - 2026-10-03: Add checklists to Appa and then store those saved checklists in a brief format to go on the report. That way I can demonstrate that I checked everything. include brief, minimal  timestamp of checklist by each item to help the authenticity.
+- 2026-10-03: i like the rest of appa. actually the checklists seem like a burden. remove that.
 ### Keep
+- 2026-10-03: i like the rest of appa.
 ### Change
 ### Add
 - 2026-10-03: Add checklists to Appa and then store those saved checklists in a brief format to go on the report. That way I can demonstrate that I checked everything.
 - 2026-10-03: include brief, minimal  timestamp of checklist by each item to help the authenticity.
 ### Remove
+- 2026-10-03: actually the checklists seem like a burden. remove that.
 ### Bugs
 ### Open questions
 
