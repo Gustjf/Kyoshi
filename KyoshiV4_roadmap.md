@@ -54,10 +54,12 @@ Comment format: `- 2026-10-03: <the owner's words>`
 - 2026-10-03: (from Badgermole) for momo, I don't want it to fill a generic workout card anymore. I want it to be the specific task that I have from badgermole.
 - 2026-10-03: (from Turtleduck) yes, each meal or cooking task becomes its own card.
 - 2026-10-03: sorry about the erika/erica problem being in hawky - it was in pabu - my bad. remove that. ok, that makes sense about the conflicting reply. The prime directive is that it is still a 168 hour budget, true cost tab and close out should remain. Remove my current input about the meeting invites/et. bad idea.
+- 2026-10-03: momo is fine continue to core
 ### Keep
 - 2026-10-03: (from Pabu) birthday stays as board events
 - 2026-10-03: yes that summary makes sense. (the summary: each app puts its own individual, correctly sized card/task into Momo, labelled by its app, instead of Momo filling generic title-matched blocks)
 - 2026-10-03: The prime directive is that it is still a 168 hour budget, true cost tab and close out should remain.
+- 2026-10-03: momo is fine
 ### Change
 - 2026-10-03: (from Pabu) I don't like having generic card like "keep in touch" - after thinking I would rather have it put the task directly on there with the right amount of time from pabu.
 - 2026-10-03: (from Pabu) I meant that momo no longer fills a keep in touch block and directly fills in the individual task.
