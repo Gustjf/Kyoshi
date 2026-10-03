@@ -70,10 +70,17 @@ Comment format: `- 2026-10-03: <the owner's words>`
 ## Wan Shi Tong
 ### Comments (verbatim)
 ### Keep
+- 2026-10-03: update the kyoshiv4 roadmap replace in progress with "Active media" I want this to function how in progress is currently. I don't feel the need to queue up things when I already have three things in the queue. Remove up next.  I like how the up next one was purple.  Make each category of things in the backlog section a bit more distinctive, although they are separated by dropdowns, its hard to tell each section apartment. make them distinct subsections within the larger backlog section. Reduce the "Have it" sections to Have it : yes/no (wordsmith that better)
+- 2026-10-03: I like how the up next one was purple.
+- 2026-10-03: I want this to function how in progress is currently.
 ### Change
 ### Add
+- 2026-10-03: replace in progress with "Active media"
+- 2026-10-03: Make each category of things in the backlog section a bit more distinctive, although they are separated by dropdowns, its hard to tell each section apartment. make them distinct subsections within the larger backlog section.
+- 2026-10-03: Reduce the "Have it" sections to Have it : yes/no (wordsmith that better)
 ### Remove
 ### Bugs
+- 2026-10-03: I don't feel the need to queue up things when I already have three things in the queue. Remove up next.
 ### Open questions
 
 ## Appa
