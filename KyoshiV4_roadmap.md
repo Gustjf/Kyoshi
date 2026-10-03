@@ -192,12 +192,17 @@ Comment format: `- 2026-10-03: <the owner's words>`
 
 ## Turtleduck
 ### Comments (verbatim)
+- 2026-10-03: 1, - often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure. 4. include support for plurals. 5. let me enter units in any unit and then let me change between output units in the grocery output.
 ### Keep
 ### Change
+- 2026-10-03: include support for plurals.
+- 2026-10-03: let me enter units in any unit and then let me change between output units in the grocery output.
 ### Add
+- 2026-10-03: often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure.
 ### Remove
 ### Bugs
 ### Open questions
+- 2026-10-03: (answers to Claude's questions 1, 4 and 5) 1, - often times I will be preparing a sandwich/salad/bulk ingredient for sandwich or salad or future meal for my work or travel lunches ahead of time. make sure there is a way for me to do this. I think the cook section covers it, but i wasnt sure. 4. include support for plurals. 5. let me enter units in any unit and then let me change between output units in the grocery output.
 
 ## Pabu
 ### Comments (verbatim)
