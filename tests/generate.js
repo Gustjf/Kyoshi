@@ -152,10 +152,12 @@ const RECIPES = [
   { id: "rc-soup", name: "Old soup", meal: "lunch", servings: 2, kcal: 300, ingredients: ["1 l stock"], steps: "Heat.", archived: true }
 ];
 // A Turtleduck backup: the recipes (all, or those named), planned meals ({ id?, date, meal, recipeId | kind, … } → whole
-// entries), trips (dates), and anything else given (checked, manual, sections, templates, settings).
-function turtleduck({ recipes = RECIPES.map(r => r.id), plan = [], trips = [], ...rest } = {}) {
+// entries), trips (dates), the weeks confirmed for Momo (their Mondays), and anything else given (checked, manual,
+// sections, templates, slotTimes, tripSkips, settings).
+function turtleduck({ recipes = RECIPES.map(r => r.id), plan = [], trips = [], confirmed = [], ...rest } = {}) {
   const t = at("2026-01-05");
   return {
+    confirmed: Object.fromEntries(confirmed.map(m => [m, { at: t, u: t }])),
     schemaVersion: 1, appVersion: "1.000",
     recipes: RECIPES.filter(r => recipes.includes(r.id)).map((r, i) => ({ prepMin: null, cookMin: null, kcal: null, protein: null, carbs: null, fat: null, fiber: null, link: "", archived: false, ...r, deleted: false, at: t + i, u: t })),
     plan: plan.map((e, i) => {

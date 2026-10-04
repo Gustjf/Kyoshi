@@ -67,7 +67,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   hawky/              errands (quick add on the phone, each a card of its own in Momo) & shopping lists (by store and topic, a 30- or 7-day cooling-off lock; not in Momo)
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
   badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (each workout a card of its own in Momo)
-  turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips with a grocery list each, a cook view (each meal, cooking session and trip a card of its own in Momo, on its day)
+  turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips (a weekly schedule too) with a grocery list each, a cook view; Times & trips sets when (its meals and scheduled trips are slots in Momo's baseline, filled once a week is confirmed; cooking and extra trips pinned cards of their own)
   pabu/               keep in touch: people (a group and notes each) with calls, texts or visits, each on its own cadence (each a card of its own in Momo; This week at the top); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js

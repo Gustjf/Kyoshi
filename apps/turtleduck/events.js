@@ -4,8 +4,8 @@
  * PLAN_PX, a list narrower), the mouse's place for Ctrl+C / X / V, and the first view (Groceries on a phone, Momo's
  * rule) — and the hooks Kyoshi calls: onShow, onHide, onTick (a new day), onReload (another tab saved; the cook view
  * stays), onKeydown (copy, cut and paste; Esc), awake (the cook view keeps the screen on: core/wakelock.js), attention
- * (a dot while today or tomorrow has no dinner planned) and bugState (counts only: never recipe names, ingredients or
- * meals). */
+ * (a dot while this week isn't confirmed for Momo, from Friday while next week isn't, else while today or tomorrow has no
+ * dinner planned) and bugState (counts only: never recipe names, ingredients or meals). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -29,11 +29,16 @@
     "save-template": () => { A.toggleMenu(false); A.openTemplateName(); },
     "load-template": el => { A.toggleMenu(false); A.loadTemplate(el.dataset.id); },
     "delete-template": el => A.deleteTemplate(el.dataset.id),
-    "clear-week": () => { A.toggleMenu(false); A.clearWeek(); }
+    "clear-week": () => { A.toggleMenu(false); A.clearWeek(); },
+    times: () => { A.toggleMenu(false); A.openTimes(); },
+    "confirm-week": el => A.confirmWeek(el.dataset.week || S.week),
+    "unconfirm-week": () => { A.toggleMenu(false); A.unconfirmWeek(S.week); },
+    "trip-time-usual": el => A.setSlotTime(el.dataset.date, "trip", "")
   };
 
   A.init = () => {
     A.wirePopups();
+    A.wireTimes();
     A.wireRecipes();
     A.wirePaste();
     A.wireGroceries();
@@ -115,10 +120,13 @@
   // The screen stays on while a recipe is open in the cook view (core/wakelock.js; showView tells it).
   A.awake = () => S.view === "cook";
 
-  // A dot on the icon while today or tomorrow has no dinner planned (anything in its slot counts, Skipped too); it clears
-  // once one is. Not before Turtleduck is in use (a recipe or a planned meal).
+  // A dot on the icon while this week isn't confirmed for Momo, or from Friday on while next week isn't (confirm.js); else
+  // while today or tomorrow has no dinner planned (anything in its slot counts, Skipped too); it clears once one is. Not
+  // before Turtleduck is in use (a recipe or a planned meal).
   A.attention = () => {
     if (!A.liveRecipes().length && !A.liveEntries().length) return "";
+    const week = A.unconfirmed();
+    if (week) return `${week} week's meals aren't confirmed`;
     const today = todayStr(), none = [today, addDays(today, 1)].filter(d => !A.entriesOn(d, "dinner").length);
     return !none.length ? "" : `no dinner planned ${none.length === 2 ? "today or tomorrow" : none[0] === today ? "today" : "tomorrow"}`;
   };
@@ -131,7 +139,8 @@
       `- Recipes: ${recipes.length} (${recipes.filter(r => r.archived).length} archived); templates: ${A.liveTemplates().length}; deleted markers ${["recipes", "plan", "trips", "manual", "templates"].map(k => S[k].filter(x => x.deleted).length).join("/")}`,
       `- Planned: ${entries.length} (${kinds}; ${entries.filter(e => e.leftover).length} leftovers); this week ${entries.filter(e => e.date >= days[0] && e.date <= days[6]).length}; batches on the shelf ${A.shelf().length}`,
       `- Trips: ${A.liveTrips().length} (${lists.trips.length} upcoming, Now ${lists.now ? `${lists.now.open} open` : "none"}); ticks ${Object.keys(S.checked).length}; by hand ${A.live(S.manual).length}; sections set ${Object.keys(S.sections).length}; targets ${A.NUTRIENTS.filter(([k]) => S.settings.targets[k] !== null).length}`,
-      `- View: ${S.view}${S.view === "plan" ? ` (${A.wide() ? `grid, ${S.week} week` : "list"})` : ""}; pop-ups: ${[S.editing && "recipe", S.picking && "picker", S.entry && "meal", S.paste && "paste"].filter(Boolean).join(", ") || "none"}; copied: ${S.clip ? (S.clip.cut ? "cut" : "copy") : "no"}`
+      `- View: ${S.view}${S.view === "plan" ? ` (${A.wide() ? `grid, ${S.week} week` : "list"})` : ""}; pop-ups: ${[S.editing && "recipe", S.picking && "picker", S.entry && "meal", S.paste && "paste", S.timesSnapshot && "times"].filter(Boolean).join(", ") || "none"}; copied: ${S.clip ? (S.clip.cut ? "cut" : "copy") : "no"}`,
+      `- Times: trip schedule ${S.settings.schedule.length} day(s) (${A.liveTrips().filter(t => t.sched).length} scheduled trips shown); days' own times ${Object.values(S.slotTimes).filter(x => x.time).length} (${Object.keys(S.slotTimes).length} kept); skips ${Object.values(S.tripSkips).filter(x => x.skip).length}; confirmed: this week ${A.isConfirmed(A.thisMonday()) ? "yes" : "no"}, next ${A.isConfirmed(A.nextMonday()) ? "yes" : "no"} (${Object.values(S.confirmed).filter(x => x.at).length} kept); Momo has this week's slots: ${(A.momoStatus(A.thisMonday()) || { slots: [] }).slots.length}`
     ];
   };
 })(Kyoshi, Kyoshi.apps.turtleduck);

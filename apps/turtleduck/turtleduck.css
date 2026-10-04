@@ -33,6 +33,16 @@
 .app-turtleduck .menu-tpl .icon-btn { width: 26px; height: 26px; }
 .app-turtleduck .menu-none { padding: 2px 10px 8px 18px; font-size: .85em; color: var(--muted); }
 .app-turtleduck .menu-item.danger-item { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 6px 6px; color: var(--bad); }
+.app-turtleduck .menu-item.unconfirm-item { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0; }
+/* The week on screen's Confirm (for Momo), and its line about Momo under the bar: muted, green once it's there. */
+.app-turtleduck .confirm-btn { flex: 0 0 auto; padding: 8px 14px; font-weight: 600; }
+.app-turtleduck .week-status { font-size: .85em; color: var(--muted); }
+.app-turtleduck #momoLine { margin: -4px 2px 10px; }
+.app-turtleduck #momoLine:empty { display: none; }
+.app-turtleduck #momoLine.on, .app-turtleduck .week-head.on .week-status { color: var(--good); }
+/* A phone's list: each week headed by its line about Momo and Confirm. */
+.app-turtleduck .week-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin: 0 2px 10px; }
+.app-turtleduck .week-head .confirm-btn { padding: 10px 16px; }
 
 /* --- The grid: a column a day (a label column first), a row a meal, totals under it; the sidebar beside it --- */
 .app-turtleduck .plan-body { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 14px; align-items: start; }
@@ -63,6 +73,12 @@
 .app-turtleduck .chip.skipped { background: none; border-style: dashed; color: var(--muted); }
 .app-turtleduck .chip.skipped .chip-name { font-weight: 400; font-style: italic; }
 .app-turtleduck .chip.warn { border-color: var(--bad); }
+/* A meal cooked there with no trip before it (amber), or with things not bought once its trip is past (red). */
+.app-turtleduck .chip-shop { flex-basis: 100%; font-size: .9em; font-weight: 600; }
+.app-turtleduck .chip.nocover { border-color: var(--warn); border-left-color: var(--warn); }
+.app-turtleduck .chip.nocover .chip-shop { color: var(--warn); }
+.app-turtleduck .chip.unbought { border-color: var(--bad); border-left-color: var(--bad); }
+.app-turtleduck .chip.unbought .chip-shop { color: var(--bad); }
 .app-turtleduck .chip.clipped { opacity: .55; outline: 2px dashed var(--accent); outline-offset: 1px; }
 .app-turtleduck .chip.clipped.cut { opacity: .35; }
 .app-turtleduck .chip.dragging { opacity: .4; }
@@ -74,7 +90,8 @@
 .app-turtleduck .cart { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); opacity: .6; }
 .app-turtleduck .cart svg { width: 15px; height: 15px; }
 .app-turtleduck .cart:hover:not(:disabled) { opacity: 1; border-color: var(--border); background: none; }
-.app-turtleduck .cart.on { opacity: 1; background: var(--turtleduck-amber); color: #fff; }
+.app-turtleduck .cart.on { width: auto; gap: 3px; padding: 0 5px; opacity: 1; background: var(--turtleduck-amber); color: #fff; }
+.app-turtleduck .cart-time { font-size: .72em; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .app-turtleduck .cart.on:hover { background: var(--turtleduck-amber); filter: brightness(.92); }
 .app-turtleduck .day-head.today .cart:not(.on) { color: #fff; }
 .app-turtleduck .cart:disabled { visibility: hidden; }
@@ -104,6 +121,8 @@
 .app-turtleduck .day-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .app-turtleduck .day-name { color: var(--text); font-size: 1em; letter-spacing: 0; text-transform: none; }
 .app-turtleduck .day .cart { width: 40px; height: 40px; }
+.app-turtleduck .day .cart.on { width: auto; min-width: 40px; padding: 0 8px; }
+.app-turtleduck .day .cart-time { font-size: .82em; }
 .app-turtleduck .day .cart svg { width: 20px; height: 20px; }
 .app-turtleduck .day-tot { margin: 0 0 4px; font-size: .8em; color: var(--muted); font-variant-numeric: tabular-nums; }
 .app-turtleduck .slot { display: flex; align-items: center; gap: 8px; min-height: 50px; border-top: 1px solid var(--border); cursor: pointer; }
@@ -161,6 +180,11 @@
 .app-turtleduck .g-bought > summary { padding: 6px 0; font-size: .85em; color: var(--muted); }
 .app-turtleduck .settings .own-nums, .app-turtleduck .settings .amounts { max-width: 520px; }
 .app-turtleduck .settings .targets-head { margin-top: 18px; }
+.app-turtleduck .times-btn { min-height: 44px; }
+/* A trip's time on its list: a time field (the day's own, else the usual), Usual while it differs. */
+.app-turtleduck .g-when { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.app-turtleduck input.g-time { width: auto; min-height: 36px; padding: 2px 6px; font-size: .9em; }
+.app-turtleduck .g-usual { padding: 4px 8px; }
 
 /* --- The cook view: big type, room to breathe, the width of a page --- */
 .app-turtleduck .cook-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; max-width: 780px; margin: 0 auto 8px; }
@@ -207,6 +231,24 @@
 .app-turtleduck .entry-left { margin: 6px 0 10px; font-size: .9em; font-weight: 600; }
 .app-turtleduck .entry-left.bad, .app-turtleduck .entry-note.bad { color: var(--bad); }
 .app-turtleduck .also-hint { font-size: 1em; text-transform: none; letter-spacing: 0; }
+/* A meal's pop-up: that day's time for its row, and its groceries (amber: no trip before it; red: not bought). */
+.app-turtleduck .entry-time input { width: auto; min-height: 38px; }
+.app-turtleduck .entry-cover { margin: 0 0 8px; font-size: .88em; font-weight: 600; }
+.app-turtleduck .entry-cover.none { color: var(--warn); }
+.app-turtleduck .entry-cover.unbought { color: var(--bad); }
+/* Times & trips: a row a meal (its time, its usual length), then the trips every week (a weekday and a time, ✕). */
+.app-turtleduck .times-grid { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 8px 10px; margin-bottom: 14px; }
+.app-turtleduck .tm-head { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.app-turtleduck label.tm-name { margin: 0; font-size: .92em; font-weight: 600; color: var(--text); }
+.app-turtleduck .tm-len { display: flex; align-items: center; gap: 6px; font-size: .88em; color: var(--muted); }
+.app-turtleduck .tm-len input { width: 5em; }
+.app-turtleduck .tm-note { font-style: italic; }
+.app-turtleduck .trip-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.app-turtleduck .trip-row select { flex: 1; min-width: 0; }
+.app-turtleduck .trip-row input { width: auto; }
+.app-turtleduck .trip-row .icon-btn { flex: 0 0 auto; width: 36px; height: 36px; }
+.app-turtleduck .times-none { margin-bottom: 8px; font-size: .88em; color: var(--muted); }
+.app-turtleduck .tm-other { margin-top: 14px; }
 .app-turtleduck .also-meals { margin-bottom: 6px; }
 .app-turtleduck .also-meals .mode-btn { padding: 6px 4px; font-size: .82em; }
 .app-turtleduck .also-days { display: flex; flex-wrap: wrap; gap: 4px; }

@@ -1,12 +1,16 @@
 /* Turtleduck · markup.js — the page (A.markup): the nav (Plan · Recipes · Groceries), then one view at a time
- * (render.js) — Plan (the tabs and ⋯ menu, the grid with its sidebar, or a phone's list of days: plan-view.js), Recipes
- * (recipes.js), Groceries (add by hand, the lists, Settings: groceries.js) and the cook view (cook.js) — Backup & sync,
- * and the pop-ups: the picker and a planned meal's (plan-popups.js), the recipe (recipes.js), Paste recipes (paste.js)
- * and Save as template. The shell supplies the header, footer, Developer Mode and bug reports; core/backup.js fills
- * [data-kyoshi="backup"]. Ids only need to be unique within the app (A.$). */
+ * (render.js) — Plan (the tabs, the week's Confirm and its line about Momo, the ⋯ menu, the grid with its sidebar, or a
+ * phone's list of days: plan-view.js), Recipes (recipes.js), Groceries (add by hand, the lists, Settings: groceries.js)
+ * and the cook view (cook.js) — Backup & sync, and the pop-ups: the picker and a planned meal's (plan-popups.js), the
+ * recipe (recipes.js), Paste recipes (paste.js), Save as template, and Times & trips (times.js). The shell supplies the
+ * header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only need to be
+ * unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES, UNIT_MODES } = A;
+  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES, UNIT_MODES, MIN_LENGTH, MAX_LENGTH } = A;
+  // Times & trips: a meal's row (its usual time, its usual length), the Cook row's (a time only).
+  const timeRow = (k, label, length = true) => `<label class="tm-name" for="time_${k}">${label}</label><input type="time" id="time_${k}" step="900">` +
+    (length ? `<span class="tm-len"><input type="number" id="len_${k}" min="${MIN_LENGTH}" max="${MAX_LENGTH}" step="5" inputmode="numeric" aria-label="${label}: usual length in minutes"> min</span>` : `<span class="tm-len tm-note">as long as its recipes</span>`);
   // Five number fields: kcal, then protein, carbs, fat and fiber in grams (ids prefix + Kcal, Protein…).
   const nums = (prefix, max = [MAX_KCAL, MAX_GRAMS]) => [["Kcal", "kcal", max[0]], ["Protein", "Protein (g)", max[1]], ["Carbs", "Carbs (g)", max[1]], ["Fat", "Fat (g)", max[1]], ["Fiber", "Fiber (g)", max[1]]]
     .map(([id, label, top]) => `<label class="own-num"><span>${label}</span><input type="number" id="${prefix}${id}" min="0" max="${top}" step="any" inputmode="decimal"></label>`).join("");
@@ -39,11 +43,13 @@ Season to taste.`;
         <button type="button" class="mode-btn" data-week="this"><span>This week</span><span class="wk-sub" id="weekSub_this"></span></button>
         <button type="button" class="mode-btn" data-week="next"><span>Next week</span><span class="wk-sub" id="weekSub_next"></span></button>
       </div>
+      <button type="button" class="confirm-btn" id="confirmBtn" data-act="confirm-week" hidden>Confirm this week</button>
       <div class="menu-wrap">
-        <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="planMenu" aria-label="More: copy last week, templates, clear the week" title="Copy last week, templates, clear the week">${MORE}</button>
+        <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="planMenu" aria-label="More: times and trips, copy last week, templates, clear the week" title="Times & trips, copy last week, templates, clear the week">${MORE}</button>
         <div class="plan-menu" id="planMenu" role="menu" hidden></div>
       </div>
     </div>
+    <div class="week-status" id="momoLine"></div>
     <div class="plan-body" id="planBody">
       <section class="grid-box">
         <div class="plan-grid" id="planGrid"></div>
@@ -88,7 +94,10 @@ Season to taste.`;
     <section class="settings">
       <details id="settingsBox">
         <summary><h2>Settings</h2></summary>
-        <div class="subhead">Amounts</div>
+        <div class="subhead">When</div>
+        <button type="button" class="secondary times-btn" data-act="times">Times &amp; trips&hellip;</button>
+        <div class="footnote">When you usually eat and cook, how long meals take, and your grocery trips every week: Momo keeps them in your baseline at those times.</div>
+        <div class="subhead targets-head">Amounts</div>
         <div class="mode-toggle amounts" id="unitsToggle" role="group" aria-label="Amounts">${UNIT_MODES.map(([k, t]) => `<button type="button" class="mode-btn" data-units="${k}">${t}</button>`).join("")}</div>
         <div class="footnote">As entered: in the recipes' own unit when they agree (cups, oz…), the US way when they all use US units, else metric. US: ounces and pounds, spoons, cups, quarts and gallons, rounded to a neat amount.</div>
         <div class="subhead targets-head">A day's targets (each optional)</div>
@@ -228,6 +237,27 @@ Season to taste.`;
           <button type="button" class="secondary" id="templateCancelBtn">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="timesOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="timesTitle">
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="timesTitle">Times &amp; trips</h3>
+      <p class="modal-hint">When you usually eat, cook and shop: Momo keeps each meal and trip in your baseline at its time, fixed there. A day that's different: tap its meal on the plan, or the trip's time on its list.</p>
+      <div class="times-grid">
+        <span></span><span class="tm-head">Usually at</span><span class="tm-head">Takes</span>
+        ${timeRow("breakfast", "Breakfast")}${timeRow("lunch", "Lunch")}${timeRow("dinner", "Dinner")}${timeRow("cook", "Cooking", false)}
+      </div>
+      <div class="subhead">Grocery trips every week</div>
+      <div id="tripRows"></div>
+      <button type="button" class="secondary small" id="tripAddBtn">+ Add a trip day</button>
+      <div class="field tm-other"><label for="time_trip">A trip you place by hand, at</label><input type="time" id="time_trip" step="900"></div>
+      <div class="modal-status bad" id="timesStatus" role="status"></div>
+      <div class="modal-actions">
+        <button type="button" id="timesSaveBtn">Save</button>
+        <button type="button" class="secondary" id="timesCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 `;

@@ -1,19 +1,25 @@
-/* Turtleduck · groceries.js — shopping. Trips are placed on the plan's days (the cart toggle; one a day at most), and each
- * has its grocery list, worked out from the plan: every recipe cooked from that trip's day up to the day before the next
- * trip (the last one through next Sunday), its ingredient lines scaled and merged by name (plurals too: "onions" with
- * "onion") and unit (every weight together, every volume together; a line with no amount is a row with none), in store
- * sections, the amounts shown as entered, metric or US (Settings). A tick is "bought" for every planned use in that
- * list's days, so a meal added later past them brings the item back; a tick on one list leaves the others as they were.
- * The Now list is what's needed before the first trip (normally empty); groceries added by hand ("running out of…") ride
- * on it when it has anything, else on the first trip's. A past trip is gone from the screen: what it left unbought shows
- * up in Now. Also here: each ingredient's section (guessed, or set with a tap and remembered by name), the Groceries
- * view, and Settings (how amounts show, the day's targets). Ticks and sections set before 1.300 merged plurals and
- * units are found under the keys the lines had then, until the new key gets its own. */
+/* Turtleduck · groceries.js — shopping. Trips are on the plan's days (one a day at most): the schedule's every week
+ * (Times & trips: times.js; worked out, app.js liveTrips; the cart skips one, or brings it back) and any placed by hand
+ * with the cart, each at its time (a day's own time, set from its list, else its weekday's on the schedule, else the
+ * usual time for other trips). Each has its grocery list, worked out from the plan by moments (a day and a time): every
+ * recipe cooked from that trip's moment up to the next trip's (the last one through next Sunday), a meal at its slot's
+ * time (a snack at SNACK_TIME) — so a trip at 6 pm covers that evening's dinner, and that day's lunch belongs to the
+ * list before — its ingredient lines scaled and merged by name (plurals too: "onions" with "onion") and unit (every
+ * weight together, every volume together; a line with no amount is a row with none), in store sections, the amounts
+ * shown as entered, metric or US (Settings). A tick is "bought" for every planned use in that list's days, so a meal
+ * added later past them brings the item back; a tick on one list leaves the others as they were. Ticks go by days, so a
+ * day two lists share (a 6 pm trip) counts for both: what's needed only that day shows bought on both once either is
+ * ticked. The Now list is what's needed before the first trip (normally empty); groceries added by hand ("running out
+ * of…") ride on it when it has anything, else on the first trip's. A past trip is gone from the screen: what it left
+ * unbought shows up in Now. A cooked meal's coverage (coverageOf): the trip before it, and whether its ingredients were
+ * bought once that trip is past. Also here: each ingredient's section (guessed, or set with a tap and remembered by name),
+ * the Groceries view, and Settings (how amounts show, the day's targets). Ticks and sections set before 1.300 merged
+ * plurals and units are found under the keys the lines had then, until the new key gets its own. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, newId, addDays, todayStr, readNumber } = K.util;
-  const { SECTIONS, UNIT_MODES, MAX_MANUAL, MAX_KCAL, MAX_GRAMS, NUTRIENTS, cleanLine, own, kept, fmtRange, fmtFull, fmtWd } = A;
+  const { esc, newId, addDays, todayStr, readNumber, fmtTime } = K.util;
+  const { SECTIONS, UNIT_MODES, MAX_MANUAL, MAX_KCAL, MAX_GRAMS, NUTRIENTS, cleanLine, own, kept, fmtRange, fmtFull, fmtWd, moment, mealTime, tripTime, onGrid, dayIndex } = A;
 
   // ==========================================================================
   // THE LISTS
@@ -28,13 +34,18 @@
   const covers = (key, a, b) => own(S.checked, key) && S.checked[key].ranges.some(([x, y]) => x <= a && b <= y);
   const isTicked = row => (own(S.checked, row.key) ? covers(row.key, row.first, row.last) : [...row.olds].every(([k, [a, b]]) => covers(k, a, b)));
 
-  // The rows for the recipes cooked from–through: { key, norm, name (the first spelling), many (the first plural
-  // spelling, "" when none), unit and qty (base units; qty null when no line gave one), units (the units its amounts
-  // were typed in), recipes (names), first and last (the days needing it), olds (its lines' keys before 1.300, each
-  // with its first and last day), section, ticked }, by section.
-  function rowsFor(from, through) {
+  // When a planned meal happens, as a moment.
+  const at = e => moment(e.date, mealTime(e.date, e.meal));
+  // The recipes cooked from one moment up to (not at) another, by moment.
+  const cookedIn = (fromM, toM) => A.liveEntries().filter(e => A.isCooked(e) && at(e) >= fromM && at(e) < toM).sort((a, b) => at(a).localeCompare(at(b)) || A.byAdded(a, b));
+
+  // The rows for the recipes cooked from fromM up to toM (moments): { key, norm, name (the first spelling), many (the
+  // first plural spelling, "" when none), unit and qty (base units; qty null when no line gave one), units (the units
+  // its amounts were typed in), recipes (names), first and last (the days needing it), olds (its lines' keys before
+  // 1.300, each with its first and last day), section, ticked }, by section.
+  function rowsFor(fromM, toM) {
     const rows = new Map();
-    A.liveEntries().filter(e => A.isCooked(e) && e.date >= from && e.date <= through).sort((a, b) => a.date.localeCompare(b.date) || A.byAdded(a, b)).forEach(e => {
+    cookedIn(fromM, toM).forEach(e => {
       const r = A.recipeById(e.recipeId);
       if (!r) return; // a deleted recipe adds nothing
       r.ingredients.forEach(line => {
@@ -56,18 +67,26 @@
       .sort((a, b) => SECTIONS.indexOf(a.section) - SECTIONS.indexOf(b.section) || a.norm.localeCompare(b.norm));
   }
 
-  // { now, trips }: each list { id ("now" or the trip's day), kind, date, from, through, rows, manual (groceries added by
-  // hand, on one list only), total, open (not bought yet) }. now is null when a trip is today.
+  // { now, trips }: each list { id ("now" or the trip's day), kind, date, time (a trip's), fromM and toM (the moments it
+  // covers, toM not included), from and through (its days, for its words and its ticks: through is toM's day when a
+  // meal it covers falls on it, else the day before), rows, manual (groceries added by hand, on one list only), total,
+  // open (not bought yet) }. Now runs from today's start to the first trip (or to the end), and shows only with
+  // something on it.
   const lists = () => A.remember("lists", () => {
-    const today = todayStr(), end = A.planEnd();
+    const today = todayStr(), end = A.planEnd(), endM = moment(end, "24:00");
     const trips = A.liveTrips().filter(t => t.date >= today && t.date <= end);
     const manual = A.live(S.manual).filter(m => !m.done || m.done >= today).sort(A.byAdded);
-    const make = (kind, date, from, through) => ({ id: kind === "now" ? "now" : date, kind, date, from, through, rows: rowsFor(from, through), manual: [] });
-    const out = trips.map((t, i) => make("trip", t.date, t.date, i + 1 < trips.length ? addDays(trips[i + 1].date, -1) : end));
-    const now = trips.length && trips[0].date === today ? null : make("now", "", today, trips.length ? addDays(trips[0].date, -1) : end);
-    const host = now && (now.rows.length || !out.length) ? now : out[0] || now;
-    if (host) host.manual = manual;
-    [now, ...out].filter(Boolean).forEach(l => {
+    const make = (kind, trip, fromM, toM) => {
+      const from = fromM.slice(0, 10), toDay = toM.slice(0, 10), rows = rowsFor(fromM, toM);
+      const last = toM === endM || cookedIn(moment(toDay, "00:00"), toM).length ? toDay : addDays(toDay, -1);
+      return { id: trip ? trip.date : "now", kind, date: trip ? trip.date : "", time: trip ? tripTime(trip) : "", fromM, toM, from, through: last < from ? from : last, rows, manual: [] };
+    };
+    const moments = trips.map(t => moment(t.date, tripTime(t)));
+    const out = trips.map((t, i) => make("trip", t, moments[i], i + 1 < trips.length ? moments[i + 1] : endM));
+    const now = make("now", null, moment(today, "00:00"), moments.length ? moments[0] : endM);
+    const host = now.rows.length || !out.length ? now : out[0];
+    host.manual = manual;
+    [now, ...out].forEach(l => {
       l.total = l.rows.length + l.manual.length;
       l.open = l.rows.filter(r => !r.ticked).length + l.manual.filter(m => !m.done).length;
     });
@@ -79,13 +98,30 @@
   // CHANGES
   // ==========================================================================
 
-  // The cart on a day: a trip there, or none (two devices may have placed one each: both go).
+  // The cart on a day: a trip there, or none. A trip placed by hand goes (two devices may have placed one each: both go);
+  // on a weekday of the schedule, its trip is skipped that day (tripSkips), and tapped again it's back.
   function toggleTrip(date) {
     if (!A.inPlan(date) || date < todayStr()) return;
-    const t = Date.now();
-    if (A.hasTrip(date)) S.trips = S.trips.map(x => (!x.deleted && x.date === date ? { id: x.id, deleted: true, at: x.at, u: t } : x));
-    else S.trips.push(A.cleanTrips([{ id: newId(), date, at: t, u: t }])[0]);
+    const t = Date.now(), on = A.hasTrip(date), sched = !!A.scheduleOn(dayIndex(date));
+    if (on) S.trips = S.trips.map(x => (!x.deleted && x.date === date ? { id: x.id, deleted: true, at: x.at, u: t } : x));
+    if (sched) S.tripSkips[date] = { skip: on, u: t };
+    else if (!on) S.trips.push(A.cleanTrips([{ id: newId(), date, at: t, u: t }])[0]);
     kept();
+  }
+
+  // A cooked meal's groceries (A.isCooked; else null: a leftover, a quick meal, a restaurant, a skipped one): { state:
+  // "none" (no trip before it), "unbought" (its trip is past and missing of its ingredients weren't bought for its day)
+  // or "ok", missing, trip }. Its trip: the last before it, by moments (one placed by hand any day, the schedule's from
+  // last Monday).
+  function coverageOf(e) {
+    const r = A.isCooked(e) && A.recipeById(e.recipeId);
+    if (!r) return null;
+    const when = at(e), trip = A.liveTrips().filter(t => moment(t.date, tripTime(t)) <= when).pop();
+    if (!trip) return { state: "none", missing: 0, trip: null };
+    if (moment(trip.date, tripTime(trip)) > A.nowMoment()) return { state: "ok", missing: 0, trip };
+    const keys = [...new Map(r.ingredients.map(line => { const p = A.parseLine(line); return [p.key, p.oldKey]; }))];
+    const missing = keys.filter(([key, old]) => !(own(S.checked, key) ? covers(key, e.date, e.date) : covers(old, e.date, e.date))).length;
+    return { state: missing ? "unbought" : "ok", missing, trip };
   }
 
   // A tick's days, as ranges [[from, until], …]: ticked in a list, its days join them (with any they touch); unticked,
@@ -183,6 +219,13 @@
     `<span class="g-text"><span class="g-what">${esc(m.text)}</span><span class="g-tag">added by hand</span></span></label>` +
     `<button type="button" class="icon-btn g-remove" data-act="manual-remove" data-id="${esc(m.id)}" aria-label="${esc(`Remove ${m.text}`)}">&times;</button></div>`;
 
+  // A trip's time on its list: to change that day's (back to the usual with Usual).
+  function timeHTML(l) {
+    const mine = A.isOwnTime(l.date, "trip"), usual = A.usualTime("trip", l.date);
+    return `<span class="g-when">· <input type="time" class="g-time" step="900" data-trip-time="${esc(l.date)}" value="${esc(l.time)}" aria-label="${esc(`Time of ${fmtFull(l.date)}'s trip`)}">` +
+      (mine ? `<button type="button" class="secondary small g-usual" data-act="trip-time-usual" data-date="${esc(l.date)}" title="${esc(`Back to ${fmtTime(usual)}`)}">Usual</button>` : "") + `</span>`;
+  }
+
   function listHTML(l, firstTrip) {
     const title = l.kind === "trip" ? fmtFull(l.date) : firstTrip ? `Needed before ${fmtWd(firstTrip.date)}'s trip` : "Everything planned";
     const open = l.rows.filter(r => !r.ticked), bought = l.rows.filter(r => r.ticked);
@@ -195,7 +238,7 @@
     });
     const done = bought.length + manualDone.length;
     const empty = !l.total ? `<div class="empty-msg">${l.kind === "trip" ? "Nothing to buy for these meals." : "Nothing planned to buy yet."}</div>` : "";
-    return `<section class="g-list" data-list="${esc(l.id)}"><div class="g-top"><h2 class="g-title">${esc(title)}</h2>` +
+    return `<section class="g-list" data-list="${esc(l.id)}"><div class="g-top"><h2 class="g-title">${esc(title)}</h2>${l.kind === "trip" ? timeHTML(l) : ""}` +
       `<span class="g-meta">for meals ${esc(fmtRange(l.from, l.through))}</span><span class="g-count">${l.total ? `${done} of ${l.total}` : ""}</span></div>` +
       empty + groups.join("") +
       (done ? `<details class="g-bought" data-list="${esc(l.id)}"${S.boughtOpen && S.boughtOpen.has(l.id) ? " open" : ""}><summary>Bought (${done})</summary>` +
@@ -214,6 +257,18 @@
       b.setAttribute("aria-pressed", String(b.dataset.units === S.settings.units));
     });
     NUTRIENTS.forEach(([k]) => { const el = $(TARGET_IDS[k]); if (document.activeElement !== el) el.value = S.settings.targets[k] === null ? "" : S.settings.targets[k]; });
+  }
+
+  // A trip's time typed on its list: that day's own (on the 15-minute grid, else it's put back as it was).
+  function setTripTime(el) {
+    const date = el.dataset.tripTime, trip = A.liveTrips().find(t => t.date === date);
+    if (!trip) return A.renderAll();
+    if (el.value === tripTime(trip)) return;
+    if (el.validity.badInput || !onGrid(el.value)) {
+      el.value = tripTime(trip);
+      return alert("A trip's time goes in 15-minute steps (:00, :15, :30 or :45), as in Momo.");
+    }
+    A.setSlotTime(date, "trip", el.value);
   }
 
   // From Momo's "Open in Turtleduck": a trip's list (or Now) comes into view, flashing.
@@ -237,6 +292,9 @@
       else if (el.dataset.manual) tickManual(el.dataset.manual, el.checked);
       else if (el.dataset.section !== undefined) setSection(el.dataset.section, el.value);
     });
+    // A trip's time is kept once its field is left (or on Enter): a time field reports each digit typed as a change.
+    $("lists").addEventListener("focusout", e => { if (e.target.dataset && e.target.dataset.tripTime) setTripTime(e.target); });
+    $("lists").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.tripTime) { e.preventDefault(); e.target.blur(); } });
     // Bought stays open or folded as left, through redraws.
     $("lists").addEventListener("toggle", e => {
       const d = e.target;
@@ -246,5 +304,5 @@
     Object.values(TARGET_IDS).forEach(id => $(id).addEventListener("change", setTargets));
   }
 
-  Object.assign(A, { lists, toggleTrip, removeManual, renderGroceries, revealList, wireGroceries });
+  Object.assign(A, { lists, toggleTrip, coverageOf, removeManual, renderGroceries, revealList, wireGroceries });
 })(Kyoshi, Kyoshi.apps.turtleduck);

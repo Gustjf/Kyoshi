@@ -2,17 +2,20 @@
  * then the shelf's portions that can go on that day (Leftovers), that meal's recipes, then the rest (most recently
  * cooked first, PAGE at a time with More); tap one and it's placed. Below: a quick meal (its text and own numbers), a
  * restaurant (a name if you like) and Skip this meal. The Cook row takes recipes only. Replace… opens it for a planned
- * meal, which gives way to what's picked. The planned meal's pop-up (#entryOverlay): a batch's × (halves), the portions
- * eaten there, the portions left (in red when below zero, or when some were placed before the cook day) and Also on…
- * (later days as chips: each tick places a portion there, unticking takes one off); a leftover's portions; a quick
- * meal's or restaurant's text and numbers. Changes count at once. Then Read (the cook view), Edit recipe, Replace… and
- * Remove. And Save as template… (#templateOverlay): a name for the week on screen's meals. */
+ * meal, which gives way to what's picked. The planned meal's pop-up (#entryOverlay): that day's time for its breakfast,
+ * lunch, dinner or Cook row (kept once the field is left; Usual while it differs: times.js setSlotTime), and for a meal
+ * cooked there whether there's a trip before it, or what wasn't bought on that trip's list; a batch's × (halves), the
+ * portions eaten there, the portions left (in red when below zero, or when some were placed before the cook day) and
+ * Also on… (later days as chips: each tick places a portion there, unticking takes one off); a leftover's portions; a
+ * quick meal's or restaurant's text and numbers. Changes count at once. Then Read (the cook view), Edit recipe,
+ * Replace… and Remove. And Save as template… (#templateOverlay): a name for the week on screen's meals. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, addDays, readNumber } = K.util;
+  const { esc, addDays, readNumber, todayStr, fmtTime } = K.util;
   const { MEALS, NUTRIENTS, PAGE, MAX_QUICK, MAX_KCAL, MAX_GRAMS, MAX_SERVINGS, MIN_SCALE, MAX_SCALE, PHONE,
-    cleanLine, plural, fmtKcal, fmtScale, fmtFull, fmtHead, fmtDay, fmtWd, mealTitle } = A;
+    cleanLine, plural, fmtKcal, fmtScale, fmtFull, fmtHead, fmtDay, fmtWd, mealTitle, onGrid } = A;
+  const TIMED = ["breakfast", "lunch", "dinner", "cook"]; // the rows with a time of their own each day
   const pickOverlay = () => $("pickOverlay"), entryOverlay = () => $("entryOverlay");
   const NUM_IDS = { kcal: "Kcal", protein: "Protein", carbs: "Carbs", fat: "Fat", fiber: "Fiber" };
 
@@ -152,7 +155,24 @@
     }).join("") + `</div>`;
   }
 
-  function bodyHTML(e) {
+  // That day's time for the meal's row (the same for everything in it), and Usual while it's a time of its own.
+  function timeHTML(e) {
+    if (e.kind === "skipped" || !TIMED.includes(e.meal)) return "";
+    const kind = e.meal, mine = A.isOwnTime(e.date, kind);
+    return `<div class="entry-step entry-time"><label class="es-label" for="entryTime">${kind === "cook" ? "Cooking at" : `${mealTitle(kind)} at`}</label>` +
+      `<input type="time" id="entryTime" step="900" data-own="time" data-slot-time="${kind}" value="${esc(A.slotTime(e.date, kind))}">` +
+      (mine ? `<button type="button" class="secondary small" data-entry="time-usual">Usual (${esc(fmtTime(A.usualTime(kind)))})</button>` : "") + `</div>`;
+  }
+  // A meal cooked there, from today on: no trip before it (amber), or its trip is past with things not bought (red).
+  function coverHTML(e) {
+    const c = e.date >= todayStr() ? A.coverageOf(e) : null;
+    if (!c || c.state === "ok") return "";
+    return c.state === "none" ? `<p class="entry-cover none">No trip before this: tap the cart on a day before it.</p>`
+      : `<p class="entry-cover unbought">${esc(`${plural(c.missing, "item")} not bought since the trip on ${fmtWd(c.trip.date)} ${fmtDay(c.trip.date)}: they're on Groceries' first list.`)}</p>`;
+  }
+
+  const bodyHTML = e => timeHTML(e) + coverHTML(e) + mealHTML(e);
+  function mealHTML(e) {
     const r = e.kind === "recipe" ? A.recipeById(e.recipeId) : null, gone = e.kind === "recipe" && !r ? `<p class="entry-note bad">This recipe was deleted: its name stays here.</p>` : "";
     if (A.isCooked(e)) {
       const left = A.portionsLeft(e), placed = A.leftoversOf(e.id), early = placed.filter(x => x.date < e.date).length;
@@ -202,15 +222,27 @@
     else if (act === "edit") { closeEntry(); A.openRecipe(e.recipeId); }
     else if (act === "replace") { closeEntry(); openPicker(e.date, e.meal, e.id); }
     else if (act === "remove") { closeEntry(); A.removeEntry(e.id); }
+    else if (act === "time-usual") A.setSlotTime(e.date, e.meal, "");
   }
   // A quick meal's or restaurant's text and numbers, kept as each field is left.
   function onEntryChange(ev) {
     const el = ev.target, e = S.entry && A.entryById(S.entry.id), k = el.dataset.own;
-    if (!e || !k) return;
+    if (!e || !k || k === "time") return; // the time is kept once its field is left (setEntryTime)
     if (k === "name") return void A.updateEntry(e.id, { name: cleanLine(el.value, MAX_QUICK) || (e.kind === "quick" ? e.name : "") });
     const v = readNumber(el), max = k === "kcal" ? MAX_KCAL : MAX_GRAMS;
     if (v !== null && !(v >= 0 && v <= max)) { el.value = e[k] === null ? "" : e[k]; return alert(`From 0 to ${max}, or empty.`); }
     A.updateEntry(e.id, { [k]: v });
+  }
+  // The day's time for the meal's row, once its field is left (a time field reports each digit typed as a change): on
+  // the 15-minute grid, else it's put back as it was.
+  function setEntryTime(el) {
+    const e = S.entry && A.entryById(S.entry.id), kind = el.dataset.slotTime;
+    if (!e || el.value === A.slotTime(e.date, kind)) return;
+    if (el.validity.badInput || !onGrid(el.value)) {
+      el.value = A.slotTime(e.date, kind);
+      return alert("Times go in 15-minute steps (:00, :15, :30 or :45), as in Momo.");
+    }
+    A.setSlotTime(e.date, kind, el.value);
   }
 
   // ==========================================================================
@@ -248,6 +280,8 @@
     $("skipBtn").addEventListener("click", skip);
     $("entryOverlay").addEventListener("click", onEntryClick);
     $("entryBody").addEventListener("change", onEntryChange);
+    $("entryBody").addEventListener("focusout", ev => { if (ev.target.dataset && ev.target.dataset.own === "time") setEntryTime(ev.target); });
+    $("entryBody").addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.own === "time") { ev.preventDefault(); ev.target.blur(); } });
     $("entryDoneBtn").addEventListener("click", closeEntry);
     K.modal.define(tplOverlay(), { pending: () => !!$("templateName").value.trim(), ask: "Discard the template's name?" });
     $("templateForm").addEventListener("submit", ev => { ev.preventDefault(); saveTemplateName(); });

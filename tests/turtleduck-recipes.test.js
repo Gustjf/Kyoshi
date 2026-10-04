@@ -136,7 +136,7 @@ module.exports = [
       const tab = await open(t, { app: "turtleduck", size: DESKTOP }), p = tab.page;
       await importBackup(tab, gen.turtleduck({ plan, trips: [D(3)], manual: [{ id: "m1", text: "coffee", done: "", deleted: false, at: 1, u: 1 }] }));
       const backup = await exportBackup(tab);
-      eq(Object.keys(backup).filter(k => k !== "meetings" && k !== "savedAt").sort(), ["appVersion", "checked", "manual", "plan", "recipes", "schemaVersion", "sections", "settings", "templates", "trips"], "all eight, and the versions");
+      eq(Object.keys(backup).filter(k => k !== "meetings" && k !== "savedAt").sort(), ["appVersion", "checked", "confirmed", "manual", "plan", "recipes", "schemaVersion", "sections", "settings", "slotTimes", "templates", "tripSkips", "trips"], "all eleven, and the versions");
       eq([backup.recipes.length, backup.plan.length, backup.trips.length, backup.manual.length], [8, 2, 1, 1], "everything in it");
 
       // Into a fresh browser: asked with counts when there's something to replace.
@@ -173,8 +173,9 @@ module.exports = [
       await p.fill("#kBugText", "Testing the report");
       await p.click("#kBugSubmit");
       const report = await p.evaluate(() => Kyoshi.store.json("bugReports").pop().markdown);
-      has(report, "- Recipes: 8 (1 archived)", "the app's counts");
-      has(report, "- Trips: 1 (1 upcoming", "and its trips");
+      has(report, "state: Recipes: 8 (1 archived)", "the app's counts");
+      has(report, "| Trips: 1 (1 upcoming", "and its trips");
+      has(report, "| Times: trip schedule 0 day(s)", "and its times, counted");
       for (const name of ["Chili", "coffee", "ground beef", "Overnight"]) lacks(report, name, "no names in a bug report");
     }
   }

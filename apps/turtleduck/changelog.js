@@ -5,6 +5,15 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.300", date: "2026-10-04", changes: [
+      "Times & trips (the ⋯ menu, or Groceries → Settings on a phone): when you usually have breakfast, lunch and dinner and cook, how long each meal usually takes, and your grocery trips every week; a day that's different: tap its meal and change its time there.",
+      "The trip schedule puts a trip on those days by itself: tap the cart to skip one (and again to bring it back); a trip's time for one day changes on its list in Groceries.",
+      "The grocery lists go by those times: a trip at 6 pm covers that evening's dinner, and that day's lunch belongs to the list before.",
+      "A meal cooked there turns amber when no trip comes before it, and red once its trip is past while things for it aren't ticked as bought.",
+      "Confirm each week for Momo (by the week's tabs, or at the top of a phone's list): until then nothing of that week goes there; once confirmed, changes follow by themselves. The line under the tabs says whether Momo has it, and the dot on the icon reminds you any day while this week isn't confirmed, and from Friday while next week isn't. After updating, confirm this week and next once: until then nothing of Turtleduck's is on Momo.",
+      "Momo keeps your meals and scheduled trips in its baseline at your times, fixed there (changed here only); each week's meals fill them, and a cooking session or an extra trip gets a pinned card of its own. What's needed before the first trip no longer goes to Momo's Tasks.",
+      "Reload Turtleduck on every device: an older copy would drop the times, the schedule and the weeks confirmed when it syncs."
+    ] },
     { version: "1.300", date: "2026-10-03", changes: [
       "Plurals add up in the grocery lists: “1 onion” and “2 onions” make one row, “3 onions” (tomatoes with tomato, berries with berry, leaves with leaf).",
       "Any unit adds up: oz and lb with g and kg; fl oz, pints, quarts and gallons with ml, l, spoons and cups; sticks of butter as their own. Groceries → Settings shows the amounts as entered, metric or US (rounded to a neat amount); the cook view stays as typed."

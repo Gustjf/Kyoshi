@@ -1,7 +1,8 @@
 /* Kyoshi · tests/turtleduck.js — Turtleduck's screens as the tests read and use them: the nav, the plan's grid (cells
  * and their chips, the cart, a day's totals), the sidebar (recipes, the shelf of portions), dragging, copy and paste by
  * the mouse, the picker and a planned meal's pop-up, the recipe pop-up, the grocery lists (rows, ticks, sections, added
- * by hand), and the cook view. Selectors live here, so a markup change is fixed in one place. */
+ * by hand), the cook view, Times & trips, a week's Confirm and its line about Momo, a day's own time (a meal's, a
+ * trip's) and a meal's groceries mark. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 
 const view = async (tab, v) => { await tab.page.click(`#kMount #nav [data-view="${v}"]`); await tab.page.waitForSelector(`#kMount #${v}View:not([hidden])`); };
@@ -111,7 +112,96 @@ async function cook(tab) {
 const S = (tab, fn) => tab.page.evaluate(fn);
 const entries = tab => S(tab, () => Kyoshi.apps.turtleduck.liveEntries().map(e => ({ id: e.id, date: e.date, meal: e.meal, kind: e.kind, name: Kyoshi.apps.turtleduck.nameOf(e), leftover: e.leftover, from: e.from, scale: e.scale, servings: e.servings })));
 
+// --- Times & trips, a week confirmed for Momo, a day's own time, a trip's, a meal's groceries ---
+// Times & trips: opened from the ⋯ menu (a computer) or Groceries → Settings ("settings": a phone).
+async function openTimes(tab, via = "menu") {
+  const p = tab.page;
+  if (via === "menu") {
+    await view(tab, "plan");
+    await p.click("#kMount #menuBtn");
+    await p.click('#kMount #planMenu [data-act="times"]');
+  } else {
+    await view(tab, "groceries");
+    if (!(await p.locator("#kMount #settingsBox").evaluate(el => el.open))) await p.click("#kMount #settingsBox > summary");
+    await p.click('#kMount #settingsBox [data-act="times"]');
+  }
+  await p.waitForSelector("#kMount #timesOverlay.open");
+}
+// The pop-up as filled in: { breakfast, lunch, dinner, cook, trip (times), lengths: { breakfast, lunch, dinner }, trips: [[weekday 0–6, time]], status }.
+const times = tab => tab.page.evaluate(() => {
+  const $ = s => document.querySelector(`#kMount ${s}`), v = id => $(`#${id}`).value;
+  return {
+    breakfast: v("time_breakfast"), lunch: v("time_lunch"), dinner: v("time_dinner"), cook: v("time_cook"), trip: v("time_trip"),
+    lengths: { breakfast: +v("len_breakfast"), lunch: +v("len_lunch"), dinner: +v("len_dinner") },
+    trips: [...document.querySelectorAll("#kMount #tripRows .trip-row")].map(r => [+r.querySelector("select").value, r.querySelector("input").value]),
+    status: $("#timesStatus").textContent.trim()
+  };
+});
+// Fills the pop-up ({ breakfast, …, lengths: { … }, trips: [[weekday, time]] }: what's given), then Save; whether it closed.
+async function setTimes(tab, f, save = true) {
+  const p = tab.page;
+  for (const k of ["breakfast", "lunch", "dinner", "cook", "trip"]) if (f[k] !== undefined) await p.fill(`#kMount #time_${k}`, f[k]);
+  for (const [k, n] of Object.entries(f.lengths || {})) await p.fill(`#kMount #len_${k}`, String(n));
+  if (f.trips) {
+    while (await p.locator("#kMount #tripRows [data-trip-remove]").count()) await p.click("#kMount #tripRows [data-trip-remove] >> nth=0");
+    for (const [day, time] of f.trips) {
+      await p.click("#kMount #tripAddBtn");
+      const row = p.locator("#kMount #tripRows .trip-row").last();
+      await row.locator("select").selectOption(String(day));
+      await row.locator("input").fill(time);
+    }
+  }
+  if (!save) return true;
+  await p.click("#kMount #timesSaveBtn");
+  return !(await p.locator("#kMount #timesOverlay").evaluate(el => el.classList.contains("open")));
+}
+// The plan bar's Confirm for the week on screen (week(tab, w) first), or a phone's list's for this or next week.
+async function confirmWeek(tab, which = "this") {
+  const p = tab.page;
+  if (await p.locator("#kMount #planBar").isVisible()) {
+    await week(tab, which);
+    await p.click("#kMount #confirmBtn");
+  } else await p.click(`#kMount #planList .week-head [data-act="confirm-week"][data-week="${which}"]`);
+}
+// Where the weeks stand with Momo: { this, next: the tabs' words after the dates, line: the bar's line, heads: a phone's list's lines }.
+const weekStatus = tab => tab.page.evaluate(() => {
+  const sub = w => document.querySelector(`#kMount #weekSub_${w}`).textContent.split(" · ").pop();
+  return { this: sub("this"), next: sub("next"), line: document.querySelector("#kMount #momoLine").textContent.trim(), heads: [...document.querySelectorAll("#kMount #planList .week-status")].map(e => e.textContent.trim()) };
+});
+// The meal's pop-up's time row (open it first): { label, time, usual: the Usual button's words or "" } (null without one).
+const entryTime = tab => tab.page.evaluate(() => {
+  const row = document.querySelector("#kMount #entryBody .entry-time");
+  if (!row) return null;
+  const u = row.querySelector('[data-entry="time-usual"]');
+  return { label: row.querySelector("label").textContent.trim(), time: row.querySelector("input").value, usual: u ? u.textContent.trim() : "" };
+});
+// Types a time into the meal's pop-up, then Enter (a time field keeps Tab for its own parts): kept once it's left;
+// Usual puts it back.
+async function setEntryTime(tab, time) {
+  await tab.page.fill("#kMount #entryTime", time);
+  await tab.page.press("#kMount #entryTime", "Enter");
+}
+const entryTimeUsual = tab => tab.page.click('#kMount #entryBody [data-entry="time-usual"]');
+// A trip's time on its list (Groceries): { time, usual: whether Usual shows }; set: typed, then the field left.
+const tripTime = (tab, date) => tab.page.evaluate(d => {
+  const l = document.querySelector(`#kMount .g-list[data-list="${d}"]`);
+  return l ? { time: l.querySelector("[data-trip-time]").value, usual: !!l.querySelector('[data-act="trip-time-usual"]') } : null;
+}, date);
+async function setTripTime(tab, date, time) {
+  const f = `#kMount .g-list[data-list="${date}"] [data-trip-time]`;
+  await tab.page.fill(f, time);
+  await tab.page.press(f, "Enter");
+}
+// A chip's groceries mark on the grid: "none" (amber: no trip before it), "unbought" (red) or "" — and its words.
+const coverage = (tab, date, meal, name) => tab.page.$eval(chip(date, meal, name), e => ({
+  mark: e.classList.contains("nocover") ? "none" : e.classList.contains("unbought") ? "unbought" : "",
+  meta: [".chip-meta", ".chip-shop"].map(c => e.querySelector(c)).filter(Boolean).map(x => x.textContent).join(" · ")
+}));
+// The carts on the grid's days: { date: time or "" when off }.
+const carts = tab => tab.page.$$eval("#kMount #planGrid .cart", els => Object.fromEntries(els.map(b => [b.dataset.date, b.classList.contains("on") ? (b.querySelector(".cart-time") || {}).textContent || "" : ""])));
+
 module.exports = {
   view, week, cell, chips, chip, shelf, totals, dragRecipe, dragPortion, dragChip, key, openPicker, pickRecipe, pickPortion, pickList, quickMeal,
-  openEntry, entryText, entryAct, closeEntry, fillRecipe, recipeRows, chipWords, lists, tickRow, openBought, setSection, cart, cook, entries
+  openEntry, entryText, entryAct, closeEntry, fillRecipe, recipeRows, chipWords, lists, tickRow, openBought, setSection, cart, cook, entries,
+  openTimes, times, setTimes, confirmWeek, weekStatus, entryTime, setEntryTime, entryTimeUsual, tripTime, setTripTime, coverage, carts
 };

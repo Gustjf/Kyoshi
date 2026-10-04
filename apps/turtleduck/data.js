@@ -1,15 +1,16 @@
 /* Turtleduck · data.js — the saved data: cleaning, loading, saving, backups, and combining with other devices' saves.
  * A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js (folder sync) use. Storage keys (A.store):
- * recipes, plan, trips, manual and templates (lists, merged item by item), checked and sections (key by key), settings
- * (whole); sync and meetings are core's. */
+ * recipes, plan, trips, manual and templates (lists, merged item by item), checked, sections, slotTimes, tripSkips and
+ * confirmed (key by key), settings (whole); sync and meetings are core's. */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MIN_SCALE, MAX_SCALE,
-    MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, cleanLine, cleanText, clampInt, numIn, plural, own } = A;
+    MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, SLOTS, DEFAULT_TIMES, DEFAULT_LENGTHS,
+    MIN_LENGTH, MAX_LENGTH, cleanLine, cleanText, clampInt, numIn, plural, own, onGrid, dayIndex } = A;
   const LISTS = ["recipes", "plan", "trips", "manual", "templates"];
-  const MAPS = ["checked", "sections"];
+  const MAPS = ["checked", "sections", "slotTimes", "tripSkips", "confirmed"];
   const KEYS = LISTS.concat(MAPS, "settings");
   const KINDS = ["recipe", "quick", "restaurant", "skipped"];
   const MEAL_KEYS = MEALS.map(m => m[0]), TYPE_KEYS = TYPES.map(t => t[0]);
@@ -132,21 +133,56 @@
     return out;
   }
 
+  // A day's own times, by "<date>:<kind>" ("" = back to the usual, kept so the clearing wins when two devices combine).
+  const TIME_KINDS = ["breakfast", "lunch", "dinner", "cook", "trip"];
+  function cleanSlotTimes(v) {
+    const out = {};
+    if (isObj(v)) Object.keys(v).sort().forEach(k => {
+      const x = v[k], [date, kind] = k.split(":");
+      if (k === `${date}:${kind}` && isDate(date) && TIME_KINDS.includes(kind) && isObj(x)) out[k] = { time: onGrid(x.time) ? x.time : "", u: uOf(x) };
+    });
+    return out;
+  }
+  // A scheduled trip's day skipped (skip: false once it's back on), by date.
+  function cleanTripSkips(v) {
+    const out = {};
+    if (isObj(v)) Object.keys(v).sort().forEach(k => { if (isDate(k) && isObj(v[k])) out[k] = { skip: v[k].skip === true, u: uOf(v[k]) }; });
+    return out;
+  }
+  // A week confirmed for Momo, by its Monday: since at (0: un-confirmed, kept so that wins too).
+  function cleanConfirmed(v) {
+    const out = {};
+    if (isObj(v)) Object.keys(v).sort().forEach(k => { if (isDate(k) && dayIndex(k) === 0 && isObj(v[k])) out[k] = { at: msOf(v[k].at), u: uOf(v[k]) }; });
+    return out;
+  }
+
   // The day's targets, each optional (null: none); how the grocery lists show amounts (units: "entered" when a file
-  // has none, as before 1.300).
+  // has none, as before 1.300); the usual times (each on the 15-minute grid, else its default), the meals' usual lengths
+  // (5 to 240 minutes in 5-minute steps, else the default) and the weekly trips (a weekday each at most, by day; none in
+  // a file from before 2.300).
   const target = (v, max) => (isNum(v) && v > 0 ? Math.min(max, Math.round(v)) : null);
+  const lengthOf = (v, fallback) => (Number.isInteger(v) && v >= MIN_LENGTH && v <= MAX_LENGTH && v % 5 === 0 ? v : fallback);
+  function cleanSchedule(list) {
+    const days = new Set();
+    return objects(list).filter(s => Number.isInteger(s.day) && s.day >= 0 && s.day <= 6 && onGrid(s.time) && !days.has(s.day) && days.add(s.day))
+      .map(s => ({ day: s.day, time: s.time })).sort((a, b) => a.day - b.day);
+  }
   const cleanSettings = s => {
-    const t = isObj(s) && isObj(s.targets) ? s.targets : {};
+    const ok = isObj(s), t = ok && isObj(s.targets) ? s.targets : {}, times = ok && isObj(s.times) ? s.times : {}, lengths = ok && isObj(s.lengths) ? s.lengths : {};
     return {
       targets: { kcal: target(t.kcal, 4 * MAX_KCAL), protein: target(t.protein, 2 * MAX_GRAMS), carbs: target(t.carbs, 2 * MAX_GRAMS), fat: target(t.fat, 2 * MAX_GRAMS), fiber: target(t.fiber, 2 * MAX_GRAMS) },
-      units: isObj(s) && UNIT_MODES.some(([k]) => k === s.units) ? s.units : UNIT_MODES[0][0],
-      u: isObj(s) ? uOf(s) : 0
+      units: ok && UNIT_MODES.some(([k]) => k === s.units) ? s.units : UNIT_MODES[0][0],
+      times: Object.fromEntries(TIME_KINDS.map(k => [k, onGrid(times[k]) ? times[k] : DEFAULT_TIMES[k]])),
+      lengths: Object.fromEntries(SLOTS.map(k => [k, lengthOf(lengths[k], DEFAULT_LENGTHS[k])])),
+      schedule: cleanSchedule(ok ? s.schedule : null),
+      u: ok ? uOf(s) : 0
     };
   };
 
   const cleanAll = raw => ({
     recipes: cleanRecipes(raw.recipes), plan: cleanPlan(raw.plan), trips: cleanTrips(raw.trips), manual: cleanManual(raw.manual),
-    templates: cleanTemplates(raw.templates), checked: cleanChecked(raw.checked), sections: cleanSections(raw.sections), settings: cleanSettings(raw.settings)
+    templates: cleanTemplates(raw.templates), checked: cleanChecked(raw.checked), sections: cleanSections(raw.sections),
+    slotTimes: cleanSlotTimes(raw.slotTimes), tripSkips: cleanTripSkips(raw.tripSkips), confirmed: cleanConfirmed(raw.confirmed), settings: cleanSettings(raw.settings)
   });
 
   // ==========================================================================
@@ -173,7 +209,7 @@
   }
 
   // ==========================================================================
-  // BACKUPS (Export / Import JSON): all eight
+  // BACKUPS (Export / Import JSON): all eleven (a file from before 2.300 has no times, skips or weeks confirmed)
   // ==========================================================================
   // No other app keeps both lists (Badgermole: exercises and sessions; Hawky and Wan Shi Tong: items).
   const looksLike = raw => Array.isArray(raw.recipes) && Array.isArray(raw.plan);
@@ -181,11 +217,12 @@
   function buildBackup() {
     return {
       schemaVersion: DATA_SCHEMA_VERSION, appVersion: A.VERSION, recipes: S.recipes, plan: S.plan, trips: S.trips,
-      checked: S.checked, manual: S.manual, sections: S.sections, templates: S.templates, settings: S.settings
+      checked: S.checked, manual: S.manual, sections: S.sections, templates: S.templates,
+      slotTimes: S.slotTimes, tripSkips: S.tripSkips, confirmed: S.confirmed, settings: S.settings
     };
   }
 
-  // Replaces all eight with the backup's, after checking it has recipes or planned meals in it (so a bad file never
+  // Replaces all eleven with the backup's, after checking it has recipes or planned meals in it (so a bad file never
   // changes anything) and asking first (unless ask is false: Import all already did) if there's anything to lose.
   // True once it's in.
   function importBackup(raw, ask = true) {
@@ -213,8 +250,9 @@
   // ==========================================================================
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
-  // A save from the sync folder: taken whole, or combined with ours — the lists item by item, the ticks and sections
-  // key by key, the settings whole — the later change winning. The same on every device, so two combining at once agree.
+  // A save from the sync folder: taken whole, or combined with ours — the lists item by item, the ticks, sections, days'
+  // own times, skipped trips and weeks confirmed key by key, the settings whole — the later change winning. The same on
+  // every device, so two combining at once agree.
   const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
   function merge(mine, theirs) {

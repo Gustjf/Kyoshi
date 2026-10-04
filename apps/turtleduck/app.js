@@ -1,13 +1,15 @@
-/* Turtleduck · app.js — registers Turtleduck with Kyoshi, plus its constants (limits, the meals, the minutes Momo's cards
- * take, the store sections), state (A.S) and small helpers: text and numbers, days and weeks (the plan is this week
- * and next, Monday to Sunday, as in Momo), nutrition and minutes as words, and lookups — which recipe, planned meal or
- * shopping trip is which, worked out once until the data or the day changes (remember): "last cooked" and "cooked N×",
+/* Turtleduck · app.js — registers Turtleduck with Kyoshi, plus its constants (limits, the meals, the usual times and
+ * lengths, the minutes Momo's cards take, the store sections), state (A.S) and small helpers: text and numbers, days and
+ * weeks (the plan is this week and next, Monday to Sunday, as in Momo), times of day (the usual ones, a day's own, a
+ * trip's) and moments, a week confirmed for Momo, nutrition and minutes as words, and lookups — which recipe, planned
+ * meal or shopping trip is which (the schedule's trips worked out too), worked out once until the data or the day
+ * changes (remember): "last cooked" and "cooked N×",
  * a batch's portions left and the shelf of them, what a meal adds to its day and how long it takes. Loads first of the
  * app's files: the others destructure what's here at the top, and call functions from each other as A.name(). File
  * map and data model: apps/turtleduck/CLAUDE.md. */
 (function (K) {
   "use strict";
-  const { isNum, dateMs, addDays, fmtDate, fmtShort, fmtNum, todayStr } = K.util;
+  const { isNum, isTime, dateMs, addDays, fmtDate, fmtShort, fmtNum, todayStr } = K.util;
 
   const A = K.register({
     id: "turtleduck",
@@ -50,6 +52,13 @@
     // A recipe's meal type, the only "tag": the sidebar and the recipe list group by it.
     TYPES: [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snack", "Snack"], ["any", "Any"]],
     MOMO_MEALS: ["breakfast", "lunch", "dinner"], // snacks never go to Momo
+    SLOTS: ["breakfast", "lunch", "dinner"],      // the meals with a slot of their own in Momo's baseline, each day (share.js routine)
+    // The usual times ("Times & trips": times.js), on Momo's 15-minute grid, and the meals' usual lengths in minutes (a
+    // slot's while no meal fills it). A snack has no slot: for the grocery lists it's at SNACK_TIME.
+    DEFAULT_TIMES: { breakfast: "07:30", lunch: "12:00", dinner: "18:00", cook: "16:00", trip: "10:00" },
+    DEFAULT_LENGTHS: { breakfast: 15, lunch: 30, dinner: 45 },
+    MIN_LENGTH: 5, MAX_LENGTH: 240, // a usual length, in 5-minute steps
+    SNACK_TIME: "15:00",
     GROCERY_MINUTES: 45,
     DEFAULT_COOK_MINUTES: 45,  // a meal cooked there, when its recipe gives no prep or cook minutes
     QUICK_MINUTES: 20,         // a leftover or a quick meal
@@ -74,7 +83,11 @@
     recipes: [], plan: [], trips: [], manual: [], templates: [],
     checked: {},   // "<name>|<unit>" -> { ranges, u }: bought for every planned use in those days
     sections: {},  // "<name>" -> { section, u }: set by hand in the grocery list
-    settings: { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, units: "entered", u: 0 },
+    slotTimes: {}, // "<date>:<breakfast|lunch|dinner|cook|trip>" -> { time ("" = the usual), u }: a day's own time
+    tripSkips: {}, // "<date>" -> { skip, u }: a scheduled trip's day with no trip after all (false: back on)
+    confirmed: {}, // "<Monday>" -> { at (0: not any more), u }: that week's meals are on Momo since at
+    settings: { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, units: "entered",
+      times: { ...A.DEFAULT_TIMES }, lengths: { ...A.DEFAULT_LENGTHS }, schedule: [], u: 0 },
     version: 0,    // counts every change to the stored data, so what's worked out is worked out again (remember)
     // On screen (this device only)
     view: "plan",  // "plan" | "recipes" | "groceries" | "cook"
@@ -91,6 +104,7 @@
     mouse: null,   // where the mouse is, for Ctrl+C / X / V
     drag: null,    // what's being dragged: { what: "recipe" | "portion" | "entry", id } (drag.js)
     menu: false,   // the plan's ⋯ menu is open
+    timesSnapshot: null, // Times & trips' form as opened, to tell whether closing it would lose changes (times.js)
     knownToday: "" // today as of the last draw, to redraw when the date changes
   });
 
@@ -142,6 +156,30 @@
   const fmtRange = (a, b) => (a === b ? fmtDay(a) : a.slice(0, 7) === b.slice(0, 7) ? `${fmtDay(a)} – ${+b.slice(8)}` : `${fmtDay(a)} – ${fmtDay(b)}`);
   const mealTitle = meal => (A.MEALS.find(m => m[0] === meal) || ["", "Meal"])[1];
   const mealIndex = meal => A.MEALS.findIndex(m => m[0] === meal);
+  const dayIndex = d => (new Date(dateMs(d)).getUTCDay() + 6) % 7; // 0 = Monday, as in Momo
+
+  // ==========================================================================
+  // HELPERS: times of day ("HH:MM", on Momo's 15-minute grid), as "Times & trips" sets them (times.js), and moments
+  // ("<date> <time>", which sort as text: the grocery lists and coverage go by them)
+  // ==========================================================================
+  const onGrid = t => isTime(t) && +t.slice(3) % 15 === 0;
+  // A scheduled trip's weekday (0 = Monday): { day, time }, or null.
+  const scheduleOn = day => S.settings.schedule.find(s => s.day === day) || null;
+  // The usual time of a meal's slot ("breakfast", "lunch", "dinner"), the Cook row ("cook") or a trip ("trip": its
+  // weekday's on the schedule, else the usual time for other trips).
+  const usualTime = (kind, date = null) => (kind === "trip" && date && scheduleOn(dayIndex(date)) ? scheduleOn(dayIndex(date)).time : S.settings.times[kind]);
+  // A day's own time for it (set from the meal's pop-up, or a trip's list), else the usual.
+  const slotTime = (date, kind) => { const x = own(S.slotTimes, `${date}:${kind}`) && S.slotTimes[`${date}:${kind}`].time; return x || usualTime(kind, date); };
+  const isOwnTime = (date, kind) => own(S.slotTimes, `${date}:${kind}`) && !!S.slotTimes[`${date}:${kind}`].time;
+  // A meal slot's usual length (minutes): its card's in Momo while no meal fills it.
+  const slotMinutes = meal => S.settings.lengths[meal];
+  const tripTime = t => slotTime(t.date, "trip");
+  // When a planned meal happens (a snack: SNACK_TIME); a moment to compare.
+  const mealTime = (date, meal) => (meal === "snack" ? A.SNACK_TIME : slotTime(date, meal));
+  const moment = (date, time) => `${date} ${time}`;
+  const nowMoment = () => { const t = new Date(); return moment(todayStr(), `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`); };
+  // A week's meals are on Momo once confirmed (confirm.js).
+  const isConfirmed = monday => own(S.confirmed, monday) && S.confirmed[monday].at > 0;
 
   // ==========================================================================
   // LOOKUPS, worked out once until the data (S.version) or the day changes. Deleted items are only markers.
@@ -170,10 +208,16 @@
     return out;
   });
   const entriesOn = (date, meal) => cells().get(`${date}|${meal}`) || [];
-  // One trip a day: two devices placing one on the same day keep the earliest placed. By date.
+  // One trip a day: two devices placing one on the same day keep the earliest placed. Then the schedule's (worked out,
+  // never stored: { id: "sched:<date>", date, sched: true }): each scheduled weekday from last Monday to the plan's end
+  // with no trip placed by hand and not skipped (tripSkips). By date.
+  const isSkipped = date => own(S.tripSkips, date) && S.tripSkips[date].skip === true;
   const liveTrips = () => remember("trips", () => {
-    const out = new Map();
+    const out = new Map(), end = planEnd();
     live(S.trips).sort(byAdded).forEach(t => { if (!out.has(t.date)) out.set(t.date, t); });
+    for (let d = addDays(thisMonday(), -7); d <= end; d = addDays(d, 1)) {
+      if (!out.has(d) && scheduleOn(dayIndex(d)) && !isSkipped(d)) out.set(d, { id: `sched:${d}`, date: d, sched: true });
+    }
     return [...out.values()].sort((a, b) => a.date.localeCompare(b.date));
   });
   const hasTrip = date => liveTrips().some(t => t.date === date);
@@ -249,8 +293,9 @@
 
   Object.assign(A, {
     cleanLine, cleanText, clampInt, numIn, plural, cap, sameName, own, kept, fmtKcal, fmtG, fmtScale, fmtMinutes,
-    mondayOf, thisMonday, nextMonday, planEnd, weekDates, inPlan, fmtDay, fmtWd, fmtHead, fmtFull, fmtRange, mealTitle, mealIndex,
-    remember, live, byAdded, liveRecipes, shownRecipes, recipeById, liveEntries, entryById, entriesOn, liveTrips, hasTrip, liveTemplates,
+    mondayOf, thisMonday, nextMonday, planEnd, weekDates, inPlan, fmtDay, fmtWd, fmtHead, fmtFull, fmtRange, mealTitle, mealIndex, dayIndex,
+    onGrid, scheduleOn, usualTime, slotTime, isOwnTime, slotMinutes, tripTime, mealTime, moment, nowMoment, isConfirmed,
+    remember, live, byAdded, liveRecipes, shownRecipes, recipeById, liveEntries, entryById, entriesOn, isSkipped, liveTrips, hasTrip, liveTemplates,
     nameOf, isCooked, lastCooked, cookedTimes, yieldAt, yieldOf, leftoversOf, portionsLeft, shelf, addUp, fmtMacros, entryMinutes
   });
 })(Kyoshi);
