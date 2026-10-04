@@ -238,5 +238,24 @@ Bosco: untouched throughout.
 
 ---
 
-## Phase 7 — Turtleduck sets the times, Momo's baseline holds the slots
-Planned 2026-10-03: see `KyoshiV4_phase7_plan.md` (its own decisions and three pushes; end-to-end tests are back on for it, overriding the no-tests rule above).
+## Phase 7 — Turtleduck times, Momo baseline slots
+Done 2026-10-04 (Kyoshi 3.640, Momo 10.064, Turtleduck 2.300). Planned 2026-10-03 in `KyoshiV4_phase7_plan.md` (the details, its three pushes; end-to-end tests are back on for it, overriding the no-tests rule above). Turtleduck sets the normal times (breakfast, lunch, dinner, cooking, trips), the meals' usual lengths and a weekly trip schedule ("Times & trips"), with a day's own time from the meal's pop-up or the trip's list; Momo keeps a pinned slot card per meal and day and per scheduled trip in its baseline (`K.routine`), and a confirmed week's meals fill those slots at their times; cooking sessions and extra trips are pinned cards of their own; nothing of Turtleduck's goes to Momo's Tasks; Turtleduck's cards are fixed in Momo ("Change it in Turtleduck").
+The owner's decisions (don't reopen):
+1. **Apps talking:** an app may read another and ask it to change things, but only through a function that app offers (so its own save, undo and sync run); never its `A.S` or storage; no "ask me first".
+2. **What gets times:** breakfast, lunch, dinner, the Cook row, grocery trips. Snacks stay out of Momo.
+3. **After confirming,** later changes flow through within a minute (the week stays confirmed).
+4. **The Now list stays out of Momo**; its meals get the coverage mark instead.
+5. **Trips get a weekly schedule** ("every Sunday 8:00 AM, every Tuesday 6:00 PM"); one-off trips keep a usual time.
+6. **Turtleduck feeds Momo's baseline:** Momo reads Turtleduck's routine and keeps the slot cards there itself, following changes.
+7. **Turtleduck's cards are fixed in Momo:** no drag, resize, pin, delete or cut; "Change it in Turtleduck".
+8. **Exact, pinned** times on Momo's board; the owner arranges the other baseline cards around them once; a card running into a pinned one is flagged.
+9. **No daily Cook slot:** a cooking session is placed on its own, pinned, only on days the Cook row is used.
+10. **Coverage by time within the day** (a Tuesday 6 pm trip doesn't cover Tuesday's 4 pm cooking or 6 pm dinner).
+11. **Dot** on Turtleduck's icon from Friday while next week isn't confirmed, and any day while this week isn't (once in use).
+12. **Tests** (the root rules apply again: refresh the stale tests, add tests, `node tests/run.js` green).
+13. **"Times & trips" pop-up** from the Plan's ⋯ menu and from Groceries → Settings.
+14. **A filled slot takes the meal's own minutes**; the slot's usual length applies while it's empty.
+15. **Turtleduck reads Momo back** (`weekStatus`) and shows under the week's tab whether that week has its slots there.
+16. **Confirm warns about gaps** (days with no dinner, meals with no trip before them) and confirms anyway.
+Mine (not raised; each is small to change): breakfast's usual length is 15 minutes (the plan said 20 in one place, 15 in another); a pinned card comes in at its time and leaves the cards of yours where they are (`timeSpot`: one running into it is flagged, per 8) rather than pushing them down; an empty slot's card says "Set in Turtleduck" and opens Times & trips; Clear week keeps the cards set in other apps (they'd come straight back); the coverage marks show from today on (past meals are history); "On Momo ✓" waits until Momo's week is planned (a card of yours on a day), as Momo's own tab says; a time typed in a trip's list or a meal's pop-up is kept when the field is left or on Enter (a time field changes at every digit typed).
+Also: the end-to-end tests from before v4 (the apps with Momo, Pabu's own screens, the signals) now expect v4's cards of their own and the redesigned screens; the flow simulator (`tests/sim/`) is a follow-up (`testplan.md`).
