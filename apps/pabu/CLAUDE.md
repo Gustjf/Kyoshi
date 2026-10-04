@@ -80,7 +80,8 @@ hid them).
   over the person as kept now, and never stops without saying why: no name, a birthday that can't be, or minutes
   outside 5–480 are said in `#personHint`, right above Save (kept in view at the pop-up's foot), and that field is
   marked; a "Talked on" day picked but not added goes in; one unfinished, or not come yet, is left out, everything else
-  saved, and the pop-up stays open to say so. An unchanged Save saves nothing.
+  saved, and the pop-up stays open to say so. An unchanged Save (nothing changed in the pop-up since it opened) just
+  closes, writing nothing, so a change made to them meanwhile on another device stands.
 - A group typed as one in use in other capitals takes that one's spelling; the chips show each group once (any case).
 - "Today" is `K.util.todayStr()` (time travel works); `Date.now()` is only for the `u` stamps.
 - Birthdays: Feb 29 is kept, and falls on Feb 28 in a year without it; the pop-up checks the day against the month (and

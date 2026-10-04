@@ -239,7 +239,7 @@ module.exports = [
     }
   },
   {
-    name: "pabu: the pop-up's Save writes the whole person as shown over the person as kept now (another tab's ✓ meanwhile goes; deleted meanwhile, nothing saved); — takes a birthday off",
+    name: "pabu: the pop-up's Save writes the whole person as shown over the person as kept now (another tab's ✓ meanwhile goes; unchanged here, nothing written; deleted meanwhile, nothing saved); — takes a birthday off",
     async run(t) {
       const flo = { id: "pp-flo", name: "Great-aunt Flo", every: "year", how: "visit", minutes: 120, talks: [200], birthday: "1850-03-01" };
       const a = await open(t, { app: "pabu", size: DESKTOP }), p = a.page;
@@ -259,6 +259,15 @@ module.exports = [
       eq([mom.note, mom.cadences[0].talks, mom.birthday], ["Ask about the trip.", [D(-35), D(-70)], "1966-10-12"], "the whole person, as shown");
       await b.page.waitForFunction(() => Kyoshi.apps.pabu.personById("pp-mom").note === "Ask about the trip.", null, { timeout: 5000 });
       has(await weekText(b), "Call Mom · overdue 4 days · 30m", "the other tab follows: no ✓");
+      // Nothing changed here: Save writes nothing, so the other tab's change meanwhile stands.
+      await pb.openPerson(a, "Sam");
+      await pb.openPerson(b, "Sam");
+      await pb.fill(b, { group: "Work" });
+      await pb.save(b);
+      await p.waitForFunction(() => Kyoshi.apps.pabu.personById("pp-sam").group === "Work", null, { timeout: 5000 });
+      const sam = await pb.person(a, "Sam");
+      await pb.save(a);
+      eq([await pb.isOpen(a), await pb.person(a, "Sam")], [false, sam], "closed; Sam as the other tab left him");
 
       // Someone deleted in the other tab while their pop-up is open here: Save says so, and saves nothing.
       await pb.openPerson(a, "Jo");

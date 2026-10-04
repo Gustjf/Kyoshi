@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.111", date: "2026-10-04", changes: [
+      "Saving someone's pop-up without changing anything no longer undoes a change made to them meanwhile on another device."
+    ] },
     { version: "2.110", date: "2026-10-03", changes: [
       "One person, several calls, texts and visits: each on its own schedule, with its own minutes and days you talked (a ✓ counts for that one only), and each its own card in Momo (“Call Mom”, “Text Mom”).",
       "This week at the top: every call, text or visit due by Sunday or overdue, soonest first, with ✓; ticked ones stay until the week ends.",

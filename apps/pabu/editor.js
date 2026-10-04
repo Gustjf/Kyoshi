@@ -191,7 +191,8 @@
   // Save: the whole person as the pop-up has them, at once, over the person as kept now. What it can't take stops it,
   // saying so above it: no name, a birthday that can't be, minutes outside 5–480. A "Talked on" day picked but not
   // added goes in too; one unfinished, or not come yet, is left out: everything else is saved, and the pop-up stays
-  // open to say so, with that day marked.
+  // open to say so, with that day marked. Nothing changed since it opened: it just closes, writing nothing (so a change
+  // made to them meanwhile on another device stands).
   function saveEditor() {
     const e = S.editing;
     if (!e) return;
@@ -201,6 +202,7 @@
       A.renderAll();
       return alert("That person was deleted on another device, so nothing was saved.");
     }
+    if (formState() === e.snapshot && !e.cadences.some(c => field(c, ".c-day").validity.badInput)) return closeEditor();
     unmark();
     hint();
     const name = A.cleanLine($("personName").value, MAX_NAME);
