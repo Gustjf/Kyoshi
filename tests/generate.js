@@ -2,7 +2,8 @@
  * seeded random generator, so every run gets the same: Badgermole histories (weeks of sessions in a rotation, weights
  * creeping up, bodyweight exercises, either unit, deleted markers), a damaged backup, other apps' backups (to be
  * refused), an Appa job (for its timer), Turtleduck's recipes with a plan and shopping trips (and a damaged one), Pabu's
- * people (and a damaged backup), and Momo weeks with "Workout", meal, "Cooking", "Groceries" and "Keep in touch" cards.
+ * people (a version 1 backup, one in today's shape with groups, and a damaged one), and Momo weeks with "Workout", meal,
+ * "Cooking", "Groceries" and "Keep in touch" cards.
  * Then fuller worlds, for the flow simulator (tests/sim) and any test: core's meetings, many Hawky errands, Iroh's areas
  * and goals, Bosco's weekly dose and weigh-ins, Appa's things with meters, seasonal and meter jobs, Wan Shi Tong's
  * recommendations, Momo's baseline, and an Export all file of them.
@@ -225,6 +226,37 @@ const damagedPabu = () => ({
     { id: "d4", name: "Old clock", every: "month", how: "text", minutes: 12.6, talks: [addDays(TODAY, 1)], at: 9e15, u: "soon" }
   ]
 });
+// Pabu's people in today's shape (schemaVersion 2): a group, notes, a birthday, and calls, texts and visits each on its own
+// schedule ({ id, every, how, minutes, talks: days back, newest first }); added: days back (else a fixed stamp). As of
+// TODAY (Wed Sep 30), This week holds Mom's visit (overdue 9 days), Bo's text (never talked: due Monday, the day he was
+// added), Dad's text (talked yesterday), Mom's weekly call (due today) and Raj's call (Saturday); Zoe's visit is due Oct
+// 12; Ivy is birthday only (Feb 29); Mom's group is "Family", Dad's "family"; Mom turns 60 on Oct 12, Zoe's birthday is
+// Oct 15.
+const CIRCLE = [
+  { id: "pc-mom", name: "Mom", group: "Family", birthday: "1966-10-12", note: "Ask about the garden.\nShe's back from the lake on Friday.",
+    cadences: [{ id: "c1", every: "week", how: "call", minutes: 30, talks: [7, 14] }, { id: "c2", every: "month", how: "visit", minutes: 120, talks: [40] }] },
+  { id: "pc-dad", name: "Dad", group: "family", cadences: [{ id: "c1", every: "2weeks", how: "text", minutes: 10, talks: [1, 15] }] },
+  { id: "pc-raj", name: "Raj", group: "Work", cadences: [{ id: "c1", every: "month", how: "call", minutes: 30, talks: [27] }] },
+  { id: "pc-zoe", name: "Zoe", group: "Friends", birthday: "10-15", cadences: [{ id: "c1", every: "quarter", how: "visit", minutes: 120, talks: [80] }] },
+  { id: "pc-ivy", name: "Ivy", birthday: "2000-02-29", cadences: [] },
+  { id: "pc-bo", name: "Bo", added: 2, cadences: [{ id: "c1", every: "week", how: "text", minutes: 10, talks: [] }] },
+  { id: "pc-gone", deleted: true }
+];
+// A Pabu backup of those people (or others in the same shape), each exactly as Pabu keeps them (so Export gives it back).
+function pabuCircle(people = CIRCLE) {
+  const t = at("2026-01-05");
+  return {
+    schemaVersion: 2, appVersion: "2.110",
+    people: people.map((p, i) => {
+      const added = p.added === undefined ? t + i : at(addDays(TODAY, -p.added)), gone = !!p.deleted;
+      return {
+        id: p.id, name: gone ? "" : p.name, group: gone ? "" : p.group || "", note: gone ? "" : p.note || "", birthday: gone ? "" : p.birthday || "",
+        cadences: gone ? [] : (p.cadences || []).map(c => ({ id: c.id, every: c.every, how: c.how, minutes: c.minutes, talks: c.talks.map(n => addDays(TODAY, -n)), at: added })),
+        deleted: gone, at: added, u: t
+      };
+    })
+  };
+}
 
 // --- Fuller worlds (the flow simulator, tests/sim, builds its lives from these; any test can too) ---
 // Made-up first names (never real people's data), and a pick from a seeded rng.
@@ -319,5 +351,5 @@ const exportAll = apps => ({ kyoshiVersion: "3.330", exportedAt: "2026-01-05T00:
 
 module.exports = {
   random, LB_PER_KG, EXERCISES, ROUTINES, setup, session, history, damaged, hawky, wanshitong, appa, momo, RECIPES, turtleduck, damagedTurtleduck, PEOPLE, pabu, damagedPabu,
-  NAMES, pick, meetings, hawkyItems, ERRANDS, iroh, bosco, appaWorld, library, momoWorld, exportAll
+  CIRCLE, pabuCircle, NAMES, pick, meetings, hawkyItems, ERRANDS, iroh, bosco, appaWorld, library, momoWorld, exportAll
 };

@@ -1,79 +1,167 @@
-/* Kyoshi · tests/pabu.js — Pabu's screens as the tests read and use them: the list's groups (each person as one line)
- * and their heads, the Birthdays strip, quick add with its chips and status line, ✓, the person pop-up (its fields and
- * the days you talked, read and filled in), and the flash Momo's "Open in Pabu" leaves. Selectors live here, so a markup
- * change is fixed in one place. */
+/* Kyoshi · tests/pabu.js — Pabu's screens as the tests read and use them: This week (a line per call, text or visit due,
+ * its ✓, the count, the red ones), quick add with its chips and status line, the Birthdays strip, People (the group chips,
+ * a line per person), the person pop-up (its fields, a box per call, text or visit with the days you talked, what Save
+ * said above it and the fields it marked: read, filled in, saved, cancelled, deleted), the flash Momo's "Open in Pabu"
+ * leaves, and a person as Pabu keeps them (for checks). Lines are found by what they say ("Call Mom", "Mom"), as the user
+ * finds them. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 
-// The list by group: { "Due now": ["Mom · Call · every month · last talked 5 weeks ago · overdue 4 days · 🎂 Oct 12 · turns
-// 60", …], "Coming up": […], "Later": […] } (only the groups shown).
-const groups = tab => tab.page.$$eval("#kMount #groups .group", els => Object.fromEntries(els.map(g => [
-  g.querySelector(".group-title").textContent.trim(),
-  [...g.querySelectorAll(".person")].map(r => [".person-name", ".person-meta", ".person-bday"].map(c => r.querySelector(c)).filter(Boolean)
-    .map(x => x.textContent.replace(/\s+/g, " ").trim()).join(" · "))
-])));
-// Each group's head: { "Due now": "3 · 3h", … } (how many, and their time).
-const heads = tab => tab.page.$$eval("#kMount #groups .group", els => Object.fromEntries(els.map(g => [g.querySelector(".group-title").textContent.trim(), g.querySelector(".group-sum").textContent.trim()])));
-// A person's row as one line (as in groups), or "" when they're not on the list.
-async function row(tab, id) {
-  const all = Object.values(await groups(tab)).flat(), name = await tab.page.$eval(`#kMount .person[data-id="${id}"] .person-name`, e => e.textContent.trim()).catch(() => null);
-  return name === null ? "" : all.find(line => line.startsWith(`${name} · `)) || "";
-}
-// The Birthdays strip: ["Kai · Oct 1 · tomorrow", "Mom · Oct 12 · in 12 days · turns 60"]; [] while it's hidden.
-async function birthdays(tab) {
-  if (await tab.page.locator("#kMount #bdaySection").isHidden()) return [];
-  return tab.page.$$eval("#kMount #bdayList .bday", els => els.map(e => `${e.querySelector(".bday-name").textContent.trim()} · ${e.querySelector(".bday-when").textContent.trim()}`));
-}
+const M = "#kMount";
 
-// Quick add: the name, the chips given ({ every: "week", how: "text" }), then Add (or Enter in the field).
-async function quickAdd(tab, name, { every, how, enter = false } = {}) {
-  const p = tab.page;
-  await p.fill("#kMount #addName", name);
-  if (every) await p.click(`#kMount #addEvery [data-every="${every}"]`);
-  if (how) await p.click(`#kMount #addHow [data-how="${how}"]`);
-  if (enter) await p.press("#kMount #addName", "Enter");
-  else await p.click("#kMount #addBtn");
-}
-// Quick add as it is: the chips pressed, the field, whether it has the focus, and the line under it.
-const addState = tab => tab.page.evaluate(() => {
-  const $ = id => document.querySelector(`#kMount #${id}`), pressed = box => [...$(box).querySelectorAll(".active")].map(b => b.dataset.every || b.dataset.how);
-  return { every: pressed("addEvery"), how: pressed("addHow"), name: $("addName").value, focused: document.activeElement === $("addName"), status: $("addStatus").textContent };
-});
-
-// ✓ on a person's row: talked today (again: undo).
-const tick = (tab, id) => tab.page.click(`#kMount .person[data-id="${id}"] .tick`);
-
-// The pop-up, opened by tapping the name.
-async function openPerson(tab, id) {
-  await tab.page.click(`#kMount .person[data-id="${id}"] .person-name`);
-  await tab.page.waitForSelector("#kMount #personOverlay.open");
-}
-const isOpen = tab => tab.page.locator("#kMount #personOverlay").evaluate(el => el.classList.contains("open"));
-// The pop-up as it is: its fields' values, the days you talked (as shown) and the line under them.
-const popup = tab => tab.page.evaluate(() => {
-  const $ = id => document.querySelector(`#kMount #${id}`);
+// --- This week ---
+// As shown: { count: "1 of 4 done" ("4"; "" for none), lines: a ticked one with "✓ " first ["✓ Text Sam · talked yesterday ·
+// 10m", "Visit Gran · overdue 9 days · 2h"], late: the red ones' titles, empty: "No one's due this week." while it says so };
+// null while it's hidden (no one has a call, text or visit).
+const thisWeek = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`), flat = s => s.replace(/\s+/g, " ").trim();
+  if ($("weekSection").hidden) return null;
+  const rows = [...$("weekList").querySelectorAll(".due-row")];
   return {
-    name: $("personName").value, every: $("personEvery").value, how: $("personHow").value, minutes: $("personMinutes").value,
-    month: $("personBdayMonth").value, day: $("personBdayDay").value, year: $("personBdayYear").value, note: $("personNote").value,
-    talks: [...$("personTalks").querySelectorAll("li")].map(li => (li.querySelector("span") || li).textContent.trim()),
-    hint: $("personHint").hidden ? "" : $("personHint").textContent
+    count: $("weekCount").textContent.trim(),
+    lines: rows.map(li => `${li.classList.contains("done") ? "✓ " : ""}${flat(li.querySelector(".row-title").textContent)} · ${flat(li.querySelector(".row-meta").textContent)}`),
+    late: rows.filter(li => li.classList.contains("overdue")).map(li => flat(li.querySelector(".row-title").textContent)),
+    empty: $("weekEmpty").hidden ? "" : flat($("weekEmpty").textContent)
   };
 });
-// Fills in the pop-up's fields given ({ name, every, how, minutes, month, day, year, note }); month by its number ("10").
+const weekLine = title => `${M} #weekList .due-row:has(.row-title:text-is("${title}"))`;
+// ✓ on This week's line for a call, text or visit ("Call Mom"): talked today; on a ticked one, that day taken off.
+const tick = (tab, title) => tab.page.click(`${weekLine(title)} .tick`);
+
+// --- Quick add ---
+// The name, then the chips given ({ every: "week", how: "text" }), then Add (or Enter in the field; add: false stops before).
+async function quickAdd(tab, name, { every, how, enter = false, add = true } = {}) {
+  const p = tab.page;
+  await p.fill(`${M} #addName`, name);
+  if (every) await p.click(`${M} #addEvery [data-every="${every}"]`);
+  if (how) await p.click(`${M} #addHow [data-how="${how}"]`);
+  if (add) await submitAdd(tab, { enter });
+}
+const submitAdd = (tab, { enter = false } = {}) => (enter ? tab.page.press(`${M} #addName`, "Enter") : tab.page.click(`${M} #addBtn`));
+// Quick add as it is: the chips pressed, the field, whether it has the focus (the phone's keyboard up), and the line under
+// it (bad: said in red).
+const addState = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`), pressed = box => [...$(box).querySelectorAll(".active")].map(b => b.dataset.every || b.dataset.how);
+  return { every: pressed("addEvery"), how: pressed("addHow"), name: $("addName").value, focused: document.activeElement === $("addName"), status: $("addStatus").textContent, bad: $("addStatus").classList.contains("bad") };
+});
+
+// --- The Birthdays strip: ["Kai · Oct 1 · tomorrow", "Mom · Oct 12 · in 12 days · turns 60"]; [] while it's hidden ---
+async function birthdays(tab) {
+  if (await tab.page.locator(`${M} #bdaySection`).isHidden()) return [];
+  return tab.page.$$eval(`${M} #bdayList .bday`, els => els.map(e => `${e.querySelector(".bday-name").textContent.trim()} · ${e.querySelector(".bday-when").textContent.trim()}`));
+}
+
+// --- People ---
+// A line per person as listed: "Mom · Family · Call monthly · overdue 4 days · 🎂 Oct 12 · turns 60" (name, group, their
+// calls, texts and visits with the next due, birthday).
+const people = tab => tab.page.$$eval(`${M} #roster .person`, els => els.map(li => [".person-name", ".person-group", ".person-meta", ".person-bday"]
+  .map(c => li.querySelector(c)).filter(Boolean).map(e => e.textContent.replace(/\s+/g, " ").trim()).join(" · ")));
+// Just the names listed.
+const names = async tab => (await people(tab)).map(line => line.split(" · ")[0]);
+// The heading's count ("7"; "" for none) and the empty list's words ("" while hidden).
+const peopleHead = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`);
+  return { count: $("peopleCount").textContent.trim(), empty: $("listEmpty").hidden ? "" : $("listEmpty").textContent.trim() };
+});
+// The group chips: { shown: ["All", "Family", "No group"], on: the pressed one } ({ shown: [], on: null } while hidden).
+const chips = tab => tab.page.evaluate(() => {
+  const box = document.querySelector("#kMount #groupChips"), all = box.hidden ? [] : [...box.querySelectorAll(".chip")];
+  const on = all.find(b => b.classList.contains("active") && b.getAttribute("aria-pressed") === "true");
+  return { shown: all.map(b => b.textContent.trim()), on: on ? on.textContent.trim() : null };
+});
+const pickChip = (tab, label) => tab.page.click(`${M} #groupChips .chip:text-is("${label}")`);
+
+// --- The person pop-up ---
+// Opened by tapping their line on People (from: "week", a line's name on This week ("Call Mom"); "birthdays", the strip).
+async function openPerson(tab, name, from = "people") {
+  const at = {
+    people: `${M} #roster .person:has(.person-name:text-is("${name}")) .person-row`,
+    week: `${weekLine(name)} .row-title`,
+    birthdays: `${M} #bdayList .bday-name:text-is("${name}")`
+  }[from];
+  await tab.page.click(at);
+  await tab.page.waitForSelector(`${M} #personOverlay.open`);
+}
+const isOpen = tab => tab.page.locator(`${M} #personOverlay`).evaluate(el => el.classList.contains("open"));
+// The pop-up as it is: its fields, the groups it offers, a box per call, text or visit ({ how, every, minutes, last: "Last
+// talked 5 weeks ago · overdue 4 days", talks: ["Aug 26"], hint: the line under its "Talked on" }), none: "Birthday only"
+// shows, more: "+ Add a call, text or visit" shows.
+const popup = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`), shown = el => (el.hidden ? "" : el.textContent.trim());
+  return {
+    name: $("personName").value, group: $("personGroup").value, offered: [...$("personGroupList").options].map(o => o.value),
+    month: $("personBdayMonth").value, day: $("personBdayDay").value, year: $("personBdayYear").value, note: $("personNote").value,
+    boxes: [...$("personCadences").querySelectorAll(".cadence")].map(b => ({
+      how: b.querySelector(".c-how").value, every: b.querySelector(".c-every").value, minutes: b.querySelector(".c-minutes").value,
+      last: b.querySelector(".cadence-last").textContent.trim(), talks: b.querySelector(".talks").hidden ? [] : [...b.querySelectorAll(".talks li > span")].map(s => s.textContent.trim()),
+      hint: shown(b.querySelector(".talk-hint"))
+    })),
+    none: !$("personNoCadence").hidden, more: !$("personCadenceAdd").hidden
+  };
+});
+// The pop-up's form as Save left it: the line above Save, whether it was said once saved (not as a problem), the fields
+// marked and the one with the focus, by name ("name", "group", "month", "day", "year", "note"; in a box "minutes 1",
+// "talked on 1", box 1 the first; "" for anything else).
+const formSaid = tab => tab.page.evaluate(() => {
+  const form = document.querySelector("#kMount #personForm"), hint = form.querySelector("#personHint"), boxes = [...form.querySelectorAll(".cadence")];
+  const ids = { personName: "name", personGroup: "group", personBdayMonth: "month", personBdayDay: "day", personBdayYear: "year", personNote: "note" };
+  const named = el => {
+    if (!el || !form.contains(el)) return "";
+    const box = el.closest(".cadence"), what = el.matches(".c-minutes") ? "minutes" : el.matches(".c-day") ? "talked on" : "";
+    return ids[el.id] || (box && what ? `${what} ${boxes.indexOf(box) + 1}` : "");
+  };
+  return { hint: hint.hidden ? "" : hint.textContent, saved: hint.classList.contains("saved"), marked: [...form.querySelectorAll("[aria-invalid]")].map(named), focus: named(document.activeElement) };
+});
+// What Save said: { hint ("" while hidden), saved, marked }.
+const said = async tab => { const { hint, saved, marked } = await formSaid(tab); return { hint, saved, marked }; };
+// The field with the focus, by name.
+const focused = async tab => (await formSaid(tab)).focus;
+// Whether the line above Save is in view: within the window and the pop-up as it's scrolled.
+const hintInView = tab => tab.page.evaluate(() => {
+  const r = document.querySelector("#kMount #personHint").getBoundingClientRect(), m = document.querySelector("#kMount #personOverlay .modal").getBoundingClientRect();
+  return r.height > 0 && r.top >= Math.max(0, m.top) && r.bottom <= Math.min(window.innerHeight, m.bottom);
+});
+// Fills in the fields given ({ name, group, month ("10"; "" for —), day, year, note }); the month first, as it clears the day
+// and year when set to —.
 async function fill(tab, f) {
-  const p = tab.page, ids = { name: "personName", minutes: "personMinutes", day: "personBdayDay", year: "personBdayYear", note: "personNote" };
-  for (const k of ["every", "how", "month"]) if (f[k] !== undefined) await p.selectOption(`#kMount #person${{ every: "Every", how: "How", month: "BdayMonth" }[k]}`, String(f[k]));
-  for (const [k, id] of Object.entries(ids)) if (f[k] !== undefined) await p.fill(`#kMount #${id}`, String(f[k]));
+  const p = tab.page, ids = { name: "personName", group: "personGroup", day: "personBdayDay", year: "personBdayYear", note: "personNote" };
+  if (f.month !== undefined) await p.selectOption(`${M} #personBdayMonth`, String(f.month));
+  for (const [k, id] of Object.entries(ids)) if (f[k] !== undefined) await p.fill(`${M} #${id}`, String(f[k]));
 }
-// Adds a day you talked ("YYYY-MM-DD") with Add a day (or Enter in its field); removes one by its ✕.
-async function addTalk(tab, day, { enter = false } = {}) {
-  await tab.page.fill("#kMount #personTalkDate", day);
-  if (enter) await tab.page.press("#kMount #personTalkDate", "Enter");
-  else await tab.page.click("#kMount #personTalkAdd");
+// A call, text or visit's box (1 for the first): its how, how often and minutes, as given ({ how, every, minutes }).
+const box = n => `${M} #personCadences .cadence:nth-child(${n})`;
+async function setBox(tab, n, { how, every, minutes } = {}) {
+  const p = tab.page;
+  if (minutes !== undefined) await p.fill(`${box(n)} .c-minutes`, String(minutes));
+  if (how) await p.selectOption(`${box(n)} .c-how`, how);
+  if (every) await p.selectOption(`${box(n)} .c-every`, every);
 }
-const removeTalk = (tab, day) => tab.page.click(`#kMount #personTalks [data-act="talk-remove"][data-day="${day}"]`);
-const save = tab => tab.page.click('#kMount #personForm button[type="submit"]');
+const addBox = tab => tab.page.click(`${M} #personCadenceAdd`);
+const removeBox = (tab, n) => tab.page.click(`${box(n)} [data-act="cadence-remove"]`);
+// A box's "Talked on": a day ("YYYY-MM-DD") picked, then Add (or Enter there; add: false leaves it picked).
+async function talkedOn(tab, n, day, { enter = false, add = true } = {}) {
+  const p = tab.page;
+  await p.fill(`${box(n)} .c-day`, day);
+  if (enter) await p.press(`${box(n)} .c-day`, "Enter");
+  else if (add) await p.click(`${box(n)} [data-act="talk-add"]`);
+}
+// Typed into a box's "Talked on" as from the keyboard ("09": a day not finished).
+async function typeTalk(tab, n, keys) {
+  await tab.page.click(`${box(n)} .c-day`);
+  await tab.page.keyboard.type(keys);
+}
+const removeTalk = (tab, n, day) => tab.page.click(`${box(n)} [data-act="talk-remove"][data-day="${day}"]`);
+// Save (or Enter in the name field, enter: true).
+const save = (tab, { enter = false } = {}) => (enter ? tab.page.press(`${M} #personName`, "Enter") : tab.page.click(`${M} #personForm button[type="submit"]`));
+const cancel = tab => tab.page.click(`${M} #personCancelBtn`);
+const remove = tab => tab.page.click(`${M} #personDeleteBtn`);
 
-// Whether a person's row is flashing (Momo's "Open in Pabu").
-const isFlashing = (tab, id) => tab.page.locator(`#kMount .person[data-id="${id}"]`).evaluate(el => el.classList.contains("flash"));
+// --- Momo's "Open in Pabu": what flashes, ["week pp-mom c1"] (This week's line) or ["person pp-jo"] (People's) ---
+const flashing = tab => tab.page.$$eval(`${M} .flash`, els => els.map(e => (e.classList.contains("due-row") ? `week ${e.dataset.id} ${e.dataset.cid}` : `person ${e.dataset.id}`)));
 
-module.exports = { groups, heads, row, birthdays, quickAdd, addState, tick, openPerson, isOpen, popup, fill, addTalk, removeTalk, save, isFlashing };
+// --- A person as Pabu keeps them (a copy), by name; null when there's no one by that name ---
+const person = (tab, name) => tab.page.evaluate(x => { const p = Kyoshi.apps.pabu.live().find(q => q.name === x); return p ? JSON.parse(JSON.stringify(p)) : null; }, name);
+
+module.exports = {
+  thisWeek, tick, quickAdd, submitAdd, addState, birthdays, people, names, peopleHead, chips, pickChip, openPerson, isOpen, popup, said,
+  focused, hintInView, fill, setBox, addBox, removeBox, talkedOn, typeTalk, removeTalk, save, cancel, remove, flashing, person
+};
