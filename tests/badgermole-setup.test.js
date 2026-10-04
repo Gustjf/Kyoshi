@@ -117,7 +117,7 @@ module.exports = [
       // Deleting a routine takes it out of the program.
       await p.click('#routinesList .row-btn:has-text("Pull")');
       await p.click("#routineDeleteBtn");
-      has(lastDialog(tab), "It comes out of the program too", "delete routine asks");
+      has(lastDialog(tab), "It comes out of your programs too", "delete routine asks");
       await bm.openFold(tab, "program");
       eq(await bm.programRows(tab), ["Push (next)", "Legs"], "the program without Pull");
       const kept = await p.evaluate(() => ({ ex: Kyoshi.apps.badgermole.S.exercises.filter(e => e.deleted).map(e => Object.keys(e).sort().join()), rt: Kyoshi.apps.badgermole.S.routines.filter(r => r.deleted).length }));

@@ -1,9 +1,10 @@
 /* Kyoshi · tests/signals.test.js — where you stand, per app (roadmap Phase 8): the dots when you're behind (Badgermole when
- * today's workout is needed for the week's target, Turtleduck when today or tomorrow has no dinner, Pabu for anyone
- * overdue, Iroh for a goal more than a week behind or an overdue meeting), Iroh's meetings counting only once Iroh is
- * used, Appa's recorded job ✓ on its day's card (and a job due after the window kept out), and the small fixes: "Open in
- * <App>" from the card editor asks before dropping an edit, an event at any time of day adds no hours, and an import's
- * question names the backup's date and how much newer what's here is. */
+ * today's workout is needed for the week's target, Turtleduck while this week's meals aren't confirmed for Momo and then
+ * when today or tomorrow has no dinner, Pabu for anyone overdue, Iroh for a goal more than a week behind or an overdue
+ * meeting), Iroh's meetings counting only once Iroh is used, Appa's recorded job ✓ on a card of its own on its day (and
+ * a job due after the window kept out), and the small fixes: "Open in <App>" from the card editor asks before dropping
+ * an edit, an event at any time of day adds no hours, and an import's question names the backup's date and how much
+ * newer what's here is. */
 "use strict";
 const { TODAY, DESKTOP, eq, ok, has, lacks, open, switchTo, importBackup, exportBackup, addDays, at, lastDialog } = require("./lib");
 const gen = require("./generate");
@@ -57,22 +58,24 @@ module.exports = [
     }
   },
   {
-    name: "signals: Turtleduck dots while today or tomorrow has no dinner; Pabu for anyone overdue",
+    name: "signals: Turtleduck dots while this week isn't confirmed, then while today or tomorrow has no dinner; Pabu for anyone overdue",
     async run(t) {
       const tab = await open(t, { app: "turtleduck", size: DESKTOP }), p = tab.page;
       eq(await why(tab, "turtleduck"), "", "unused: no dot");
       await importBackup(tab, gen.turtleduck({ plan: [{ date: TODAY, meal: "dinner", recipeId: "rc-chili" }] }));
-      eq(await why(tab, "turtleduck"), "no dinner planned tomorrow", "tomorrow has no dinner");
+      eq(await why(tab, "turtleduck"), "this week's meals aren't confirmed", "this week isn't on Momo yet");
+      await td.confirmWeek(tab, "this");
+      eq(await why(tab, "turtleduck"), "no dinner planned tomorrow", "confirmed: tomorrow has no dinner");
       await td.view(tab, "plan");
       await td.dragRecipe(tab, "rc-salad", D(1), "dinner");
       eq(await why(tab, "turtleduck"), "", "planned: no dot");
       await switchTo(tab, "pabu");
       await importBackup(tab, gen.pabu());
-      eq(await why(tab, "pabu"), "3 people overdue", "Gran, Mom and Ana");
+      eq(await why(tab, "pabu"), "2 calls and 1 visit overdue", "Mom's and Ana's calls, Gran's visit");
     }
   },
   {
-    name: "signals: Appa's job recorded today shows ✓ on today's card; one due after the window stays out of Momo",
+    name: "signals: Appa's job recorded today shows ✓ on a card of its own today; one due after the window stays out of Momo",
     async run(t) {
       const tab = await open(t, { app: "appa", size: DESKTOP }), p = tab.page;
       const world = gen.appaWorld({
@@ -87,11 +90,14 @@ module.exports = [
       await importBackup(tab, world);
       eq(await inbox(tab), ["appa:oil1", "appa:done:rec1:wash1"], "the oil change due Monday, the wash done today; the gutters (Oct 13) wait");
       await switchTo(tab, "momo");
-      await importBackup(tab, gen.momo([], [{ date: D(0), title: "Car maintenance", hours: 0.5 }, { date: D(2), title: "Car maintenance", hours: 1 }]));
-      const cards = await p.$$eval("#kMount #board .card[data-id^='card-']", els => els.map(e => e.getAttribute("aria-label").replace(/, [\d.]+[hm]\b.*$/, "")));
-      eq(cards, ["Car maintenance (Wash from Appa — done ✓)", "Car maintenance (Oil change from Appa)"], "✓ on today's card, the oil change on Friday's");
+      // A card of yours today (the week is planned); Momo places its cards on the minute.
+      await importBackup(tab, gen.momo([], [{ date: D(0), title: "Reading", hours: 1 }]));
+      await tab.ctx.clock.fastForward(61000);
+      const today = (await mo.days(tab))[2].cards;
+      eq(today.map(c => c.label.replace(/, [\d.]+[hm]\b.*$/, "")), ["Reading", "Car: Wash (from Appa — done ✓)"], "✓ on a card of its own today");
+      eq((await mo.tasks(tab)).tasks.map(x => x.label.replace(/ — drag.*$/, "")), ["Car: Oil change (from Appa, due Oct 5)"], "the oil change waits in Tasks");
       // Open in Appa on the done one: its record.
-      await mo.openCard(tab, "card-0");
+      await mo.openCard(tab, today[1].id);
       await mo.openInApp(tab, "appa", "done:rec1:wash1");
       await p.waitForSelector("#kMount #recOverlay.open");
       eq(await p.locator("#kMount #rcTitle").innerText(), "Record", "the record pop-up");
@@ -103,7 +109,8 @@ module.exports = [
       const tab = await open(t, { app: "pabu", size: DESKTOP }), p = tab.page;
       await importBackup(tab, gen.pabu()); // Kai's birthday tomorrow: at any time of day
       await switchTo(tab, "momo");
-      await importBackup(tab, gen.momo([], [{ date: D(0), title: "Keep in touch", hours: 1 }]));
+      // Today's card holds the call to Mom.
+      await importBackup(tab, gen.momo([], [{ date: D(0), title: "Call Mom", hours: 1, app: "pabu", need: "pabu:p:pp-mom:c1" }]));
       eq((await mo.days(tab))[3].total, 0, "Thursday: Kai's birthday adds no hours");
       has(JSON.stringify((await mo.days(tab))[3].marks), "Kai's birthday", "but it's there, in the heading");
 

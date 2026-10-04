@@ -3,6 +3,8 @@ A test campaign, not a phase: a few made-up people live with Kyoshi for a year o
 
 **Status (2026-10-02): cut short by the owner.** The simulator was built (`tests/sim/`, `tests/momo.js`) and lives 4–6 ran a year or two, 1–3 a few weeks each: no crash, console error or data loss. No report or bundles were written; the discussion went straight to the findings, and its decisions are `roadmap.md`'s Phase 8 "Flow fixes". The simulator stays for rechecking (`node tests/sim/run.js`, or one life: `node tests/sim/run.js planner --weeks 6`). Phase 8 is built: the simulator reads Momo's window (from this Monday), checks cards' late marks, and finds done needs by their own ids too; the "How the flow works today" notes below describe the flow before it.
 
+**Since v4 Phase 7 (2026-10-04): the simulator lags the app**, a follow-up before its next run (`node tests/run.js` doesn't run it). Turtleduck now sends Momo nothing until a week is confirmed (the plan's Confirm, a week at a time), its meals fill the baseline's slot cards (one per meal and day, made from its Times & trips) and its cooking sessions and extra trips are pinned cards of their own. So the evening sitting (`tests/sim/day.js`) should confirm this week and next once it plans them, and `tests/sim/world.js`'s baseline should drop its Breakfast, Lunch, Dinner, Cooking and Groceries blocks (the slots take their place), as well as its Workout, Errands and Keep in touch blocks, which nothing has filled since v4 Phase 1 (each need a card of its own).
+
 ## What we're testing for
 Two things the owner must get from the system, in their words:
 1. **Where I stand, per app, at a glance.** Am I behind? It should be obvious without digging: the switcher's dot, the app's own header line, Momo's board and Today.

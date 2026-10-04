@@ -125,12 +125,12 @@ const appa = () => ({
 });
 
 // A Momo backup whose weeks have cards titled "Workout" (1 hour each) on the days given ("YYYY-MM-DD"), and any other
-// cards ({ date, title, hours }).
+// cards ({ date, title, hours }; another app's: also app, and need "<app>:<id>", the need it holds).
 function momo(dates, others = []) {
   const weeks = {}, t = at("2026-01-05");
   dates.map(date => ({ date, title: "Workout", hours: 1 })).concat(others).forEach((c, i) => {
     const key = mondayOf(c.date), week = weeks[key] || (weeks[key] = { cards: [], closed: false, u: t });
-    week.cards.push({ id: `card-${i}`, title: c.title, hours: c.hours, day: (new Date(`${c.date}T00:00:00Z`).getUTCDay() + 6) % 7 });
+    week.cards.push({ id: `card-${i}`, title: c.title, hours: c.hours, day: (new Date(`${c.date}T00:00:00Z`).getUTCDay() + 6) % 7, ...(c.app ? { app: c.app, need: c.need || null } : {}) });
   });
   return { schemaVersion: 2, appVersion: "6.964", weeks, baseline: { cards: [], u: 0 }, goals: [], colors: {} };
 }
