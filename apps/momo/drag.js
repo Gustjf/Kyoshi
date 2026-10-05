@@ -10,7 +10,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { DAY_HOURS, POSITIONS, DRAG_START_PX, TOUCH_HOLD_MS, TOUCH_GROUP_MS, TOUCH_SLOP_PX, fmtClock } = A;
+  const { DAY_HOURS, POSITIONS, DRAG_START_PX, TOUCH_HOLD_MS, TOUCH_GROUP_MS, TOUCH_SLOP_PX } = A;
 
   function onBoardPointerDown(e) {
     if (S.press || S.drag || S.resize || e.button !== 0 || e.altKey || A.isLocked()) return; // Alt+click deletes (onBoardClick)
@@ -209,24 +209,24 @@
     showGhostTimes(list, card, t);
   }
 
-  // Shows on the ghost when the card would start where it's headed, worked
+  // Shows on the ghost when the card would start and end where it's headed, worked
   // out by making the drop on a copy of the board (nothing, over Tasks or
   // nowhere). In a group drag, that's where it lands on its own day.
   function showGhostTimes(list, card, t) {
     const drag = S.drag;
-    let times = null, top = drag.id;
+    let times = null, top = drag.id, sim = null;
     if (card && t && t.day !== null) {
-      const sim = JSON.parse(JSON.stringify(list));
+      sim = JSON.parse(JSON.stringify(list));
       if (drag.draw) sim.cards.push({ ...drag.draw });
       if (t.moves) A.dropGroup(sim, drag.id, drag.twins, t.spot);
       else top = (A.moveCard(sim, drag.id, t.day, t.before ? t.before.dataset.id : null, t.parent ? t.parent.id : null, t.pos) || { id: top }).id;
       times = A.startTimes(sim, A.daySchedule(sim, t.moves ? card.day : t.day).rows);
     }
     drag.ghost.querySelectorAll(".card-time").forEach(el => {
-      const id = el.closest(".card").dataset.id, when = times && times.get(id === drag.id ? top : id);
+      const id = el.closest(".card").dataset.id, key = id === drag.id ? top : id, when = times && times.get(key);
       el.hidden = !when;
       if (!when) return;
-      el.querySelector(".clock").textContent = fmtClock(when.at);
+      el.querySelector(".clock").innerHTML = A.clockHTML(when.at, A.endOf(sim, sim.cards.find(c => c.id === key), when.at));
       el.classList.toggle("clash", when.clash > 0 || when.at >= DAY_HOURS);
     });
   }

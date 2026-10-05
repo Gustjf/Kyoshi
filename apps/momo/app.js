@@ -35,6 +35,8 @@
     MAX_GOAL_HOURS: 100000, // the old goals' limits, which data.js cleanGoal still keeps them within
     GOAL_MAX_WEEK: 10,
     DRAW_HOURS: 1,     // a card drawn from a task in Tasks that doesn't say how long (tasks.js)
+    SIDE_TITLE: "Commute", // a card's before & after, until you call it something else (sides.js)
+    SIDE_MAX: 240,     // …and how long each can be, in minutes
     COST_WEEKS: 13,    // the true cost averages the apps' asks over the weeks kept among this many, this one too (truecost.js)
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
     WEEKENDS: 13,      // the weekends Upcoming weekends shows, this one first: about three months (weekends.js)

@@ -205,13 +205,13 @@
     }).join("");
   }
 
-  // An event, drawn like a card: its app's icon and its title, then its time (with a ✓ once done)
-  // and how long it is. Clicking one opens its pop-up, except once it's done or on a closed week.
+  // An event, drawn like a card: its app's icon and its title, then its time, start to end (with a ✓
+  // once done), and how long it is. Clicking one opens its pop-up, except once it's done or on a closed week.
   function eventHTML(ev, locked, style, cls = "") {
     const app = K.apps[ev.app], label = describe(ev, app);
     const attrs = `class="event${cls}${ev.flag ? " clash" : ""}${ev.done ? " done" : ""}" style="${style};--c:${A.keyColor(A.titleKey(ev.title))}" title="${esc(label)}" aria-label="${esc(label)}"`;
     const body = `<span class="card-title"><span class="app-icon" aria-hidden="true">${app ? app.meta.icon : ""}</span>${esc(ev.title)}</span>` +
-      `<span class="card-time${ev.flag ? " clash" : ""}"><span class="clock">${fmtClock(ev.at)}</span>${ev.done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>` +
+      `<span class="card-time${ev.flag ? " clash" : ""}"><span class="clock">${A.clockHTML(ev.at, ev.end)}</span>${ev.done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>` +
       `<span class="card-hours">${fmtH(ev.dur)}</span>`;
     return locked || ev.done ? `<div role="img" ${attrs}>${body}</div>` : `<button type="button" ${attrs} data-ev="${esc(ev.key)}">${body}</button>`;
   }

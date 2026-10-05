@@ -192,6 +192,7 @@
     previewCol(resize.col, total);
     const d = +resize.col.dataset.day, list = A.readList(resize.key), sim = { cards: list.cards.map(c => (c.id === resize.id ? { ...c, hours } : c)) };
     resize.col.querySelector(".col-body").innerHTML = A.dayHTML(sim, d, A.dayPlan(sim, d, false), total, false);
+    A.fitClocks(resize.col);
     const el = [...resize.col.querySelectorAll(".card")].find(x => x.dataset.id === resize.id);
     el.classList.add("resizing");
     try { el.setPointerCapture(resize.pointerId); } catch (err) { /* the pointer is already gone */ }

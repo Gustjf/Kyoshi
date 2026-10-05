@@ -84,10 +84,10 @@
   const tagOpen = (a, cls) => `${a.tap ? `button type="button" ${a.tap} aria-label="${esc(a.label)}"` : "div"} class="${cls}${a.cls}" title="${esc(a.label)}" style="--c:${a.color}"`;
   const tick = a => (a.done ? ` <span class="ev-done" aria-hidden="true">✓</span>` : "");
 
-  // A row: when it starts, what it is with the line under it, and how long (a ✓ once done).
+  // A row: when it starts (and under it, small, when it ends), what it is with the line under it, and how long (a ✓ once done).
   function rowHTML(day, it, cls = "") {
     const a = about(day, it), tag = a.tap ? "button" : "div";
-    return `<${tagOpen(a, `t-row${cls}`)}><span class="t-when${it.s === null ? " any" : ""}">${it.s === null ? "any time" : fmtClock(it.s)}</span>` +
+    return `<${tagOpen(a, `t-row${cls}`)}><span class="t-when${it.s === null ? " any" : ""}">${it.s === null ? "any time" : `${fmtClock(it.s)}<span class="t-end">–${fmtClock(it.e)}</span>`}</span>` +
       `<span class="t-what"><span class="t-title">${a.title}</span>${a.sub ? `<span class="t-sub">${a.sub}</span>` : ""}</span>` +
       `<span class="t-len">${fmtLong(it.ev ? it.ev.dur : it.e - it.s)}${tick(a)}</span></${tag}>`;
   }

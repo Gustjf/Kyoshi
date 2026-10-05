@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.164", date: "2026-10-05", changes: [
+      "Cards show when they end as well as when they start, on the board and on Today, and so do other apps' events; a card too narrow for its end still shows its start and hours.",
+      "A card can have time before and after it inside it (a commute, by default), the same both ways or not, set in its pop-up; none is the default."
+    ] },
     { version: "10.064", date: "2026-10-03", changes: [
       "Your baseline keeps a card for each of Turtleduck's meal slots (breakfast, lunch and dinner every day) and each scheduled grocery trip, pinned at the times set in Turtleduck and as long as their usual length; they follow when those change, and your own cards stay where they are (one running into a slot is flagged, to arrange once).",
       "Loaded into a week, a slot takes its meal's name, length and time (a day's exception too), and goes back to the plain slot when the meal goes; a cooking session or a trip off the schedule gets a pinned card of its own, even in a week not planned yet. Nothing of Turtleduck's waits in Tasks any more.",

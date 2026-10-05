@@ -1,13 +1,14 @@
 /* Kyoshi · tests/momo.js — Momo's screens as the tests read and use them: the week tabs and their statuses, the bank
  * (To Be Budgeted, its line and message), Tasks (each task's title, hours, apps and overdue edge; parked cards), the
- * board's days and cards (title, hours, what fills them, ✓), dragging a task onto a day (Momo drags with Pointer
- * Events: the mouse down, a few moves past its threshold, up), New card, the bank's actions (Load or Reload baseline,
- * Copy previous week, Fill gaps with Free time, Save as baseline, Clear), the close-out (its banner, the pop-up's rows,
- * the Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's pop-up), the
- * card editor's From section, "Open in <App>" and read-only state (a card set in its app), and the switcher's dots with
- * their tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a card looks, trying to
- * drag one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps' needs) is read too, for
- * checks. Selectors live here, so a markup change is fixed in one place. */
+ * board's days and cards (title, hours, what fills them, ✓, start–end), dragging a task onto a day (Momo drags with
+ * Pointer Events: the mouse down, a few moves past its threshold, up), New card and the card editor's Before & after,
+ * the bank's actions (Load or Reload baseline, Copy previous week, Fill gaps with Free time, Save as baseline, Clear),
+ * the close-out (its banner, the pop-up's rows, the Done stepper, Confirm, Later; Close out this week; Reopen), Today
+ * (its sections and rows, a card's pop-up), the card editor's From section, "Open in <App>" and read-only state (a
+ * card set in its app), and the switcher's dots with their tooltips; for cards set in their app: the baseline's and a
+ * week's cards as stored, how a card looks, trying to drag one, Alt+click and the clipboard's shortcuts. What Momo
+ * drew from (its fill of other apps' needs) is read too, for checks. Selectors live here, so a markup change is fixed
+ * in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -58,7 +59,8 @@ const tasks = tab => tab.page.evaluate(() => {
   };
 });
 // The board's days: [{ day (0 = Monday), date ("Today", "Oct 6" or ""), total, over, cards: [{ id, title, hours, label, done,
-// inner, parent }], events: [{ key, title, done, flag, at }], marks: any-time events in the heading [{ title, done }] }].
+// inner, parent, time: "0900–1700" (start to end; "" without a time), noEnd: its end left out for room }], events: [{ key,
+// title, done, flag, time }], marks: any-time events in the heading [{ title, done }] }].
 const days = tab => tab.page.$$eval(`${M} #board .col`, cols => cols.map(col => {
   const h = s => { const m = /^([\d.]+)(h|m)$/.exec((s || "").trim()); return m ? (m[2] === "m" ? +m[1] / 60 : +m[1]) : null; };
   const own = c => c.querySelector(":scope > .card-own") || c;
@@ -70,10 +72,11 @@ const days = tab => tab.page.$$eval(`${M} #board .col`, cols => cols.map(col => 
         id: c.dataset.id, title: title ? [...title.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim() : "",
         fill: ((title && title.querySelector(".card-fill")) || {}).textContent?.replace(/^\s*·\s*/, "") || "",
         hours: h((o.querySelector(":scope > .card-hours") || {}).textContent), label: o.getAttribute("aria-label") || "",
-        done: !!o.querySelector(".card-time .ev-done"), late: c.classList.contains("late"), inner: c.classList.contains("inner"), parent: c.classList.contains("inner") ? c.parentElement.closest(".card").dataset.id : null
+        done: !!o.querySelector(".card-time .ev-done"), late: c.classList.contains("late"), inner: c.classList.contains("inner"), parent: c.classList.contains("inner") ? c.parentElement.closest(".card").dataset.id : null,
+        time: (o.querySelector(":scope > .card-time .clock") || {}).textContent || "", noEnd: !!o.querySelector(":scope > .card-time.no-end")
       };
     }),
-    events: [...col.querySelectorAll(".event")].map(e => ({ key: e.dataset.ev || "", title: e.getAttribute("title"), done: e.classList.contains("done"), flag: e.classList.contains("clash") })),
+    events: [...col.querySelectorAll(".event")].map(e => ({ key: e.dataset.ev || "", title: e.getAttribute("title"), done: e.classList.contains("done"), flag: e.classList.contains("clash"), time: (e.querySelector(".clock") || {}).textContent || "" })),
     marks: [...col.querySelectorAll(".ev-mark")].map(e => ({ title: e.getAttribute("title"), done: e.classList.contains("done") }))
   };
 }));
@@ -130,8 +133,9 @@ async function placeTask(tab, key, dayList) {
 }
 
 // --- Cards ---
-// + New card: a title, hours and days (none: it waits in Tasks).
-async function newCard(tab, { title, hours = 1, days: on = [] }) {
+// + New card: a title, hours and days (none: it waits in Tasks); on the baseline a time it's pinned at ("0900"), and its
+// before & after (as setSides).
+async function newCard(tab, { title, hours = 1, days: on = [], pin = "", sides: around = null }) {
   const p = tab.page;
   await p.click(`${M} #addTaskBtn`);
   await p.waitForSelector(`${M} #cardOverlay.open`);
@@ -141,8 +145,28 @@ async function newCard(tab, { title, hours = 1, days: on = [] }) {
     for (const d of on) await p.click(`${M} #cardDays .day-pill[data-day="${d}"]`);
     if (await p.locator(`${M} #cardDays .day-pill.active[data-day=""]`).count()) await p.click(`${M} #cardDays .day-pill[data-day=""]`);
   }
+  if (pin) await p.fill(`${M} #cardPin`, pin);
+  if (around) await setSides(tab, around);
   await p.click(`${M} #cardSaveBtn`);
 }
+// The card editor's Before & after: { shown, title, before, after (minutes), same (Same both ways ticked), afterOff (After
+// can't be changed) }.
+const sides = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`);
+  return { shown: !$("cardSidesField").hidden, title: $("cardSideTitle").value, before: +$("cardBefore").value, after: +$("cardAfter").value, same: $("cardSidesSame").checked, afterOff: $("cardAfter").disabled };
+});
+// Sets them as the user does: the title typed, Same both ways ticked or not, then the minutes typed and the field left.
+async function setSides(tab, { title, same, before, after } = {}) {
+  const p = tab.page;
+  if (title !== undefined) await p.fill(`${M} #cardSideTitle`, title);
+  if (same !== undefined) await p.setChecked(`${M} #cardSidesSame`, same);
+  for (const [id, v] of [["cardBefore", before], ["cardAfter", after]]) {
+    if (v === undefined) continue;
+    await p.fill(`${M} #${id}`, String(v));
+    await p.press(`${M} #${id}`, "Tab");
+  }
+}
+const saveCard = tab => tab.page.click(`${M} #cardSaveBtn`);
 // A card's editor, by its id: { title, hours, from: what fills it, by app [{ app, needs: [{ title, done, id, details }] }],
 // readonly (a card set in its app: no Save, fields off), change: "Change it in …" / "Set in …" ("" when hidden), changeId:
 // what its link opens, close: the Cancel button's words }.
@@ -237,12 +261,14 @@ const closeOutNow = tab => action(tab, "closeOutNowBtn");
 const reopen = tab => action(tab, "reopenBtn");
 
 // --- Today ---
-// Its sections in order: [{ head: "Now" | "Next" | "Later today" | "Tomorrow", rows: [{ when, title, sub, len, done, kind:
-// "card" | "event" | "free", card (its id), week, ev }] }], plus empty: "Nothing's planned for today yet." when shown.
+// Its sections in order: [{ head: "Now" | "Next" | "Later today" | "Tomorrow", rows: [{ when (it starts: "0900", or "any
+// time"), end ("1700", under it; "" for any time), title, sub, len, done, kind: "card" | "event" | "free", card (its id),
+// week, ev }] }], plus empty: "Nothing's planned for today yet." when shown.
 const today = tab => tab.page.evaluate(() => {
   const body = document.querySelector("#kMount #todayBody"), out = [];
   const row = el => ({
-    when: (el.querySelector(".t-when") || {}).textContent || "", title: [...(el.querySelector(".t-title") || { childNodes: [] }).childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim(),
+    when: [...(el.querySelector(".t-when") || { childNodes: [] }).childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim(),
+    end: ((el.querySelector(".t-when .t-end") || {}).textContent || "").replace(/^–/, ""), title: [...(el.querySelector(".t-title") || { childNodes: [] }).childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim(),
     sub: (el.querySelector(".t-sub") || {}).textContent || "", len: (el.querySelector(".t-len") || {}).textContent || "", done: !!el.querySelector(".ev-done"),
     kind: el.classList.contains("t-free") ? "free" : el.classList.contains("t-event") ? "event" : "card", card: el.dataset.card || "", week: el.dataset.week || "", ev: el.dataset.ev || "",
     label: el.getAttribute("title") || ""
@@ -279,7 +305,7 @@ const switchTip = tab => tab.page.getAttribute("#kSwitchBtn", "title");
 
 module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
-  newCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
+  newCard, sides, setSides, saveCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
   fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };

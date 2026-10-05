@@ -97,6 +97,33 @@ Kyoshi.apps.momo.markup = `
         </div>
         <div class="note" id="cardInnerNote" hidden></div>
       </div>
+      <!-- Before & after (sides.js): cards inside it at its start and its end, a commute by default; none is the default. -->
+      <div class="field" id="cardSidesField">
+        <div class="field-head">
+          <label for="cardSideTitle">Before &amp; after</label>
+          <label class="check"><input type="checkbox" id="cardSidesSame"> Same both ways</label>
+        </div>
+        <input type="text" id="cardSideTitle" maxlength="40" list="titleSuggestions" placeholder="Commute" autocomplete="off">
+        <div class="field-row sides-row">
+          <div class="field">
+            <label for="cardBefore">Minutes before</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
+              <input type="number" id="cardBefore" step="15" min="0" max="240" data-minutes>
+              <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="cardAfter">Minutes after</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
+              <input type="number" id="cardAfter" step="15" min="0" max="240" data-minutes>
+              <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="note">Inside the card, at its start and its end. A pinned card's time is when the whole block starts.</div>
+      </div>
       <div class="field">
         <div class="field-head">
           <label>Days</label>

@@ -108,11 +108,15 @@
 .app-momo .col-body > .card.clashing { margin-left: 25%; box-shadow: 0 1px 5px rgba(0, 0, 0, .3); }
 .app-momo .card-title { flex: 1 0 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .app-momo .card-hours { flex: 0 0 auto; color: var(--muted); font-size: .92em; font-variant-numeric: tabular-nums; }
-/* When a card starts, on the 24-hour clock (red when the cards above run
-   into it, or past midnight), then its pin: filled in the card's colour
-   while pinned, otherwise only there on hover. A pinned card stays put. */
+/* When a card starts and ends, on the 24-hour clock (red when the cards above run
+   into it, or past midnight; the end lighter), then its pin: filled in the card's colour
+   while pinned, otherwise only there on hover. A pinned card stays put. Where the end
+   doesn't fit beside the hours (a narrow day, a pin, long hours: render.js fitClocks), it
+   goes, so the start and the hours always show. */
 .app-momo .card-time { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 1px; color: var(--muted); font-size: .92em; font-variant-numeric: tabular-nums; }
 .app-momo .card-time.clash { color: var(--bad); font-weight: 700; }
+.app-momo .clock-end { font-weight: 400; opacity: .75; }
+.app-momo .no-end .clock-end { display: none; }
 .app-momo .pin { display: inline-flex; margin: -2px 0 -2px 1px; padding: 2px; border-radius: 3px; color: var(--muted); cursor: pointer; visibility: hidden; }
 .app-momo .pin:hover { background: var(--ring); color: var(--text); }
 .app-momo .pin-icon { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -240,6 +244,7 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .t-row.t-free .t-title { font-weight: 400; }
 .app-momo .t-when { flex: 0 0 3.2em; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .app-momo .t-when.any { font-size: .78em; font-weight: 400; line-height: 1.2; }
+.app-momo .t-end { display: block; font-size: .78em; font-weight: 400; } /* when it ends, under when it starts */
 .app-momo .t-what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .app-momo .t-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .app-momo .t-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85em; color: var(--muted); }
@@ -290,6 +295,11 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .field-head { display: flex; align-items: center; justify-content: space-between; gap: 4px 10px; flex-wrap: wrap; margin-bottom: 5px; }
 .app-momo .field-head label { margin: 0; }
 .app-momo .presets { display: flex; gap: 5px; margin-left: auto; }
+/* A card's before & after (sides.js): Same both ways beside its heading, then its title, then Before and After side by
+   side (on phones too). */
+.app-momo label.check { display: inline-flex; align-items: center; gap: 6px; font-size: .82em; color: var(--text); cursor: pointer; }
+.app-momo .sides-row { flex-direction: row; gap: 10px; margin-top: 8px; }
+.app-momo .sides-row > .field { margin: 0; }
 .app-momo .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .app-momo .swatch { width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 2px solid var(--panel); background: var(--c); box-shadow: 0 0 0 1px var(--border); transition: transform .1s; }
 .app-momo .swatch:hover { background: var(--c); transform: scale(1.12); }

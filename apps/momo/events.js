@@ -10,12 +10,13 @@
   const { DAY_HOURS, DAYS, WEEKDAYS, BUTTON_STEP, snap, fmtH, thisWeekKey, nextWeekKey } = A;
 
   // − / + buttons next to a number field step it by half an hour, within its min and max;
-  // next to a time of day (an event's), by 15 minutes.
+  // next to a time of day (an event's), or minutes (a card's before & after), by 15 minutes.
   function onStepper(e) {
     const btn = e.target.closest(".step-btn");
     if (!btn) return;
     const input = btn.parentElement.querySelector("input");
     if (input.dataset.clock !== undefined) return A.stepEventTime(+btn.dataset.step);
+    if (input.dataset.minutes !== undefined) return A.stepMinutes(input, +btn.dataset.step);
     const min = parseFloat(input.min), max = parseFloat(input.max);
     const next = snap((parseFloat(input.value) || 0) + BUTTON_STEP * +btn.dataset.step);
     input.value = fmtNum(Math.min(isNum(max) ? max : DAY_HOURS, Math.max(isNum(min) ? min : 0, next)));
@@ -76,8 +77,9 @@
     });
     // Once a touch drag has started, the page mustn't scroll under the finger.
     A.listen(document, "touchmove", e => { if (S.drag || S.resize) e.preventDefault(); }, { passive: false });
-    // The ruler is in pixels: the board is redrawn when an hour's height changes (narrow screens have shorter hours).
-    A.listen(window, "resize", () => { if (A.hourPx() !== S.ruler.hour) A.renderAll(); });
+    // The ruler is in pixels: the board is redrawn when an hour's height changes (narrow screens have shorter hours);
+    // else its days may be wider or narrower, so where cards' ends fit is measured again.
+    A.listen(window, "resize", () => { if (A.hourPx() !== S.ruler.hour) A.renderAll(); else A.fitClocks(); });
 
     // Pop-ups: Esc, their × and a click beside them are handled by core/modal.js.
     A.defineCardOverlay();
@@ -99,6 +101,7 @@
     $("cardPin").addEventListener("change", () => { const t = A.readClock("cardPin"); if (isNum(t)) $("cardPin").value = A.fmtClock(t); });
     $("cardHours").addEventListener("input", A.renderInnerNote);
     Object.keys(A.HOUR_RANGES).forEach(id => $(id).addEventListener("change", A.tidyHours));
+    A.initSides(); // its before & after (sides.js)
 
     $("eventFixes").addEventListener("click", A.onFixClick);
     $("eventTime").addEventListener("input", () => A.onEventTime(false));

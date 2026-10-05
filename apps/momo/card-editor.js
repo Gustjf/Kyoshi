@@ -1,7 +1,7 @@
 /* Momo · card-editor.js — the card editor pop-up (#cardOverlay): new and existing cards,
- * the days they're on, pin time, which card they sit inside, and colour; saving, deleting,
- * and the colour swatches (renderColors, onColorClick). Hours fields and clock times are read
- * here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one.
+ * the days they're on, pin time, which card they sit inside, its before & after (sides.js), and
+ * colour; saving, deleting, and the colour swatches (renderColors, onColorClick). Hours fields and
+ * clock times are read here too. A card from before goals moved to Iroh keeps its goalId; nothing here sets one.
  * Another app's card (model.js need: an errand, a meal…) goes on one day at a time, and its
  * colour is its app's; one whose day its app sets (a meal, a trip, something done) has no
  * Delete: "Change it in <App>" leads there. Editing one Momo placed makes it yours (auto).
@@ -17,7 +17,8 @@
 
   const overlay = () => $("cardOverlay");
   // What the editor holds for the card itself, and with the colour picked too, to tell whether closing it would lose changes.
-  const cardFields = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort()]);
+  const cardFields = () => JSON.stringify([$("cardTitle").value, $("cardHours").value, $("cardIn").value, $("cardPos").value, $("cardPin").value, [...S.editing.days].sort(),
+    $("cardSideTitle").value, $("cardBefore").value, $("cardAfter").value]);
   const cardFormState = () => JSON.stringify([cardFields(), S.editing.pick]);
 
   // Esc, × and a click beside the editor ask first if it has unsaved changes (core/modal.js); Cancel doesn't.
@@ -109,6 +110,7 @@
     $("cardPin").value = card && A.pinned(card) ? fmtClock(card.pin) : "";
     $("cardPin").placeholder = row ? `${fmtClock(row.start)} (where it starts now)` : "e.g. 2300";
     renderPinField();
+    A.openSides(list, card); // its before & after (sides.js)
     renderInnerNote();
     const noWeekdays = !presetDays(WEEKDAYS).length; // this week, on a weekend
     $("cardWeekdaysBtn").disabled = noWeekdays;
@@ -257,9 +259,9 @@
     $("cardPinField").hidden = !S.editing || S.editing.key !== "base" || (!$("cardInField").hidden && !!$("cardIn").value);
   }
 
-  // Under the hours of a card with cards inside it: those, and the block's total.
+  // Under the hours of a card with cards inside it (its before & after as their fields say): those, and the block's total.
   function renderInnerNote() {
-    const inner = S.editing ? S.editing.inner : [], h = readHours("cardHours");
+    const inner = S.editing ? A.innerAfter() : [], h = readHours("cardHours");
     $("cardInnerNote").hidden = !inner.length;
     $("cardInnerNote").textContent = `+ ${inner.map(c => `${c.title} ${fmtH(c.hours)}`).join(" + ")} inside${isNum(h) ? ` = ${fmtH(h + sum(inner.map(c => c.hours)))}` : ""}`;
   }
@@ -272,8 +274,11 @@
     const inTitle = $("cardInField").hidden ? "" : $("cardIn").value;
     const pos = POSITIONS.includes($("cardPos").value) ? $("cardPos").value : "middle";
     const setPin = !$("cardPinField").hidden, pinAt = setPin ? readClock("cardPin") : null;
+    const sides = A.readSides(); // its before & after (sides.js): null when they aren't shown
     if (!title) { $("cardTitle").focus(); return alert("Give the card a name."); }
     if (!isNum(hours)) { $("cardHours").focus(); return alert("Enter how many hours, e.g. 1.5 (in 15-minute steps)."); }
+    if (sides && !(isNum(sides.before) && isNum(sides.after))) { $(isNum(sides.before) ? "cardAfter" : "cardBefore").focus(); return alert("Enter the minutes before and after, e.g. 30 (in 15-minute steps), or 0 for none."); }
+    if (sides && (sides.before || sides.after) && sides.title.toLowerCase() === title.toLowerCase()) { $("cardSideTitle").focus(); return alert("Give the time before and after a name of its own, e.g. Commute."); }
     if (Number.isNaN(pinAt)) { $("cardPin").focus(); return alert("Enter the time it starts, like 2300 or 7:30 — or leave it empty."); }
     if (!editing.days.size) return alert(editing.need ? "Pick a day." : editing.key === "base" ? "Pick at least one day." : "Pick at least one day, or No day to keep it in Tasks.");
     const list = A.listFor(editing.key), days = [...editing.days].sort((a, b) => a - b);
@@ -299,13 +304,16 @@
     const pinOn = d => (d === null || parentOn(d) ? null : pin);
     const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false, slot: null, fixed: false });
     // Adds a new card before the card `before` (AUTO: wherever autoSpot puts
-    // it; a pinned one always goes there), or into a matching card next to that spot.
+    // it; a pinned one always goes there), or into a matching card next to that
+    // spot. Returns the card that holds it.
     const add = (c, before) => {
       const spot = c.day === null || c.parentId ? null : A.pinned(c) || before === AUTO ? A.autoSpot(list, c.day, c) : before;
       const into = A.mergeTarget(list, c, c.day, c.parentId, c.pos, spot);
       if (into) into.hours += c.hours;
       else A.insertCard(list, c, spot);
+      return into || c;
     };
+    const held = []; // the cards it ends up as, one a day picked: each takes the before & after
     if (card) {
       const wasPinned = A.pinned(card), orig = card.pin;
       Object.assign(card, { title, hours });
@@ -327,20 +335,22 @@
       const open = days.filter(d => !twinOn(d));
       const home = editing.days.has(card.day) ? card.day : open.length ? open[0] : days[0];
       card.pin = pinOn(home);
-      if (!A.inPlace(card, home, parentOn(home), pos) || (A.pinned(card) && card.pin !== orig)) A.moveCard(list, card.id, home, AUTO, parentOn(home), pos);
-      else A.settle(list, card);
+      if (!A.inPlace(card, home, parentOn(home), pos) || (A.pinned(card) && card.pin !== orig)) held.push(A.moveCard(list, card.id, home, AUTO, parentOn(home), pos) || card);
+      else held.push(A.settle(list, card) || card);
       days.filter(d => d !== home).forEach(d => {
         const twin = twinOn(d);
-        if (!twin) return add(newCard(d), AUTO);
+        if (!twin) return held.push(add(newCard(d), AUTO));
         twin.hours = hours;
         if (setPin && !twin.parentId && twin.pin !== pin) {
           twin.pin = pin;
           if (A.pinned(twin)) A.moveCard(list, twin.id, d, AUTO, null, twin.pos);
         }
+        held.push(twin);
       });
     } else {
-      days.forEach(day => add(newCard(day), day === editing.at.day ? editing.at.before : AUTO));
+      days.forEach(day => held.push(add(newCard(day), day === editing.at.day ? editing.at.before : AUTO)));
     }
+    if (sides) held.forEach(c => A.setSides(list, c, sides.title, sides.before, sides.after, sides.was));
     // Its title's colour: the one it had, when it's renamed to a new title and
     // no card on show keeps the old one; and one picked here, which swaps with
     // the title that had it. Another app's card: its app's.

@@ -26,6 +26,17 @@
     A.paintClip();
     A.renderWeekends(); // under the board and under Today (weekends.js)
     A.renderToday();
+    fitClocks(); // once the board's on screen (renderToday shows it)
+  }
+
+  // A card's end that doesn't fit beside its hours (a narrow day, a pin, long hours) isn't shown (momo.css .no-end):
+  // the start and the hours come first. Measured on the board (or a day of it: box) as laid out: after drawing it, a
+  // day redrawn while a card is resized (drop.js), and when the window changes size (events.js); nothing to measure
+  // while it's off screen.
+  function fitClocks(box = $("board")) {
+    const times = [...box.querySelectorAll(".card-time")];
+    times.forEach(t => t.classList.remove("no-end"));
+    times.filter(t => t.nextElementSibling && t.nextElementSibling.offsetTop > t.offsetTop + t.offsetHeight / 2).forEach(t => t.classList.add("no-end"));
   }
 
   function renderTabs() {
@@ -119,7 +130,7 @@
   // those at the top, its own part (which takes the clicks, so buttons aren't
   // nested), those in the middle with the rest of its own part below them, and
   // those at the bottom. Its own part is resized from its lower edge. On a
-  // day each card shows when it starts (times, from startTimes), one on its
+  // day each card shows when it starts and ends (times, from startTimes), one on its
   // own has a pin, and each piece is sized to the ruler (styles, from
   // pieceStyles). Another app's card shows its app's icon, filled or not; one
   // missed on a day gone by (inbox.js) is red-edged, as late ones are; one whose
@@ -138,7 +149,7 @@
       (P ? `, set in ${P.meta.name}` : "");
     const button = `role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}"`;
     const own = `<span class="card-title">${icons}${esc(c.title)}${fill && fill.names ? `<span class="card-fill"> · ${esc(fill.names)}</span>` : ""}</span>` +
-      (when ? timeHTML(c, when, !parent && !set, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
+      (when ? timeHTML(list, c, when, !parent && !set, !!fill && fill.done) : "") + `<span class="card-hours">${fmtH(c.hours)}</span>`;
     const grip = c.day === null || set ? "" : `<span class="grip" aria-hidden="true"></span>`;
     const at = pos => inner.filter(x => x.pos === pos).map(x => cardHTML(list, x, times, styles)).join("");
     const mid = at("middle"), size = key => (styles ? `${styles.get(key)};` : "");
@@ -147,15 +158,21 @@
         (mid ? `${mid}<div class="card-own card-rest" style="${size(`rest:${c.id}`)}" aria-hidden="true">${grip}</div>` : "") + at("bottom") : own + grip) + `</div>`;
   }
 
-  // When a card starts, then its pin if it's on its own: filled while
-  // pinned, else there to pin it where it is (a card its app sets: a sign
+  // When a piece of a day that starts at `at` ends: a card's own hours on, and a block's own part runs around the
+  // cards in its middle. Its time on the board: "0900–1700", the end less marked (also an event's, agenda.js).
+  const endOf = (list, c, at) => at + c.hours + sum(A.innerCards(list, c).filter(x => x.pos === "middle").map(x => x.hours));
+  const clockHTML = (at, end) => `${fmtClock(at)}<span class="clock-end">–${fmtClock(end)}</span>`;
+
+  // When a card starts and ends, then its pin if it's on its own: filled while
+  // pinned, else there to pin it where its block starts now (a card its app sets: a sign
   // that it's pinned there, shown on phones too); then a ✓ once what fills it is done.
-  function timeHTML(c, when, canPin, done) {
-    const tip = A.pinned(c) ? `Pinned at ${fmtClock(c.pin)} — unpin` : `Pin at ${fmtClock(Math.min(DAY_HOURS - STEP, when.at))}`;
+  function timeHTML(list, c, when, canPin, done) {
+    const from = when.at - sum(A.innerCards(list, c).filter(x => x.pos === "top").map(x => x.hours)); // the cards at its top come first
+    const tip = A.pinned(c) ? `Pinned at ${fmtClock(c.pin)} — unpin` : `Pin at ${fmtClock(Math.min(DAY_HOURS - STEP, from))}`;
     const icon = `<svg class="pin-icon" viewBox="0 0 24 24"><use href="#i-pin"/></svg>`;
     const pin = canPin ? `<span class="pin${A.pinned(c) ? " on" : ""}" title="${tip}" aria-hidden="true">${icon}</span>`
       : A.isFixed(c) && A.pinned(c) ? `<span class="set-pin" aria-hidden="true">${icon}</span>` : "";
-    return `<span class="card-time${when.clash || when.at >= DAY_HOURS ? " clash" : ""}"><span class="clock">${fmtClock(when.at)}</span>${pin}${done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>`;
+    return `<span class="card-time${when.clash || when.at >= DAY_HOURS ? " clash" : ""}"><span class="clock">${clockHTML(when.at, endOf(list, c, when.at))}</span>${pin}${done ? `<span class="ev-done" aria-hidden="true">✓</span>` : ""}</span>`;
   }
 
   // Free time on a day, sized to the ruler (style) and saying how much it is:
@@ -217,5 +234,5 @@
       (regions.has("end") ? free("end", DAY_HOURS - end, null) : locked ? "" : endHTML(d, DAY_HOURS - end, total, styles.get("end"))) + A.overlaysHTML(plan, locked);
   }
 
-  Object.assign(A, { renderAll, renderTabs, renderBank, cardHTML, renderBoard, dayPlan, dayHTML });
+  Object.assign(A, { renderAll, fitClocks, renderTabs, renderBank, cardHTML, endOf, clockHTML, renderBoard, dayPlan, dayHTML });
 })(Kyoshi, Kyoshi.apps.momo);
