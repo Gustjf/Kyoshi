@@ -155,18 +155,16 @@ footer a:hover { color: var(--text); text-decoration: underline; }
 .field-row > .field { flex: 1; }
 @media (max-width: 640px) { .field-row { flex-direction: column; gap: 0; } }
 
-/* --- Bugs & requests (core/bugs.js): Bug or Feature request over the box, the open ones under it --- */
+/* --- Bugs & requests (core/bugs.js): Bug or Feature request over the box, everything logged under it --- */
 .bug-kinds { margin-bottom: 10px; }
 .bug-kinds .mode-btn { padding: 8px 10px; }
-.bug-open-head { margin: 14px 0 2px; }
+.bug-list-head { margin: 14px 0 2px; }
 .bug-list { list-style: none; margin: 0; padding: 0; }
 .bug-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); font-size: .85em; line-height: 1.4; }
 .bug-kind { flex: 0 0 auto; min-width: 20px; padding: 0 4px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: .8em; font-weight: 700; text-align: center; }
 .bug-kind.request { border-color: var(--accent); color: var(--accent); }
 .bug-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .bug-where { color: var(--muted); }
-.bug-row button { flex: 0 0 auto; }
-@media (max-width: 640px) { .bug-row button { min-height: 34px; } }
 
 /* --- Developer mode (Ctrl+9, core/dev.js) --- */
 .dev-panel { display: none; position: fixed; right: 14px; bottom: 48px; width: 300px; max-height: 70vh; overflow-y: auto; padding: 12px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: .85em; z-index: 9999; box-shadow: 0 4px 16px rgba(0, 0, 0, .25); }

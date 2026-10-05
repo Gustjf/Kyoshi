@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.760", date: "2026-10-05", changes: [
+      "Bugs & requests are no longer ticked off one by one: everything submitted stays listed (and counted on the footer link) until you clear it in Developer Mode, whose Copy all and Download .md take them all, feature requests first, then bugs.",
+      "Submit empties the box at once, so closing the pop-up right after never asks to discard a report that's already saved."
+    ] },
     { version: "3.750", date: "2026-10-05", changes: [
       "The browser tab always reads “Kyoshi”, with one dark-green icon, instead of changing with the app on screen: Lucide's flame (dragons were the first firebenders), as a drawn dragon didn't read at tab size.",
       "A checkup or meeting done today shows its ✓ in green on the app's header line.",

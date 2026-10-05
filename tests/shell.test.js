@@ -1,10 +1,10 @@
 /* Kyoshi · tests/shell.test.js — the whole of Kyoshi, every app: each opens through the switcher with a clean console
  * at phone and desktop width (and after a week of time travel), the switcher lists every app in order, a new device
  * opens on the first, Export all / Import all (Developer Mode) carry every app's data, the tab always reads "Kyoshi",
- * a checkup done today shows a green ✓, and Bugs & requests (the pop-up's open list, Developer Mode's exports). */
+ * a checkup done today shows a green ✓, and Bugs & requests (the pop-up's list, Developer Mode's exports and Clear). */
 "use strict";
 const fs = require("fs");
-const { TODAY, PHONE, DESKTOP, eq, ok, has, lacks, open, switchTo, importBackup, travel, text } = require("./lib");
+const { TODAY, PHONE, DESKTOP, eq, ok, has, open, switchTo, importBackup, travel, text } = require("./lib");
 const gen = require("./generate");
 
 module.exports = [
@@ -78,40 +78,33 @@ module.exports = [
     }
   },
   {
-    name: "shell: a feature request is listed until it's done; the tab stays Kyoshi; a checkup done today shows a green ✓",
+    name: "shell: a feature request stays listed with its app; the tab stays Kyoshi; a checkup done today shows a green ✓",
     async run(t) {
       const tab = await open(t, { app: "hawky" }), p = tab.page, icon = await p.getAttribute("#kFavicon", "href");
       eq(await p.title(), "Kyoshi", "the tab reads Kyoshi");
       ok(icon.startsWith("data:image/svg+xml,") && icon.includes("%2314532d"), "with the dark-green icon");
-      eq(await text(tab, "#kReportBug"), "Bugs & requests", "the footer link, nothing open");
+      eq(await text(tab, "#kReportBug"), "Bugs & requests", "the footer link, nothing logged");
       await p.click("#kReportBug");
       eq(await p.getAttribute('#kBugKind [data-kind="bug"]', "aria-pressed"), "true", "Bug is picked the first time");
       await p.click('#kBugKind [data-kind="request"]');
       eq(await p.getAttribute("#kBugText", "placeholder"), "What should Kyoshi do, and where?", "the box asks for a request");
       await p.fill("#kBugText", "A five-minute chip on quick add\nand a second line");
       await p.click("#kBugSubmit");
-      has(await text(tab, "#kBugStatus"), "Saved request", "the status line says what was saved");
+      await p.locator("#kBugStatus", { hasText: "Saved request" }).waitFor({ timeout: 5000 }); // once the copy is done, the status line says what was saved
+      eq(await p.inputValue("#kBugText"), "", "the box is emptied");
       const rows = () => p.$$eval("#kBugList .bug-row", els => els.map(r => [r.querySelector(".bug-kind").textContent, r.querySelector(".bug-body").textContent]));
       eq(await rows(), [["R", `Hawky · ${TODAY} A five-minute chip on quick add`]], "one R row: the app, the day, the first line");
-      eq(await p.textContent("#kBugOpenHead"), "Open · 1", "under its heading");
+      eq(await p.textContent("#kBugListHead"), "Submitted · 1", "under its heading");
+      eq(await p.locator("#kBugList button").count(), 0, "nothing to tick off one by one");
       eq(await text(tab, "#kReportBug"), "Bugs & requests · 1", "the footer link counts it");
       const [stored] = await p.evaluate(() => Kyoshi.store.json("bugReports"));
-      eq([stored.kind, stored.done], ["request", ""], "kept as an open request");
+      eq(stored.kind, "request", "kept as a request");
       ok(stored.markdown.split("\n")[0].endsWith(" · feature request"), "the report's first line ends with what it is");
-      // On a phone, Done stays at the row's right end and nothing scrolls sideways.
-      const fit = await p.evaluate(() => {
-        const row = document.querySelector("#kBugList .bug-row"), modal = document.querySelector("#kBugOverlay .modal");
-        return [Math.round(row.getBoundingClientRect().right - row.querySelector("button").getBoundingClientRect().right), modal.scrollWidth - modal.clientWidth];
-      });
-      eq(fit, [0, 0], "Done at the row's right end, no sideways scrolling");
-      await p.click("#kBugList [data-done]");
-      eq(await rows(), [], "Done empties the list");
-      ok(await p.locator("#kBugOpenHead").isHidden(), "and hides its heading");
-      eq(await text(tab, "#kReportBug"), "Bugs & requests", "the footer count goes");
-      ok((await p.evaluate(() => Kyoshi.store.json("bugReports")))[0].done, "the request is kept, marked done");
+      eq(await p.evaluate(() => { const m = document.querySelector("#kBugOverlay .modal"); return m.scrollWidth - m.clientWidth; }), 0, "no sideways scrolling on a phone");
       await p.click("#kBugOverlay .modal-close");
       await p.click("#kReportBug");
-      eq(await p.getAttribute('#kBugKind [data-kind="request"]', "aria-pressed"), "true", "Feature request is picked again next time");
+      eq(await rows(), [["R", `Hawky · ${TODAY} A five-minute chip on quick add`]], "still listed next time");
+      eq(await p.getAttribute('#kBugKind [data-kind="request"]', "aria-pressed"), "true", "and Feature request is picked again");
       await p.click("#kBugOverlay .modal-close");
 
       // Another app: the tab doesn't change; its checkup, done today, shows a green ✓.
@@ -130,20 +123,24 @@ module.exports = [
     }
   },
   {
-    name: "shell: Developer Mode copies the open bugs and requests, requests first; Clear done; older reports are open bugs",
+    name: "shell: Developer Mode exports every bug and request, requests first, then Clear empties the list; older reports are bugs",
     async run(t) {
       const tab = await open(t, { app: "pabu", size: DESKTOP }), p = tab.page;
-      // A report kept before Kyoshi 3.750 (no kind, no done) is an open bug.
+      // Kept before Kyoshi 3.760: one from before 3.750 (no kind: a bug), one marked done in 3.750 (listed like any other now).
       await p.evaluate(() => {
-        Kyoshi.store.set("bugReports", JSON.stringify([{ id: 1, timestamp: "2026-09-01T12:00:00.000Z", app: "momo", description: "Old one", markdown: "Kyoshi 3.650 · Momo 10.064\nOld one" }]));
+        Kyoshi.store.set("bugReports", JSON.stringify([
+          { id: 1, timestamp: "2026-09-01T12:00:00.000Z", app: "momo", description: "Old one", markdown: "Kyoshi 3.650 · Momo 10.064\nOld one" },
+          { id: 2, timestamp: "2026-10-05T12:00:00.000Z", app: "hawky", description: "Marked done", markdown: "Kyoshi 3.750 · Hawky 2.110 · feature request\nMarked done", kind: "request", done: "2026-10-05T13:00:00.000Z" }
+        ]));
         Kyoshi.bugs.load();
       });
-      eq(await text(tab, "#kReportBug"), "Bugs & requests · 1", "an older report counts as open");
+      eq(await text(tab, "#kReportBug"), "Bugs & requests · 2", "both count");
       for (const [kind, words] of [["request", "Request one"], ["bug", "Bug two"]]) {
         await p.click("#kReportBug");
         await p.click(`#kBugKind [data-kind="${kind}"]`);
         await p.fill("#kBugText", words);
         await p.click("#kBugSubmit");
+        await p.locator("#kBugStatus", { hasText: "Saved" }).waitFor({ timeout: 5000 });
         await p.click("#kBugOverlay .modal-close");
       }
       const head = () => text(tab, ".dev-block-head:has(#kDevBugCount)");
@@ -153,28 +150,28 @@ module.exports = [
         return fs.readFileSync(await file.path(), "utf8");
       };
       await p.click("#kDevBadge");
-      eq(await head(), "Bugs & requests: 3 open · 0 done", "Developer Mode counts them");
-      let md = await download();
-      ok(md.startsWith("FEATURE REQUESTS (1)\n\nKyoshi "), "requests first");
-      const at = ["Request one", "BUGS (2)", "Old one", "Bug two"].map(w => md.indexOf(w));
-      ok(at.every((n, i) => n > (i ? at[i - 1] : 0)), `then the bugs, in the order they were logged (${at})`);
+      eq(await head(), "Bugs & requests: 4", "Developer Mode counts them");
+      const md = await download();
+      ok(md.startsWith("FEATURE REQUESTS (2)\n\nKyoshi "), "requests first");
+      const at = ["Marked done", "Request one", "BUGS (2)", "Old one", "Bug two"].map(w => md.indexOf(w));
+      ok(at.every((n, i) => n > (i ? at[i - 1] : 0)), `then the bugs, each group in the order they were logged (${at})`);
       has(md, "\n\n---\n\n", "each report apart");
 
-      // Done on the old one and the request: only the bug is left to copy.
+      // Clear asks first: No keeps them all; Yes empties the list.
+      tab.answers.push(false);
+      await p.click("#kDevClearBugs");
+      has(tab.dialogs.map(d => d[1]).join(" | "), "Export them first", "Clear reminds to export");
+      eq(await head(), "Bugs & requests: 4", "No keeps them");
+      await p.click("#kDevClearBugs");
+      eq(await head(), "Bugs & requests: 0", "Yes clears them");
+      eq(await p.evaluate(() => Kyoshi.store.json("bugReports")), [], "the log is empty");
+      tab.dialogs.length = 0;
+      await p.click("#kDevDownloadBugs");
+      has(tab.dialogs.map(d => d[1]).join(" | "), "No bugs or requests logged", "nothing left to download");
       await p.click("#kDevBadge");
+      eq(await text(tab, "#kReportBug"), "Bugs & requests", "the footer count goes");
       await p.click("#kReportBug");
-      for (const words of ["Old one", "Request one"]) await p.click(`#kBugList .bug-row:has-text("${words}") [data-done]`);
-      eq(await p.$$eval("#kBugList .bug-row .bug-kind", els => els.map(e => e.textContent)), ["B"], "one open bug left");
-      await p.click("#kBugOverlay .modal-close");
-      await p.click("#kDevBadge");
-      eq(await head(), "Bugs & requests: 1 open · 2 done", "two done");
-      md = await download();
-      ok(md.startsWith("BUGS (1)\n\n") && md.includes("Bug two"), "the open bug alone");
-      lacks(md, "FEATURE REQUESTS", "no requests group when none is open");
-      lacks(md, "Old one", "nor the done ones");
-      await p.click("#kDevClearDoneBugs");
-      eq(await head(), "Bugs & requests: 1 open · 0 done", "Clear done removes the done ones");
-      eq((await p.evaluate(() => Kyoshi.store.json("bugReports"))).map(r => r.description), ["Bug two"], "and keeps the open one");
+      eq([await p.locator("#kBugList .bug-row").count(), await p.locator("#kBugListHead").isHidden()], [0, true], "and the pop-up's list");
     }
   }
 ];

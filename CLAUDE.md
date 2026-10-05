@@ -49,7 +49,7 @@ core/                 the shared DNA — K = window.Kyoshi
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
   sync.js             K.sync: folder autosave & sync engine (clocks, merge calls, one subfolder per app, apps' files). No UI.
   backup.js           K.backup: each app's "Backup & sync" section, sync & storage banners, Export/Import JSON & all (dated; K.backup.ask: the import question)
-  bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; the open ones listed, Done ✓) and log
+  bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared) and log
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline
