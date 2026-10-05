@@ -19,11 +19,14 @@ Kyoshi.apps.hawky.markup = `
       </div>
       <div class="chips days" id="addDays" role="group" aria-label="When">
         <button type="button" class="mode-btn chip" data-day="today">Today</button>
+        <button type="button" class="mode-btn chip" data-day="week" title="Due this Sunday">This week</button>
+        <button type="button" class="mode-btn chip" data-day="nextweek" title="Due next Sunday">Next week</button>
         <button type="button" class="mode-btn chip" data-day="pick">Pick a day</button>
         <button type="button" class="mode-btn chip" data-day="none">No day</button>
       </div>
       <input type="date" id="addDate" class="add-extra" aria-label="The day it's due" hidden>
       <div class="chips" id="addMinutes" role="group" aria-label="How long">
+        <button type="button" class="mode-btn chip" data-minutes="5">5 min</button>
         <button type="button" class="mode-btn chip" data-minutes="15">15 min</button>
         <button type="button" class="mode-btn chip" data-minutes="30">30 min</button>
         <button type="button" class="mode-btn chip" data-minutes="60">1 hour</button>
@@ -113,6 +116,7 @@ Kyoshi.apps.hawky.markup = `
           </div>
         </div>
         <p class="modal-hint" id="errandDoneNote" hidden></p>
+        <p class="modal-hint" id="errandPostponedNote" hidden></p>
         <div class="modal-actions">
           <button type="submit">Save</button>
           <button type="button" class="secondary" id="errandCancelBtn">Cancel</button>

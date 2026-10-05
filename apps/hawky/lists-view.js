@@ -1,11 +1,12 @@
 /* Hawky · lists-view.js — the Shopping view (lists.js has the model): the add row (store and topic, each suggesting
  * what's been used, the item, + Note or link; Add puts the item on that store and topic's list or starts one, and keeps
- * the store and topic for the next; a locked list's is refused), then the lists by store (stores A to Z, topics A to Z),
- * each a card: its topic, how many items and its state, Rename, its items (✓ once it's ready, ✕ to take one off, how
- * long each has waited, its note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7
- * days · Unlock early, in amber, after a warning · Tick all); then the Done fold, newest first. The pop-ups: a list's
- * (Rename: store and topic; Delete list) and an item's (its words and note, while the list is open or ready; Remove).
- * renderLists is called by renderAll (render.js); wireLists by A.init (events.js). */
+ * the store and topic for the next; a locked list's is refused), then the lists by store (stores A to Z, topics A to Z;
+ * each store in its own colour: a dot by its name, the left edge of its lists, done ones' too), each a card: its topic,
+ * how many items and its state, Rename, its items (✓ once it's ready, ✕ to take one off, how long each has waited, its
+ * note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days · Unlock early, in
+ * amber, after a warning · Tick all); then the Done fold, newest first. The pop-ups: a list's (Rename: store and topic;
+ * Delete list) and an item's (its words and note, while the list is open or ready; Remove). renderLists is called by
+ * renderAll (render.js); wireLists by A.init (events.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -17,6 +18,12 @@
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" });
+
+  // A store's own colour (a dot by its name, an edge on its lists), worked out from its name, never stored: the same
+  // store, in any capitals, gets the same one on every device. Eight from Momo's palette, read on light and dark;
+  // with more stores than that, two may share one.
+  const STORE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#22c55e", "#14b8a6", "#38bdf8", "#d4a017"];
+  const storeColor = name => STORE_COLORS[[...name.toLowerCase()].reduce((h, ch, k) => h + ch.codePointAt(0) * (k + 1), 0) % STORE_COLORS.length];
 
   // A note as HTML: its web addresses (http and https only) as links showing the site's name, less the punctuation
   // after one (as in Appa's notes); the rest as text.
@@ -53,15 +60,15 @@
       `</li>`;
   }
 
-  // One list as a card: "Gifts · 3 items · locked · 18 days" and Rename, its items, then its state's buttons. In the
-  // Done fold it names its store too.
+  // One list as a card, edged in its store's colour: "Gifts · 3 items · locked · 18 days" and Rename, its items, then
+  // its state's buttons. In the Done fold it names its store too.
   function cardHTML(l, today) {
     const state = A.stateOf(l, today), items = A.liveItemsOf(l), id = `data-list="${esc(l.id)}"`;
     let actions = "";
     if (state === "open") actions = LOCK_DAYS.map((d, k) => `<button type="button"${k ? ' class="secondary"' : ""} data-act="list-lock" ${id} data-days="${d}">Lock ${d} days</button>`).join("");
     if (state === "locked") actions = `<span class="slist-lock">Unlocks ${esc(dayWords(A.unlockDay(l), today))}</span><button type="button" class="warn-btn" data-act="list-unlock" ${id}>Unlock early</button>`;
     if (state === "ready") actions = `<button type="button" data-act="list-tickall" ${id}>Tick all</button>`;
-    return `<div class="slist ${state}" data-id="${esc(l.id)}">` +
+    return `<div class="slist ${state}" data-id="${esc(l.id)}" style="--store:${storeColor(l.vendor)}">` +
       `<div class="slist-head"><span class="slist-topic">${esc(l.topic)}${state === "done" ? `<span class="slist-vendor"> · ${esc(l.vendor)}</span>` : ""}</span>` +
       `<span class="slist-meta">${plural(items.length, "item")} · <span class="slist-state">${esc(stateWords(l, state, today))}</span></span>` +
       `<button type="button" class="secondary small" data-act="list-rename" ${id}>Rename</button></div>` +
@@ -90,7 +97,7 @@
     const items = active.reduce((n, l) => n + A.liveItemsOf(l).length, 0);
     $("listsEmpty").hidden = active.length > 0;
     $("listsCount").textContent = active.length ? `${active.length} · ${plural(items, "item")}` : "";
-    $("vendors").innerHTML = groups.map(g => `<div class="vendor"><h3 class="vendor-name">${esc(g.name)}</h3>${g.lists.map(l => cardHTML(l, today)).join("")}</div>`).join("");
+    $("vendors").innerHTML = groups.map(g => `<div class="vendor" style="--store:${storeColor(g.name)}"><h3 class="vendor-name">${esc(g.name)}</h3>${g.lists.map(l => cardHTML(l, today)).join("")}</div>`).join("");
     const done = A.doneLists(), shown = done.slice(0, S.listsDoneShown);
     $("listsDoneSection").hidden = !done.length;
     $("listsDoneCount").textContent = `(${done.length})`;

@@ -1,15 +1,18 @@
 /* Hawky · render.js — draws the page from A.S: the nav and the view on screen (showView; the Shopping view is
  * lists-view.js's), quick add's chips (and the field the picked one asks for, and the note line), the list in its
  * groups (each errand: ✓, its text, when it's due or how long it has waited, how long it takes, its note's first
- * line; each group's total time), and the Done fold (newest first, DONE_PAGE at a time). */
+ * line, a warning once it's been postponed often, and Tomorrow → while it's overdue; each group's total time), and
+ * the Done fold (newest first, DONE_PAGE at a time). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, sum, todayStr } = K.util;
-  const { GROUPS, DONE_PAGE, fmtMinutes, dayWords, waited, firstLine, groupOf } = A;
+  const { GROUPS, DONE_PAGE, POSTPONE_WARN, fmtMinutes, dayWords, waited, firstLine, groupOf } = A;
 
   // The "check" icon from Lucide (ISC license), in the ✓ button's circle.
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  // The "triangle-alert" icon from Lucide (ISC license), before "postponed 4×".
+  const ALERT = '<svg class="warn-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const total = list => fmtMinutes(sum(list.map(i => i.minutes)));
 
@@ -30,15 +33,19 @@
 
   // One errand: ✓ (filled once done, and tapping it again undoes), its text (opens its pop-up), then
   // when (the day it's due, but today's; how long an undated one has waited; or the day it was done), how
-  // long it takes, and its note's first line.
+  // long it takes, and its note's first line. Postponed more than POSTPONE_WARN times, its line starts with a
+  // warning and how often; while it's overdue, Tomorrow → at the row's end postpones it.
   function errandHTML(i, today) {
     const when = i.done ? `Done ${dayWords(i.done, today)}` : i.due ? (i.due !== today ? cap(dayWords(i.due, today)) : "") : cap(waited(i.at, today));
     const tick = i.done ? "Not done yet" : "Done", note = firstLine(i.note);
+    const slipped = i.postponed > POSTPONE_WARN ? `<span class="slipped">${ALERT}postponed ${i.postponed}×</span> · ` : "";
     return `<li class="errand${i.done ? " done" : ""}" data-id="${esc(i.id)}">` +
       `<button type="button" class="tick" data-act="${i.done ? "undo" : "tick"}" data-id="${esc(i.id)}" title="${tick}" aria-label="${tick}: ${esc(i.text)}"><span class="box">${CHECK}</span></button>` +
       `<div class="errand-main"><button type="button" class="errand-text" data-act="edit" data-id="${esc(i.id)}">${esc(i.text)}</button>` +
-      `<span class="errand-meta">${esc([when, fmtMinutes(i.minutes)].filter(Boolean).join(" · "))}</span>` +
-      (note ? `<span class="errand-note">${esc(note)}</span>` : "") + `</div></li>`;
+      `<span class="errand-meta">${slipped}${esc([when, fmtMinutes(i.minutes)].filter(Boolean).join(" · "))}</span>` +
+      (note ? `<span class="errand-note">${esc(note)}</span>` : "") + `</div>` +
+      (!i.done && groupOf(i, today) === "overdue" ? `<button type="button" class="secondary small postpone" data-act="postpone" data-id="${esc(i.id)}" title="Postpone to tomorrow" aria-label="Postpone to tomorrow: ${esc(i.text)}">Tomorrow →</button>` : "") +
+      `</li>`;
   }
 
   // The open errands, in their groups (only those with any), each with its total time.

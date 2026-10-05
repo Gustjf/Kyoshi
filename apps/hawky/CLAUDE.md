@@ -1,47 +1,53 @@
 # Hawky — errands and shopping lists (a Kyoshi app)
 Gets things out of your head, on the phone, in seconds. Two tabs: **Errands** and **Shopping** (it opens on Errands;
 Shopping says how many lists are ready to buy).
-**Errands** are one-off tasks and things promised: the text, a tap for the day (Today, Pick a day, or none), one for how
-long (15 min, 30 min, 1 hour, Other) and, after + Note, a note. The list shows them by when they're due: Overdue, Today,
-This week (by Sunday) and Later (dated beyond, soonest first, then the undated, oldest first, each saying how long it
-has waited); ✓ ticks one off, and the done ones fold away. **Momo** decides when: every open errand due by the end of
-next week (or undated) is a card of its own there, waiting in its Tasks until you drag it onto a day; a ticked one shows ✓.
+**Errands** are one-off tasks and things promised: the text, a tap for the day (Today, This week or Next week: due that
+Sunday, Pick a day, or none), one for how long (5 min, 15 min, 30 min, 1 hour, Other) and, after + Note, a note. The list
+shows them by when they're due: Overdue, Today, This week (by Sunday) and Later (dated beyond, soonest first, then the
+undated, oldest first, each saying how long it has waited); ✓ ticks one off, and the done ones fold away. An overdue one
+has Tomorrow →, which moves it to tomorrow and counts; past three times its line carries a warning mark ("postponed 4×").
+**Momo** decides when: every open errand due by the end of next week (or undated) is a card of its own there, waiting in
+its Tasks until you drag it onto a day; a ticked one shows ✓.
 **Shopping lists** hold the products you spot (not groceries: Turtleduck's) for a cooling-off period before buying: each
 item goes on its store and topic's list, one list per topic; once everything's on it, a list is locked for 30 or 7 days,
 and while it's locked items can only come off (an amber Unlock early warns first); then each item is ticked as it's
-bought, and the done list folds away. Lists never go to Momo.
+bought, and the done list folds away. Each store has its own colour (a dot by its name, the left edge of its lists).
+Lists never go to Momo.
 Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
 | `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), Backup & sync, the pop-ups (errand, list, item) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (errands, lists and their items), backups and sync merge (`A.data`) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `lists.js` | the shopping lists' model (its header documents it): lookups (`listFor`, `activeLists`, `doneLists`, `clashOf`, the names the add row suggests), `stateOf` (open, locked, ready, done), `unlockDay`, `daysLeft`, and the changes (`addItem`, `editItem`, `removeItem`, `lockList`, `unlockEarly`, `tickItem`, `tickAll`, `renameList`, `deleteList`) |
-| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions, the lists by store as cards, the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
-| `render.js` | `renderAll` (the nav and both views), `showView`, `renderAdd`: the chips and the note line, the groups (each with its total time), the Done fold (a page at a time) |
-| `editor.js` | the errand pop-up: text, note, due, minutes; Save (Enter), Cancel, Delete |
-| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState` |
+| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions, the lists by store as cards, each store in its colour (`storeColor`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
+| `render.js` | `renderAll` (the nav and both views), `showView`, `renderAdd`: the chips and the note line, the groups (each with its total time; Tomorrow → on overdue errands, the warning mark past `POSTPONE_WARN`), the Done fold (a page at a time) |
+| `editor.js` | the errand pop-up: text, note, due, minutes, how often it was postponed; Save (Enter), Cancel, Delete |
+| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo, Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState` |
 | `hawky.css` | styles under `.app-hawky` |
 
 ## State (`A.S`)
 Saved:
-- `items` [{ id, text, note, due, minutes, done, deleted, at, u }]: errands. `text` ≤ 60 (the need's title in Momo), `note`
-  ≤ 200 (lines kept; "" for none, as in errands from before notes), `due` "YYYY-MM-DD" or "" (no date), `minutes` 5–480,
-  `done` the day it was ticked or "" while open, `at` when it was added (the undated's order and how long they've waited),
-  `u` when it last changed (the later wins in sync). Deleted ones stay as markers. Done ones are kept for good.
+- `items` [{ id, text, note, due, minutes, done, postponed, deleted, at, u }]: errands. `text` ≤ 60 (the need's title in
+  Momo), `note` ≤ 200 (lines kept; "" for none, as in errands from before notes), `due` "YYYY-MM-DD" or "" (no date),
+  `minutes` 5–480, `done` the day it was ticked or "" while open, `postponed` how many times Tomorrow → moved it (a whole
+  number, up to 999 from a file; 0 before any, in errands from before it, and in a deleted one), `at` when it was added
+  (the undated's order and how long they've waited), `u` when it last changed (the later wins in sync). Deleted ones stay
+  as markers. Done ones are kept for good.
 - `lists` [{ id, vendor, topic, items, lock, unlocked, done, deleted, at, u }]: shopping lists. `vendor` (the store) and
   `topic` ≤ 40 each; `items` [{ id, text ≤ 100, note ≤ 300 (a note or a web link, lines kept), at (when added: their order
   and how long they've waited), bought ("" or the day ticked), deleted }]; `lock` null while open, else { at: the day it
   was locked, days: 30 or 7 (any whole number up to 365 is kept from a file) }; `unlocked` the day it was unlocked early,
   or ""; `done` the day it was done, or ""; `u` when it or any of its items last changed. Deleted lists and items stay as
   markers. Done lists are kept for good.
-This device only: `view` ("errands" | "lists"; it opens on errands), `add` (quick add: `day` "none"|"today"|"pick",
-`minutes` 15|30|60|"other", `note` its note line shown; back to no day, 15 and no note after each add), `listNote` (the
+This device only: `view` ("errands" | "lists"; it opens on errands), `add` (quick add: `day` "none"|"today"|"week"|
+"nextweek"|"pick", `minutes` 5|15|30|60|"other", `note` its note line shown; back to no day, 15 and no note after each
+add), `listNote` (the
 add row's note line shown), `editing` (the errand pop-up), `listEditing` and `itemEditing` (theirs), `doneShown`,
 `listsDoneShown`, `knownToday`.
 
@@ -58,7 +64,8 @@ errand or list.
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies): every open errand due by `to` (one due later asks nothing of Momo
 yet), soonest due first (so overdue ones lead), then the undated oldest first, then those done between `from` and `to`, each `{ id (the errand's), title (its text), fill: "card",
-details: ["Due Oct 7"] or ["No date · added Sep 30"], then the note's first line if it has one, minutes, due (or null),
+details: ["Due Oct 7"] or ["No date · added Sep 30"], then the note's first line if it has one, then "Postponed 4×" once
+it's been postponed more than `POSTPONE_WARN` (3) times, minutes, due (or null),
 overdue (due before today), done, date (the day done; null while open) }`; "added" is the real day, from `at`. Each is a
 card of its own in Momo, titled by its text and as long as it takes: an open one waits in Momo's Tasks (from today to its
 due day, any day once overdue) until you place it; a done one keeps the errand's id, so ✓ shows on its card, or Momo
@@ -67,9 +74,16 @@ places one on the day it was ticked; it never goes to Tasks.
 for a done one. Shopping lists are never shared.
 
 ## Invariants
-- Groups, overdue, a list's state, how long something has waited and the words for days are worked out, never stored.
-  "Today" is `K.util.todayStr()` (time travel works); `Date.now()` is only for the `at` / `u` stamps. Weeks run Monday
-  to Sunday, as in Momo.
+- Groups, overdue, a list's state, how long something has waited, the words for days and a store's colour are worked
+  out, never stored. "Today" is `K.util.todayStr()` (time travel works); `Date.now()` is only for the `at` / `u` stamps.
+  Weeks run Monday to Sunday, as in Momo: quick add's This week and Next week are due that week's Sunday (on a Sunday,
+  This week is today).
+- Tomorrow → shows only on an open errand that's overdue: due becomes tomorrow (from today, not from its old due day) and
+  `postponed` goes up by one. Changing the day in its pop-up isn't counted. Past `POSTPONE_WARN` its line (open or done)
+  starts with Lucide's triangle-alert and "postponed 4×", and Momo's details say so; up to it, only the pop-up says
+  "Postponed 2 times".
+- A store's colour (`storeColor` in lists-view.js): one of eight from Momo's palette, picked by a hash of its name in
+  lower case, so the same store is the same colour on every device; with more than eight stores two may share one.
 - A list's state (`stateOf`): done once `done` is set; else open with no `lock`; else locked while today is before the
   lock's day + its days and it wasn't unlocked early; else ready. Open: items added, changed, taken off; Lock 30 days or
   Lock 7 days. Locked: items only come off, and one added for its store and topic is refused (the owner's choice); Unlock

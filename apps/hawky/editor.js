@@ -1,5 +1,6 @@
 /* Hawky · editor.js — the errand pop-up (#errandOverlay), opened by tapping an errand's text: what it
- * is, its note, the day it's due (or none), how many minutes; Save (or Enter outside the note), Cancel and Delete. */
+ * is, its note, the day it's due (or none), how many minutes, and how often it was postponed; Save (or Enter outside
+ * the note), Cancel and Delete. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -31,6 +32,9 @@
     $("errandMinutes").value = i.minutes;
     $("errandDoneNote").textContent = i.done ? `Done ${fmtDay(i.done)}. To put it back on the list, tap its ✓.` : "";
     $("errandDoneNote").hidden = !i.done;
+    const n = i.postponed || 0;
+    $("errandPostponedNote").textContent = n ? `Postponed ${n} time${n === 1 ? "" : "s"}.` : "";
+    $("errandPostponedNote").hidden = !n;
     S.editing.snapshot = formState();
     K.modal.open(overlay());
   }
@@ -68,7 +72,7 @@
       return alert("That errand was already deleted on another device.");
     }
     if (!confirm(`Delete “${i.text}”? This can't be undone.`)) return;
-    Object.assign(i, { text: "", note: "", due: "", done: "", deleted: true, u: Date.now() });
+    Object.assign(i, { text: "", note: "", due: "", done: "", postponed: 0, deleted: true, u: Date.now() });
     closeEditor();
     A.save();
     A.renderAll();

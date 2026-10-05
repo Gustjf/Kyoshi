@@ -32,6 +32,7 @@
     DEFAULT_MINUTES: 15,   // quick add's estimate until another chip is picked (one of its chips)
     DONE_PAGE: 50,         // done errands (and done shopping lists) shown at a time
     DOT_WHEN_OVERDUE: true, // a dot on Hawky's icon while an errand is overdue: false turns it off
+    POSTPONE_WARN: 3,      // postponed (Tomorrow →) more times than this, an errand carries a warning mark, here and in Momo
     // Shopping lists: a store and a topic make a list; its items, each with a note or a web link.
     MAX_VENDOR: 40,
     MAX_TOPIC: 40,
@@ -45,14 +46,15 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    // Every errand: { id, text, note, due, minutes, done, deleted, at, u } (CLAUDE.md has the details).
+    // Every errand: { id, text, note, due, minutes, done, postponed, deleted, at, u } (CLAUDE.md has the details).
     // Deleted ones stay as markers so sync can't bring them back.
     items: [],
     // Every shopping list: { id, vendor, topic, items, lock, unlocked, done, deleted, at, u } (lists.js has the details).
     lists: [],
     view: "errands",        // what's on screen: "errands" | "lists" (this device only; it opens on errands)
-    // Quick add's chips: day "none" | "today" | "pick" (its date field); minutes 15, 30, 60 or "other" (its number
-    // field); note: its note line shown. Back to no day, 15 minutes and no note after each add.
+    // Quick add's chips: day "none" | "today" | "week" (this Sunday) | "nextweek" (next Sunday) | "pick" (its date
+    // field); minutes 5, 15, 30, 60 or "other" (its number field); note: its note line shown. Back to no day, 15
+    // minutes and no note after each add.
     add: { day: "none", minutes: A.DEFAULT_MINUTES, note: false },
     listNote: false,        // the shopping add row's note line shown
     editing: null,          // the errand pop-up: { id, snapshot }

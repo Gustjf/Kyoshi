@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.210", date: "2026-10-05", changes: [
+      "Each store's shopping lists carry the store's own colour (a dot by its name, a coloured edge on its lists), so they're told apart while scrolling.",
+      "Overdue errands have a Tomorrow → button that moves them to tomorrow and counts how often; past three times a warning mark says so (in the errand's pop-up and on its card in Momo too). Reload Hawky on every device after updating: an older copy drops the count.",
+      "Quick add offers 5 minutes, and This week / Next week, which make the errand due that Sunday."
+    ] },
     { version: "2.110", date: "2026-10-03", changes: [
       "Shopping lists, on a tab of their own: items by store and topic, one list per topic (both suggested as you type), each item with a note or a web link and how long it has waited.",
       "Lock a list for 30 or 7 days to cool off: until then items can only come off (or unlock it early, after an amber warning); then tick each item as you buy it, or Tick all, and the done list folds away.",

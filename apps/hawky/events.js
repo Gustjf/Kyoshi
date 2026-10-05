@@ -1,11 +1,12 @@
 /* Hawky · events.js — loads last: wires the page (A.init): the nav, quick add (Enter or Add adds the errand,
  * clears the field and keeps its focus; tapping a chip or + Note leaves the phone's keyboard up), ✓ and its undo,
- * and the Done fold's Show more (the Shopping view wires itself: lists-view.js); and the hooks Kyoshi calls: onTick
- * (a new day), onReload (another tab saved), attention (overdue errands) and bugState. */
+ * an overdue errand's Tomorrow → (postponed, and counted), and the Done fold's Show more (the Shopping view wires
+ * itself: lists-view.js); and the hooks Kyoshi calls: onTick (a new day), onReload (another tab saved), attention
+ * (overdue errands) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { newId, isDate, todayStr } = K.util;
+  const { newId, isDate, addDays, todayStr } = K.util;
   const { MAX_TEXT, MAX_NOTE, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
 
   const kept = () => { A.save(); A.renderAll(); };
@@ -37,10 +38,13 @@
     if (m === "other") $("addOther").focus();
   }
 
-  // The day the chips give: "YYYY-MM-DD", "" for no day, or null while Pick a day has none.
+  // The day the chips give: "YYYY-MM-DD", "" for no day, or null while Pick a day has none. This week and Next week
+  // are due that week's Sunday (on a Sunday, This week is today).
   function chipDay() {
-    const picked = $("addDate").value;
-    if (S.add.day === "today") return todayStr();
+    const picked = $("addDate").value, today = todayStr();
+    if (S.add.day === "today") return today;
+    if (S.add.day === "week") return A.sundayOf(today);
+    if (S.add.day === "nextweek") return addDays(A.sundayOf(today), 7);
     if (S.add.day === "pick") return isDate(picked) ? picked : null;
     return "";
   }
@@ -67,7 +71,7 @@
       return $("addOther").focus();
     }
     const now = Date.now();
-    S.items.push({ id: newId(), text, note, due, minutes, done: "", deleted: false, at: now, u: now });
+    S.items.push({ id: newId(), text, note, due, minutes, done: "", postponed: 0, deleted: false, at: now, u: now });
     A.save();
     S.add = { day: "none", minutes: DEFAULT_MINUTES, note: false };
     ["addText", "addDate", "addOther", "addNote"].forEach(id => { $(id).value = ""; });
@@ -84,10 +88,20 @@
     kept();
   }
 
+  // Tomorrow → (an overdue errand's): due tomorrow, from today, and counted, so one that keeps slipping says so.
+  function postpone(id) {
+    const i = A.itemById(id);
+    if (!i || i.done) return;
+    Object.assign(i, { due: addDays(todayStr(), 1), postponed: (i.postponed || 0) + 1, u: Date.now() });
+    kept();
+    setStatus(`Postponed “${i.text}” to tomorrow (${i.postponed}×).`);
+  }
+
   // Buttons drawn into the list carry data-act and data-id.
   const ACTS = {
     tick: btn => tick(btn.dataset.id, true),
     undo: btn => tick(btn.dataset.id, false),
+    postpone: btn => postpone(btn.dataset.id),
     edit: btn => A.openEditor(btn.dataset.id)
   };
 
@@ -131,8 +145,9 @@
     const open = A.openItems(), groups = A.GROUPS.map(([key]) => `${key} ${open.filter(i => A.groupOf(i) === key).length}`);
     const lists = A.liveLists(), states = ["open", "locked", "ready", "done"].map(s => `${s} ${lists.filter(l => A.stateOf(l) === s).length}`);
     const items = lists.flatMap(A.liveItemsOf), popup = S.editing ? "errand" : S.listEditing ? "list" : S.itemEditing ? "item" : "none";
+    const slipped = A.live().filter(i => i.postponed), warned = slipped.filter(i => i.postponed > A.POSTPONE_WARN).length;
     return [
-      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note; +${S.items.length - A.live().length} deleted`,
+      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note, ${slipped.length} postponed (${warned} past ${A.POSTPONE_WARN}×); +${S.items.length - A.live().length} deleted`,
       `- Lists: ${lists.length} (${states.join(", ")}), ${items.length} items (${items.filter(i => i.bought).length} bought, ${items.filter(i => i.note).length} with a note); +${S.lists.length - lists.length} deleted`,
       `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}, note ${S.add.note ? "shown" : "hidden"}`,
       `- View: ${S.view}; pop-up: ${popup}; done shown: ${S.doneShown} errands, ${S.listsDoneShown} lists`

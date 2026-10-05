@@ -19,12 +19,12 @@ async function hawkyAdd(L, e) {
     A.save(); A.renderAll(); return true;
   }, e);
   await L.switchTo("hawky");
-  const p = L.page, tomorrow = L.addDays(L.today, 1);
+  const p = L.page, sunday = L.addDays(L.thisKey(), 6); // This week's chip: due Sunday; Next week's: the Sunday after
   await p.fill(`${M} #addText`, e.text);
-  const day = !e.due ? "none" : e.due === L.today ? "today" : e.due === tomorrow ? "tomorrow" : "pick";
+  const day = !e.due ? "none" : e.due === L.today ? "today" : e.due === sunday ? "week" : e.due === L.addDays(sunday, 7) ? "nextweek" : "pick";
   await p.click(`${M} #addDays [data-day="${day}"]`);
   if (day === "pick") await p.fill(`${M} #addDate`, e.due);
-  const chip = [15, 30, 60].includes(e.minutes) ? String(e.minutes) : "other";
+  const chip = [5, 15, 30, 60].includes(e.minutes) ? String(e.minutes) : "other";
   await p.click(`${M} #addMinutes [data-minutes="${chip}"]`);
   if (chip === "other") await p.fill(`${M} #addOther`, String(e.minutes));
   await p.click(`${M} #addBtn`);

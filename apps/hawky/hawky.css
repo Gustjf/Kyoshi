@@ -7,14 +7,13 @@
 .app-hawky .hawky-nav .mode-btn { padding: 10px; }
 .app-hawky .nav-ready { font-weight: 400; }
 
-/* --- Quick add: the field and Add, then the chips (core's .mode-btn, smaller), four to a line even on a phone (the
- * days three), then + Note; the shopping add row's store and topic side by side above its item --- */
+/* --- Quick add: the field and Add, then the chips (core's .mode-btn, smaller), five to a line (on a phone the days
+ * three, then two), then + Note; the shopping add row's store and topic side by side above its item --- */
 .app-hawky .add-line { display: flex; gap: 8px; }
 .app-hawky .add-line input, .app-hawky .add-pair input { flex: 1; min-width: 0; height: 2.6em; font-size: 1em; }
 .app-hawky .add-line button { flex: 0 0 auto; padding: 0 20px; font-size: 1em; font-weight: 600; }
 .app-hawky .add-pair { display: flex; gap: 8px; margin-bottom: 8px; }
-.app-hawky .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
-.app-hawky .chips.days { grid-template-columns: repeat(3, 1fr); }
+.app-hawky .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
 .app-hawky .chip { min-height: 38px; padding: 4px; font-size: .85em; font-weight: 400; line-height: 1.15; }
 .app-hawky .add-extra { margin-top: 8px; }
 .app-hawky .note-btn { display: block; min-height: 32px; margin-top: 6px; padding: 4px 2px; background: none; color: var(--accent); font-size: .85em; }
@@ -47,6 +46,9 @@
 .app-hawky .errand-meta { font-size: .8em; color: var(--muted); white-space: nowrap; }
 .app-hawky .errand-note { flex-basis: 100%; min-width: 0; font-size: .8em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app-hawky .group.overdue .errand-meta { color: var(--bad); }
+.app-hawky .warn-mark { width: 12px; height: 12px; margin-right: 3px; vertical-align: -1px; color: var(--warn); }
+/* Tomorrow →: an overdue errand's, at the row's end. */
+.app-hawky .postpone { flex: 0 0 auto; margin-left: 6px; white-space: nowrap; }
 .app-hawky .errand.done .errand-text { color: var(--muted); text-decoration: line-through; }
 .app-hawky .errand.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
 
@@ -60,12 +62,14 @@
 .app-hawky #doneMore, .app-hawky #listsDoneMore { margin-top: 8px; }
 
 /* --- Shopping lists: a store's lists under its name, each a card: its head, its items (✓ as the errands', ✕), its
- * buttons; ready ones edged green, locked ones' state amber, done ones quieter --- */
+ * buttons; each store in its own colour (--store: a dot by its name, the left edge of its lists), ready ones edged
+ * green on the other sides, locked ones' state amber, done ones quieter --- */
 .app-hawky .vendor { margin-top: 14px; }
 .app-hawky .vendor:first-child { margin-top: 10px; }
 .app-hawky .vendor-name { margin: 0; font-size: 1em; overflow-wrap: anywhere; }
-.app-hawky .slist { margin-top: 8px; padding: 8px 12px 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; }
-.app-hawky .slist.ready { border-color: var(--good); }
+.app-hawky .vendor-name::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; background: var(--store); vertical-align: 1px; }
+.app-hawky .slist { margin-top: 8px; padding: 8px 12px 10px; background: var(--card-bg); border: 1px solid var(--border); border-left: 3px solid var(--store, var(--border)); border-radius: 8px; }
+.app-hawky .slist.ready { border-color: var(--good); border-left-color: var(--store, var(--good)); }
 .app-hawky .slist.done { opacity: .8; }
 .app-hawky .slist-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
 .app-hawky .slist-topic { font-weight: 600; overflow-wrap: anywhere; }
@@ -94,15 +98,19 @@
 .app-hawky .warn-btn { background: transparent; color: var(--warn); border: 1px solid var(--warn); font-weight: 600; }
 .app-hawky .warn-btn:hover { background: var(--unsaved-bg); }
 
-/* --- Phones: taller fields, Add, chips and buttons for a thumb --- */
+/* --- Phones: taller fields, Add, chips and buttons for a thumb; the days three to a line (Today, This week, Next
+ * week), then two (Pick a day, No day) --- */
 @media (max-width: 640px) {
   .app-hawky .add-line input, .app-hawky .add-line button, .app-hawky .add-pair input { height: 46px; }
   .app-hawky .chip { min-height: 42px; }
+  .app-hawky .chips.days { grid-template-columns: repeat(6, 1fr); }
+  .app-hawky .chips.days .chip { grid-column: span 2; }
+  .app-hawky .chips.days .chip:nth-child(n + 4) { grid-column: span 3; }
   .app-hawky .note-btn { min-height: 40px; }
   .app-hawky .errand-text, .app-hawky .sitem-text { font-size: 1em; }
   .app-hawky .hawky-nav .mode-btn { padding: 12px 6px; }
   .app-hawky .slist-actions button { min-height: 42px; padding: 0 16px; }
-  .app-hawky .slist-head .small { min-height: 34px; padding: 4px 12px; }
+  .app-hawky .slist-head .small, .app-hawky .postpone { min-height: 34px; padding: 4px 12px; }
 }
 /* Narrow phones: "Pick a day" still on one line. */
 @media (max-width: 400px) {

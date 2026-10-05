@@ -270,11 +270,15 @@ function meetings(spec) {
   return Object.fromEntries(Object.entries(spec).map(([id, m]) => [id, { every: m.every || "whenever", minutes: m.minutes || 15, last: m.last || "", since: m.since || m.last || TODAY, u: T0 }]));
 }
 
-// Hawky: errands, each { text, due ("" for none), minutes, done ("" or the day), added (a day) }.
+// Hawky: errands, each { text, due ("" for none), minutes, done ("" or the day), added (a day), postponed (how often:
+// left out of the file unless given, as in backups from before it) }.
 function hawkyItems(list, meet) {
   return {
     schemaVersion: 1, appVersion: "1.000", ...(meet ? { meetings: meet } : {}),
-    items: list.map((e, i) => ({ id: `hk${String(i).padStart(4, "0")}`, text: e.text, due: e.due || "", minutes: e.minutes || 15, done: e.done || "", deleted: false, at: at(e.added || addDays(TODAY, -3), "08:00") + i, u: T0 + i }))
+    items: list.map((e, i) => ({
+      id: `hk${String(i).padStart(4, "0")}`, text: e.text, due: e.due || "", minutes: e.minutes || 15, done: e.done || "",
+      ...(e.postponed ? { postponed: e.postponed } : {}), deleted: false, at: at(e.added || addDays(TODAY, -3), "08:00") + i, u: T0 + i
+    }))
   };
 }
 // Errands to make up: what, and how long (minutes).

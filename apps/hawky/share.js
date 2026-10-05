@@ -10,10 +10,15 @@
   "use strict";
   const S = A.S;
   const { localDate, todayStr } = K.util;
-  const { DONE_PAGE, fmtDay, firstLine } = A;
+  const { DONE_PAGE, POSTPONE_WARN, fmtDay, firstLine } = A;
 
-  // A need's details: "Due Oct 7", or "No date · added Sep 30"; then the note's first line, if it has one.
-  const details = i => [i.due ? `Due ${fmtDay(i.due)}` : `No date${i.at ? ` · added ${fmtDay(localDate(new Date(i.at)))}` : ""}`, firstLine(i.note)].filter(Boolean);
+  // A need's details: "Due Oct 7", or "No date · added Sep 30"; then the note's first line, if it has one; then
+  // "Postponed 4×" once it's been postponed more than POSTPONE_WARN times.
+  const details = i => [
+    i.due ? `Due ${fmtDay(i.due)}` : `No date${i.at ? ` · added ${fmtDay(localDate(new Date(i.at)))}` : ""}`,
+    firstLine(i.note),
+    i.postponed > POSTPONE_WARN ? `Postponed ${i.postponed}×` : ""
+  ].filter(Boolean);
   const need = (i, today) => ({
     id: i.id, title: i.text, fill: "card", details: details(i), minutes: i.minutes, due: i.due || null,
     overdue: !i.done && !!i.due && i.due < today, done: !!i.done, date: i.done || null

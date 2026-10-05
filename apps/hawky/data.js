@@ -34,6 +34,7 @@
         due: !gone && isDate(i.due) ? i.due : "",     // the day it's due, "" for none
         minutes: cleanMinutes(i.minutes),
         done: !gone && isDate(i.done) ? i.done : "",  // the day it was ticked, "" while open
+        postponed: !gone && isPos(i.postponed) ? Math.min(999, Math.round(i.postponed)) : 0, // Tomorrow → taps (0 before them)
         deleted: gone,
         at: isPos(i.at) && i.at < MAX_MS ? i.at : 0, // when it was added: the order of the undated, and Momo's "added" day
         u: isPos(i.u) ? i.u : 0
