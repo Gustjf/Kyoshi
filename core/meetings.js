@@ -151,16 +151,18 @@
 
   // --- The header line ---
   // The app on screen's meetings: each one's words (a button to its settings) and Done ✓ (not once met today, nor when off).
-  // A checkup (no schedule) just says when you last did it: "Last checkup: 12 days ago".
+  // A checkup (no schedule) just says when you last did it: "Last checkup: 12 days ago". Done today, its ✓ is green.
   let shown = null; // the line as last drawn, so the minute tick leaves it (and focus on its buttons) alone
+  const met = words => `${esc(words)} <span class="met">✓</span>`;
   function render() {
     const A = K.active(), list = states(A), box = $("kMeeting");
     const html = list.map(s => {
       const off = s.every === "off", words = s.every === "whenever"
-        ? `Last ${s.def.title.toLowerCase()}: ${s.metToday ? "today ✓" : s.last ? ago(s.last) : "not yet"}`
-        : [`Meeting: ${s.def.title}`, EVERY[s.every]].concat(off ? [] : [lastText(s), dueText(s)]).filter(Boolean).join(" · ");
+        ? (s.metToday ? met(`Last ${s.def.title.toLowerCase()}: today`) : esc(`Last ${s.def.title.toLowerCase()}: ${s.last ? ago(s.last) : "not yet"}`))
+        : [`Meeting: ${s.def.title}`, EVERY[s.every]].map(esc)
+          .concat(off ? [] : [s.metToday ? met("met today") : esc(lastText(s)), esc(dueText(s))]).filter(Boolean).join(" · ");
       return `<div class="meeting${s.overdue ? " overdue" : s.due === todayStr() ? " due" : off ? " off" : ""}">` +
-        `<button type="button" class="meeting-text" data-meet="${esc(s.def.id)}" title="Settings">${esc(words)}</button>` +
+        `<button type="button" class="meeting-text" data-meet="${esc(s.def.id)}" title="Settings">${words}</button>` +
         (off || s.metToday ? "" : `<button type="button" class="secondary small" data-done="${esc(s.def.id)}" title="Mark it done today">Done ✓</button>`) + `</div>`;
     }).join("");
     box.hidden = !list.length;

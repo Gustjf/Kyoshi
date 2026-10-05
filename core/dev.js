@@ -1,7 +1,7 @@
 /* Kyoshi · core/dev.js — the one Developer Mode for every app, as K.dev.
  * Ctrl+9 or the DEV badge (bottom-right, for phones) opens #kDevPanel: versions, the app on
  * screen's own tools (A.renderDev(box)), time travel (test mode), Export/Import all apps,
- * storage used, bug reports, and a changelog for the app or Kyoshi. The test banner lives here too. */
+ * storage used, bugs & requests (core/bugs.js), and a changelog for the app or Kyoshi. The test banner lives here too. */
 (function (K) {
   "use strict";
   const { fmtDate, todayStr, addMonths, daysBetween, readFile, fmtBytes } = K.util;
@@ -19,6 +19,7 @@
   // Redraws the panel for the app on screen, while it's open.
   function refresh() {
     $("kDevBugCount").textContent = K.bugs.count();
+    $("kDevBugDone").textContent = K.bugs.doneCount();
     const A = K.active();
     if (!on || !A) return;
     $("kDevVersion").textContent = `${A.meta.name} ${A.VERSION} | Kyoshi ${K.VERSION}`;
@@ -91,6 +92,7 @@
     });
     $("kDevCopyBugs").addEventListener("click", K.bugs.copyAll);
     $("kDevDownloadBugs").addEventListener("click", K.bugs.download);
+    $("kDevClearDoneBugs").addEventListener("click", K.bugs.clearDone);
     $("kDevClearBugs").addEventListener("click", K.bugs.clear);
     $("kDevLogPills").addEventListener("click", e => {
       const btn = e.target.closest("button[data-log]");

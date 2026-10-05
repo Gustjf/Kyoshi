@@ -8,13 +8,13 @@
   const A = K.register({
     id: "template",                        // folder name, storage prefix, URL #id, CSS scope .app-template
     name: "Template",                      // the header and the switcher
-    title: "Template — What It Does",      // the browser tab
+    title: "Template — What It Does",      // its full name (the browser tab always reads "Kyoshi")
     subtitle: "One line about what this app is for.",
     width: 780,                            // page width in px (Bosco 780, Momo 1180)
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     // An app reviewed on a schedule (Iroh, say) names meetings instead: every "week", "month", "quarter" or "year".
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30 }],
-    // The "list-todo" icon from Lucide (ISC license), in a color of its own for tabs and the switcher.
+    // The "list-todo" icon from Lucide (ISC license), in a color of its own for the switcher and Momo's cards.
     icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><rect x="3" y="4" width="6" height="6" rx="1"/></svg>'
   });
 

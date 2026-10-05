@@ -8,12 +8,12 @@
  * lives in IndexedDB: then changes stay in memory and Kyoshi says so, rather than show an old copy.
  * If a newer Kyoshi in another tab upgrades the database, this tab lets go of it and says so too.
  * K.storage.get/set/remove/json are localStorage itself: only for tiny preferences read before the
- * page draws (theme, last app) and for reading what the standalone apps left behind.
+ * page draws (theme, last app; also Bugs & requests' last pick) and for reading what the standalone apps left behind.
  * In test mode (time travel) apps' writes stay in memory; core's (bug reports) are still kept. */
 (function (K) {
   "use strict";
   const DB_NAME = "kyoshi-data", STORE = "kv";
-  const PREFS = ["kyoshi.theme", "kyoshi.lastApp", "kyoshi.storage"]; // these stay in localStorage
+  const PREFS = ["kyoshi.theme", "kyoshi.lastApp", "kyoshi.storage", "kyoshi.bugKind"]; // these stay in localStorage
   const MOVED = "kyoshi.storage.moved"; // in IndexedDB: when Kyoshi's localStorage data was moved over
   const LOCAL_LIMIT = 5 * 1024 * 1024; // localStorage's room, for everything at this address
   let backend = "opening";  // "opening" (until open() is done) | "indexeddb" | "localStorage" | "memory"

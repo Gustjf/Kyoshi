@@ -5,6 +5,13 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.750", date: "2026-10-05", changes: [
+      "The browser tab always reads “Kyoshi”, with one dark-green icon, instead of changing with the app on screen: Lucide's flame (dragons were the first firebenders), as a drawn dragon didn't read at tab size.",
+      "A checkup or meeting done today shows its ✓ in green on the app's header line.",
+      "The footer's “Bugs & requests” takes a bug or a feature request: pick one above the box (remembered for next time), and the report's first line says which.",
+      "Its pop-up lists the open ones under the form, newest first, each with Done ✓, and the footer link says how many are open.",
+      "Developer Mode's Copy all and Download .md take the open ones only, feature requests first, then bugs; Clear done removes the ones marked done."
+    ] },
     { version: "3.650", date: "2026-10-05", changes: [
       "The bug report log keeps the latest 200 reports instead of 20."
     ] },

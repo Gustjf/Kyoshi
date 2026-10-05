@@ -81,7 +81,7 @@
       A.started = true;
     } catch (err) {
       console.error(`${A.meta.name} couldn't start.`, err);
-      A.root.innerHTML = `<section><h2>${esc(A.meta.name)} couldn't start</h2><p class="note">Something went wrong while loading it. Use Report a bug below: the report includes the error. Your data is still kept in this browser, and you can download a copy of it.</p><div class="toolbar"><button class="secondary">Download its data</button></div></section>`;
+      A.root.innerHTML = `<section><h2>${esc(A.meta.name)} couldn't start</h2><p class="note">Something went wrong while loading it. Use Bugs &amp; requests below: a bug report includes the error. Your data is still kept in this browser, and you can download a copy of it.</p><div class="toolbar"><button class="secondary">Download its data</button></div></section>`;
       A.root.querySelector("button").addEventListener("click", () => rescue(A, loaded));
     }
   }
@@ -97,7 +97,7 @@
     K.util.downloadJSON({ kyoshiApp: A.id, savedAt: new Date().toISOString(), keys }, `${A.id}-saved-data-${K.util.todayStr()}.json`);
   }
 
-  // Puts an app on screen: its root, header (meetings too), tab title & icon, width, and #id in the URL.
+  // Puts an app on screen: its root, header (meetings too), width, and #id in the URL. The tab stays "Kyoshi" (index.html).
   function show(A) {
     if (!A || A === active) return;
     closeMenu();
@@ -113,8 +113,6 @@
     K.meetings.render();
     $("kFooterName").textContent = A.meta.name;
     $("kVersionTag").textContent = A.VERSION ? `v${A.VERSION}` : "";
-    document.title = A.meta.title || A.meta.name;
-    $("kFavicon").href = `data:image/svg+xml,${encodeURIComponent(A.meta.icon)}`;
     K.storage.set("kyoshi.lastApp", A.id);
     if (location.hash.slice(1) !== A.id) try { history.replaceState(null, "", `#${A.id}`); } catch (err) { /* some file:// setups */ }
     call(A, "onShow");

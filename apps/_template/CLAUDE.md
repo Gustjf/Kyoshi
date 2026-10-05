@@ -30,7 +30,7 @@ its settings, sync and backups (core/meetings.js). For a dot when the user is be
 
 ## Adding a new app from this template
 1. Copy this folder to `apps/<id>/` (`<id>`: lowercase letters and digits, from a letter, not used yet); rename `template`/`Template` → `<id>`/`<Name>` in every file (incl. `.app-template`, `template.css` → `<id>.css`).
-2. In `app.js` set name, tab title, subtitle, page width, icon (a Lucide SVG with a stroke color, like Bosco's and Momo's) and its checkup (or meetings).
+2. In `app.js` set name, title, subtitle, page width, icon (a Lucide SVG with a stroke color, like Bosco's and Momo's) and its checkup (or meetings).
 3. Add its `<link>`/`<script>` tags to `index.html` (app.js first, events.js last; the switcher lists apps in that order), then give every link a new build stamp.
 4. Rewrite this `CLAUDE.md` for the app (purpose, file map, data model). Start its changelog at 1.000 and add a line to Kyoshi's changelog.
 5. Add its flows to the end-to-end tests: `tests/<id>.js` for its screens (selectors in one place), `tests/<id>-….test.js` for what the
