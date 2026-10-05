@@ -134,7 +134,9 @@ module.exports = [
       await td.tickRow(a, SAT, "1.4 kg rice");
       await a.page.fill("#kMount #manualText", "coffee");
       await a.page.keyboard.press("Enter");
-      await b.page.waitForFunction(() => document.querySelectorAll("#kMount .g-bought .g-row").length === 1, null, { timeout: 5000 });
+      // Both changes, each saved (and passed on) on its own: the tick, then the grocery added by hand.
+      await b.page.waitForFunction(() => document.querySelectorAll("#kMount .g-bought .g-row").length === 1 &&
+        [...document.querySelectorAll("#kMount .g-row .g-what")].some(w => w.textContent.trim() === "coffee"), null, { timeout: 5000 });
       const [sat] = await td.lists(b);
       eq([sat.count, sat.rows[0], sat.bought], ["1 of 13", "coffee · added by hand · by hand", ["1.4 kg rice · Chili, Fried rice · Pantry"]], "the other tab has both");
       // A trip placed in the other tab re-cuts this one's lists.
