@@ -71,6 +71,7 @@
 .app-turtleduck .chip-meta { font-size: .9em; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .app-turtleduck .chip-n { font-weight: 700; } /* ×2: eaten as two portions */
 .app-turtleduck .chip.cooked { border-left: 3px solid var(--turtleduck-amber); }
+.app-turtleduck .chip.bought { border-left: 3px solid var(--muted); } /* store-bought: a bag, not the pot */
 .app-turtleduck .chip.skipped { background: none; border-style: dashed; color: var(--muted); }
 .app-turtleduck .chip.skipped .chip-name { font-weight: 400; font-style: italic; }
 .app-turtleduck .chip.warn { border-color: var(--bad); }
@@ -120,6 +121,7 @@
 .app-turtleduck .side-recipe { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--card-bg); font-size: .85em; cursor: grab; user-select: none; }
 .app-turtleduck .side-recipe:hover, .app-turtleduck .side-recipe:focus-visible { border-color: var(--accent); outline: none; }
 .app-turtleduck .sr-name { min-width: 0; overflow-wrap: anywhere; }
+.app-turtleduck .sr-name .glyph { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; color: var(--muted); }
 .app-turtleduck .sr-meta { flex: 0 0 auto; font-size: .88em; color: var(--muted); }
 .app-turtleduck .sidebar .empty-msg { font-size: .85em; }
 
@@ -266,6 +268,11 @@
 .app-turtleduck .also-day .pill.also:not(:last-child) { border-radius: 4px 0 0 4px; }
 .app-turtleduck .also-days .also-less { min-width: 30px; padding: 4px 8px; border-left: none; border-radius: 0 4px 4px 0; font-weight: 700; }
 .app-turtleduck .types .mode-btn { padding: 8px 4px; font-size: .85em; }
+/* Cooked · Store-bought under the meal types, and On hand beside it for a store-bought item. */
+.app-turtleduck .made-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-top: 12px; }
+.app-turtleduck .made-row .made { flex: 1 1 220px; }
+.app-turtleduck .made .mode-btn { padding: 8px 4px; font-size: .85em; }
+.app-turtleduck .made-stock { flex: 0 0 120px; }
 .app-turtleduck .paste-format pre { margin: 8px 0; padding: 10px; overflow-x: auto; border-radius: 6px; background: var(--card-bg); font-size: .78em; line-height: 1.45; }
 .app-turtleduck .paste-format summary { font-size: .88em; color: var(--accent); }
 .app-turtleduck #pasteText { margin-top: 10px; min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82em; }

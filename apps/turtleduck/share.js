@@ -26,6 +26,7 @@
   function describe(e) {
     if (e.kind === "quick") return "Quick meal";
     if (e.kind === "restaurant") return "Restaurant";
+    if (A.isBought(e)) return `Store-bought${e.servings > 1 ? ` · ${e.servings} portions` : ""}`;
     if (e.leftover) {
       const from = A.entryById(e.from);
       return `Leftovers${from ? ` of ${fmtWd(from.date)}'s ${A.nameOf(from)}` : ""}${e.servings > 1 ? ` · ${e.servings} portions` : ""}`;

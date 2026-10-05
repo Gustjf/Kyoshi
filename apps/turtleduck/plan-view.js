@@ -3,10 +3,11 @@
  * about Momo (confirm.js), and the ⋯ menu; the grid, a column a day Mon–Sun (its date, today marked, past days dimmed,
  * the cart toggle for a shopping trip with its time: a dot when placed by hand, a slash when the schedule's is skipped;
  * its totals under it) and a row a meal (Breakfast, Lunch, Dinner,
- * Snack, Cook), each cell holding its meals as chips (a pot: cooked there; ↩ a leftover; a fork: a restaurant; Skipped;
- * a cooked one amber with no trip before it, red with things not bought once its trip is past) with + to add; the
- * week's average; and the sidebar: search, the shelf (Leftovers: portions of a batch waiting to be placed) and the
- * recipes by meal type, all draggable (drag.js). On a phone: the days from today to next Sunday as a list, each week
+ * Snack, Cook), each cell holding its meals as chips (a pot: cooked there; a bag: store-bought; ↩ a leftover; a fork: a
+ * restaurant; Skipped; a cooked or store-bought one amber with no trip before it, red with things not bought once its
+ * trip is past, a store-bought one its stock covers neither) with + to add; the week's average; and the sidebar: search,
+ * the shelf (Leftovers: portions of a batch waiting to be placed) and the recipes by meal type (a bag: store-bought), all
+ * draggable (drag.js). On a phone: the days from today to next Sunday as a list, each week
  * headed by its line about Momo and Confirm, each day with its cart, totals and meals (the Cook row only when it has
  * something). Tapping a cell's + (or the cell) opens the picker, tapping a chip its pop-up (plan-popups.js). */
 (function (K, A) {
@@ -16,11 +17,12 @@
   const { MEALS, TYPES, NUTRIENTS, PLAN_PX, plural, fmtKcal, fmtG, fmtScale, fmtHead, fmtFull, fmtRange, fmtMacros, isConfirmed } = A;
   const wide = () => !window.matchMedia(`(max-width: ${PLAN_PX}px)`).matches;
 
-  // Icons from Lucide (ISC license): cooking-pot (cooked there), undo-2 (a leftover), utensils (a restaurant),
-  // shopping-cart (a trip), plus, ellipsis.
+  // Icons from Lucide (ISC license): cooking-pot (cooked there), shopping-bag (store-bought), undo-2 (a leftover),
+  // utensils (a restaurant), shopping-cart (a trip), plus, ellipsis.
   const svg = (d, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICONS = {
     cooked: svg('<path d="M2 12h20"/><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="m4 8 16-4"/><path d="m8.86 6.78-.45-1.81a2 2 0 0 1 1.45-2.43l1.94-.48a2 2 0 0 1 2.43 1.46l.45 1.8"/>', "glyph"),
+    bought: svg('<path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>', "glyph"),
     leftover: svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>', "glyph"),
     restaurant: svg('<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>', "glyph"),
     cart: svg('<path d="m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"/><path d="M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"/><circle cx="18" cy="20" r="2"/><circle cx="8" cy="20" r="2"/>'),
@@ -32,17 +34,18 @@
   // PIECES
   // ==========================================================================
   // A planned meal's chip: its glyph, name and "650 · P 45" (×2 first when it's eaten as two portions; a batch on the
-  // Cook row: its × and portions), and for a meal cooked there its groceries (groceries.js coverageOf): amber with no trip
-  // before it, red with things not bought once its trip is past (from today on: a day gone by was shopped for or not); a
-  // leftover its batch can't give (A.shortPortions) dashed red, "no portion left". Draggable on a computer; the × takes
-  // it off (mouse only: its pop-up has Remove).
+  // Cook row: its × and portions), and for a meal cooked there, or store-bought, its groceries (groceries.js coverageOf):
+  // amber with no trip before it, red with things not bought once its trip is past (from today on: a day gone by was
+  // shopped for or not; a store-bought one its stock covers has neither); a leftover its batch can't give
+  // (A.shortPortions) dashed red, "no portion left". Draggable on a computer; the × takes it off (mouse only: its pop-up
+  // has Remove).
   function chipHTML(e, drag = wide()) {
-    const kind = e.kind === "recipe" ? (e.leftover ? "leftover" : "cooked") : e.kind, name = A.nameOf(e), cov = e.date >= todayStr() ? A.coverageOf(e) : null;
+    const kind = e.kind === "recipe" ? (e.leftover ? "leftover" : A.isBought(e) ? "bought" : "cooked") : e.kind, name = A.nameOf(e), cov = e.date >= todayStr() ? A.coverageOf(e) : null;
     const t = A.addUp([e]), meta = e.meal === "cook" ? `×${fmtScale(e.scale)} · ${plural(A.yieldOf(e), "portion")}`
       : e.kind === "skipped" ? "" : [t.kcal !== null ? fmtKcal(t.kcal) : "?", t.protein !== null ? `P ${fmtG(t.protein)}` : ""].filter(Boolean).join(" · ");
     const n = e.kind === "recipe" && e.meal !== "cook" && e.servings !== 1 ? `×${e.servings}` : "", short = e.leftover && A.shortPortions().has(e.id);
     const warn = (A.isCooked(e) && A.leftoversOf(e.id).some(x => x.date < e.date)) || (e.leftover && A.entryById(e.from) && e.date < A.entryById(e.from).date);
-    const words = { cooked: e.meal === "cook" ? "cooked for later" : "cooked here", leftover: "leftover", quick: "quick meal", restaurant: "restaurant", skipped: "" }[kind];
+    const words = { cooked: e.meal === "cook" ? "cooked for later" : "cooked here", bought: "store-bought", leftover: "leftover", quick: "quick meal", restaurant: "restaurant", skipped: "" }[kind];
     const shop = short ? "no portion left" : !cov ? "" : cov.state === "none" ? "no trip before this" : cov.state === "unbought" ? `${cov.missing} not bought` : "";
     const mark = short ? " short" : !cov || cov.state === "ok" ? "" : cov.state === "none" ? " nocover" : " unbought";
     return `<div class="chip ${kind}${warn ? " warn" : ""}${mark}" draggable="${drag}" data-drag="entry" data-act="entry" data-id="${esc(e.id)}" role="button" tabindex="0" ` +
@@ -122,8 +125,8 @@
       return `<div class="chip shelf" draggable="true" data-drag="portion" data-act="entry" data-id="${esc(e.id)}" role="button" tabindex="0" title="Drag onto a later day" aria-label="${esc(`${text}: open its batch`)}"><span class="chip-name">${ICONS.leftover}${esc(text)}</span></div>`;
     }).join("")}</div>` : "";
     const recipes = A.shownRecipes().filter(r => !q || r.name.toLowerCase().includes(q));
-    const item = r => `<div class="side-recipe" draggable="true" data-drag="recipe" data-act="recipe" data-id="${esc(r.id)}" role="button" tabindex="0" title="Drag onto a day, or tap to open">` +
-      `<span class="sr-name">${esc(r.name)}</span>${r.kcal !== null ? `<span class="sr-meta">${fmtKcal(r.kcal)} kcal</span>` : ""}</div>`;
+    const item = r => `<div class="side-recipe" draggable="true" data-drag="recipe" data-act="recipe" data-id="${esc(r.id)}" role="button" tabindex="0" title="${r.bought ? "Store-bought: drag" : "Drag"} onto a day, or tap to open">` +
+      `<span class="sr-name">${r.bought ? ICONS.bought : ""}${esc(r.name)}</span>${r.kcal !== null ? `<span class="sr-meta">${fmtKcal(r.kcal)} kcal</span>` : ""}</div>`;
     if (!A.shownRecipes().length) { $("sideRecipes").innerHTML = `<div class="empty-msg">No recipes yet: add some in Recipes, then drag them onto the days.</div>`; return; }
     if (q) { $("sideRecipes").innerHTML = recipes.map(item).join("") || `<div class="empty-msg">No recipe called that.</div>`; return; }
     $("sideRecipes").innerHTML = TYPES.map(([type, title]) => {

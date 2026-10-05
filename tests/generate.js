@@ -152,17 +152,18 @@ const RECIPES = [
   { id: "rc-stew", name: "Mystery stew", meal: "dinner", servings: 4, ingredients: ["1 kg potatoes", "2 carrots"], steps: "Stew it." },
   { id: "rc-soup", name: "Old soup", meal: "lunch", servings: 2, kcal: 300, ingredients: ["1 l stock"], steps: "Heat.", archived: true }
 ];
-// A Turtleduck backup: the recipes (all, or those named), planned meals ({ id?, date, meal, recipeId | kind, … } → whole
-// entries), trips (dates), the weeks confirmed for Momo (their Mondays), and anything else given (checked, manual,
-// sections, templates, slotTimes, tripSkips, settings).
+// A Turtleduck backup: the recipes (all, or those named; a recipe given whole is added as it is: a test's own, a
+// store-bought one with its stock for instance), planned meals ({ id?, date, meal, recipeId | kind, … } → whole entries),
+// trips (dates), the weeks confirmed for Momo (their Mondays), and anything else given (checked, manual, sections,
+// templates, slotTimes, tripSkips, settings).
 function turtleduck({ recipes = RECIPES.map(r => r.id), plan = [], trips = [], confirmed = [], ...rest } = {}) {
-  const t = at("2026-01-05");
+  const t = at("2026-01-05"), whole = recipes.filter(r => typeof r === "object"), known = RECIPES.concat(whole);
   return {
     confirmed: Object.fromEntries(confirmed.map(m => [m, { at: t, u: t }])),
     schemaVersion: 1, appVersion: "1.000",
-    recipes: RECIPES.filter(r => recipes.includes(r.id)).map((r, i) => ({ prepMin: null, cookMin: null, kcal: null, protein: null, carbs: null, fat: null, fiber: null, link: "", archived: false, ...r, deleted: false, at: t + i, u: t })),
+    recipes: RECIPES.filter(r => recipes.includes(r.id)).concat(whole).map((r, i) => ({ prepMin: null, cookMin: null, kcal: null, protein: null, carbs: null, fat: null, fiber: null, link: "", archived: false, ...r, deleted: false, at: t + i, u: t })),
     plan: plan.map((e, i) => {
-      const r = RECIPES.find(x => x.id === e.recipeId);
+      const r = known.find(x => x.id === e.recipeId);
       return { id: `pl-${i}`, kind: "recipe", recipeId: "", name: r ? r.name : "", leftover: false, from: "", scale: 1, servings: e.meal === "cook" ? 0 : 1, kcal: null, protein: null, carbs: null, fat: null, fiber: null, deleted: false, at: t + 100 + i, u: t, ...e };
     }),
     trips: trips.map((date, i) => ({ id: `tr-${i}`, date, deleted: false, at: t + 200 + i, u: t })),
@@ -170,11 +171,12 @@ function turtleduck({ recipes = RECIPES.map(r => r.id), plan = [], trips = [], c
     ...rest
   };
 }
-// A Turtleduck backup made of junk: wrong types, duplicates, out-of-range numbers, a leftover on the Cook row, a bad section.
+// A Turtleduck backup made of junk: wrong types, duplicates, out-of-range numbers, a leftover on the Cook row, a bad section,
+// a count on hand too big and one on a recipe that isn't store-bought.
 const damagedTurtleduck = () => ({
   schemaVersion: 1,
-  recipes: [null, "x", { id: "r1", name: "  Chili \n con carne ", meal: "brunch", servings: 99, kcal: -5, protein: "lots", ingredients: "2 eggs\n\n 1 cup rice ", steps: 42 },
-    { id: "r1", name: "Copy" }, { name: "" }, { id: "r2", name: "Oats", ingredients: [{ qty: 50, unit: "g", name: "oats" }, 7, null] }, { id: "r3", deleted: true, name: "Gone" }],
+  recipes: [null, "x", { id: "r1", name: "  Chili \n con carne ", meal: "brunch", servings: 99, kcal: -5, protein: "lots", ingredients: "2 eggs\n\n 1 cup rice ", steps: 42, bought: true, stock: { count: 1500.4, date: TODAY } },
+    { id: "r1", name: "Copy" }, { name: "" }, { id: "r2", name: "Oats", ingredients: [{ qty: 50, unit: "g", name: "oats" }, 7, null], bought: "yes", stock: { count: 3, date: TODAY } }, { id: "r3", deleted: true, name: "Gone" }],
   plan: [{ id: "p1", date: addDays(TODAY, 1), meal: "dinner", recipeId: "r1", scale: 37, servings: -2 }, { id: "p2", date: "2026-02-30", meal: "dinner", recipeId: "r1" },
     { id: "p3", date: TODAY, meal: "cook", kind: "quick", name: "Shake" }, { id: "p4", date: TODAY, meal: "brunch", recipeId: "r1" }, { id: "p5", date: TODAY, meal: "lunch", kind: "quick", name: "Shake", kcal: 1e9 }],
   trips: [{ id: "t1", date: addDays(TODAY, 2) }, { id: "t2", date: "soon" }],

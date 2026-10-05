@@ -1,6 +1,7 @@
 /* Turtleduck · plan.js — the plan's changes and sums. Placing: a recipe (cooked there; on the Cook row, all its portions
- * go on the shelf), a portion of a batch (a leftover: never before its cook day, never on the Cook row, never more than
- * the batch yields: refused, saying why), a quick meal, a restaurant or a skipped meal; moving, copying (Ctrl+C / V) and
+ * go on the shelf; a store-bought item is eaten there, never on the Cook row), a portion of a batch (a leftover: never
+ * before its cook day, never on the Cook row, never more than the batch yields: refused, saying why), a quick meal, a
+ * restaurant or a skipped meal; moving, copying (Ctrl+C / V) and
  * removing them; "Also on…" (a batch's portions on later days, one more or one fewer a tap); what may go where (canPlace:
  * for dragging, pasting and the picker; hasRoom / refused: a batch's portions to give); a day's totals, a week's average
  * and what's past a target; and the ⋯ menu's Copy last week, templates (save the week on screen, load one into it) and
@@ -22,9 +23,10 @@
   // ==========================================================================
   // WHAT MAY GO WHERE: d = { what: "recipe" | "portion" | "entry" (moved) | "copy", id }
   // ==========================================================================
-  // An entry in a cell: the Cook row only takes what's cooked there; a leftover never goes before its batch's day.
+  // An entry in a cell: the Cook row only takes what's cooked there (a store-bought item isn't); a leftover never goes
+  // before its batch's day.
   function fits(e, date, meal) {
-    if (meal === "cook") return A.isCooked(e);
+    if (meal === "cook") return A.isCooked(e) && !A.isBought(e);
     if (!e.leftover) return true;
     const from = A.entryById(e.from);
     return !from || date >= from.date;
@@ -33,10 +35,10 @@
   function goes(d, date, meal) {
     if (!d || !A.inPlan(date) || A.mealIndex(meal) < 0) return false;
     const full = A.entriesOn(date, meal).length >= MAX_CHIPS, e = d.what === "recipe" ? null : A.entryById(d.id);
-    if (d.what === "recipe") return !full && !!A.recipeById(d.id);
+    if (d.what === "recipe") { const r = A.recipeById(d.id); return !full && !!r && !(meal === "cook" && r.bought); }
     if (!e) return false;
     if (d.what === "entry") return !(e.date === date && e.meal === meal) && !full && fits(e, date, meal);
-    if (d.what === "portion") return !full && A.isCooked(e) && meal !== "cook" && date >= e.date;
+    if (d.what === "portion") return !full && A.isCooked(e) && !A.isBought(e) && meal !== "cook" && date >= e.date;
     return d.what === "copy" && !full && fits(e, date, meal);
   }
   // The portions it takes from a batch: a portion of one (one), a copy of a leftover (as many as it has); else none.

@@ -2,8 +2,9 @@
  * another, its checks, Esc asking first), the list by meal type with "last cooked" and "5×", Archive (out of the sidebar
  * and the picker), Delete (planned meals keep the name; the lists and the cook view know it's gone); Paste recipes (a
  * block without a name, one you already have, one repeated in the paste); the cook view (the steps as typed, a batch's
- * scaled amounts); and the data: Export then Import, other apps' backups and an empty one refused, a damaged one cleaned,
- * bug reports with counts only. */
+ * scaled amounts); store-bought items (Cooked · Store-bought, On hand kept, counted again or emptied, "last had", the
+ * paste key, the cook view); and the data: Export then Import, other apps' backups and an empty one refused, a damaged
+ * one cleaned, bug reports with counts only. */
 "use strict";
 const { TODAY, DESKTOP, eq, ok, has, lacks, open, importBackup, exportBackup, lastDialog, switchTo, addDays, mondayOf, travel } = require("./lib");
 const gen = require("./generate");
@@ -130,6 +131,85 @@ module.exports = [
     }
   },
   {
+    name: "turtleduck recipes: store-bought — Cooked · Store-bought, On hand (kept, counted again, emptied), last had, Read, the paste key",
+    async run(t) {
+      const tab = await open(t, { app: "turtleduck", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, gen.turtleduck({ recipes: ["rc-chili"] }));
+      await td.view(tab, "recipes");
+      const row = name => `#kMount #recipeGroups .recipe-row:has(.rr-name:text-is("${name}"))`;
+      const openRow = name => p.click(`${row(name)} [data-act="recipe"]`);
+      const save = () => p.click('#kMount #recipeForm button[type="submit"]');
+      const mine = () => p.evaluate(() => Kyoshi.apps.turtleduck.liveRecipes().filter(r => r.name !== "Chili").map(r => [r.name, r.bought, r.stock]));
+      const rows = async () => (await td.recipeRows(tab)).filter(r => !r.startsWith("Chili"));
+
+      // New: Cooked unless picked; Store-bought asks how many are on hand. Save & add another keeps the pick.
+      await p.click("#kMount #newRecipeBtn");
+      ok(await p.locator("#kMount #recipeStockBox").isHidden(), "Cooked: no On hand");
+      await p.click('#kMount #recipeMade [data-made="bought"]');
+      ok(await p.locator("#kMount #recipeStockBox").isVisible() && await p.locator("#kMount #recipeStockHint").isVisible(), "Store-bought: On hand, explained");
+      await td.fillRecipe(tab, { name: "Protein shake", meal: "snack", kcal: 160, protein: 30 });
+      await p.fill("#kMount #recipeStock", "6");
+      await p.click("#kMount #recipeAnotherBtn");
+      eq([await p.locator("#kMount #recipeMade .active").innerText(), await p.locator("#kMount #recipeStock").inputValue()], ["Store-bought", ""], "Store-bought kept, On hand cleared");
+      await td.fillRecipe(tab, { name: "Granola bar", kcal: 200 });
+      await p.fill("#kMount #recipeStock", "1.5");
+      await save();
+      eq(lastDialog(tab), "On hand: a whole number from 0 to 999, or empty.", "a whole number");
+      await p.fill("#kMount #recipeStock", "");
+      await save();
+      eq(await rows(), ["Granola bar · store-bought · 200 kcal", "Protein shake · store-bought · 6 on hand · 160 kcal · P 30"], "store-bought, and how many are on hand");
+      eq(await mine(), [["Granola bar", true, null], ["Protein shake", true, { count: 6, date: TODAY }]], "counted today; the bar isn't tracked");
+
+      // Planned today and tomorrow: today's is taken as eaten.
+      await td.view(tab, "plan");
+      for (const d of [TODAY, D(1)]) { await td.openPicker(tab, d, "lunch"); await td.pickRecipe(tab, "Protein shake"); }
+      await td.view(tab, "recipes");
+      eq((await rows())[1], "Protein shake · store-bought · 5 on hand · 160 kcal · P 30 · last had Sep 30 · 1×", "5 on hand after today's, last had");
+      // Its pop-up shows the count before today's meals; saved as it is, the count keeps its day.
+      await openRow("Protein shake");
+      eq([await p.locator("#kMount #recipeStock").inputValue(), await p.locator("#kMount #recipeUse").innerText()], ["6", "Had 1×, last Sep 30 · planned 2 times from today"], "as counted this morning");
+      await save();
+      eq((await mine())[1], ["Protein shake", true, { count: 6, date: TODAY }], "unchanged");
+
+      // A day on: 4 on hand (5 this morning); counted again, from today.
+      await travel(tab, 1);
+      eq((await rows())[1], "Protein shake · store-bought · 4 on hand · 160 kcal · P 30 · last had Oct 1 · 2×", "a day on");
+      await openRow("Protein shake");
+      eq(await p.locator("#kMount #recipeStock").inputValue(), "5", "5 before today's");
+      await p.fill("#kMount #recipeStock", "10");
+      await save();
+      eq([(await mine())[1], (await rows())[1]], [["Protein shake", true, { count: 10, date: D(1) }], "Protein shake · store-bought · 9 on hand · 160 kcal · P 30 · last had Oct 1 · 2×"], "counted again today");
+      // Emptied: not tracked; Cooked: a recipe again.
+      await openRow("Protein shake");
+      await p.fill("#kMount #recipeStock", "");
+      await save();
+      eq((await mine())[1], ["Protein shake", true, null], "not tracked");
+      eq(await p.locator(`${row("Protein shake")} [data-act="cook"]`).innerText(), "Read", "nothing to cook");
+      await p.click(`${row("Protein shake")} [data-act="cook"]`);
+      const c = await td.cook(tab);
+      eq([c.name, c.meta, c.ingredients, c.steps], ["Protein shake", "Store-bought", [], []], "the cook view: just its name");
+      await p.click('#kMount [data-act="cook-back"]');
+      await openRow("Protein shake");
+      await p.click('#kMount #recipeMade [data-made="cooked"]');
+      ok(await p.locator("#kMount #recipeStockBox").isHidden(), "no On hand");
+      await save();
+      eq([(await mine())[1], (await rows())[1]], [["Protein shake", false, null], "Protein shake · 160 kcal · P 30 · last cooked Oct 1 · 2×"], "cooked");
+
+      // Paste: Store-bought (or Bought, Ready-made) yes needs no ingredients or steps.
+      await p.click("#kMount #pasteBtn");
+      await p.fill("#kMount #pasteText", ["# Iced coffee", "Store-bought: yes", "Per serving: 90 kcal", "", "# Bar", "Bought: maybe", "", "# Hummus", "Ready-made", "- 1 tub hummus"].join("\n"));
+      await p.click("#kMount #pastePreviewBtn");
+      eq(await p.$$eval("#kMount #pasteRows .paste-row", els => els.map(e => `${e.querySelector("input").checked ? "[x]" : "[ ]"} ${e.querySelector(".paste-main").innerText.replace(/\s*\n\s*/g, " · ")}`)), [
+        "[x] Iced coffee · store-bought · 90 kcal",
+        "[ ] Bar · no ingredients or steps · Bought: couldn't read yes or no",
+        "[x] Hummus · store-bought · 1 ingredient"
+      ], "the preview");
+      await p.click("#kMount #pasteAddBtn");
+      eq((await mine()).filter(r => r[0] === "Iced coffee" || r[0] === "Hummus"), [["Hummus", true, null], ["Iced coffee", true, null]], "added, store-bought");
+      ok(tab.problems.length === 0, "a clean console");
+    }
+  },
+  {
     name: "turtleduck data: Export then Import, other apps' and empty backups refused, a damaged one cleaned, bug reports with counts only",
     async run(t) {
       const plan = [{ id: "c1", date: TODAY, meal: "dinner", recipeId: "rc-chili" }, { date: D(1), meal: "lunch", recipeId: "rc-chili", leftover: true, from: "c1" }];
@@ -160,8 +240,8 @@ module.exports = [
 
       // A damaged backup: only what can be used comes in, and nothing breaks.
       await importBackup(tab, gen.damagedTurtleduck());
-      const got = await p.evaluate(() => { const A = Kyoshi.apps.turtleduck, S = A.S; return { recipes: A.liveRecipes().map(r => [r.name, r.meal, r.servings, r.kcal, r.protein, r.ingredients]), plan: A.liveEntries().map(e => [e.date, e.meal, e.kind, e.scale, e.servings, e.kcal]), trips: A.liveTrips().length, checked: Object.entries(S.checked).map(([k, v]) => [k, v.ranges]), manual: S.manual.map(m => m.text), sections: Object.keys(S.sections), tpl: S.templates.map(x => x.entries.map(e => [e.day, e.from])), targets: S.settings.targets }; });
-      eq(got.recipes, [["Chili con carne", "any", 50, 0, null, ["2 eggs", "1 cup rice"]], ["Oats", "any", 1, null, null, ["50 g oats", "7"]]], "the recipes, cleaned");
+      const got = await p.evaluate(() => { const A = Kyoshi.apps.turtleduck, S = A.S; return { recipes: A.liveRecipes().map(r => [r.name, r.meal, r.servings, r.kcal, r.protein, r.ingredients, r.bought, r.stock]), plan: A.liveEntries().map(e => [e.date, e.meal, e.kind, e.scale, e.servings, e.kcal]), trips: A.liveTrips().length, checked: Object.entries(S.checked).map(([k, v]) => [k, v.ranges]), manual: S.manual.map(m => m.text), sections: Object.keys(S.sections), tpl: S.templates.map(x => x.entries.map(e => [e.day, e.from])), targets: S.settings.targets }; });
+      eq(got.recipes, [["Chili con carne", "any", 50, 0, null, ["2 eggs", "1 cup rice"], true, { count: 999, date: TODAY }], ["Oats", "any", 1, null, null, ["50 g oats", "7"], false, null]], "the recipes, cleaned");
       eq(got.plan, [[D(1), "dinner", "recipe", 10, 1, null], [TODAY, "lunch", "quick", 1, 1, 5000]], "the plan, cleaned");
       eq([got.trips, got.checked, got.manual, got.sections, got.tpl], [1, [["rice|cup", [[D(1), D(3)]]]], ["olive oil"], ["rice"], [[[6, -1], [1, -1]]]], "the rest, cleaned");
       eq(got.targets, { kcal: null, protein: 150, carbs: null, fat: null, fiber: null }, "the targets, cleaned");

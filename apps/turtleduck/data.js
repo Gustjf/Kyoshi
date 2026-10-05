@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
-  const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MIN_SCALE, MAX_SCALE,
+  const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MAX_STOCK, MIN_SCALE, MAX_SCALE,
     MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, SLOTS, DEFAULT_TIMES, DEFAULT_LENGTHS,
     MIN_LENGTH, MAX_LENGTH, cleanLine, cleanText, clampInt, numIn, plural, own, onGrid, dayIndex } = A;
   const LISTS = ["recipes", "plan", "trips", "manual", "templates"];
@@ -38,7 +38,11 @@
   // Ingredient lines, one each as typed (a line of text, or text in one piece; { qty, unit, name } becomes a line too).
   const lineOf = l => (isObj(l) ? [isNum(l.qty) ? String(l.qty) : "", typeof l.unit === "string" ? l.unit : "", typeof l.name === "string" ? l.name : ""].join(" ") : isNum(l) ? String(l) : l);
   const cleanLines = v => (typeof v === "string" ? v.split(/\r\n?|\n/) : Array.isArray(v) ? v : []).map(l => cleanLine(lineOf(l), MAX_LINE)).filter(Boolean).slice(0, MAX_LINES);
+  // A store-bought item's count on hand on a day ({ count: 0–MAX_STOCK whole, date }), or null: not tracked.
+  const cleanStock = s => (isObj(s) && isNum(s.count) && isDate(s.date) ? { count: clampInt(s.count, 0, MAX_STOCK, 0), date: s.date } : null);
 
+  // A recipe; bought: a store-bought item (not cooked: never on the Cook row, no portions kept), with its stock (a file
+  // from before 2.500 has neither: cooked).
   function cleanRecipes(list) {
     return unique(objects(list).map(r => (r.deleted === true ? marker(r) : {
       id: idOf(r.id) || newId(),
@@ -51,6 +55,8 @@
       ...nutrition(r),
       link: cleanLine(r.link, MAX_LINK),
       archived: r.archived === true, // hidden from the sidebar and the picker, not gone
+      bought: r.bought === true,
+      stock: r.bought === true ? cleanStock(r.stock) : null,
       deleted: false, at: msOf(r.at), u: uOf(r)
     })), r => r.deleted || r.name);
   }

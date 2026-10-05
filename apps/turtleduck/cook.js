@@ -1,8 +1,9 @@
 /* Turtleduck · cook.js — the cook view (#cookView): a recipe on a phone stand, never touched while cooking. Its name big,
- * "×2 · 8 portions" when scaled, its minutes and link, the ingredients (scaled), and the steps as typed (a line each,
- * a line starting with - or • a bullet), in big type; on a batch day "1 of 3 · Next: Curry ›" pages through the day's
- * recipes. ← Back goes back to where it was opened from. The screen stays on while it's on screen (A.awake, events.js).
- * Opened by a planned meal's Read, a recipe's Cook, and Momo's "Open in Turtleduck". */
+ * "×2 · 8 portions" when scaled ("Store-bought" for an item bought ready to eat), its minutes and link, the ingredients
+ * (scaled), and the steps as typed (a line each, a line starting with - or • a bullet), in big type; on a batch day
+ * "1 of 3 · Next: Curry ›" pages through the day's recipes. ← Back goes back to where it was opened from. The screen
+ * stays on while it's on screen (A.awake, events.js). Opened by a planned meal's Read, a recipe's Cook (Read), and Momo's
+ * "Open in Turtleduck". */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -59,10 +60,11 @@
       return;
     }
     const minutes = [r.prepMin ? `prep ${fmtMinutes(r.prepMin)}` : "", r.cookMin ? `cook ${fmtMinutes(r.cookMin)}` : ""].filter(Boolean).join(" · ");
-    const made = item.scale !== 1 ? `×${fmtScale(item.scale)} · ${plural(A.yieldAt(r, item.scale), "portion")}` : `Serves ${r.servings}`;
+    // A store-bought item is as it comes: never scaled.
+    const scale = r.bought ? 1 : item.scale, made = r.bought ? "Store-bought" : scale !== 1 ? `×${fmtScale(scale)} · ${plural(A.yieldAt(r, scale), "portion")}` : `Serves ${r.servings}`;
     $("cookBox").innerHTML = `<h2 class="cook-name">${esc(r.name)}</h2><p class="cook-meta">${esc([made, minutes].filter(Boolean).join(" · "))}</p>` +
       (r.link ? `<p class="cook-meta cook-link">${linkHTML(r.link)}</p>` : "") +
-      (r.ingredients.length ? `<h3>Ingredients</h3><ul class="cook-ings">${r.ingredients.map(l => `<li>${esc(A.scaledLine(l, item.scale))}</li>`).join("")}</ul>` : "") +
+      (r.ingredients.length ? `<h3>Ingredients</h3><ul class="cook-ings">${r.ingredients.map(l => `<li>${esc(A.scaledLine(l, scale))}</li>`).join("")}</ul>` : "") +
       (r.steps ? `<h3>Steps</h3><div class="cook-steps">${stepsHTML(r.steps)}</div>` : "");
   }
 

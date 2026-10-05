@@ -7,7 +7,7 @@
  * unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES, UNIT_MODES, MIN_LENGTH, MAX_LENGTH } = A;
+  const { MAX_NAME, MAX_LINK, MAX_STEPS, MAX_QUICK, MAX_MANUAL, MAX_TEMPLATE_NAME, MAX_SERVINGS, MAX_STOCK, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES, UNIT_MODES, MIN_LENGTH, MAX_LENGTH } = A;
   // Times & trips: a meal's row (its usual time, its usual length), the Cook row's (a time only).
   const timeRow = (k, label, length = true) => `<label class="tm-name" for="time_${k}">${label}</label><input type="time" id="time_${k}" step="900">` +
     (length ? `<span class="tm-len"><input type="number" id="len_${k}" min="${MIN_LENGTH}" max="${MAX_LENGTH}" step="5" inputmode="numeric" aria-label="${label}: usual length in minutes"> min</span>` : `<span class="tm-len tm-note">as long as its recipes</span>`);
@@ -173,6 +173,11 @@ Season to taste.`;
         <div class="field">
           <label>Meal</label>
           <div class="mode-toggle many types" id="recipeTypes" role="group" aria-label="Meal">${TYPES.map(([k, t]) => `<button type="button" class="mode-btn" data-type="${k}">${t}</button>`).join("")}</div>
+          <div class="made-row">
+            <div class="mode-toggle made" id="recipeMade" role="group" aria-label="Cooked or store-bought"><button type="button" class="mode-btn" data-made="cooked">Cooked</button><button type="button" class="mode-btn" data-made="bought">Store-bought</button></div>
+            <div class="made-stock" id="recipeStockBox" hidden><label for="recipeStock">On hand</label><input type="number" id="recipeStock" min="0" max="${MAX_STOCK}" step="1" inputmode="numeric" placeholder="not tracked"></div>
+          </div>
+          <div class="hint" id="recipeStockHint" hidden>On hand: how many you have before today's meals. The plan uses them up, and the grocery list adds what's missing. Empty: not tracked (every one planned is on the list).</div>
         </div>
         <div class="field-row">
           <div class="field"><label for="recipeServings">Serves</label><input type="number" id="recipeServings" min="1" max="${MAX_SERVINGS}" step="1" inputmode="numeric" placeholder="1"></div>
@@ -184,7 +189,7 @@ Season to taste.`;
         <div class="field">
           <label for="recipeIngredients">Ingredients, one a line</label>
           <textarea id="recipeIngredients" rows="7" placeholder="200 g rice&#10;1 can beans, drained&#10;salt"></textarea>
-          <div class="hint">Like “200 g rice”, “1 can beans, drained” or “salt”: the grocery list adds them up (g/kg/oz/lb together, ml/l/tsp/tbsp/cup together, onions with onion).</div>
+          <div class="hint">Like “200 g rice”, “1 can beans, drained” or “salt”: the grocery list adds them up (g/kg/oz/lb together, ml/l/tsp/tbsp/cup together, onions with onion). None: the list has the recipe's own name.</div>
         </div>
         <div class="field"><label for="recipeSteps">Steps</label><textarea id="recipeSteps" rows="7" maxlength="${MAX_STEPS}" placeholder="As you like: a paragraph, or a line each (start one with - for a bullet)"></textarea></div>
         <div class="field"><label for="recipeLink">Link (optional)</label><input type="text" id="recipeLink" maxlength="${MAX_LINK}" inputmode="url" placeholder="https://…"></div>
@@ -210,7 +215,7 @@ Season to taste.`;
       <details class="paste-format">
         <summary>The format</summary>
         <pre>${FORMAT}</pre>
-        <div class="footnote">Keys in any order and any case, the colon optional: Meal (breakfast, lunch, dinner, snack or any), Serves, Prep, Cook, Per serving (or Calories, Protein (quality protein), Carbs, Fat and Fiber, each on a line), Link. Lines starting with - (or * or •) are ingredients, or every line under “Ingredients:”; everything after them, or after “Steps:”, is the steps as you typed them. A recipe you already have isn't changed: ticking it adds a second one.</div>
+        <div class="footnote">Keys in any order and any case, the colon optional: Meal (breakfast, lunch, dinner, snack or any), Serves, Prep, Cook, Per serving (or Calories, Protein (quality protein), Carbs, Fat and Fiber, each on a line), Link, and Store-bought: yes for something you buy ready to eat (it needs no ingredients or steps). Lines starting with - (or * or •) are ingredients, or every line under “Ingredients:”; everything after them, or after “Steps:”, is the steps as you typed them. A recipe you already have isn't changed: ticking it adds a second one.</div>
       </details>
       <textarea id="pasteText" rows="12" spellcheck="false" placeholder="# Chili&#10;Serves: 4&#10;- 500 g ground beef&#10;Brown the beef…"></textarea>
       <div id="pastePreview" hidden>

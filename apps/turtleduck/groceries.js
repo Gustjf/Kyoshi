@@ -5,16 +5,18 @@
  * recipe cooked from that trip's moment up to the next trip's (the last one through next Sunday), a meal at its slot's
  * time (a snack at SNACK_TIME) — so a trip at 6 pm covers that evening's dinner, and that day's lunch belongs to the
  * list before — its ingredient lines scaled and merged by name (plurals too: "onions" with "onion") and unit (every
- * weight together, every volume together; a line with no amount is a row with none), in store sections, the amounts
- * shown as entered, metric or US (Settings). A tick is "bought" for every planned use in that list's days, so a meal
- * added later past them brings the item back; a tick on one list leaves the others as they were. Ticks go by days, so a
- * day two lists share (a 6 pm trip) counts for both: what's needed only that day shows bought on both once either is
- * ticked. The Now list is what's needed before the first trip (normally empty); groceries added by hand ("running out
+ * weight together, every volume together; a line with no amount is a row with none; a recipe with no lines, its name),
+ * a store-bought item by count once its stock runs out (every one while it isn't tracked), in store sections, the
+ * amounts shown as entered, metric or US (Settings). A tick is "bought" for every planned use in that list's days, so a
+ * meal added later past them brings the item back; a tick on one list leaves the others as they were. Ticks go by days,
+ * so a day two lists share (a 6 pm trip) counts for both: what's needed only that day shows bought on both once either
+ * is ticked. The Now list is what's needed before the first trip (normally empty); groceries added by hand ("running out
  * of…") ride on it when it has anything, else on the first trip's. A past trip is gone from the screen: what it left
  * unbought shows up in Now. A cooked meal's coverage (coverageOf): the trip before it, and whether its ingredients were
- * bought once that trip is past. Also here: each ingredient's section (guessed, or set with a tap and remembered by name),
- * the Groceries view, and Settings (how amounts show, the day's targets). Ticks and sections set before 1.300 merged
- * plurals and units are found under the keys the lines had then, until the new key gets its own. */
+ * bought once that trip is past (a store-bought one's: none needed while its stock covers it, else the item itself).
+ * Also here: each ingredient's section (guessed, or set with a tap and remembered by name), the Groceries view, and
+ * Settings (how amounts show, the day's targets). Ticks and sections set before 1.300 merged plurals and units are found
+ * under the keys the lines had then, until the new key gets its own. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -39,21 +41,38 @@
   // The recipes cooked from one moment up to (not at) another, by moment.
   const cookedIn = (fromM, toM) => A.liveEntries().filter(e => A.isCooked(e) && at(e) >= fromM && at(e) < toM).sort((a, b) => at(a).localeCompare(at(b)) || A.byAdded(a, b));
 
+  // A store-bought item as a list's line: a count, its own row (keyed by its recipe, so it never merges with an
+  // ingredient), found by its name for its section.
+  const boughtLine = r => { const key = `bought:${r.id}|`; return { qty: 1, unit: "", name: r.name, note: "", norm: r.name.toLowerCase(), key, plural: false, oldKey: key, bought: true }; };
+  // A recipe with no ingredient lines shops by its name: a line with no amount (merged with any other line of that name
+  // with none), the whole name even when it starts with a number or has a comma.
+  function nameLine(r) {
+    const p = A.parseLine(r.name), norm = A.normName(r.name);
+    return p.qty === null && !p.note ? p : { qty: null, unit: "", name: r.name, note: "", norm, key: `${norm}|`, plural: false, oldKey: `${norm}|` };
+  }
+  // What a meal cooked there (or a store-bought one) puts on the lists, [[a parsed line, times]]: a store-bought item's
+  // portions its stock doesn't cover (nothing while it covers them all), else the recipe's lines at the batch's × (its
+  // name when it has none).
+  function needs(e, r) {
+    if (r.bought) { const n = A.toBuy(e); return n ? [[boughtLine(r), n]] : []; }
+    return r.ingredients.length ? r.ingredients.map(line => [A.parseLine(line), e.scale]) : [[nameLine(r), 1]];
+  }
+
   // The rows for the recipes cooked from fromM up to toM (moments): { key, norm, name (the first spelling), many (the
   // first plural spelling, "" when none), unit and qty (base units; qty null when no line gave one), units (the units
   // its amounts were typed in), recipes (names), first and last (the days needing it), olds (its lines' keys before
-  // 1.300, each with its first and last day), section, ticked }, by section.
+  // 1.300, each with its first and last day), bought (a store-bought item's row), section, ticked }, by section.
   function rowsFor(fromM, toM) {
     const rows = new Map();
     cookedIn(fromM, toM).forEach(e => {
       const r = A.recipeById(e.recipeId);
       if (!r) return; // a deleted recipe adds nothing
-      r.ingredients.forEach(line => {
-        const p = A.parseLine(line), b = A.toBase(p);
+      needs(e, r).forEach(([p, times]) => {
+        const b = A.toBase(p);
         let row = rows.get(p.key);
-        if (!row) rows.set(p.key, row = { key: p.key, norm: p.norm, name: p.name, many: "", unit: b.unit, qty: null, units: [], recipes: [], first: e.date, last: e.date, olds: new Map() });
+        if (!row) rows.set(p.key, row = { key: p.key, norm: p.norm, name: p.name, many: "", unit: b.unit, qty: null, units: [], recipes: [], first: e.date, last: e.date, olds: new Map(), bought: !!p.bought });
         if (b.qty !== null) {
-          row.qty = (row.qty || 0) + b.qty * e.scale;
+          row.qty = (row.qty || 0) + b.qty * times;
           if (!row.units.includes(p.unit)) row.units.push(p.unit);
         }
         if (p.plural && !row.many) row.many = p.name;
@@ -109,17 +128,19 @@
     kept();
   }
 
-  // A cooked meal's groceries (A.isCooked; else null: a leftover, a quick meal, a restaurant, a skipped one): { state:
-  // "none" (no trip before it), "unbought" (its trip is past and missing of its ingredients weren't bought for its day)
-  // or "ok", missing, trip }. Its trip: the last before it, by moments (one placed by hand any day, the schedule's from
-  // last Monday).
+  // A cooked meal's groceries (A.isCooked, store-bought too; else null: a leftover, a quick meal, a restaurant, a skipped
+  // one): { state: "none" (no trip before it), "unbought" (its trip is past and missing of its ingredients weren't bought
+  // for its day) or "ok", missing, trip }. Its trip: the last before it, by moments (one placed by hand any day, the
+  // schedule's from last Monday). A store-bought one its stock covers needs none.
   function coverageOf(e) {
     const r = A.isCooked(e) && A.recipeById(e.recipeId);
     if (!r) return null;
+    const lines = needs(e, r);
+    if (r.bought && !lines.length) return { state: "ok", missing: 0, trip: null };
     const when = at(e), trip = A.liveTrips().filter(t => moment(t.date, tripTime(t)) <= when).pop();
     if (!trip) return { state: "none", missing: 0, trip: null };
     if (moment(trip.date, tripTime(trip)) > A.nowMoment()) return { state: "ok", missing: 0, trip };
-    const keys = [...new Map(r.ingredients.map(line => { const p = A.parseLine(line); return [p.key, p.oldKey]; }))];
+    const keys = [...new Map(lines.map(([p]) => [p.key, p.oldKey]))];
     const missing = keys.filter(([key, old]) => !(own(S.checked, key) ? covers(key, e.date, e.date) : covers(old, e.date, e.date))).length;
     return { state: missing ? "unbought" : "ok", missing, trip };
   }
@@ -213,7 +234,7 @@
   function rowHTML(l, row) {
     const what = A.fmtLine(row, S.settings.units);
     return `<div class="g-row${row.ticked ? " ticked" : ""}" data-key="${esc(row.key)}"><label class="g-main">${box(`data-tick="${esc(row.key)}" data-list="${esc(l.id)}"`, row.ticked, what)}` +
-      `<span class="g-text"><span class="g-what">${esc(what)}</span><span class="g-for">${esc(row.recipes.join(", "))}</span></span></label>${sectionPick(row)}</div>`;
+      `<span class="g-text"><span class="g-what">${esc(what)}</span><span class="g-for">${esc(row.bought ? "store-bought" : row.recipes.join(", "))}</span></span></label>${sectionPick(row)}</div>`;
   }
   const manualHTML = m => `<div class="g-row manual${m.done ? " ticked" : ""}"><label class="g-main">${box(`data-manual="${esc(m.id)}"`, !!m.done, m.text)}` +
     `<span class="g-text"><span class="g-what">${esc(m.text)}</span><span class="g-tag">added by hand</span></span></label>` +

@@ -4,8 +4,8 @@
  * trip's) and moments, a week confirmed for Momo, nutrition and minutes as words, and lookups — which recipe, planned
  * meal or shopping trip is which (the schedule's trips worked out too), worked out once until the data or the day
  * changes (remember): "last cooked" and "cooked N×",
- * a batch's portions left, the leftovers it can't give (short) and the shelf, what a meal adds to its day and how long it
- * takes. Loads first of the
+ * a batch's portions left, the leftovers it can't give (short) and the shelf, a store-bought item's count on hand (what
+ * its stock covers, and what's left to buy), what a meal adds to its day and how long it takes. Loads first of the
  * app's files: the others destructure what's here at the top, and call functions from each other as A.name(). File
  * map and data model: apps/turtleduck/CLAUDE.md. */
 (function (K) {
@@ -38,6 +38,7 @@
     MAX_QUICK: 60,           // a quick meal's or restaurant's text
     MAX_MINUTES: 600,        // prep, and cook
     MAX_SERVINGS: 50,        // a recipe's yield at ×1, and portions in one place
+    MAX_STOCK: 999,          // a store-bought item's count on hand
     MIN_SCALE: 0.5,
     MAX_SCALE: 10,           // a batch's ×, in halves
     MAX_KCAL: 5000,
@@ -248,9 +249,9 @@
   const cookedTimes = id => (history().get(id) || { times: 0 }).times;
 
   // --- A batch's portions: a cooked entry yields its recipe's servings × its scale; what isn't eaten there or placed as
-  // leftovers waits on the shelf. Its recipe deleted, it yields nothing (its portions leave the shelf). ---
+  // leftovers waits on the shelf. Its recipe deleted, or store-bought, it yields nothing (no portions on the shelf). ---
   const yieldAt = (r, scale) => Math.max(1, Math.round(r.servings * scale)); // a recipe's portions at a ×
-  const yieldOf = e => { const r = isCooked(e) && recipeById(e.recipeId); return r ? yieldAt(r, e.scale) : 0; };
+  const yieldOf = e => { const r = isCooked(e) && recipeById(e.recipeId); return r && !r.bought ? yieldAt(r, e.scale) : 0; };
   const leftoversOf = id => remember("leftovers", () => {
     const out = new Map();
     liveEntries().forEach(e => { if (e.kind === "recipe" && e.leftover && e.from) (out.get(e.from) || out.set(e.from, []).get(e.from)).push(e); });
@@ -277,6 +278,40 @@
       .sort((a, b) => a.date.localeCompare(b.date) || mealIndex(a.meal) - mealIndex(b.meal) || byAdded(a, b));
   });
 
+  // --- A store-bought item (its recipe's bought): placed like a recipe, never cooked, so it yields no portions. Its stock,
+  // when tracked, is the count typed on its day (stock.date), run down by its meals from that day on, in date, meal and
+  // placing order — worked out, never stored: after each meal, what's left (below 0 once it has run out); start, what's
+  // left before today's meals (the recipe pop-up's On hand); hand, after them; runsOut, the first day after today it
+  // doesn't cover. ---
+  const isBought = e => { const r = isCooked(e) && recipeById(e.recipeId); return !!r && r.bought; };
+  const stocks = () => remember("stock", () => {
+    const out = new Map(), today = todayStr(), order = (a, b) => a.date.localeCompare(b.date) || mealIndex(a.meal) - mealIndex(b.meal) || byAdded(a, b);
+    liveRecipes().forEach(r => { if (r.bought && r.stock) out.set(r.id, { from: r.stock.date, left: r.stock.count, start: r.stock.count, hand: r.stock.count, runsOut: "", after: new Map() }); });
+    liveEntries().filter(e => e.kind === "recipe" && out.has(e.recipeId) && e.date >= out.get(e.recipeId).from).sort(order).forEach(e => {
+      const s = out.get(e.recipeId);
+      s.left -= e.servings;
+      s.after.set(e.id, s.left);
+      if (e.date < today) s.start = s.left;
+      if (e.date <= today) s.hand = s.left;
+      else if (s.left < 0 && !s.runsOut) s.runsOut = e.date;
+    });
+    return out;
+  });
+  const stockOf = r => (r && stocks().get(r.id)) || null;
+  // On hand after today's meals, or before them (null: not tracked). Either can go below 0: shown as 0, in red.
+  const onHand = r => (stockOf(r) ? stockOf(r).hand : null);
+  const stockStart = r => (stockOf(r) ? stockOf(r).start : null);
+  const runsOut = r => (stockOf(r) ? stockOf(r).runsOut : "");
+  // What's left once this meal is eaten (null: not tracked, or a meal from before it was counted).
+  const stockAfter = e => { const s = e.kind === "recipe" && stocks().get(e.recipeId); return s && s.after.has(e.id) ? s.after.get(e.id) : null; };
+  // A store-bought meal's portions its stock doesn't cover, to buy (all of them while it isn't tracked); 0 for a meal
+  // that isn't store-bought.
+  function toBuy(e) {
+    if (!isBought(e)) return 0;
+    const after = stockAfter(e);
+    return after === null ? e.servings : Math.min(e.servings, Math.max(0, -after));
+  }
+
   // --- What meals add to their day: per serving × portions (a recipe's), a quick meal's or restaurant's own; the Cook
   // row and skipped meals nothing. A nutrient nobody typed stays null; unknown: a meal without its kcal. ---
   function addUp(entries) {
@@ -295,12 +330,14 @@
     .map(([k, short, word]) => (k === "kcal" ? `${fmtKcal(t.kcal)} kcal` : long ? `${fmtG(t[k])} g ${word}` : `${short} ${fmtG(t[k])}`)).join(" · ");
 
   // --- How long a meal takes, for Momo: cooked there, its recipe's prep + cook (DEFAULT_COOK_MINUTES when it gives
-  // none); a leftover or quick meal QUICK_MINUTES; a restaurant RESTAURANT_MINUTES; skipped nothing. ---
+  // none); a leftover, a quick meal or a store-bought item QUICK_MINUTES; a restaurant RESTAURANT_MINUTES; skipped
+  // nothing. ---
   function entryMinutes(e) {
     if (e.kind === "skipped") return 0;
     if (e.kind === "restaurant") return A.RESTAURANT_MINUTES;
-    if (e.kind === "quick" || e.leftover) return A.QUICK_MINUTES;
-    const r = recipeById(e.recipeId), m = r ? (r.prepMin || 0) + (r.cookMin || 0) : 0;
+    const r = e.kind === "recipe" ? recipeById(e.recipeId) : null;
+    if (e.kind === "quick" || e.leftover || (r && r.bought)) return A.QUICK_MINUTES;
+    const m = r ? (r.prepMin || 0) + (r.cookMin || 0) : 0;
     return m > 0 ? m : A.DEFAULT_COOK_MINUTES;
   }
 
@@ -309,6 +346,7 @@
     mondayOf, thisMonday, nextMonday, planEnd, weekDates, inPlan, fmtDay, fmtWd, fmtHead, fmtFull, fmtRange, mealTitle, mealIndex, dayIndex,
     onGrid, scheduleOn, usualTime, slotTime, isOwnTime, slotMinutes, tripTime, mealTime, moment, nowMoment, isConfirmed,
     remember, live, byAdded, liveRecipes, shownRecipes, recipeById, liveEntries, entryById, entriesOn, isSkipped, liveTrips, hasTrip, liveTemplates,
-    nameOf, isCooked, lastCooked, cookedTimes, yieldAt, yieldOf, leftoversOf, portionsLeft, shortPortions, shelf, addUp, fmtMacros, entryMinutes
+    nameOf, isCooked, lastCooked, cookedTimes, yieldAt, yieldOf, leftoversOf, portionsLeft, shortPortions, shelf,
+    isBought, onHand, stockStart, runsOut, stockAfter, toBuy, addUp, fmtMacros, entryMinutes
   });
 })(Kyoshi);

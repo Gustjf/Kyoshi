@@ -1,11 +1,12 @@
 /* Turtleduck · paste.js — Paste recipes (#pasteOverlay): many recipes at once, written out in a plain text format (the
  * pop-up shows it, folded): each starts at a line beginning with "#" (its name), then keys in any order and any case, the
  * colon optional (Meal, Serves / Servings / Yield, Prep, Cook, Per serving: 650 kcal, 45 g protein, …, or Calories,
- * Protein, Carbs, Fat, Fiber each on a line, Link); "-", "*" or "•" lines are ingredients (or every line under
- * "Ingredients:"); everything after the ingredients, or after "Steps:", is the steps as typed. Preview lists each block
- * with a tick (none for a name you already have: ticking it adds a second, "Chili (2)"), its counts and any problems;
- * a block with no name, or with neither ingredients nor steps, is skipped. Add puts the ticked ones in. A paste never
- * changes a recipe you have. */
+ * Protein, Carbs, Fat, Fiber each on a line, Link, Store-bought: yes (or Bought, Ready-made: something bought ready to
+ * eat)); "-", "*" or "•" lines are ingredients (or every line under "Ingredients:"); everything after the ingredients,
+ * or after "Steps:", is the steps as typed. Preview lists each block with a tick (none for a name you already have:
+ * ticking it adds a second, "Chili (2)"), its counts and any problems; a block with no name, or with neither
+ * ingredients nor steps (unless it's store-bought), is skipped. Add puts the ticked ones in. A paste never changes a
+ * recipe you have. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -15,7 +16,7 @@
   const TYPE_KEYS = TYPES.map(t => t[0]);
 
   // --- Reading a block's lines ---
-  const KEY = /^(meal|type|serves|servings|yield|makes|prep(?:\s*time)?|cook(?:ing)?(?:\s*time)?|per\s+serving|nutrition|calories|kcal|energy|protein|carbs|carbohydrates|fat|fiber|fibre|link|url|source)(\s*:)?\s*(.*)$/i;
+  const KEY = /^(meal|type|serves|servings|yield|makes|prep(?:\s*time)?|cook(?:ing)?(?:\s*time)?|per\s+serving|nutrition|calories|kcal|energy|protein|carbs|carbohydrates|fat|fiber|fibre|link|url|source|store[\s-]*bought|bought|ready[\s-]*made)(\s*:)?\s*(.*)$/i;
   const HEAD = /^(ingredients|steps|method|directions|instructions)\s*(?::\s*(.*))?$/i; // alone on its line, or with a colon
   const BULLET = /^\s*[-*•·]\s*(.*)$/;
   const NUMBER = /(\d+(?:[.,]\d+)?)/;
@@ -68,6 +69,11 @@
     } else if (/^(protein|carbs|carbohydrates|fat|fiber|fibre)$/.test(key)) {
       if (!inRange(num(v), MAX_GRAMS)) return bad("the grams");
       r[NUTRIENT[key]] = num(v);
+    } else if (/bought|made/.test(key)) {
+      // "Store-bought: yes" (or alone on its line), "Bought: no".
+      const yes = !v || /^(yes|y|true)$/i.test(v);
+      if (!yes && !/^(no|n|false)$/i.test(v)) return bad("yes or no");
+      r.bought = yes;
     } else {
       if (!v || !colon) return colon;
       r.link = v;
@@ -122,7 +128,7 @@
         const r = { name: cleanLine(b.name, MAX_NAME), meal: "any" }, out = [];
         if ([...b.name].length > MAX_NAME) out.push(`the name is cut to ${MAX_NAME} characters`);
         readBlock(b.lines, r, out);
-        const skip = !r.name ? `Recipe ${i + 1} has no name after its #` : !r.ingredients.length && !r.steps ? "no ingredients or steps" : "";
+        const skip = !r.name ? `Recipe ${i + 1} has no name after its #` : !r.ingredients.length && !r.steps && !r.bought ? "no ingredients or steps" : "";
         return { n: i + 1, name: r.name, recipe: skip ? null : A.cleanRecipes([{ ...r, id: "paste" }])[0], problems: skip ? [skip, ...out] : out, skip: !!skip };
       })
     };
@@ -152,7 +158,8 @@
     $("pasteProblems").innerHTML = p.problems.map(x => `<div class="paste-problem">${esc(x)}</div>`).join("");
     $("pasteRows").innerHTML = p.blocks.map(b => {
       const r = b.recipe, exists = r && A.liveRecipes().some(x => sameName(x.name, r.name));
-      const counts = r ? [plural(r.ingredients.length, "ingredient"), r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : "", r.steps ? "" : "no steps"].filter(Boolean).join(" · ") : "";
+      const counts = !r ? "" : (r.bought ? ["store-bought", r.ingredients.length ? plural(r.ingredients.length, "ingredient") : "", r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : ""]
+        : [plural(r.ingredients.length, "ingredient"), r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : "", r.steps ? "" : "no steps"]).filter(Boolean).join(" · ");
       // A name you have: unticked ("already have Chili"), or ticked, added as "Chili (2)"; one repeated in the paste too.
       const renamed = r && b.on && names.get(b.n) !== r.name ? `adds “${names.get(b.n)}”` : "";
       const note = [exists ? `already have ${r.name}` : "", renamed].filter(Boolean);

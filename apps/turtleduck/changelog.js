@@ -5,6 +5,12 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.500", date: "2026-10-05", changes: [
+      "Store-bought items: in a recipe's pop-up, pick Cooked or Store-bought. A store-bought item shows a bag on the plan, never goes on the Cook row, keeps no leftovers, and takes a quick 20 minutes in Momo.",
+      "Track how many you have on hand if you like: the plan uses them up day by day, the Recipes list says how many are left or the day they run out, and from then on the grocery list adds the item by count.",
+      "A recipe with no ingredient lines (something ready to eat) goes on the grocery list by its own name.",
+      "Paste recipes reads “Store-bought: yes” (or Bought, Ready-made), and such an item needs no ingredients or steps. Reload Turtleduck on every device after updating, so an older copy doesn't drop the new fields when it saves."
+    ] },
     { version: "2.400", date: "2026-10-05", changes: [
       "Protein fields read “Quality protein”, a reminder to count complete proteins only.",
       "On the plan, a trip placed by hand carries a small dot and a skipped scheduled trip a slash, so the unusual stands out.",

@@ -1,15 +1,17 @@
 /* Turtleduck · plan-popups.js — the plan's two pop-ups. The picker (#pickOverlay, "Dinner, Mon Oct 5"): a search field,
  * then the shelf's portions that can go on that day (Leftovers), that meal's recipes, then the rest (most recently
- * cooked first, PAGE at a time with More); tap one and it's placed. Below: a quick meal (its text and own numbers), a
- * restaurant (a name if you like) and Skip this meal. The Cook row takes recipes only. Replace… opens it for a planned
- * meal, which gives way to what's picked. The planned meal's pop-up (#entryOverlay): that day's time for its breakfast,
- * lunch, dinner or Cook row (kept once the field is left; Usual while it differs: times.js setSlotTime), and for a meal
- * cooked there whether there's a trip before it, or what wasn't bought on that trip's list; a batch's × (halves), the
- * portions eaten there, the portions left (in red when below zero, or when some were placed before the cook day) and
- * Also on… (later days as chips: a tap puts one more portion there, its − one fewer); a leftover's portions (in red when
- * its batch ran out before it); a quick meal's or restaurant's text and numbers. A batch never gives more portions than
- * it yields: one more is refused, saying why (plan.js refused). Changes count at once. Then Read (the cook view), Edit recipe,
- * Replace… and Remove. And Save as template… (#templateOverlay): a name for the week on screen's meals. */
+ * cooked first, PAGE at a time with More; a bag: store-bought); tap one and it's placed. Below: a quick meal (its text and
+ * own numbers), a restaurant (a name if you like) and Skip this meal. The Cook row takes recipes only (never a
+ * store-bought item). Replace… opens it for a planned meal, which gives way to what's picked. The planned meal's pop-up
+ * (#entryOverlay): that day's time for its breakfast, lunch, dinner or Cook row (kept once the field is left; Usual while
+ * it differs: times.js setSlotTime), and for a meal cooked there (or store-bought) whether there's a trip before it, or
+ * what wasn't bought on that trip's list; a batch's × (halves), the portions eaten there, the portions left (in red when
+ * below zero, or when some were placed before the cook day) and Also on… (later days as chips: a tap puts one more
+ * portion there, its − one fewer); a store-bought item's portions and how many are on hand after it (or that it isn't
+ * tracked); a leftover's portions (in red when its batch ran out before it); a quick meal's or restaurant's text and
+ * numbers. A batch never gives more portions than it yields: one more is refused, saying why (plan.js refused). Changes
+ * count at once. Then Read (the cook view), Edit recipe, Replace… and Remove. And Save as template… (#templateOverlay): a
+ * name for the week on screen's meals. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -46,12 +48,12 @@
     if (!p) return;
     const q = p.query.trim().toLowerCase(), has = name => !q || name.toLowerCase().includes(q);
     const shelf = p.meal === "cook" ? [] : A.shelf().filter(e => e.date <= p.date && e.id !== p.replace && has(A.nameOf(e)));
-    const recipes = A.shownRecipes().filter(r => has(r.name)).sort(recent);
+    const recipes = A.shownRecipes().filter(r => has(r.name) && !(p.meal === "cook" && r.bought)).sort(recent);
     const mine = q || p.meal === "cook" ? recipes : recipes.filter(r => r.meal === p.meal), rest = q || p.meal === "cook" ? [] : recipes.filter(r => r.meal !== p.meal);
     let left = p.shown;
     const recipeBtn = r => {
       const last = A.lastCooked(r.id), meta = [r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : "", last ? `last ${fmtDay(last)}` : ""].filter(Boolean).join(" · ");
-      return `<button type="button" class="pick-item" data-pick="recipe" data-id="${esc(r.id)}"><span class="pi-name">${esc(r.name)}</span>${meta ? `<span class="pi-meta">${esc(meta)}</span>` : ""}</button>`;
+      return `<button type="button" class="pick-item" data-pick="recipe" data-id="${esc(r.id)}">${r.bought ? A.ICONS.bought : ""}<span class="pi-name">${esc(r.name)}</span>${meta ? `<span class="pi-meta">${esc(meta)}</span>` : ""}</button>`;
     };
     const group = (title, list) => {
       const shown = list.slice(0, Math.max(0, left));
@@ -82,8 +84,8 @@
   function pick(what, id) {
     const p = S.picking;
     if (!p) return;
-    const c = what === "portion" && A.entryById(id);
-    const ok = what === "recipe" ? !!A.recipeById(id) : !!c && A.isCooked(c) && p.meal !== "cook" && p.date >= c.date;
+    const c = what === "portion" && A.entryById(id), r = what === "recipe" && A.recipeById(id);
+    const ok = what === "recipe" ? !!r && !(p.meal === "cook" && r.bought) : !!c && A.isCooked(c) && !A.isBought(c) && p.meal !== "cook" && p.date >= c.date;
     if (!ok || (c && A.refused(c))) return renderPicker(); // a batch with none left (placed on another device) says so
     if (!roomFor(p)) return;
     if (p.replace) A.dropEntry(p.replace);
@@ -175,8 +177,14 @@
   }
 
   const bodyHTML = e => timeHTML(e) + coverHTML(e) + mealHTML(e);
+  // A store-bought item's stock after it: what's left on hand, or that it runs out first (its groceries say the rest).
+  function stockWords(e, r) {
+    const after = A.stockAfter(e);
+    return !r.stock ? "on hand not tracked" : after === null ? "" : after >= 0 ? `${after} on hand after this` : "on hand runs out before this";
+  }
   function mealHTML(e) {
     const r = e.kind === "recipe" ? A.recipeById(e.recipeId) : null, gone = e.kind === "recipe" && !r ? `<p class="entry-note bad">This recipe was deleted: its name stays here.</p>` : "";
+    if (A.isBought(e)) return `<p class="entry-line">${esc(["Store-bought", stockWords(e, r)].filter(Boolean).join(" · "))}</p>` + stepper("servings", "Portions", e.servings, 1, MAX_SERVINGS);
     if (A.isCooked(e)) {
       const left = A.portionsLeft(e), placed = A.leftoversOf(e.id), early = placed.filter(x => x.date < e.date).length;
       const leftLine = !r ? "" : left < 0 ? `<p class="entry-left bad">${esc(`Placed ${plural(placed.reduce((n, x) => n + x.servings, 0) + e.servings, "portion")} of ${A.yieldOf(e)}: ${left} left`)}</p>`

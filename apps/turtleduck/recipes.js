@@ -1,29 +1,35 @@
 /* Turtleduck · recipes.js — the Recipes view and the recipe pop-up. The view: New recipe, Paste recipes… (paste.js) and
- * a search; the recipes by meal type, each row "Chili · 650 kcal · P 45 · 60 min · last cooked Sep 12 · 5×" (tap: its
- * pop-up; Cook: the cook view), Archived folded at the bottom. The pop-up (#recipeOverlay): name, meal type, serves,
- * prep and cook minutes, kcal and macros per serving, ingredients (a line each, as the grocery list reads them), steps
- * (as you like), a link; Save (Enter in a field, Ctrl+Enter anywhere), Save & add another, Cancel, Archive / Unarchive
- * and Delete (planned meals keep its name). */
+ * a search; the recipes by meal type, each row "Chili · 650 kcal · P 45 · 60 min · last cooked Sep 12 · 5×" (a
+ * store-bought item's "store-bought · 3 on hand · … · last had Sep 12": or "runs out Sat Oct 3", or "0 on hand" in red;
+ * tap: its pop-up; Cook (Read for a store-bought item): the cook view), Archived folded at the bottom. The pop-up
+ * (#recipeOverlay): name, meal type, Cooked or Store-bought (with how many are on hand, if you track it), serves, prep
+ * and cook minutes, kcal and macros per serving, ingredients (a line each, as the grocery list reads them; none: the list
+ * has the recipe's name), steps (as you like), a link; Save (Enter in a field, Ctrl+Enter anywhere), Save & add another,
+ * Cancel, Archive / Unarchive and Delete (planned meals keep its name). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, newId, todayStr, readNumber } = K.util;
-  const { MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_LINK, MAX_SERVINGS, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES,
-    cleanLine, cleanText, plural, sameName, fmtKcal, fmtG, fmtMinutes, fmtDay } = A;
+  const { MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_LINK, MAX_SERVINGS, MAX_STOCK, MAX_MINUTES, MAX_KCAL, MAX_GRAMS, TYPES,
+    cleanLine, cleanText, plural, sameName, fmtKcal, fmtG, fmtMinutes, fmtDay, fmtFull } = A;
   const overlay = () => $("recipeOverlay");
-  const FIELDS = ["recipeName", "recipeServings", "recipePrep", "recipeCook", "recipeKcal", "recipeProtein", "recipeCarbs", "recipeFat", "recipeFiber", "recipeLink", "recipeIngredients", "recipeSteps"];
+  const FIELDS = ["recipeName", "recipeStock", "recipeServings", "recipePrep", "recipeCook", "recipeKcal", "recipeProtein", "recipeCarbs", "recipeFat", "recipeFiber", "recipeLink", "recipeIngredients", "recipeSteps"];
 
   // ==========================================================================
   // THE RECIPES VIEW
   // ==========================================================================
-  // "650 kcal · P 45 · 60 min · last cooked Sep 12 · 5×".
-  function metaOf(r) {
-    const last = A.lastCooked(r.id), times = A.cookedTimes(r.id), minutes = (r.prepMin || 0) + (r.cookMin || 0);
-    return [r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : "", r.protein !== null ? `P ${fmtG(r.protein)}` : "", minutes ? fmtMinutes(minutes) : "",
-      last ? `last cooked ${fmtDay(last)}` : "", times ? `${times}×` : ""].filter(Boolean).join(" · ");
+  // "650 kcal · P 45 · 60 min · last cooked Sep 12 · 5×"; a store-bought item "store-bought · 3 on hand · 160 kcal · … ·
+  // last had Sep 12 · 5×" (on hand after today's meals: "runs out Sat Oct 3" when the plan uses more later, "0 on hand"
+  // in red once it has used more), as HTML.
+  function metaHTML(r) {
+    const last = A.lastCooked(r.id), times = A.cookedTimes(r.id), minutes = (r.prepMin || 0) + (r.cookMin || 0), hand = A.onHand(r), out = A.runsOut(r);
+    const words = list => list.filter(Boolean).map(esc);
+    const stock = hand === null ? [] : hand < 0 ? [`<span class="bad">0 on hand</span>`] : words([out ? `runs out ${fmtFull(out)}` : `${hand} on hand`]);
+    return [...words([r.bought ? "store-bought" : ""]), ...stock, ...words([r.kcal !== null ? `${fmtKcal(r.kcal)} kcal` : "", r.protein !== null ? `P ${fmtG(r.protein)}` : "",
+      minutes ? fmtMinutes(minutes) : "", last ? `last ${r.bought ? "had" : "cooked"} ${fmtDay(last)}` : "", times ? `${times}×` : ""])].join(" · ");
   }
   const rowHTML = r => `<div class="recipe-row"><button type="button" class="rr-main" data-act="recipe" data-id="${esc(r.id)}"><span class="rr-name">${esc(r.name)}</span>` +
-    `<span class="rr-meta">${esc(metaOf(r))}</span></button><button type="button" class="more-link rr-cook" data-act="cook" data-id="${esc(r.id)}" aria-label="${esc(`Cook ${r.name}`)}">Cook</button></div>`;
+    `<span class="rr-meta">${metaHTML(r)}</span></button><button type="button" class="more-link rr-cook" data-act="cook" data-id="${esc(r.id)}" aria-label="${esc(`${r.bought ? "Read" : "Cook"} ${r.name}`)}">${r.bought ? "Read" : "Cook"}</button></div>`;
 
   function renderRecipes() {
     const q = S.listSearch.trim().toLowerCase(), all = A.liveRecipes(), shown = all.filter(r => !r.archived && (!q || r.name.toLowerCase().includes(q)));
@@ -43,16 +49,20 @@
   // THE RECIPE POP-UP
   // ==========================================================================
   // What the pop-up holds, to tell whether closing it would lose something.
-  const formState = () => JSON.stringify(FIELDS.map(id => $(id).value).concat(S.editing.meal));
+  const formState = () => JSON.stringify(FIELDS.map(id => $(id).value).concat(S.editing.meal, S.editing.bought));
   const num = v => (v === null ? "" : String(v));
+  // The meal type and Cooked · Store-bought as picked; On hand with Store-bought only.
   function renderTypes() {
-    $("recipeTypes").querySelectorAll("button").forEach(b => {
-      b.classList.toggle("active", b.dataset.type === S.editing.meal);
-      b.setAttribute("aria-pressed", String(b.dataset.type === S.editing.meal));
-    });
+    const ed = S.editing, press = (b, on) => { b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); };
+    $("recipeTypes").querySelectorAll("button").forEach(b => press(b, b.dataset.type === ed.meal));
+    $("recipeMade").querySelectorAll("button").forEach(b => press(b, (b.dataset.made === "bought") === ed.bought));
+    $("recipeStockBox").hidden = $("recipeStockHint").hidden = !ed.bought;
   }
   function fill(r) {
     $("recipeName").value = r ? r.name : "";
+    // On hand: what's left before today's meals (as typed, the day it's typed), 0 once the plan has used more.
+    $("recipeStock").value = r && A.stockStart(r) !== null ? Math.max(0, A.stockStart(r)) : "";
+    if (S.editing) S.editing.stockTyped = false;
     $("recipeServings").value = r ? r.servings : "";
     $("recipePrep").value = r ? num(r.prepMin) : "";
     $("recipeCook").value = r ? num(r.cookMin) : "";
@@ -66,12 +76,13 @@
   function openRecipe(id) {
     const r = id ? A.recipeById(id) : null;
     if (id && !r) return;
-    S.editing = { id: r ? r.id : "", meal: r ? r.meal : S.lastType || "any" };
+    S.editing = { id: r ? r.id : "", meal: r ? r.meal : S.lastType || "any", bought: r ? r.bought : S.lastBought === true, stockTyped: false };
     $("recipeTitle").textContent = r ? "Recipe" : "New recipe";
     fill(r);
     renderTypes();
     const planned = r ? A.liveEntries().filter(e => e.kind === "recipe" && e.recipeId === r.id && e.date >= todayStr()).length : 0;
-    const use = r ? [A.cookedTimes(r.id) ? `Cooked ${A.cookedTimes(r.id)}×, last ${fmtDay(A.lastCooked(r.id))}` : "Not cooked yet", planned ? `planned ${plural(planned, "time")} from today` : "", r.archived ? "archived" : ""].filter(Boolean).join(" · ") : "";
+    const done = r && r.bought ? ["Had", "Not had yet"] : ["Cooked", "Not cooked yet"];
+    const use = r ? [A.cookedTimes(r.id) ? `${done[0]} ${A.cookedTimes(r.id)}×, last ${fmtDay(A.lastCooked(r.id))}` : done[1], planned ? `planned ${plural(planned, "time")} from today` : "", r.archived ? "archived" : ""].filter(Boolean).join(" · ") : "";
     $("recipeUse").textContent = use;
     $("recipeUse").hidden = !use;
     $("recipeStatus").textContent = "";
@@ -114,7 +125,11 @@
       carbs: field("recipeCarbs", "Carbs per serving (g)", 0, MAX_GRAMS), fat: field("recipeFat", "Fat per serving (g)", 0, MAX_GRAMS), fiber: field("recipeFiber", "Fiber per serving (g)", 0, MAX_GRAMS)
     };
     if (Object.values(nums).some(v => v === undefined)) return;
-    const fields = { name, meal: ed.meal, ingredients: lines, steps: cleanText($("recipeSteps").value, MAX_STEPS), link: cleanLine($("recipeLink").value, MAX_LINK), ...nums };
+    // On hand (store-bought): typed or changed, counted from today; as it was (its day) when left alone; empty, not tracked.
+    const count = ed.bought ? field("recipeStock", "On hand", 0, MAX_STOCK, { whole: true }) : null;
+    if (count === undefined) return;
+    const stock = count === null ? null : r && r.stock && (!ed.stockTyped || count === A.stockStart(r)) ? r.stock : { count, date: todayStr() };
+    const fields = { name, meal: ed.meal, bought: ed.bought, stock, ingredients: lines, steps: cleanText($("recipeSteps").value, MAX_STEPS), link: cleanLine($("recipeLink").value, MAX_LINK), ...nums };
     const t = Date.now();
     if (r) {
       const next = A.cleanRecipes([{ ...r, ...fields }])[0];
@@ -122,11 +137,12 @@
     } else {
       S.recipes.push(A.cleanRecipes([{ id: newId(), ...fields, archived: false, at: t, u: t }])[0]);
       S.lastType = ed.meal;
+      S.lastBought = ed.bought;
       A.save();
     }
     A.renderAll();
     if (close || r) return closeRecipe();
-    // Save & add another: the same meal type, a clean form.
+    // Save & add another: the same meal type, Cooked or Store-bought as picked, a clean form.
     fill(null);
     $("recipeStatus").textContent = `Added “${name}”.`;
     ed.snapshot = formState();
@@ -168,6 +184,8 @@
     // Ctrl+Enter (⌘+Enter) saves from anywhere in it, the steps and ingredients too.
     $("recipeForm").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveRecipe(true); } });
     $("recipeTypes").addEventListener("click", e => { const b = e.target.closest("button[data-type]"); if (b && S.editing) { S.editing.meal = b.dataset.type; renderTypes(); } });
+    $("recipeMade").addEventListener("click", e => { const b = e.target.closest("button[data-made]"); if (b && S.editing) { S.editing.bought = b.dataset.made === "bought"; renderTypes(); } });
+    $("recipeStock").addEventListener("input", () => { if (S.editing) S.editing.stockTyped = true; });
     $("recipeAnotherBtn").addEventListener("click", () => saveRecipe(false));
     $("recipeCancelBtn").addEventListener("click", closeRecipe);
     $("recipeArchiveBtn").addEventListener("click", archiveRecipe);
