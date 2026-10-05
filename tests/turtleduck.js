@@ -2,7 +2,8 @@
  * and their chips, the cart, a day's totals), the sidebar (recipes, the shelf of portions), dragging, copy and paste by
  * the mouse, the picker and a planned meal's pop-up, the recipe pop-up, the grocery lists (rows, ticks, sections, added
  * by hand), the cook view, Times & trips, a week's Confirm and its line about Momo, a day's own time (a meal's, a
- * trip's) and a meal's groceries mark. Selectors live here, so a markup change is fixed in one place. */
+ * trip's), a meal's groceries mark, the carts' marks and a batch's Also on… days. Selectors live here, so a markup
+ * change is fixed in one place. */
 "use strict";
 
 const view = async (tab, v) => { await tab.page.click(`#kMount #nav [data-view="${v}"]`); await tab.page.waitForSelector(`#kMount #${v}View:not([hidden])`); };
@@ -199,9 +200,13 @@ const coverage = (tab, date, meal, name) => tab.page.$eval(chip(date, meal, name
 }));
 // The carts on the grid's days: { date: time or "" when off }.
 const carts = tab => tab.page.$$eval("#kMount #planGrid .cart", els => Object.fromEntries(els.map(b => [b.dataset.date, b.classList.contains("on") ? (b.querySelector(".cart-time") || {}).textContent || "" : ""])));
+// The carts' marks: { date: "by-hand" (a trip placed by hand: a dot), "skipped" (the schedule's, skipped: a slash) or "" }.
+const cartMarks = tab => tab.page.$$eval("#kMount #planGrid .cart", els => Object.fromEntries(els.map(b => [b.dataset.date, b.classList.contains("by-hand") ? "by-hand" : b.classList.contains("skipped") ? "skipped" : ""])));
+// A batch's pop-up: its Also on… days holding portions, as shown ("Tue 29 ×2"; each with its − beside it).
+const alsoDays = tab => tab.page.$$eval('#kMount #entryOverlay [data-entry="also"][aria-pressed="true"]', els => els.map(e => e.innerText.replace(/\s+/g, " ").trim()));
 
 module.exports = {
   view, week, cell, chips, chip, shelf, totals, dragRecipe, dragPortion, dragChip, key, openPicker, pickRecipe, pickPortion, pickList, quickMeal,
   openEntry, entryText, entryAct, closeEntry, fillRecipe, recipeRows, chipWords, lists, tickRow, openBought, setSection, cart, cook, entries,
-  openTimes, times, setTimes, confirmWeek, weekStatus, entryTime, setEntryTime, entryTimeUsual, tripTime, setTripTime, coverage, carts
+  openTimes, times, setTimes, confirmWeek, weekStatus, entryTime, setEntryTime, entryTimeUsual, tripTime, setTripTime, coverage, carts, cartMarks, alsoDays
 };

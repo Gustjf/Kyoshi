@@ -15,7 +15,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide, backup note, its checkup); constants (limits, `MEALS` with Cook last, `TYPES`, `MOMO_MEALS`, `SLOTS` (the meals with a slot in Momo's baseline), `DEFAULT_TIMES`, `DEFAULT_LENGTHS`, `MIN_LENGTH`/`MAX_LENGTH`, `SNACK_TIME` (a snack, for the lists), the minutes of Momo's cards: `GROCERY_MINUTES` 45, `DEFAULT_COOK_MINUTES` 45, `QUICK_MINUTES` 20, `RESTAURANT_MINUTES` 60; `SHELF_DAYS` 28, `SECTIONS`, `UNIT_MODES` (how the lists show amounts), `NUTRIENTS`, `CLIP_MS` 5000, `PAGE` 30, `PLAN_PX` 900, `PHONE`); state `A.S`; helpers (text, numbers, days: `mondayOf`, `thisMonday`, `planEnd`, `inPlan`, `dayIndex`, formats; times: `onGrid`, `scheduleOn`, `usualTime`, `slotTime`, `isOwnTime`, `slotMinutes`, `tripTime`, `mealTime`, `moment`, `nowMoment`; `isConfirmed`); lookups remembered by `S.version` and the day (`remember`): recipes, entries, cells, trips (the schedule's worked out: `liveTrips`, `isSkipped`), templates, `nameOf`, `lastCooked`/`cookedTimes`, `yieldOf`, `leftoversOf`, `portionsLeft`, `shelf`, `addUp` (nutrition), `fmtMacros`, `entryMinutes` |
+| `app.js` | `Kyoshi.register` (name, title, icon, 1180px wide, backup note, its checkup); constants (limits, `MEALS` with Cook last, `TYPES`, `MOMO_MEALS`, `SLOTS` (the meals with a slot in Momo's baseline), `DEFAULT_TIMES`, `DEFAULT_LENGTHS`, `MIN_LENGTH`/`MAX_LENGTH`, `SNACK_TIME` (a snack, for the lists), the minutes of Momo's cards: `GROCERY_MINUTES` 45, `DEFAULT_COOK_MINUTES` 45, `QUICK_MINUTES` 20, `RESTAURANT_MINUTES` 60; `SHELF_DAYS` 28, `SECTIONS`, `UNIT_MODES` (how the lists show amounts), `NUTRIENTS`, `CLIP_MS` 5000, `PAGE` 30, `PLAN_PX` 900, `PHONE`); state `A.S`; helpers (text, numbers, days: `mondayOf`, `thisMonday`, `planEnd`, `inPlan`, `dayIndex`, formats; times: `onGrid`, `scheduleOn`, `usualTime`, `slotTime`, `isOwnTime`, `slotMinutes`, `tripTime`, `mealTime`, `moment`, `nowMoment`; `isConfirmed`); lookups remembered by `S.version` and the day (`remember`): recipes, entries, cells, trips (the schedule's worked out: `liveTrips`, `isSkipped`), templates, `nameOf`, `lastCooked`/`cookedTimes`, `yieldOf`, `leftoversOf`, `portionsLeft`, `shortPortions` (the leftovers an overdrawn batch can't give), `shelf`, `addUp` (nutrition), `fmtMacros`, `entryMinutes` |
 | `markup.js` | the page: the nav, Plan (tabs, Confirm and the line about Momo, ⋯ menu, grid, sidebar, the phone's list), Recipes, Groceries (add by hand, the lists, Settings with Times & trips…), the cook view, Backup & sync, and the pop-ups (picker, a meal's, recipe, Paste recipes, Save as template, Times & trips) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too: `cleanSettings` with the times, lengths and schedule, `cleanSlotTimes`, `cleanTripSkips`, `cleanConfirmed`), `load`, `persist`/`save` (each key only when changed), backups and sync merge (`A.data`) |
@@ -25,9 +25,9 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `groceries.js` | the lists (`lists`: Now and each trip's, by moments, rows merged and ticked), trips (`toggleTrip`: one placed by hand, or the schedule's skipped and back), a meal's groceries (`coverageOf`), ticks, groceries added by hand, sections, the Groceries view (a trip's time on its list), Settings (amounts: `setUnits`; targets) |
 | `share.js` | what Momo reads (`routine`, `inbox`) and opens (`open`); what Turtleduck reads of Momo (`momoStatus`) |
 | `confirm.js` | a week confirmed for Momo: `weekSummary`, `confirmWeek` (asks, saying what goes and what's missing), `unconfirmWeek`, `statusLine` (the line about Momo), `unconfirmed` (for the dot), `mondayFor` |
-| `plan.js` | the plan's changes (`canPlace`, `addRecipe`, `addPortion`, `addOwn`, `moveEntry`, `copyEntry`, `dropEntry`/`removeEntry`, `updateEntry`, `alsoOn`), sums (`dayTotals`, `weekAverage`, `pastTarget`), the ⋯ menu's actions (Copy last week, templates, Clear week) |
-| `plan-view.js` | draws the Plan view: the tabs (confirmed or not), Confirm and the line about Momo, the grid (chips with their groceries mark, carts with their trip's time, totals), the sidebar (search, shelf, recipes), the phone's list (each week headed by its line and Confirm), the ⋯ menu (Times & trips…, Un-confirm week); `revealCell` |
-| `plan-popups.js` | the picker, a planned meal's pop-up (that day's time for its row and Usual, its groceries, ×, portions, Also on…, Read, Edit recipe, Replace…, Remove), Save as template |
+| `plan.js` | the plan's changes (`canPlace`, `hasRoom`/`refused` (a batch's portions to give), `addRecipe`, `addPortion`, `addOwn`, `moveEntry`, `copyEntry`, `dropEntry`/`removeEntry`, `updateEntry`, `alsoOn`), sums (`dayTotals`, `weekAverage`, `pastTarget`), the ⋯ menu's actions (Copy last week, templates, Clear week) |
+| `plan-view.js` | draws the Plan view: the tabs (confirmed or not), Confirm and the line about Momo, the grid (chips with ×2, their groceries mark, short leftovers; carts with their trip's time, a dot when placed by hand, a slash when the schedule's is skipped; totals), the sidebar (search, shelf, recipes), the phone's list (each week headed by its line and Confirm), the ⋯ menu (Times & trips…, Un-confirm week); `revealCell` |
+| `plan-popups.js` | the picker, a planned meal's pop-up (that day's time for its row and Usual, its groceries, ×, portions, Also on… (a tap one more portion, − one fewer), a short leftover's line, Read, Edit recipe, Replace…, Remove), Save as template |
 | `drag.js` | the browser's drag and drop on the grid (mouse only): recipes, portions, planned meals |
 | `clipboard.js` | Momo's copy, cut and paste by the mouse's place (Ctrl/⌘+C, X, V; `CLIP_MS`) |
 | `recipes.js` | the Recipes view and the recipe pop-up (Save, Save & add another, Archive, Delete) |
@@ -95,8 +95,9 @@ it, and never puts it in Tasks), from `from` (Momo asks from this Monday, so thi
 record of the week; meals carry no `done`: the plan is taken as eaten):
 - each day's breakfast, lunch and dinner with anything but skipped meals: `{ id: "meal:<date>:<meal>", title: "Dinner: " and
   the names joined " + " (≤ 60), date, time: that day's (its own, else the usual), slot: "<meal>:<day>", block: "Dinner",
-  minutes: the sum of `entryMinutes`, details: [the slot's nutrition, a line per meal: "Cooked here · serves 4", "Leftovers of
-  Mon's Chili", "Quick meal", "Restaurant"] }`: it fills that day's slot card in Momo; snacks never.
+  minutes: the sum of `entryMinutes`, details: [the slot's nutrition, a line per meal: "Cooked here · serves 4" ("· 2 eaten
+  here" when it's more than one portion), "Leftovers of Mon's Chili" ("· 2 portions"), "Quick meal", "Restaurant"] }`: it
+  fills that day's slot card in Momo; snacks never.
 - each day's Cook row: `{ id: "cook:<date>", title: "Cook: Curry ×1½ · Chili" (a batch's × when it isn't 1), date, time: that
   day's for the Cook row, minutes, details: ["2 recipes · 13 portions", "Curry ×1½ · Chili ×1"] }`: a card of its own.
 - each trip from today on (the schedule's and those placed by hand): `{ id: "groceries:<date>", title: "Groceries", block:
@@ -112,13 +113,28 @@ Momo can't be read), for the line under each week's tab.
 - Worked out, never stored: portions left, the shelf, last cooked and cooked N× (cooked entries up to today, not portions),
   the lists, totals and averages. "Today" is `K.util.todayStr()`; `Date.now()` only for `at` and `u` stamps.
 - A batch yields round(servings × scale); portions left = yield − eaten there − its leftovers' portions, and can go below
-  zero (shown in red, never thrown). A portion goes only on a day on or after its batch's, never on the Cook row; a batch
-  moved later than its leftovers leaves them (both marked, its pop-up says so). Copying a batch cooks it again.
+  zero (a lowered ×, a recipe's servings changed, two devices placing portions: shown in red, never thrown). A portion goes
+  only on a day on or after its batch's, never on the Cook row; a batch moved later than its leftovers leaves them (both
+  marked, its pop-up says so). Copying a batch cooks it again.
+- A batch never gives more portions than it yields (`hasRoom`): one more is refused with an alert saying why (`refused`:
+  a portion picked, Also on…, a pasted copy of a leftover, the Portions + of a leftover or of the batch itself; a drag finds
+  no cell lit, as canPlace counts them too). Not refused: a batch moved off the Cook row onto a meal (it eats one there), Copy last
+  week and templates (whole weeks), and a batch off the plan or whose recipe was deleted (nothing to count). Once a batch
+  is overdrawn, its leftovers past the yield are short (`shortPortions`: the batch's own portions first, then its
+  leftovers by day, meal and placing order): dashed red, "no portion left", their pop-up says so, and they still count in
+  their days' totals (a warning, not an erasure).
+- Also on… shows a day's portions of the batch added up ("Tue ×2", however many leftovers hold them); a tap puts one more
+  there (onto the last leftover placed there, else a new one), its − takes one off (that leftover goes at none).
+- A meal eaten as more than one portion shows ×2 first in its chip's numbers (the Cook row's chips show the batch's ×).
+- Protein is typed and read as "Quality protein" (complete proteins only): the fields, the recipe's, a quick meal's and the
+  targets'; the short "P" on chips and rows, Momo's "45 g protein" and the paste key "Protein" stay.
 - Trips: one placed by hand (the cart; one a day, the earliest placed wins) or the schedule's, worked out and never stored
   (`liveTrips`: each scheduled weekday from last Monday to the plan's end with none placed by hand and not skipped). The
   cart on a scheduled weekday skips that day's trip (`tripSkips`, `skip: true`; one placed by hand there goes too) and
   brings it back (`skip: false`); elsewhere it places or removes a trip. A trip's time: that day's own (`slotTimes`, set on
-  its list), else its weekday's on the schedule, else `settings.times.trip`.
+  its list), else its weekday's on the schedule, else `settings.times.trip`. The unusual stands out on the plan, quietly:
+  a trip placed by hand carries a small dot on its cart, a scheduled weekday whose trip is skipped a slash (the schedule's
+  trips, as they should be, carry nothing).
 - Times: every one on the 15-minute grid (Times & trips, a day's own from a meal's pop-up or a trip's list, and the
   cleaners all check it), so Momo pins exactly where Turtleduck says. A day's own time is kept until set back to the usual
   (`""`, kept so the clearing wins on sync); a meal's row shares one time for everything in it; a snack is at `SNACK_TIME`

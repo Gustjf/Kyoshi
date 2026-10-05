@@ -110,7 +110,7 @@
     const nums = {
       servings: field("recipeServings", "Serves", 1, MAX_SERVINGS, { whole: true, empty: 1 }),
       prepMin: field("recipePrep", "Prep minutes", 0, MAX_MINUTES, { whole: true }), cookMin: field("recipeCook", "Cook minutes", 0, MAX_MINUTES, { whole: true }),
-      kcal: field("recipeKcal", "Kcal per serving", 0, MAX_KCAL), protein: field("recipeProtein", "Protein per serving (g)", 0, MAX_GRAMS),
+      kcal: field("recipeKcal", "Kcal per serving", 0, MAX_KCAL), protein: field("recipeProtein", "Quality protein per serving (g)", 0, MAX_GRAMS),
       carbs: field("recipeCarbs", "Carbs per serving (g)", 0, MAX_GRAMS), fat: field("recipeFat", "Fat per serving (g)", 0, MAX_GRAMS), fiber: field("recipeFiber", "Fiber per serving (g)", 0, MAX_GRAMS)
     };
     if (Object.values(nums).some(v => v === undefined)) return;

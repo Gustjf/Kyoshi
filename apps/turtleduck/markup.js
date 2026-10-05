@@ -11,8 +11,9 @@
   // Times & trips: a meal's row (its usual time, its usual length), the Cook row's (a time only).
   const timeRow = (k, label, length = true) => `<label class="tm-name" for="time_${k}">${label}</label><input type="time" id="time_${k}" step="900">` +
     (length ? `<span class="tm-len"><input type="number" id="len_${k}" min="${MIN_LENGTH}" max="${MAX_LENGTH}" step="5" inputmode="numeric" aria-label="${label}: usual length in minutes"> min</span>` : `<span class="tm-len tm-note">as long as its recipes</span>`);
-  // Five number fields: kcal, then protein, carbs, fat and fiber in grams (ids prefix + Kcal, Protein…).
-  const nums = (prefix, max = [MAX_KCAL, MAX_GRAMS]) => [["Kcal", "kcal", max[0]], ["Protein", "Protein (g)", max[1]], ["Carbs", "Carbs (g)", max[1]], ["Fat", "Fat (g)", max[1]], ["Fiber", "Fiber (g)", max[1]]]
+  // Five number fields: kcal, then protein ("Quality protein": complete proteins only), carbs, fat and fiber in grams
+  // (ids prefix + Kcal, Protein…).
+  const nums = (prefix, max = [MAX_KCAL, MAX_GRAMS]) => [["Kcal", "kcal", max[0]], ["Protein", "Quality protein (g)", max[1]], ["Carbs", "Carbs (g)", max[1]], ["Fat", "Fat (g)", max[1]], ["Fiber", "Fiber (g)", max[1]]]
     .map(([id, label, top]) => `<label class="own-num"><span>${label}</span><input type="number" id="${prefix}${id}" min="0" max="${top}" step="any" inputmode="decimal"></label>`).join("");
   // Lucide's ellipsis (ISC license), for the ⋯ menu.
   const MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>';
@@ -209,7 +210,7 @@ Season to taste.`;
       <details class="paste-format">
         <summary>The format</summary>
         <pre>${FORMAT}</pre>
-        <div class="footnote">Keys in any order and any case, the colon optional: Meal (breakfast, lunch, dinner, snack or any), Serves, Prep, Cook, Per serving (or Calories, Protein, Carbs, Fat and Fiber, each on a line), Link. Lines starting with - (or * or •) are ingredients, or every line under “Ingredients:”; everything after them, or after “Steps:”, is the steps as you typed them. A recipe you already have isn't changed: ticking it adds a second one.</div>
+        <div class="footnote">Keys in any order and any case, the colon optional: Meal (breakfast, lunch, dinner, snack or any), Serves, Prep, Cook, Per serving (or Calories, Protein (quality protein), Carbs, Fat and Fiber, each on a line), Link. Lines starting with - (or * or •) are ingredients, or every line under “Ingredients:”; everything after them, or after “Steps:”, is the steps as you typed them. A recipe you already have isn't changed: ticking it adds a second one.</div>
       </details>
       <textarea id="pasteText" rows="12" spellcheck="false" placeholder="# Chili&#10;Serves: 4&#10;- 500 g ground beef&#10;Brown the beef…"></textarea>
       <div id="pastePreview" hidden>

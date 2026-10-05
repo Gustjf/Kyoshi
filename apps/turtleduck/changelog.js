@@ -5,6 +5,13 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.400", date: "2026-10-05", changes: [
+      "Protein fields read “Quality protein”, a reminder to count complete proteins only.",
+      "On the plan, a trip placed by hand carries a small dot and a skipped scheduled trip a slash, so the unusual stands out.",
+      "A meal eaten as two or more portions shows ×2 on its chip (and its card in Momo says so).",
+      "Also on… places two, three or four portions on a day: tap the day again for one more, − for one fewer.",
+      "A batch never gives out more portions than it yields: placing one more is refused and says why; where a batch is already overdrawn (a lowered ×, a recipe's servings changed, two devices), the latest-dated portions are marked short."
+    ] },
     { version: "2.300", date: "2026-10-04", changes: [
       "Times & trips (the ⋯ menu, or Groceries → Settings on a phone): when you usually have breakfast, lunch and dinner and cook, how long each meal usually takes, and your grocery trips every week; a day that's different: tap its meal and change its time there.",
       "The trip schedule puts a trip on those days by itself: tap the cart to skip one (and again to bring it back); a trip's time for one day changes on its list in Groceries.",

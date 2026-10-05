@@ -1,7 +1,8 @@
 /* Turtleduck · plan-view.js — draws the Plan view. On a computer (wider than PLAN_PX): the tabs This week · Next week
  * (each with its dates, week average and whether it's confirmed for Momo), the week on screen's Confirm and its line
  * about Momo (confirm.js), and the ⋯ menu; the grid, a column a day Mon–Sun (its date, today marked, past days dimmed,
- * the cart toggle for a shopping trip with its time, its totals under it) and a row a meal (Breakfast, Lunch, Dinner,
+ * the cart toggle for a shopping trip with its time: a dot when placed by hand, a slash when the schedule's is skipped;
+ * its totals under it) and a row a meal (Breakfast, Lunch, Dinner,
  * Snack, Cook), each cell holding its meals as chips (a pot: cooked there; ↩ a leftover; a fork: a restaurant; Skipped;
  * a cooked one amber with no trip before it, red with things not bought once its trip is past) with + to add; the
  * week's average; and the sidebar: search, the shelf (Leftovers: portions of a batch waiting to be placed) and the
@@ -30,30 +31,34 @@
   // ==========================================================================
   // PIECES
   // ==========================================================================
-  // A planned meal's chip: its glyph, name and "650 · P 45" (a batch on the Cook row: its × and portions), and for a
-  // meal cooked there its groceries (groceries.js coverageOf): amber with no trip before it, red with things not bought
-  // once its trip is past (from today on: a day gone by was shopped for or not). Draggable on a computer; the × takes it
-  // off (mouse only: its pop-up has Remove).
+  // A planned meal's chip: its glyph, name and "650 · P 45" (×2 first when it's eaten as two portions; a batch on the
+  // Cook row: its × and portions), and for a meal cooked there its groceries (groceries.js coverageOf): amber with no trip
+  // before it, red with things not bought once its trip is past (from today on: a day gone by was shopped for or not); a
+  // leftover its batch can't give (A.shortPortions) dashed red, "no portion left". Draggable on a computer; the × takes
+  // it off (mouse only: its pop-up has Remove).
   function chipHTML(e, drag = wide()) {
     const kind = e.kind === "recipe" ? (e.leftover ? "leftover" : "cooked") : e.kind, name = A.nameOf(e), cov = e.date >= todayStr() ? A.coverageOf(e) : null;
     const t = A.addUp([e]), meta = e.meal === "cook" ? `×${fmtScale(e.scale)} · ${plural(A.yieldOf(e), "portion")}`
       : e.kind === "skipped" ? "" : [t.kcal !== null ? fmtKcal(t.kcal) : "?", t.protein !== null ? `P ${fmtG(t.protein)}` : ""].filter(Boolean).join(" · ");
+    const n = e.kind === "recipe" && e.meal !== "cook" && e.servings !== 1 ? `×${e.servings}` : "", short = e.leftover && A.shortPortions().has(e.id);
     const warn = (A.isCooked(e) && A.leftoversOf(e.id).some(x => x.date < e.date)) || (e.leftover && A.entryById(e.from) && e.date < A.entryById(e.from).date);
     const words = { cooked: e.meal === "cook" ? "cooked for later" : "cooked here", leftover: "leftover", quick: "quick meal", restaurant: "restaurant", skipped: "" }[kind];
-    const shop = !cov ? "" : cov.state === "none" ? "no trip before this" : cov.state === "unbought" ? `${cov.missing} not bought` : "";
-    const mark = !cov || cov.state === "ok" ? "" : cov.state === "none" ? " nocover" : " unbought";
+    const shop = short ? "no portion left" : !cov ? "" : cov.state === "none" ? "no trip before this" : cov.state === "unbought" ? `${cov.missing} not bought` : "";
+    const mark = short ? " short" : !cov || cov.state === "ok" ? "" : cov.state === "none" ? " nocover" : " unbought";
     return `<div class="chip ${kind}${warn ? " warn" : ""}${mark}" draggable="${drag}" data-drag="entry" data-act="entry" data-id="${esc(e.id)}" role="button" tabindex="0" ` +
-      `aria-label="${esc([name, words, meta, shop].filter(Boolean).join(", "))}">` +
-      `<span class="chip-name">${ICONS[kind] || ""}${esc(name)}</span>${meta ? `<span class="chip-meta">${esc(meta)}</span>` : ""}${shop ? `<span class="chip-shop">${esc(shop)}</span>` : ""}` +
+      `aria-label="${esc([name, words, n && `${e.servings} portions`, meta, shop].filter(Boolean).join(", "))}">` +
+      `<span class="chip-name">${ICONS[kind] || ""}${esc(name)}</span>${meta ? `<span class="chip-meta">${n ? `<span class="chip-n">${n}</span> · ` : ""}${esc(meta)}</span>` : ""}${shop ? `<span class="chip-shop">${esc(shop)}</span>` : ""}` +
       `<span class="chip-x" data-act="remove" data-id="${esc(e.id)}" title="Remove" aria-hidden="true">&times;</span></div>`;
   }
 
   // The cart on a day: filled when there's a trip (the schedule's, or placed by hand), with its time; past days can't
-  // have one placed.
+  // have one placed. The unusual stands out, quietly: a trip placed by hand carries a dot, a scheduled one skipped a slash.
   const cartHTML = (date, today) => {
     const trip = A.liveTrips().find(t => t.date === date), time = trip ? fmtTime(A.tripTime(trip)) : "";
-    const label = trip ? `Shopping trip on ${fmtFull(date)} at ${time}${trip.sched ? " (every week): tap to skip it" : ""}` : `Place a shopping trip on ${fmtFull(date)}`;
-    return `<button type="button" class="cart${trip ? " on" : ""}" data-act="cart" data-date="${date}" aria-pressed="${!!trip}" aria-label="${esc(label)}" title="${esc(label)}"${date < today ? " disabled" : ""}>${ICONS.cart}` +
+    const skipped = !trip && !!A.scheduleOn(A.dayIndex(date)) && A.isSkipped(date), byHand = !!trip && !trip.sched;
+    const label = trip ? `Shopping trip on ${fmtFull(date)} at ${time}${trip.sched ? " (every week): tap to skip it" : ", placed by hand: tap to remove it"}`
+      : skipped ? `Shopping trip on ${fmtFull(date)} (every week) skipped: tap to bring it back` : `Place a shopping trip on ${fmtFull(date)}`;
+    return `<button type="button" class="cart${trip ? " on" : ""}${byHand ? " by-hand" : ""}${skipped ? " skipped" : ""}" data-act="cart" data-date="${date}" aria-pressed="${!!trip}" aria-label="${esc(label)}" title="${esc(label)}"${date < today ? " disabled" : ""}>${ICONS.cart}` +
       (trip ? `<span class="cart-time">${esc(time)}</span>` : "") + `</button>`;
   };
 

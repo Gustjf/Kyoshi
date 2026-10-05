@@ -30,8 +30,8 @@
       const from = A.entryById(e.from);
       return `Leftovers${from ? ` of ${fmtWd(from.date)}'s ${A.nameOf(from)}` : ""}${e.servings > 1 ? ` · ${e.servings} portions` : ""}`;
     }
-    const r = A.recipeById(e.recipeId);
-    return !r ? "Cooked here" : e.scale === 1 ? `Cooked here · serves ${r.servings}` : `Cooked here · ×${fmtScale(e.scale)} · ${plural(A.yieldOf(e), "portion")}`;
+    const r = A.recipeById(e.recipeId), eaten = e.servings > 1 ? ` · ${e.servings} eaten here` : "";
+    return (!r ? "Cooked here" : e.scale === 1 ? `Cooked here · serves ${r.servings}` : `Cooked here · ×${fmtScale(e.scale)} · ${plural(A.yieldOf(e), "portion")}`) + eaten;
   }
 
   // The day's breakfast, lunch or dinner: one need for all that's planned there, but what's skipped, in that day's slot.

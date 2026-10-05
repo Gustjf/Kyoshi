@@ -6,8 +6,9 @@
  * lunch, dinner or Cook row (kept once the field is left; Usual while it differs: times.js setSlotTime), and for a meal
  * cooked there whether there's a trip before it, or what wasn't bought on that trip's list; a batch's × (halves), the
  * portions eaten there, the portions left (in red when below zero, or when some were placed before the cook day) and
- * Also on… (later days as chips: each tick places a portion there, unticking takes one off); a leftover's portions; a
- * quick meal's or restaurant's text and numbers. Changes count at once. Then Read (the cook view), Edit recipe,
+ * Also on… (later days as chips: a tap puts one more portion there, its − one fewer); a leftover's portions (in red when
+ * its batch ran out before it); a quick meal's or restaurant's text and numbers. A batch never gives more portions than
+ * it yields: one more is refused, saying why (plan.js refused). Changes count at once. Then Read (the cook view), Edit recipe,
  * Replace… and Remove. And Save as template… (#templateOverlay): a name for the week on screen's meals. */
 (function (K, A) {
   "use strict";
@@ -83,7 +84,7 @@
     if (!p) return;
     const c = what === "portion" && A.entryById(id);
     const ok = what === "recipe" ? !!A.recipeById(id) : !!c && A.isCooked(c) && p.meal !== "cook" && p.date >= c.date;
-    if (!ok) return renderPicker();
+    if (!ok || (c && A.refused(c))) return renderPicker(); // a batch with none left (placed on another device) says so
     if (!roomFor(p)) return;
     if (p.replace) A.dropEntry(p.replace);
     if (what === "recipe") A.addRecipe(id, p.date, p.meal);
@@ -96,7 +97,7 @@
     const out = {};
     for (const [k] of NUTRIENTS) {
       const el = $(`${prefix}${NUM_IDS[k]}`), v = readNumber(el), max = k === "kcal" ? MAX_KCAL : MAX_GRAMS;
-      if (v !== null && !(v >= 0 && v <= max)) { el.focus(); alert(`${k === "kcal" ? "kcal" : `${A.cap(k)} (g)`}: from 0 to ${max}, or empty.`); return null; }
+      if (v !== null && !(v >= 0 && v <= max)) { el.focus(); alert(`${k === "kcal" ? "kcal" : k === "protein" ? "Quality protein (g)" : `${A.cap(k)} (g)`}: from 0 to ${max}, or empty.`); return null; }
       out[k] = v;
     }
     return out;
@@ -141,7 +142,8 @@
       `<button type="button" class="icon-btn" data-entry="${field}" data-dir="1" aria-label="${esc(`${label}: more`)}"${value >= max ? " disabled" : ""}>+</button>`) + `</div>`;
 
   // Also on…: the later days to the end of the plan (a batch on the Cook row: from its own day, on a meal picked here),
-  // each ticked while a portion of it is there.
+  // each ticked while a portion of it is there (×2: two portions there, its leftovers' portions added up); tapping one
+  // puts one more portion there, its − takes one off.
   function alsoHTML(e) {
     const meal = S.entry.alsoMeal, from = e.meal === "cook" ? e.date : addDays(e.date, 1), days = [];
     for (let d = from < A.thisMonday() ? A.thisMonday() : from; d <= A.planEnd(); d = addDays(d, 1)) days.push(d);
@@ -149,9 +151,10 @@
     const here = A.leftoversOf(e.id);
     const meals = e.meal === "cook" ? `<div class="mode-toggle many also-meals" role="group" aria-label="On which meal">${MEALS.filter(([m]) => m !== "cook").map(([m, title]) =>
       `<button type="button" class="mode-btn${m === meal ? " active" : ""}" data-entry="also-meal" data-meal="${m}" aria-pressed="${m === meal}">${title}</button>`).join("")}</div>` : "";
-    return `<div class="subhead">Also on&hellip; <span class="also-hint">(${mealTitle(meal).toLowerCase()}, a portion each)</span></div>${meals}<div class="also-days">` + days.map(d => {
-      const n = here.filter(x => x.date === d && x.meal === meal).length;
-      return `<button type="button" class="pill also${n ? " active" : ""}" data-entry="also" data-date="${d}" aria-pressed="${!!n}">${esc(fmtHead(d))}${n > 1 ? ` &times;${n}` : ""}</button>`;
+    return `<div class="subhead">Also on&hellip; <span class="also-hint">(${mealTitle(meal).toLowerCase()}; tap a day for a portion, again for one more)</span></div>${meals}<div class="also-days">` + days.map(d => {
+      const n = here.filter(x => x.date === d && x.meal === meal).reduce((s, x) => s + x.servings, 0);
+      return `<span class="also-day"><button type="button" class="pill also${n ? " active" : ""}" data-entry="also" data-date="${d}" aria-pressed="${!!n}">${esc(fmtHead(d))}${n > 1 ? ` &times;${n}` : ""}</button>` +
+        (n ? `<button type="button" class="pill also-less" data-entry="also-less" data-date="${d}" aria-label="${esc(`One portion fewer on ${fmtWd(d)}`)}" title="One portion fewer">&minus;</button>` : "") + `</span>`;
     }).join("") + `</div>`;
   }
 
@@ -185,15 +188,17 @@
         (r ? alsoHTML(e) : "");
     }
     if (e.kind === "recipe") {
-      const from = A.entryById(e.from);
+      const from = A.entryById(e.from), placed = from ? A.yieldOf(from) - A.portionsLeft(from) : 0;
       return gone + `<p class="entry-line">${esc(from ? `Leftover of ${fmtWd(from.date)}'s ${A.nameOf(from)}` : "Leftover (its batch is off the plan)")}</p>` +
-        (from && e.date < from.date ? `<p class="entry-left bad">This is before the day it's cooked.</p>` : "") + stepper("servings", "Portions", e.servings, 1, MAX_SERVINGS);
+        (from && e.date < from.date ? `<p class="entry-left bad">This is before the day it's cooked.</p>` : "") +
+        (A.shortPortions().has(e.id) ? `<p class="entry-left bad">${esc(`The batch ran out before this day: ${plural(placed, "portion")} placed of ${A.yieldOf(from)}.`)}</p>` : "") +
+        stepper("servings", "Portions", e.servings, 1, MAX_SERVINGS);
     }
     if (e.kind === "skipped") return `<p class="entry-line">Skipped: nothing counted, and nothing for Momo.</p>`;
     const num = (k, label) => `<label class="own-num"><span>${label}</span><input type="number" data-own="${k}" min="0" max="${k === "kcal" ? MAX_KCAL : MAX_GRAMS}" step="any" inputmode="decimal" value="${e[k] === null ? "" : e[k]}"></label>`;
     return `<p class="entry-line">${e.kind === "quick" ? "Quick meal" : "Restaurant"}: its own numbers, for the whole meal.</p>` +
       `<div class="field"><label for="entryText">${e.kind === "quick" ? "What" : "Where (optional)"}</label><input type="text" id="entryText" data-own="name" maxlength="${MAX_QUICK}" value="${esc(e.name)}"></div>` +
-      `<div class="own-nums">${num("kcal", "kcal")}${num("protein", "Protein")}${num("carbs", "Carbs")}${num("fat", "Fat")}${num("fiber", "Fiber")}</div>`;
+      `<div class="own-nums">${num("kcal", "kcal")}${num("protein", "Quality protein")}${num("carbs", "Carbs")}${num("fat", "Fat")}${num("fiber", "Fiber")}</div>`;
   }
 
   function renderEntry() {
@@ -215,8 +220,9 @@
     if (!b || !e) return;
     const act = b.dataset.entry, dir = +b.dataset.dir;
     if (act === "scale") A.updateEntry(e.id, { scale: Math.min(MAX_SCALE, Math.max(MIN_SCALE, e.scale + dir / 2)) });
-    else if (act === "servings") A.updateEntry(e.id, { servings: Math.min(MAX_SERVINGS, Math.max(1, e.servings + dir)) });
-    else if (act === "also") A.alsoOn(e.id, b.dataset.date, S.entry.alsoMeal, b.getAttribute("aria-pressed") !== "true");
+    else if (act === "servings") { if (dir < 0 || !A.refused(e.leftover ? A.entryById(e.from) : e)) A.updateEntry(e.id, { servings: Math.min(MAX_SERVINGS, Math.max(1, e.servings + dir)) }); }
+    else if (act === "also") A.alsoOn(e.id, b.dataset.date, S.entry.alsoMeal, 1);
+    else if (act === "also-less") A.alsoOn(e.id, b.dataset.date, S.entry.alsoMeal, -1);
     else if (act === "also-meal") { S.entry.alsoMeal = b.dataset.meal; renderEntry(); }
     else if (act === "read") { closeEntry(); A.openCook([{ recipeId: e.recipeId, scale: e.leftover ? 1 : e.scale, name: A.nameOf(e) }]); }
     else if (act === "edit") { closeEntry(); A.openRecipe(e.recipeId); }

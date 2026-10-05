@@ -1,14 +1,15 @@
 /* Turtleduck · plan.js — the plan's changes and sums. Placing: a recipe (cooked there; on the Cook row, all its portions
- * go on the shelf), a portion of a batch (a leftover: never before its cook day, never on the Cook row), a quick meal, a
- * restaurant or a skipped meal; moving, copying (Ctrl+C / V) and removing them; "Also on…" (a batch's portions on later
- * days, in one go); what may go where (canPlace: for dragging, pasting and the picker); a day's totals, a week's average
+ * go on the shelf), a portion of a batch (a leftover: never before its cook day, never on the Cook row, never more than
+ * the batch yields: refused, saying why), a quick meal, a restaurant or a skipped meal; moving, copying (Ctrl+C / V) and
+ * removing them; "Also on…" (a batch's portions on later days, one more or one fewer a tap); what may go where (canPlace:
+ * for dragging, pasting and the picker; hasRoom / refused: a batch's portions to give); a day's totals, a week's average
  * and what's past a target; and the ⋯ menu's Copy last week, templates (save the week on screen, load one into it) and
  * Clear week, which add or take away meals and never change the rest. Every change bumps u and saves. */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { newId, addDays } = K.util;
-  const { MAX_CHIPS, MAX_TEMPLATES, MAX_TEMPLATE_NAME, MEALS, NUTRIENTS, cleanLine, plural, kept } = A;
+  const { MAX_CHIPS, MAX_SERVINGS, MAX_TEMPLATES, MAX_TEMPLATE_NAME, MEALS, NUTRIENTS, cleanLine, plural, kept } = A;
   const EATEN = MEALS.map(m => m[0]).filter(m => m !== "cook");
 
   // Stamps in placing order, so meals placed together keep their order in a cell.
@@ -28,7 +29,8 @@
     const from = A.entryById(e.from);
     return !from || date >= from.date;
   }
-  function canPlace(d, date, meal) {
+  // Where it may go, a batch's portions aside.
+  function goes(d, date, meal) {
     if (!d || !A.inPlan(date) || A.mealIndex(meal) < 0) return false;
     const full = A.entriesOn(date, meal).length >= MAX_CHIPS, e = d.what === "recipe" ? null : A.entryById(d.id);
     if (d.what === "recipe") return !full && !!A.recipeById(d.id);
@@ -36,6 +38,25 @@
     if (d.what === "entry") return !(e.date === date && e.meal === meal) && !full && fits(e, date, meal);
     if (d.what === "portion") return !full && A.isCooked(e) && meal !== "cook" && date >= e.date;
     return d.what === "copy" && !full && fits(e, date, meal);
+  }
+  // The portions it takes from a batch: a portion of one (one), a copy of a leftover (as many as it has); else none.
+  function takes(d) {
+    const e = d && d.what !== "recipe" ? A.entryById(d.id) : null;
+    return !e ? null : d.what === "portion" ? { batch: e, n: 1 } : d.what === "copy" && e.leftover ? { batch: A.entryById(e.from), n: e.servings } : null;
+  }
+  // A batch never gives more portions than it yields: whether it has n more to give (one off the plan, or whose recipe
+  // was deleted, isn't counted).
+  const hasRoom = (c, n = 1) => !c || !A.yieldOf(c) || A.portionsLeft(c) >= n;
+  // Says why a batch can't give n more (true), or false when it can.
+  function refused(c, n = 1) {
+    if (hasRoom(c, n)) return false;
+    const placed = A.yieldOf(c) - A.portionsLeft(c);
+    alert(`No portions of ${A.fmtWd(c.date)}'s ${A.nameOf(c)} left: it yields ${A.yieldOf(c)} and ${placed} ${placed === 1 ? "is" : "are"} placed. Raise its × on its cook day, or take a portion off another day.`);
+    return true;
+  }
+  function canPlace(d, date, meal) {
+    const t = takes(d);
+    return goes(d, date, meal) && (!t || hasRoom(t.batch, t.n));
   }
 
   // ==========================================================================
@@ -59,9 +80,9 @@
     kept();
     return e;
   }
-  // A portion of a batch on a later day (or the same one): a leftover.
+  // A portion of a batch on a later day (or the same one): a leftover. None left: refused, saying why.
   function addPortion(cookId, date, meal) {
-    if (!canPlace({ what: "portion", id: cookId }, date, meal)) return null;
+    if (!goes({ what: "portion", id: cookId }, date, meal) || refused(A.entryById(cookId))) return null;
     const c = A.entryById(cookId), e = place({ date, meal, recipeId: c.recipeId, name: A.nameOf(c), leftover: true, from: c.id });
     kept();
     return e;
@@ -82,10 +103,11 @@
     kept();
     return true;
   }
-  // A copy in a cell: a batch cooked again (its own ingredients), another portion of a leftover's batch, or the same
-  // quick meal, restaurant or skip.
+  // A copy in a cell: a batch cooked again (its own ingredients), another portion of a leftover's batch (refused, saying
+  // why, once it has none left), or the same quick meal, restaurant or skip.
   function copyEntry(id, date, meal) {
-    if (!canPlace({ what: "copy", id }, date, meal)) return null;
+    const d = { what: "copy", id }, t = takes(d);
+    if (!goes(d, date, meal) || (t && refused(t.batch, t.n))) return null;
     const e = A.entryById(id), c = place({ ...e, date, meal, servings: servingsIn(e, meal) });
     kept();
     return c;
@@ -113,13 +135,16 @@
     return true;
   }
 
-  // "Also on…": a batch's portion on a day (ticked), or the last one placed there taken off (unticked).
-  function alsoOn(cookId, date, meal, on) {
+  // "Also on…": one more portion of a batch on a day (delta 1: onto the last of its leftovers there, else a new one;
+  // refused, saying why, once it has none left), or one fewer (-1: off that last one, gone at none).
+  function alsoOn(cookId, date, meal, delta) {
     const c = A.entryById(cookId);
-    if (!c || !A.isCooked(c)) return;
-    if (on) return void addPortion(cookId, date, meal);
-    const there = A.leftoversOf(c.id).filter(x => x.date === date && x.meal === meal);
-    if (there.length) removeEntry(there[there.length - 1].id);
+    if (!c || !A.isCooked(c) || (delta > 0 && refused(c))) return;
+    const there = A.leftoversOf(c.id).filter(x => x.date === date && x.meal === meal), last = there[there.length - 1];
+    if (!last) return void (delta > 0 && addPortion(cookId, date, meal));
+    const n = last.servings + delta;
+    if (n < 1) removeEntry(last.id);
+    else if (n <= MAX_SERVINGS) updateEntry(last.id, { servings: n });
   }
 
   // ==========================================================================
@@ -216,7 +241,7 @@
   }
 
   Object.assign(A, {
-    shownMonday, canPlace, addRecipe, addPortion, addOwn, moveEntry, copyEntry, dropEntry, removeEntry, updateEntry, alsoOn,
+    shownMonday, canPlace, hasRoom, refused, addRecipe, addPortion, addOwn, moveEntry, copyEntry, dropEntry, removeEntry, updateEntry, alsoOn,
     dayTotals, weekAverage, pastTarget, copyLastWeek, saveTemplate, loadTemplate, deleteTemplate, clearWeek
   });
 })(Kyoshi, Kyoshi.apps.turtleduck);

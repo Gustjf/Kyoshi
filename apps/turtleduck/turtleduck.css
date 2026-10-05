@@ -69,6 +69,7 @@
 .app-turtleduck .chip.cooked .glyph { color: var(--turtleduck-amber); }
 .app-turtleduck .chip-name { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .app-turtleduck .chip-meta { font-size: .9em; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.app-turtleduck .chip-n { font-weight: 700; } /* ×2: eaten as two portions */
 .app-turtleduck .chip.cooked { border-left: 3px solid var(--turtleduck-amber); }
 .app-turtleduck .chip.skipped { background: none; border-style: dashed; color: var(--muted); }
 .app-turtleduck .chip.skipped .chip-name { font-weight: 400; font-style: italic; }
@@ -79,6 +80,10 @@
 .app-turtleduck .chip.nocover .chip-shop { color: var(--warn); }
 .app-turtleduck .chip.unbought { border-color: var(--bad); border-left-color: var(--bad); }
 .app-turtleduck .chip.unbought .chip-shop { color: var(--bad); }
+/* A leftover its batch can't give (more portions placed than it yields: the latest ones): dashed red, "no portion left". */
+.app-turtleduck .chip.short { border-style: dashed; border-color: var(--bad); }
+.app-turtleduck .chip.short .chip-name { color: var(--muted); }
+.app-turtleduck .chip.short .chip-shop { color: var(--bad); }
 .app-turtleduck .chip.clipped { opacity: .55; outline: 2px dashed var(--accent); outline-offset: 1px; }
 .app-turtleduck .chip.clipped.cut { opacity: .35; }
 .app-turtleduck .chip.dragging { opacity: .4; }
@@ -86,8 +91,11 @@
 .app-turtleduck .chip:hover .chip-x { opacity: 1; }
 .app-turtleduck .chip-x:hover { color: var(--bad); }
 
-/* --- The cart on a day: filled once a trip is placed there --- */
-.app-turtleduck .cart { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); opacity: .6; }
+/* --- The cart on a day: filled once a trip is placed there; a dot when placed by hand, a slash when the schedule's is skipped --- */
+.app-turtleduck .cart { position: relative; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); opacity: .6; }
+.app-turtleduck .cart.on.by-hand::after { content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.app-turtleduck .cart.skipped { opacity: 1; }
+.app-turtleduck .cart.skipped::before { content: ""; position: absolute; top: 50%; left: 15%; right: 15%; height: 1px; background: currentColor; transform: rotate(45deg); }
 .app-turtleduck .cart svg { width: 15px; height: 15px; }
 .app-turtleduck .cart:hover:not(:disabled) { opacity: 1; border-color: var(--border); background: none; }
 .app-turtleduck .cart.on { width: auto; gap: 3px; padding: 0 5px; opacity: 1; background: var(--turtleduck-amber); color: #fff; }
@@ -219,7 +227,7 @@
 .app-turtleduck .pick-own form { margin-top: 8px; }
 .app-turtleduck .skip-btn { margin-top: 10px; }
 .app-turtleduck .own-nums { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
-.app-turtleduck label.own-num { margin: 0; font-size: .75em; }
+.app-turtleduck label.own-num { display: flex; flex-direction: column; justify-content: flex-end; margin: 0; font-size: .75em; } /* a label on two lines ("Quality protein (g)") keeps the fields in a row */
 .app-turtleduck .own-num input { margin-top: 2px; }
 .app-turtleduck .entry-where { margin: -8px 0 10px; font-size: .85em; color: var(--muted); }
 .app-turtleduck .entry-line { margin: 0 0 8px; font-size: .9em; }
@@ -253,6 +261,10 @@
 .app-turtleduck .also-meals .mode-btn { padding: 6px 4px; font-size: .82em; }
 .app-turtleduck .also-days { display: flex; flex-wrap: wrap; gap: 4px; }
 .app-turtleduck .also-days .pill { min-height: 34px; padding: 4px 10px; font-size: .85em; }
+/* A day with portions there: its − (one fewer) joined to its right. */
+.app-turtleduck .also-day { display: inline-flex; }
+.app-turtleduck .also-day .pill.also:not(:last-child) { border-radius: 4px 0 0 4px; }
+.app-turtleduck .also-days .also-less { min-width: 30px; padding: 4px 8px; border-left: none; border-radius: 0 4px 4px 0; font-weight: 700; }
 .app-turtleduck .types .mode-btn { padding: 8px 4px; font-size: .85em; }
 .app-turtleduck .paste-format pre { margin: 8px 0; padding: 10px; overflow-x: auto; border-radius: 6px; background: var(--card-bg); font-size: .78em; line-height: 1.45; }
 .app-turtleduck .paste-format summary { font-size: .88em; color: var(--accent); }

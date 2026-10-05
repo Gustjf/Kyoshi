@@ -4,7 +4,8 @@
  * trip's) and moments, a week confirmed for Momo, nutrition and minutes as words, and lookups — which recipe, planned
  * meal or shopping trip is which (the schedule's trips worked out too), worked out once until the data or the day
  * changes (remember): "last cooked" and "cooked N×",
- * a batch's portions left and the shelf of them, what a meal adds to its day and how long it takes. Loads first of the
+ * a batch's portions left, the leftovers it can't give (short) and the shelf, what a meal adds to its day and how long it
+ * takes. Loads first of the
  * app's files: the others destructure what's here at the top, and call functions from each other as A.name(). File
  * map and data model: apps/turtleduck/CLAUDE.md. */
 (function (K) {
@@ -257,6 +258,18 @@
   }).get(id) || [];
   // Can go below 0 (two devices placing portions, or a smaller ×): shown as it is.
   const portionsLeft = e => yieldOf(e) - e.servings - leftoversOf(e.id).reduce((n, x) => n + x.servings, 0);
+  // The leftovers a batch can't give, once it's overdrawn (a lowered ×, a recipe's servings changed, two devices placing
+  // portions): what's eaten where it's cooked counts first, then its leftovers by day, meal and placing order; from where
+  // its yield runs out, every one is short (marked on the plan, still counted in its day's totals). A set of their ids.
+  const shortPortions = () => remember("short", () => {
+    const out = new Set(), order = (a, b) => a.date.localeCompare(b.date) || mealIndex(a.meal) - mealIndex(b.meal) || byAdded(a, b);
+    liveEntries().forEach(c => {
+      const y = yieldOf(c);
+      let n = c.servings;
+      if (y) [...leftoversOf(c.id)].sort(order).forEach(x => { n += x.servings; if (n > y) out.add(x.id); });
+    });
+    return out;
+  });
   // The shelf: batches with portions left, cooked within SHELF_DAYS before today through the end of the plan, cook day first.
   const shelf = () => remember("shelf", () => {
     const from = addDays(todayStr(), -A.SHELF_DAYS), to = planEnd();
@@ -296,6 +309,6 @@
     mondayOf, thisMonday, nextMonday, planEnd, weekDates, inPlan, fmtDay, fmtWd, fmtHead, fmtFull, fmtRange, mealTitle, mealIndex, dayIndex,
     onGrid, scheduleOn, usualTime, slotTime, isOwnTime, slotMinutes, tripTime, mealTime, moment, nowMoment, isConfirmed,
     remember, live, byAdded, liveRecipes, shownRecipes, recipeById, liveEntries, entryById, entriesOn, isSkipped, liveTrips, hasTrip, liveTemplates,
-    nameOf, isCooked, lastCooked, cookedTimes, yieldAt, yieldOf, leftoversOf, portionsLeft, shelf, addUp, fmtMacros, entryMinutes
+    nameOf, isCooked, lastCooked, cookedTimes, yieldAt, yieldOf, leftoversOf, portionsLeft, shortPortions, shelf, addUp, fmtMacros, entryMinutes
   });
 })(Kyoshi);

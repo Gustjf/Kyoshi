@@ -3,9 +3,11 @@
  * Also on…, two meals in a cell, the ×; copy, cut and paste by the mouse (5 s to paste, then nothing); the Cook row; a
  * batch moved after its leftovers; the picker (shelf first, a meal's recipes, search, quick meal, restaurant, skip,
  * Replace…); a day's totals against the targets ("?" for a recipe without kcal) and the week's average; Copy last week,
- * templates and Clear week; and a phone's list (tapping only). TODAY is a Wednesday: this week has days before it. */
+ * templates and Clear week; a phone's list (tapping only); and a batch's portions: Also on… two on a day, never more than
+ * it yields (refused, saying why), short leftovers once it's overdrawn, ×2 on chips and in Momo, the carts' marks (placed
+ * by hand, skipped) and "Quality protein". TODAY is a Wednesday: this week has days before it. */
 "use strict";
-const { TODAY, DESKTOP, PHONE, eq, ok, has, lacks, open, importBackup, addDays, mondayOf } = require("./lib");
+const { TODAY, DESKTOP, PHONE, eq, ok, has, lacks, open, importBackup, addDays, mondayOf, lastDialog } = require("./lib");
 const gen = require("./generate");
 const td = require("./turtleduck");
 
@@ -45,8 +47,8 @@ module.exports = [
       await td.entryAct(tab, "also", `[data-date="${FRI}"]`);
       has(await td.entryText(tab), "No portions left", "every portion placed");
       eq(await p.$$eval('#kMount #entryOverlay [data-entry="also"][aria-pressed="true"]', els => els.map(e => e.dataset.date)), [THU, FRI], "Thursday and Friday ticked");
-      await td.entryAct(tab, "also", `[data-date="${FRI}"]`);
-      has(await td.entryText(tab), "1 portion left", "unticking takes one back");
+      await td.entryAct(tab, "also-less", `[data-date="${FRI}"]`);
+      has(await td.entryText(tab), "1 portion left", "its − takes one back");
       await td.entryAct(tab, "also", `[data-date="${FRI}"]`);
       await td.closeEntry(tab);
       eq([await td.chips(tab, THU, "dinner"), await td.chips(tab, FRI, "dinner")], [["Chili"], ["Chili"]], "leftovers on both days");
@@ -264,6 +266,82 @@ module.exports = [
       ok(box.width >= 40 && box.height >= 40, `a big + (${box.width}×${box.height})`);
       const wide = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       ok(wide <= 1, `no sideways scrolling (${wide}px over)`);
+    }
+  },
+  {
+    name: "turtleduck plan: Also on… two portions a day, never more than a batch yields (refused, saying why); short leftovers; ×2 on chips and in Momo; trips by hand and skipped; Quality protein",
+    async run(t) {
+      // Chili serves 3 here, cooked Monday (one eaten there); Curry cooked Thursday. Trips: Friday's every week, and one
+      // placed by hand on Thursday.
+      const settings = { targets: { kcal: null, protein: null, carbs: null, fat: null, fiber: null }, units: "entered", schedule: [{ day: 4, time: "10:00" }], u: 1 };
+      const data = gen.turtleduck({ plan: [{ id: "chili-mon", date: MON, meal: "dinner", recipeId: "rc-chili" }, { id: "curry-thu", date: THU, meal: "dinner", recipeId: "rc-curry" }], trips: [THU], settings });
+      data.recipes.find(r => r.id === "rc-chili").servings = 3;
+      const tab = await open(t, { app: "turtleduck", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, data);
+      const NONE_LEFT = "No portions of Mon's Chili left: it yields 3 and 3 are placed. Raise its × on its cook day, or take a portion off another day.";
+
+      // Also on… Tuesday twice: two portions there, in one leftover.
+      await td.openEntry(tab, MON, "dinner", "Chili");
+      await td.entryAct(tab, "also", `[data-date="${TUE}"]`);
+      await td.entryAct(tab, "also", `[data-date="${TUE}"]`);
+      eq(await td.alsoDays(tab), ["Tue 29 ×2"], "Tuesday holds two portions");
+      has(await td.entryText(tab), "No portions left", "all three placed");
+      eq((await td.entries(tab)).filter(e => e.leftover).map(e => [e.date, e.servings]), [[TUE, 2]], "one leftover of two portions");
+      // A fourth is refused, saying why: on Wednesday, or one more eaten on Monday.
+      lastDialog(tab);
+      await td.entryAct(tab, "also", `[data-date="${TODAY}"]`);
+      eq(lastDialog(tab), NONE_LEFT, "Wednesday refused, saying why");
+      eq(await td.alsoDays(tab), ["Tue 29 ×2"], "nothing placed on Wednesday");
+      await td.entryAct(tab, "servings", '[data-dir="1"]');
+      eq(lastDialog(tab), NONE_LEFT, "nor one more portion eaten on Monday");
+      // − takes one off Tuesday; tapping the day puts it back.
+      await td.entryAct(tab, "also-less", `[data-date="${TUE}"]`);
+      eq(await td.alsoDays(tab), ["Tue 29"], "− takes one off");
+      has(await td.entryText(tab), "1 portion left", "one left again");
+      await td.entryAct(tab, "also", `[data-date="${TUE}"]`);
+      await td.closeEntry(tab);
+      eq(await td.chipWords(tab, td.chip(TUE, "dinner", "Chili")), "Chili ×2 · 1,300 · P 90", "the grid's chip says ×2");
+      eq(await td.chipWords(tab, td.chip(MON, "dinner", "Chili")), "Chili 650 · P 45", "one portion says nothing");
+      // A copy of Tuesday's leftover pasted on Saturday: refused too.
+      await td.key(tab, td.chip(TUE, "dinner", "Chili"), "Control+c");
+      await td.key(tab, td.cell(SAT, "lunch"), "Control+v");
+      eq([lastDialog(tab), await td.chips(tab, SAT, "lunch")], [NONE_LEFT, []], "the paste refused, saying why");
+      await p.keyboard.press("Escape");
+
+      // The recipe now serves 1 (its pop-up's protein reads "Quality protein"): Tuesday's leftover is short, still counted.
+      await td.openEntry(tab, MON, "dinner", "Chili");
+      await td.entryAct(tab, "edit");
+      await p.waitForSelector("#kMount #recipeOverlay.open");
+      eq(await p.locator('#kMount #recipeOverlay label.own-num:has(#recipeProtein) span').innerText(), "Quality protein (g)", "Quality protein");
+      await p.fill("#kMount #recipeServings", "1");
+      await p.click('#kMount #recipeForm button[type="submit"]');
+      const tue = p.locator(td.chip(TUE, "dinner", "Chili"));
+      eq([await tue.evaluate(el => el.classList.contains("short")), await tue.locator(".chip-shop").innerText()], [true, "no portion left"], "Tuesday's leftover is short");
+      ok(!(await p.locator(td.chip(MON, "dinner", "Chili")).evaluate(el => el.classList.contains("short"))), "the batch itself isn't");
+      has((await td.totals(tab, TUE)).text, "1,300 kcal", "still counted in Tuesday's totals");
+      await td.openEntry(tab, TUE, "dinner", "Chili");
+      has(await td.entryText(tab), "The batch ran out before this day: 3 portions placed of 1.", "its pop-up says so");
+      await td.closeEntry(tab);
+      await td.openEntry(tab, MON, "dinner", "Chili");
+      has(await td.entryText(tab), "Placed 3 portions of 1: -2 left", "the batch's says what's over");
+      await td.closeEntry(tab);
+
+      // Curry eaten as two portions on Thursday: ×2 on its chip, and in Momo's card once the week is confirmed.
+      await td.openEntry(tab, THU, "dinner", "Curry");
+      await td.entryAct(tab, "servings", '[data-dir="1"]');
+      await td.closeEntry(tab);
+      eq(await td.chipWords(tab, td.chip(THU, "dinner", "Curry")), "Curry ×2 · 1,400 · P 80", "×2 on a meal cooked there");
+      await td.confirmWeek(tab, "this");
+      const details = await p.evaluate(ids => Kyoshi.inbox(ids[0], ids[1]).filter(n => n.app === "turtleduck" && n.id.startsWith("meal:")).map(n => [n.id, n.details.slice(1)]), [TUE, THU]);
+      eq(details, [[`meal:${TUE}:dinner`, ["Leftovers of Mon's Chili · 2 portions"]], [`meal:${THU}:dinner`, ["Cooked here · serves 6 · 2 eaten here"]]], "Momo's details");
+
+      // Trips: Thursday's placed by hand has a dot; Friday's every week, skipped, a slash until it's back.
+      eq([(await td.cartMarks(tab))[THU], (await td.cartMarks(tab))[FRI]], ["by-hand", ""], "a dot on the trip placed by hand, the schedule's as it was");
+      await td.cart(tab, FRI);
+      eq((await td.cartMarks(tab))[FRI], "skipped", "Friday's skipped: a slash");
+      has(await p.locator(`#kMount #planGrid .cart[data-date="${FRI}"]`).getAttribute("aria-label"), "skipped: tap to bring it back", "and says so");
+      await td.cart(tab, FRI);
+      eq([(await td.carts(tab))[FRI], (await td.cartMarks(tab))[FRI]], ["10:00 AM", ""], "back on, no mark");
     }
   }
 ];

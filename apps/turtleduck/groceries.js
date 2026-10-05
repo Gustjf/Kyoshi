@@ -194,7 +194,7 @@
       const el = $(TARGET_IDS[k]), v = readNumber(el), max = k === "kcal" ? 4 * MAX_KCAL : 2 * MAX_GRAMS;
       if (v !== null && !(v > 0 && v <= max)) {
         el.value = S.settings.targets[k] === null ? "" : S.settings.targets[k];
-        return alert(`A day's ${k === "kcal" ? "kcal" : `${k} (g)`}: from 1 to ${max}, or empty for no target.`);
+        return alert(`A day's ${k === "kcal" ? "kcal" : k === "protein" ? "quality protein (g)" : `${k} (g)`}: from 1 to ${max}, or empty for no target.`);
       }
       targets[k] = v === null ? null : Math.round(v);
     }
