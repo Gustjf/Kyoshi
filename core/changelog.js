@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.650", date: "2026-10-05", changes: [
+      "The bug report log keeps the latest 200 reports instead of 20."
+    ] },
     { version: "3.640", date: "2026-10-03", changes: [
       "Apps can share a weekly routine (slots at set times, like Turtleduck's meals each day and its grocery trips) that Momo keeps in its baseline, and say a need fills one of those slots on its day, or is set by the app (its day, time and length): Momo pins it there and won't let it be moved."
     ] },

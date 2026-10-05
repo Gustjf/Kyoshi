@@ -8,7 +8,7 @@
   "use strict";
   const { copyText, downloadBlob, todayStr } = K.util;
   const $ = id => document.getElementById(id);
-  const BUG_REPORTS_MAX = 20;
+  const BUG_REPORTS_MAX = 200;
   const STACK_FRAMES = 3, CONSOLE_LINE_MAX = 600;
   // The page's build stamp (index.html's "?v=…" on every file): which deploy this is.
   const BUILD = ((document.currentScript && document.currentScript.src.match(/[?&]v=([\w-]+)/)) || [])[1] || "none";
