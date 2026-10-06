@@ -4,17 +4,17 @@ Planned 2026-10-06 by the architect model from `kyoshi-bug-reports-2026-10-06.md
 Momo 10.374 · Bosco 7.400 · Hawky 2.220 · Wan Shi Tong 2.372). Seven phases, each sized for one coding session; the bugs
 first (Phases 1–2), then the feature requests, grouped by the app or core file they touch. Nothing is built yet.
 
-**The owner runs a phase by saying:** `Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md` (with answers where the
-phase says *Decide first*: "…, D1 as proposed, D3 all categories").
+**The owner runs a phase by saying:** `Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md`. The owner's answers to
+the plan's questions (D1–D6) are under *Decisions*; nothing is left to decide before a phase runs.
 
 ## How to use this file (you, the executing model — Claude Opus)
 1. Read the root `CLAUDE.md` (automatic), then **only** this file's top sections (down to the first phase) and **your phase**;
    skip the other phases. Then the phase's **Read first** list, and nothing else up front: every file's header comment says
    what it holds, and `apps/<id>/CLAUDE.md` has each app's map and data model. Don't scan the workspace.
-2. **Decide-first items:** a phase that lists any under *Decide first* needs the owner's answer before you code. Look for it in
-   the owner's request and under *Decisions* below; if it isn't there, ask the owner in plain terms (they're a layman), in plan
-   mode, and wait. Everything else is settled here or is yours to judge (small UI details). A choice that would change how
-   data is kept or what the owner sees in a way this plan doesn't settle → ask, don't guess.
+2. **Decisions:** the owner answered the plan's questions (D1–D6) on 2026-10-06; each phase's text already follows them, and
+   *Decisions* below keeps the answers for reference. Everything else is settled here or is yours to judge (small UI
+   details). A choice that would change how data is kept or what the owner sees in a way this plan doesn't settle → ask the
+   owner in plain terms (they're a layman), in plan mode, and wait; don't guess.
 3. Build the phase as one unit. Keep every change targeted: no rewrites, no renames of what works, no touching apps the phase
    doesn't name, files stay under ~400 lines (split a file along a clear seam if a phase would push it over; the phases say
    where). Reuse what's there (helpers named in each phase).
@@ -47,13 +47,13 @@ phase says *Decide first*: "…, D1 as proposed, D3 all categories").
 | B3 | Hawky | Typing a new store in the add row clears the topic kept from the last add | 2 |
 | B4 | Hawky | Quick add's default day is This week, not No day | 2 |
 | B5 | Momo | Hawky's cards in Tasks say when they're due, minimally, only while unplaced | 2 |
-| F1 | Bosco | Thigh sites gain front/side; the rotation alternates legs, faces and heights (top, bottom, middle) in an X; a skip, in Bosco's Developer Mode tools | 3 |
+| F1 | Bosco | Thigh sites gain front/side (and the abdomen and buttocks upper/lower: D1); the rotation takes body parts in turn first, then the X within each; a skip, in Bosco's Developer Mode tools | 3 |
 | F2 | Bosco | A goal counts as reached when the 7-day rolling average passes it, not a single weigh-in | 3 |
 | F4 | Bosco | A confirmation before deleting data | 3 |
 | F3 | Wan Shi Tong | Year and Director as fields of their own (optional), shown "Director, Year" in the same style as the info line | 4 |
 | F6 | core | Bugs & requests kept in the cloud and loaded with the rest of the data | 5 |
 | F7 | core | A report's row opens it in the same pop-up, full length, to edit and save | 5 |
-| F5 | core | A daily backup folder in the cloud, dated, today's + 7 days kept, each app and an all-in-one; encrypted files importable as they are | 6 |
+| F5 | core | A daily backup folder in the cloud, dated, today's + 7 days kept, each app and an all-in-one, beside the constant sync; Restore a day… brings an app (or all) back from a day; encrypted files importable as they are | 6 |
 | F8 | Momo | A lightweight PTO and sick-time tracker in Upcoming weekends: days by halves (8h / 4h), remainder in hours; days off come off PTO; set and adjusted in Developer Mode | 7 |
 | F9 | core | Developer Mode's changelog shows the latest 3 entries | 1 |
 
@@ -64,42 +64,41 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
 ## Status (tick each phase off here, with what was decided)
 - [ ] Phase 1 — core: Developer Mode's two small things (Kyoshi 4.970)
 - [ ] Phase 2 — Hawky & Momo: the four list fixes (Hawky 2.230, Momo 10.384)
-- [ ] Phase 3 — Bosco: injection sites in an X with a skip, goals by the 7-day average, deletes that ask (Bosco 7.500)
-- [ ] Phase 4 — Wan Shi Tong: a director (author, developer) and a year of their own (Wan Shi Tong 2.472)
-- [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud (Kyoshi 5.070)
-- [ ] Phase 6 — core: a daily backup folder in the cloud; encrypted files imported as they are (Kyoshi 5.170)
+- [ ] Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask (Bosco 7.500)
+- [ ] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472)
+- [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070)
+- [ ] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi 5.170)
 - [ ] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484)
 
-## Decide first (the owner, before the phase runs; recommendations in bold)
-- **D1 — Phase 3, the rotation.** The thighs become twelve sites: left/right × front/side × upper/middle/lower (front: the side
-  facing the ceiling when sitting; side: between buttock and thigh). Proposed order, alternating legs every dose, heights
-  always different from the dose before (top, bottom, middle on each leg), faces alternating on each leg:
+## Decisions (the owner's answers, 2026-10-06; the executing model adds its own small ones under Status)
+- **D1 — Phase 3, the rotation: body parts first, then the X.** The thigh order proposed is right: left/right × front/side ×
+  upper/middle/lower (front: the side facing the ceiling when sitting; side: between buttock and thigh), alternating legs
+  every dose, heights always different from the dose before (top, bottom, middle on each leg), faces alternating on each leg:
   1 L front upper · 2 R side middle · 3 L side lower · 4 R front upper · 5 L front middle · 6 R side lower · 7 L side upper ·
   8 R front middle · 9 L front lower · 10 R side upper · 11 L side middle · 12 R front lower.
-  The other regions stay where they are: Abdomen L → R first, the twelve thigh sites, then Upper arm L → R, Buttock L → R
-  (sites off are skipped, as now). With the default sites on (abdomen and thighs) a round is 14 doses. **Confirm, or write
-  the order you want** (any order of the 18 names is fine).
-- **D3 — Phase 4, which categories.** The request names movies ("Movie Director, Year"). **Recommended: every category gets
-  both fields, the first labelled for it** (Book: Author · Movie: Director · TV/Anime: Creator · Game: Developer · Other: By),
-  the Year for all; the free "info" line stays for the rest (edition, where to watch, platform). Or: movies and TV/Anime only.
-- **D4 — Phase 5, how the bug log reaches the cloud.** **Recommended: the log becomes a hidden app** (`id: "bugs"`, named
-  "Bugs & requests", never in the switcher, no page), so the existing sync engine carries it like any app: the cloud
-  (`data/bugs.json`), the sync folder (`bugs/`), Export all / Import all. Entries are combined by id across devices, and Clear
-  leaves markers so a cleared report can't come back from another device. The alternative, a separate little sync path just
-  for the log, would copy the engine's work. Approve, or say otherwise.
-- **D5 — Phase 6, the backup folder.** **Recommended:** `backups/<YYYY-MM-DD>/<app>.json` (the same encrypted files as
-  `data/`, that day's) plus `backups/<YYYY-MM-DD>/kyoshi.json` (an encrypted Export all file that Import all takes), made once
-  a day as **one commit** by the first device whose check gets through that day, pointing at the files already in the
-  repository (nothing uploaded again but the all-in-one). Folders older than 7 days before today leave in the same commit
-  (the repository's history, trimmed to 8 days by Phase 3 of the cloud plan, keeps them a week longer). Kyoshi still has no
-  call that deletes a file: a folder leaves because the new commit's tree no longer holds it. Approve, or say otherwise.
-- **D6 — Phase 7, what the PTO number means.** You type the hours as of today (Developer Mode). **Recommended: Momo then
-  subtracts every day off entered on a weekend from today on**, planned already or later, half a day = 4h (so type the
-  balance your employer shows *before* approved future days are taken off). If your employer's number already has approved
-  future days taken off, say so: Momo will then subtract only days off entered after you set the balance.
-
-## Decisions (the owner's answers go here, newest first; the executing model adds its own small ones under Status)
-- (none yet)
+  **But the body parts on take turns first:** each dose goes to the next body part on (abdomen, thigh, buttock, upper arm,
+  round and round; a part with no site on is left out), and within that part to its next site in its own order. **The
+  abdomen and the buttocks gain upper/lower** (left/right × upper/lower, four sites each). With the default sites on
+  (abdomen and thighs): Abdomen → Thigh → Abdomen → Thigh …, each walking its own X.
+- **D3 — Phase 4: Director and Year for movies only.** The other categories stay exactly as they are.
+- **D4 — Phase 5: yes to the sync engine carrying the log, but lightweight and minimal.** No app made just for bugs: if a
+  registered app is what the engine needs (it is: an `A.data` adapter and a sync identity), it's **the one hidden "Kyoshi"
+  app** (`id: "kyoshi"`), core's own record, with the bug log as its first and only content; no page, no hooks beyond load
+  and reload, never in the switcher. Its cloud file is `data/kyoshi.json`, its sync-folder subfolder `kyoshi/`, its part of
+  Export all `apps.kyoshi`.
+- **D5 — Phase 6: the constant sync stays exactly as it is; the backups are for going back to a day.** `data/<app>.json` is
+  still saved within seconds of every change and read on every check: that is the main point and nothing in Phase 6 touches
+  it. The daily `backups/<date>/` folders are a snapshot beside it, for when the owner makes a big mistake (deletes a lot of
+  data) and wants that app's data as it was on a given day: so Phase 6 also gets **Restore a day…** in the Cloud block (pick a
+  day, bring back the app on screen or every app; the sync then carries the restored data to the other devices). The layout
+  and the one-commit-a-day approach as proposed; the all-in-one file is `all.json` (the hidden Kyoshi app has `kyoshi.json`).
+- **D6 — Phase 7: all planned (future) days off come off the current balance, and come back when a weekend's days off are
+  changed or cleared.** Momo works the balance out every time (the hours typed on the day they were typed, less every day
+  off entered on a weekend from that day on), so a changed or cleared weekend refunds by itself: nothing is decremented or
+  stored per weekend.
+- Small points answered by an assumption below unless the owner says otherwise: the order body parts take turns in
+  (assumption 8), the abdomen's and buttocks' own X (assumption 9), what a skip does with body parts (assumption 10), the
+  movie's "info" label once the director and year have fields (assumption 15).
 - Assumptions the architect made, each one line to change if wrong:
   1. B1: a good message in the Cloud block fades after 20 s; a refusal stays until Developer Mode closes or the next action. *(Phase 1)*
   2. F9: the changelog shows the latest 3 entries and one muted line saying how many older ones the file holds; no Show all. *(Phase 1)*
@@ -108,12 +107,15 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   5. B4: after each add, quick add goes back to **This week** (the new default), 15 min and no note. *(Phase 2)*
   6. B5: the due word shows on every app's "card of its own" task that has a due day (Hawky's errands, Appa's jobs), never on a placed card nor on a timed block's task. *(Phase 2)*
   7. F2: ETAs and the season projections also start from the latest 7-day average (not the last weigh-in); the chart's dots stay the real weigh-ins. *(Phase 3)*
-  8. F1: a skip is one-time: the next dose passes over that site, and the skip is forgotten once a dose is logged; the rotation then follows the logged site as now. *(Phase 3)*
-  9. F4: Delete (a weigh-in) and Remove (a goal) ask every time; replacing a weigh-in already asks. *(Phase 3)*
-  10. F7: editing a report changes its words and its kind (Bug ↔ Feature request); the versions, state and console lines it captured stay as they were. No per-report delete (Clear stays the only way: the owner's 2026-10-05 decision). *(Phase 5)*
-  11. F6: the hidden app's id is `bugs`; a report filed during time travel (test mode) is still kept, and goes to the cloud at the next start. *(Phase 5)*
-  12. F5: "today" is the device's local date; the all-in-one holds this device's saves right after a check that got through (equal to the cloud's then). *(Phase 6)*
-  13. F8: balances are kept in hours and shown in 8-hour days by halves; sick time never changes by itself. *(Phase 7)*
+  8. F1: body parts take turns in the order abdomen → thigh → buttock → upper arm (those with a site on). *(Phase 3)*
+  9. F1: the abdomen's and the buttocks' own order is an X too: left upper → right lower → left lower → right upper. *(Phase 3)*
+  10. F1: a skip is one-time and stays within the body part: the next dose passes over that site to the part's next site on (the part's turn isn't lost); the skip is forgotten once a dose is logged. *(Phase 3)*
+  11. F4: Delete (a weigh-in) and Remove (a goal) ask every time; replacing a weigh-in already asks. *(Phase 3)*
+  12. F7: editing a report changes its words and its kind (Bug ↔ Feature request); the versions, state and console lines it captured stay as they were. No per-report delete (Clear stays the only way: the owner's 2026-10-05 decision). *(Phase 5)*
+  13. F6: a report filed during time travel (test mode) is still kept, and goes to the cloud at the next start. *(Phase 5)*
+  14. F5: "today" is the device's local date; the all-in-one holds this device's saves right after a check that got through (equal to the cloud's then); a restore goes through the app's ordinary import (the same confirm, naming the backup's day), and the cloud then takes the restored data as it takes any change. *(Phase 6)*
+  15. F3: a movie's "info" field, no longer "Year or director", reads "Where to watch" (the other categories' labels stay). *(Phase 4)*
+  16. F8: balances are kept in hours and shown in 8-hour days by halves; sick time never changes by itself. *(Phase 7)*
 
 ## Versions when planned
 Kyoshi 4.960 · Hawky 2.220 · Momo 10.374 · Bosco 7.400 · Wan Shi Tong 2.372. Work each bump out from the app's top
@@ -219,8 +221,8 @@ needs' `due`), `tests/momo-week.test.js` lines 1–45 (how Hawky's errands reach
 
 ---
 
-## Phase 3 — Bosco: injection sites in an X with a skip, goals by the 7-day average, deletes that ask (Bosco +0.100 → 7.500)
-Closes F1, F2, F4. Bosco only. **Decide first: D1** (the rotation order).
+## Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask (Bosco +0.100 → 7.500)
+Closes F1, F2, F4. Bosco only. The rotation follows D1 (body parts take turns first) and assumptions 8–10.
 
 **Read first:** `apps/bosco/CLAUDE.md`, `app.js` (`SITES`, `DEFAULT_SITES`, `DOSING_QUESTIONS_VERSION`, `activeSites`,
 `siteLabel`, `siteShort`), `doses.js` (`lastSite`, `nextSite`, `doseSchedule`, `renderDoseSite`, `confirmDose`), `setup.js`
@@ -229,36 +231,55 @@ lines 60–70 (`renderSites`) and 245–285 (`saveOneTimeInfo`), `data.js` (`nor
 (`renderHistory`'s Delete, `renderGoals`, `renderChart`), `events.js` (the history Delete and goals Remove handlers,
 `renderDev`, `bugState`), `bosco.css` (`.site`, `#sitePills`), `tests/bosco-doses.test.js`, `tests/generate.js` `bosco()`.
 
-### 3.1 The sites, in an X (F1)
-- `app.js` `SITES` becomes 18 entries in rotation order (D1): `abd-l`, `abd-r`; the twelve thigh ids
-  `thigh-<l|r>-<front|side>-<upper|middle|lower>` in the order D1 settles (labels "Thigh · left front, upper", short "Thigh L
-  front upper"); `arm-l`, `arm-r`, `glute-l`, `glute-r`. `DEFAULT_SITES` (`/^(abd|thigh)-/`) still gives the abdomen and
-  every thigh site.
-- The six old thigh ids (`thigh-l-upper` … `thigh-r-lower`) are stored in entries and in `profile.sites`, so they're kept
-  forever: a `LEGACY_SITES` table `[id, label, short, standsFor]` where `standsFor` is the new *front* id of the same leg and
-  height. `siteLabel` / `siteShort` look in `SITES` then `LEGACY_SITES` (an old dose still reads "Thigh · left, upper": its
-  face wasn't known). `nextSite(after)` takes an old id's place from its `standsFor`. `data.js cleanSites(list)` maps each old
-  id to **both** faces' new ids before filtering to `SITES` order (so the thighs stay on), de-duplicated.
-- `DOSING_QUESTIONS_VERSION: 4`, so start-up info asks once more on every device. `setup.js renderSites`: 18 pills; group
-  them by region with a small muted heading each ("Abdomen", "Thighs", "Upper arms", "Buttocks") and shorter pill text inside
-  ("L front upper"), four to a row on a computer, two on a phone, as the current pills are sized. The rotation order is the
-  order within each region.
-- **The skip** (`profile.skipSites`, an array of site ids or null): `doses.js doseSchedule` walks `site = nextSite(site)` and
-  while `skipSites` holds it, steps on again (at most `SITES.length` steps). `events.js A.renderDev`: a second `.dev-block`
-  "Injection sites": "Next dose: Thigh · left front, upper" (from `doseSchedule()[0]`, or "no dose scheduled"), a **Skip this
-  site** button (adds that id to `skipSites`, `A.save()`, `A.refreshDev()`, `A.renderAll()`; a second press skips the new
-  next one too), **Undo skips** when any, and the hint "For when a site isn't a good candidate this week: the next dose goes to
-  the site after it. Forgotten once a dose is logged." `confirmDose` sets `S.profile.skipSites = null` before saving.
-  `data.js`: `normalizeBackup` cleans it (known ids only; null when absent), `buildBackup` carries it beside `sites`,
-  `applyBackup` sets it, `mergeVersions` takes the newer save's value whenever that save knows the field
-  (`newer.skipSites === undefined ? older.skipSites : newer.skipSites`: a device that logged the dose and cleared it wins),
-  `dataKey` includes it. The dose pop-up needs no change: the dose's `site` already carries the skip's result. `bugState`
-  adds "Sites skipped: n".
-- Changelog: "The thighs are twelve sites (left/right, front/side, upper/middle/lower), and doses rotate in an X: the other
-  leg every time, a different height than the dose before, the faces alternating on each leg; start-up info asks once more
-  for your sites. A dose logged at an old thigh site still reads as it did." and "Bosco's Developer Mode tools can skip the
-  next site (for a week when it isn't a good candidate); the skip is forgotten once the dose is logged." Plus "Reload Bosco on
-  every device after updating."
+### 3.1 The sites: body parts take turns, each walking its own X (F1, D1)
+- `app.js` `SITES` becomes 22 entries `[id, label, short, part]`, listed part by part, each part's entries in the order its
+  doses take (its own X: the other side every time, the other height):
+  - **Abdomen** (`abd`): `abd-l-upper` ("Abdomen · left, upper" / "Abd L upper"), `abd-r-lower`, `abd-l-lower`, `abd-r-upper`.
+  - **Thigh** (`thigh`), D1's twelve: `thigh-l-front-upper`, `thigh-r-side-middle`, `thigh-l-side-lower`, `thigh-r-front-upper`,
+    `thigh-l-front-middle`, `thigh-r-side-lower`, `thigh-l-side-upper`, `thigh-r-front-middle`, `thigh-l-front-lower`,
+    `thigh-r-side-upper`, `thigh-l-side-middle`, `thigh-r-front-lower` ("Thigh · left front, upper" / "Thigh L front upper").
+  - **Buttock** (`glute`): `glute-l-upper`, `glute-r-lower`, `glute-l-lower`, `glute-r-upper`.
+  - **Upper arm** (`arm`): `arm-l`, `arm-r`.
+  `PARTS = ["abd", "thigh", "glute", "arm"]` with a label each: the order body parts take turns in (assumption 8); a part with
+  no site on is left out of the turns. `DEFAULT_SITES` (`/^(abd|thigh)-/`) still gives the abdomen and the thighs: 16 on.
+  Helpers: `partOf(id)`, `sitesIn(part)`.
+- **The rotation, worked out from the log and never stored** (`doses.js`): the next dose goes to the **next body part on after
+  the part of the last dose logged with a site**, and within that part to **the site on after the last site logged in that
+  part** (the part's first site on when none was, or when that one is off now). `lastSites()` reads the entries with a dose
+  and a site, by date → `{ part: the latest dose's part, in: { abd: id, thigh: id, … } }` (old ids count as what they stand
+  for); `nextPart(after)` and `nextSiteIn(part, after)` replace `nextSite`; `doseSchedule` walks the three upcoming doses with
+  that state, each dose assigned moving the current part on and that part's pointer. With the defaults: Abd L upper →
+  Thigh L front upper → Abd R lower → Thigh R side middle → Abd L lower → Thigh L side lower → Abd R upper → Thigh R front
+  upper → Abd L upper → Thigh L front middle → … (the abdomen starts over every fourth of its turns, the thighs every
+  twelfth). `nextSite` stays exported as `nextSiteIn`'s one-part case if any test or file uses it (grep).
+- **Old ids are kept forever**: ten of them are in entries and in `profile.sites` (`abd-l`, `abd-r`, `glute-l`, `glute-r`, and
+  `thigh-l-upper` … `thigh-r-lower`). A `LEGACY_SITES` table `[id, label, short, standsFor]`: the old abdomen and buttock ids
+  stand for their side's `upper`, the old thigh ids for their height's `front`. `siteLabel` / `siteShort` look in `SITES` then
+  `LEGACY_SITES` (an old dose still reads "Abdomen · left" or "Thigh · left, upper": its height or face wasn't known);
+  `lastSites` and the pointers use `standsFor`. `data.js cleanSites(list)` maps each old id to **every** new id of that side
+  (`abd-l` → both heights; `thigh-l-upper` → both faces) before filtering to `SITES` order, de-duplicated, so what was on
+  stays on.
+- `DOSING_QUESTIONS_VERSION: 4`, so start-up info asks once more on every device. `setup.js renderSites`: 22 pills grouped by
+  part with a small muted heading each ("Abdomen", "Thighs", "Buttocks", "Upper arms", in `PARTS` order) and shorter pill
+  text inside ("L upper", "L front upper"), four to a row on a computer, two on a phone, as the current pills are sized. The
+  pop-up's site menu (`renderDoseSite`): an `<optgroup>` per part with its sites on, then "Other" with the rest, as now.
+- **The skip** (`profile.skipSites`, an array of site ids or null; assumption 10): while a part's next site is in `skipSites`,
+  `doseSchedule` steps to that part's next site on (the part keeps its turn; a part whose sites on are all skipped gives its
+  turn to the next part). `events.js A.renderDev`: a second `.dev-block` "Injection sites": "Next dose: Thigh · left front,
+  upper" (from `doseSchedule()[0]`, or "no dose scheduled"), a **Skip this site** button (adds that id to `skipSites`,
+  `A.save()`, `A.refreshDev()`, `A.renderAll()`; a second press skips the new next one too), **Undo skips** when any, and the
+  hint "For when a site isn't a good candidate this week: the next dose goes to that body part's next site. Forgotten once a
+  dose is logged." `confirmDose` sets `S.profile.skipSites = null` before saving. `data.js`: `normalizeBackup` cleans it (known
+  ids only; null when absent), `buildBackup` carries it beside `sites`, `applyBackup` sets it, `mergeVersions` takes the newer
+  save's value whenever that save knows the field (`newer.skipSites === undefined ? older.skipSites : newer.skipSites`: a
+  device that logged the dose and cleared it wins), `dataKey` includes it. The dose pop-up needs no change: the dose's `site`
+  already carries the skip's result. `bugState` adds "Sites skipped: n".
+- Changelog: "Injection sites: the body parts you keep on take turns (abdomen, thigh, buttock, upper arm), and within each
+  the doses go in an X; the thighs are twelve sites (left/right, front/side, upper/middle/lower) and the abdomen and buttocks
+  four each (left/right, upper/lower). Start-up info asks once more for your sites; a dose logged at an old site still reads
+  as it did." and "Bosco's Developer Mode tools can skip the next site (for a week when it isn't a good candidate): the dose
+  goes to that body part's next site, and the skip is forgotten once a dose is logged." Plus "Reload Bosco on every device
+  after updating."
 
 ### 3.2 A goal is reached by the 7-day average (F2)
 - `app.js`: `GOAL_AVG_DAYS: 7` (fixed: the Average window toggle on the page starts at 7 on every load and isn't stored, so
@@ -279,21 +300,24 @@ lines 60–70 (`renderSites`) and 245–285 (`saveOneTimeInfo`), `data.js` (`nor
 - Changelog: "Deleting a weigh-in or removing a goal asks first."
 
 ### Docs & tests
-- `CLAUDE.md`: `SITES` (18, the X order, `LEGACY_SITES`), `profile.skipSites`, Invariants (the rotation; a goal by the
-  average; deletes ask).
+- `CLAUDE.md`: `SITES` (22 in four parts, each part's X, `PARTS`, `LEGACY_SITES`), `profile.skipSites`, Invariants (the
+  rotation: parts take turns, each its own pointer from the log; a goal by the average; deletes ask).
 - `tests/bosco-doses.test.js`, new tests (desktop, time travel): (a) with the default sites, confirm doses as they come due
-  through a round → the sites follow Abdomen L, R, then the twelve in D1's order; (b) an older backup with
-  `sites: ["abd-l", "thigh-l-upper"]` and an entry at `thigh-r-middle` → sites on = Abdomen L plus both left-upper faces;
-  History shows "Thigh R middle"; the next dose's site is the one after R front middle's place; (c) Skip this site in
-  Developer Mode moves the next card's site, a second press moves it again, Undo skips puts it back; logging the dose clears
-  `skipSites`; Export carries it; (d) Delete on a weigh-in asks (dialog text has "Delete the weigh-in"), No keeps it; Remove
-  on a goal asks; (e) goals: weigh-ins where one day dips under a goal but the 7-day average doesn't → "In progress"; a week
-  of days under it → "Reached" on the day the average crossed. Extend `gen.bosco()` for the entries each needs.
+  through ten doses → the sites follow Abd L upper, Thigh L front upper, Abd R lower, Thigh R side middle, Abd L lower,
+  Thigh L side lower, Abd R upper, Thigh R front upper, Abd L upper, Thigh L front middle; turning the buttocks on in
+  start-up info puts Buttock L upper in the next turn after the thigh; (b) an older backup with
+  `sites: ["abd-l", "thigh-l-upper"]`, a dose at `abd-l` then one at `thigh-r-middle` → sites on = both left abdomen heights and
+  both left-upper thigh faces; History shows "Abdomen L" and "Thigh R middle"; the next dose is the abdomen's turn, at Abd L
+  lower (after `abd-l`'s stand-in, Abd L upper); (c) Skip this site in Developer Mode moves the next card's site to the same
+  part's next site, a second press moves it again, Undo skips puts it back; logging the dose clears `skipSites`; Export
+  carries it; (d) Delete on a weigh-in asks (dialog text has "Delete the weigh-in"), No keeps it; Remove on a goal asks;
+  (e) goals: weigh-ins where one day dips under a goal but the 7-day average doesn't → "In progress"; a week of days under it
+  → "Reached" on the day the average crossed. Extend `gen.bosco()` for the entries each needs.
 
 ---
 
-## Phase 4 — Wan Shi Tong: a director (author, developer) and a year of their own (Wan Shi Tong +0.100 → 2.472)
-Closes F3. Wan Shi Tong only. **Decide first: D3** (which categories).
+## Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong +0.100 → 2.472)
+Closes F3. Wan Shi Tong only. Movies only (D3): books, TV/Anime and games stay exactly as they are.
 
 **Read first:** `apps/wanshitong/CLAUDE.md`, `app.js` (`CATS`, `OTHER`, limits, `searchUrl`), `markup.js` (`#itemOverlay`),
 `editor.js` (`FIELDS`, `renderCatFields`, `openEditor`, `saveItem`), `render.js` (`nameLine`, `metaLine`), `data.js`
@@ -301,39 +325,42 @@ Closes F3. Wan Shi Tong only. **Decide first: D3** (which categories).
 (grep `wanshitong`: add a small generator if there is none; no test file exists for this app yet).
 
 ### 4.1 Data
-- Items gain `by` (the director / author / developer, ≤ 80 characters, `MAX_BY`) and `year` (as typed, ≤ 12 characters,
-  `MAX_YEAR`: "2021", "1994–2004"); `cleanItems` keeps both as lines ("" when missing, emptied on a deleted marker); backups
-  and sync carry them (items merge whole by `u`, so nothing else changes); `schemaVersion` stays 1; the changelog says to
-  reload on every device (an older copy drops them).
+- Items gain `director` (≤ 80 characters, `MAX_DIRECTOR`) and `year` (as typed, ≤ 12 characters, `MAX_YEAR`: "2021",
+  "1984–1985"), both "" unless the item is a movie with them filled in; `cleanItems` keeps both as lines ("" when missing,
+  emptied on a deleted marker); backups and sync carry them (items merge whole by `u`, so nothing else changes);
+  `schemaVersion` stays 1; the changelog says to reload on every device (an older copy drops them).
 
 ### 4.2 The pop-up (`markup.js`, `editor.js`)
-- Under Name, one `.field-row`: **`itemBy`** (text, `maxlength` 80; its label from the category: `CATS[].by` — Book
-  "Author", Movie "Director", TV/Anime "Creator", Game "Developer", Other "By"; placeholder from `byEg`, e.g. "Denis
-  Villeneuve") and **`itemYear`** (text, `inputmode="numeric"`, `maxlength` 12, placeholder "e.g. 2021"). Both optional.
-  The info line stays, relabelled now that the year and maker have fields: Book "Edition", Movie "Where to watch", TV/Anime
-  "Where to watch", Game "Platform" (`infoEg` to match). `FIELDS` gains both ids (the discard snapshot), `openEditor` fills
-  them, `saveItem` reads them through `cleanLine`, Add another clears them. D3's other answer (movies and TV/Anime only): the
-  row is hidden for the other categories and their values left "".
+- For the **Movie** category only, one `.field-row` under Name: **`itemDirector`** (text, `maxlength` 80, label "Director",
+  placeholder "e.g. Miyazaki") and **`itemYear`** (text, `inputmode="numeric"`, `maxlength` 12, label "Year", placeholder
+  "e.g. 2001"). Both optional. The row is hidden for every other category (`renderCatFields`, which already redraws what
+  depends on the category), and saving another category writes "" to both. The movie's info line stays as the third field,
+  relabelled "Where to watch" now that the year and director have fields (assumption 15; `infoEg` e.g. "Netflix"); the other
+  categories' `CATS` entries don't change (Book "Author or edition", TV/Anime "Year or where to watch", Game "Platform").
+  `FIELDS` gains both ids (the discard snapshot), `openEditor` fills them, `saveItem` reads them through `cleanLine`, Add
+  another clears them. A movie with an older `info` holding "Miyazaki, 2001" keeps it: nothing is split or moved.
 
 ### 4.3 The line under the name (`render.js`, `app.js`)
-- `nameLine`: after the name, one `.item-info` span (the same class and look as today) reading `[by, year].filter(Boolean).join(", ")`,
-  then `info` after `SEP` when present: "Dune Denis Villeneuve, 2021 · Netflix"; with only the old `info`, as today. Active
-  media, the backlog and Finished all use `nameLine`. `searchUrl` adds `by` and `year` to the search. Momo's details ("Active ·
-  Movie") don't change.
-- Changelog: "A recommendation has a Director (Author, Creator, Developer) and a Year of its own, optional, shown under its
-  name as “Director, Year” before the rest. Reload on every device after updating: an older copy drops them."
+- `nameLine`: after the name, one `.item-info` span (the same class and look as today) reading
+  `[director, year].filter(Boolean).join(", ")`, then `info` after `SEP` when present: "Spirited Away Miyazaki, 2001 ·
+  Netflix"; with only `info`, as today (so books, TV and games look exactly as they do). Active media, the backlog and
+  Finished all use `nameLine`. `searchUrl` adds `director` and `year` to the search. Momo's details ("Active · Movie") don't
+  change.
+- Changelog: "A movie has a Director and a Year of its own, optional, shown under its name as “Director, Year” before the rest.
+  Reload on every device after updating: an older copy drops them."
 
 ### Docs & tests
-- `CLAUDE.md`: State (`by`, `year`), the pop-up's fields, `CATS` (`by`, `byEg`).
+- `CLAUDE.md`: State (`director`, `year`: movies'), the pop-up's movie row, the movie's info label.
 - New `tests/wanshitong.test.js` (and `tests/wanshitong.js` helpers if two tests share selectors): add a movie with a director
-  and a year → the backlog line reads the name, then "Denis Villeneuve, 2021"; a book with an author only → "Susanna Clarke";
-  Start it → Active media shows the same line; Export JSON holds `by` and `year`; a fresh profile imports an older backup
-  without them (its `info` shows as before); editing keeps them; the magnifier's `href` holds both words.
+  and a year → the backlog line reads the name, then "Miyazaki, 2001"; switch the pop-up to Book → the row is hidden, and a
+  book saved shows its info line as before; Start the movie → Active media shows the same line; Export JSON holds `director`
+  and `year`; a fresh profile imports an older backup without them (its `info` shows as before); editing keeps them; the
+  magnifier's `href` holds both words.
 
 ---
 
-## Phase 5 — core: Bugs & requests edited in place, and kept in the cloud (Kyoshi +0.100 → 5.070)
-Closes F6, F7. Core only (plus three test files). **Decide first: D4** (the hidden-app approach).
+## Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi +0.100 → 5.070)
+Closes F6, F7. Core only (plus three test files). D4: lightweight and minimal; the one hidden app is core's own, "Kyoshi".
 
 **Read first:** `core/bugs.js` (whole), `core/shell.js` (`K.register`, `K.start`, `startApp`, `show`, `renderSwitcher`,
 `renderMenu`, `onStoreChange`), `core/sync.js` (header, `apps`, `loadMeta`, `changed`, `incorporate`), `core/storage.js`
@@ -343,36 +370,43 @@ block and `#kBugOverlay`), `core/kyoshi.css` lines 165–175, `apps/wanshitong/d
 model to copy), `tests/shell.test.js` (the two bug tests, the switcher test, the every-app test), `tests/cloud.test.js`
 (`computerWithCloud`, `phoneWith`, `onlyText`), `tests/cloud.js`.
 
-### 5.1 The log becomes a hidden app, `bugs` (F6)
+### 5.1 The log rides in the hidden Kyoshi app (F6, D4)
+- Why an app at all: the sync engine (core/sync.js) carries exactly one thing per registered app, through its `A.data`
+  adapter and its sync identity (`A._sync`), and the cloud, the sync folder, Export all and Import all all go through it. So
+  the minimal way is one registered namespace with no page: **the hidden "Kyoshi" app, `id: "kyoshi"`**, core's own record,
+  whose save holds the bug log now (and could hold another core record later, under another key of the same save). Nothing
+  is made just for bugs, and no second sync path exists.
 - `core/shell.js K.register` accepts `meta.hidden: true`: the app has no page and is never shown. `renderSwitcher` and
-  `renderMenu` leave hidden apps out; `show()` refuses one (`#bugs` in the URL, or as the last app, falls back to the first
+  `renderMenu` leave hidden apps out; `show()` refuses one (`#kyoshi` in the URL, or as the last app, falls back to the first
   app that isn't hidden; `K.start`'s default too); its store is `K.storage.scoped(prefix, !meta.hidden)`, so its writes are
   kept in test mode, as bug reports are today (the header note in storage.js changes with it). Everything else that walks
   `K.order` already checks for the hook it needs (`inbox`, `agenda`, `routine`, `onTick`), and `K.meetings.load` is fine with
-  an app that names no meetings.
-- `core/bugs.js init()` registers it (shell.js has loaded by then): `K.register({ id: "bugs", name: "Bugs & requests",
-  hidden: true })`, then `A.VERSION = K.VERSION`, `A.CHANGELOG = K.CHANGELOG`, `A.load` (the `reports` key; the **first
+  an app that names no meetings. Its store prefix is `kyoshi.kyoshi.`; `K.store` (`kyoshi.`) keeps the device id, nothing else.
+- `core/bugs.js init()` registers it (shell.js has loaded by then): `K.register({ id: "kyoshi", name: "Kyoshi", hidden: true })`,
+  then `A.VERSION = K.VERSION`, `A.CHANGELOG = K.CHANGELOG`, `A.load` (the `bugReports` key of its own store; the **first
   time**, when that key is missing, it carries `K.store "bugReports"` over, giving each report `u = Date.parse(timestamp) ||
   Date.now()`, then removes the old key), `A.onReload` (another tab saved: redraw the list and the counts), and `A.data`:
-  `schemaVersion: 1`, `build()` → `{ schemaVersion, appVersion: K.VERSION, reports }`, `looksLike(raw)` →
-  `Array.isArray(raw.reports)`, `hasData()` → any report that isn't a marker, `importBackup(raw, ask)` → replaces the log
+  `schemaVersion: 1`, `build()` → `{ schemaVersion, appVersion: K.VERSION, bugReports }`, `looksLike(raw)` →
+  `Array.isArray(raw.bugReports)`, `hasData()` → any report that isn't a marker, `importBackup(raw, ask)` → replaces the log
   (asking through `K.backup.ask(A, raw, "Replace your N bugs and requests with the M in this backup?")`; reached by Import all
   only, as it's never the app on screen), `combine(raw, how)` → by id, the later `u` wins (an older copy's report without `u`
-  counts its timestamp), markers kept, `same` / `apply` as Wan Shi Tong's, `afterSync()` → store and redraw.
+  counts its timestamp), markers kept, `same` / `apply` as Wan Shi Tong's, `afterSync()` → store and redraw. About 60 lines.
 - A report: `{ id, timestamp, app, description, markdown, kind, u, edited ("" or an ISO moment), deleted }`. **Clear** turns
   every live report into a marker (`deleted: true`, `description` and `markdown` emptied, `u = Date.now()`), so a cleared
   report can't come back from a device that still had it; markers older than `MARKER_DAYS` (60) are dropped on load.
   `BUG_REPORTS_MAX` counts live reports. The header comment: what the file is now (the log as a hidden app, the pop-up).
 - Every change (`submit`, an edit, Clear) stores and calls `A.changed()` → the cloud, the sync folder and Export all's
   highlight follow. In test mode `A.changed()` does nothing, so set `A.store.set("pending", "1")` then; at the next start
-  outside test mode, `A.load` sees it, calls `A.changed()` once and removes it (assumption 11).
+  outside test mode, `A.load` sees it, calls `A.changed()` once and removes it (assumption 13).
 - `shell.js onStoreChange`: drop the `kyoshi.bugReports` line (the loop over `K.order` reloads the app by its prefix and calls
-  `onReload`). `core/cloud-key.js GUIDE`: "`data/<app>.json`: one file per app (momo, bosco, hawky, …; `bugs` is the Bugs &
-  requests log)". `core/backup.js` needs nothing: `running()` includes it, so Export all writes `apps.bugs` and Import all
-  takes it back.
-- If `core/bugs.js` would pass ~380 lines, split along the seam: `core/bugs-data.js` (the hidden app: register, load, the
-  carry-over, markers, `A.data`; loaded before `bugs.js`, exposing `K.bugsData`) and `core/bugs.js` (the pop-up, the list,
-  Developer Mode's exports). Put the new file in `index.html` and the root `CLAUDE.md` map.
+  `onReload`). `core/cloud-key.js GUIDE`: "`data/<app>.json`: one file per app (momo, bosco, hawky, …; `kyoshi` is Kyoshi's own
+  record: the Bugs & requests log)"; and `decryptFile`'s fallback name for an envelope with an unreadable app id changes from
+  "kyoshi" to "file" (so it isn't taken for the hidden app's). `core/backup.js` needs nothing: `running()` includes it, so
+  Export all writes `apps.kyoshi` and Import all takes it back. Its line in Export all's confirm reads "…, Pabu and Kyoshi".
+- If `core/bugs.js` would pass ~380 lines, split along the seam: `core/record.js` (the hidden Kyoshi app: register, load, the
+  carry-over, markers, `A.data`; loaded before `bugs.js`, exposing `K.record`) and `core/bugs.js` (the pop-up, the list,
+  Developer Mode's exports). Put the new file in `index.html` and the root `CLAUDE.md` map. Otherwise one file, and its header
+  says the hidden app lives there.
 
 ### 5.2 A report opens in the pop-up to edit (F7)
 - The list's rows become buttons (`<button type="button" class="bug-row" data-id="…">`, the tag and the text inside; keyboard
@@ -394,27 +428,29 @@ model to copy), `tests/shell.test.js` (the two bug tests, the switcher test, the
 
 ### Docs & tests
 - Root `CLAUDE.md`: the contract (`hidden: true` in `K.register`: no page, never shown, writes kept in test mode; only core
-  uses it, for the bug log), the map (bugs.js's line; bugs-data.js if split), Storage ("`K.store` is core's own: the device
-  id"; the bug log is the hidden app's).
+  uses it, for its own record, the hidden Kyoshi app), the map (bugs.js's line; record.js if split), Storage ("`K.store` is
+  core's own: the device id"; the bug log is the hidden Kyoshi app's; `kyoshi` joins `storage` as an id no app may take).
 - `tests/shell.test.js`: the every-app and switcher tests filter `Kyoshi.order` to apps that aren't hidden
-  (`!Kyoshi.apps[id].meta.hidden`) and check the menu never lists `bugs`; the request test reads
-  `Kyoshi.apps.bugs.store.json("reports")` instead of `Kyoshi.store.json("bugReports")`; the exports test still plants the
-  old key before the first `load()` and sees it carried over (the stored copy has `u`), and after Clear the stored reports
+  (`!Kyoshi.apps[id].meta.hidden`) and check the menu never lists `kyoshi`; the request test reads
+  `Kyoshi.apps.kyoshi.store.json("bugReports")` instead of `Kyoshi.store.json("bugReports")`; the exports test still plants
+  the old key before the first `load()` and sees it carried over (the stored copy has `u`), and after Clear the stored reports
   are markers (`deleted: true`, no words); a new edit test: tap the row → the box holds the whole description (two lines),
   change the text and the kind, Save → the row reads the new first line with "R" → "B" and " · edited", the stored
   `markdown`'s first line ends with " · bug", its description is the new text, and its `env:` line is unchanged; tap the row,
-  change a word, Esc → the discard question, No keeps editing, Cancel leaves it; opening `index.html#bugs` shows Momo.
-- `tests/cloud.test.js`, one new test: a report filed on the computer → `data/bugs.json` appears in the fake (`onlyText`
-  holds: it's a data/ file), decrypts (`decryptInNode`) to `{ reports: [ … ] }` with no device words but the typed
+  change a word, Esc → the discard question, No keeps editing, Cancel leaves it; opening `index.html#kyoshi` shows Momo.
+- `tests/cloud.test.js`, one new test: a report filed on the computer → `data/kyoshi.json` appears in the fake (`onlyText`
+  holds: it's a data/ file), decrypts (`decryptInNode`) to `{ bugReports: [ … ] }` with no device words but the typed
   description; the phone lists it after its check; Clear on the phone → the computer's list and footer count empty after a
-  check; Export all on either has `apps.bugs`.
+  check; Export all on either has `apps.kyoshi`.
 - `tests/sim`: grep `Kyoshi.order` (life.js, check.js, robust.js, curated.js): where the simulator switches to or checks each
   app, skip hidden ones; `node tests/sim/run.js` isn't part of the test run, but it must still start.
 
 ---
 
-## Phase 6 — core: a daily backup folder in the cloud; encrypted files imported as they are (Kyoshi +0.100 → 5.170) — after Phase 5
-Closes F5. Core only. **Decide first: D5** (the layout and the one-commit approach).
+## Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi +0.100 → 5.170) — after Phase 5
+Closes F5. Core only. **D5: the constant sync is not touched.** `data/<app>.json` keeps being saved within seconds of every
+change and read on every check exactly as now (core/cloud.js's `pass`, `pull`, `push` don't change); everything here is
+added beside it, for going back to a day after a big mistake.
 
 **Read first:** `core/cloud.js` (header: the safety rules; `listing` / `list`, `pass`, `checkNow` → `afterCheck`, the
 `K.cloud` object), `core/cloud-upkeep.js` (whole: the once-a-day pattern, the key record's fields through `cloud.keep`,
@@ -426,10 +462,11 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
 
 ### 6.1 What the repository holds
 - `backups/<YYYY-MM-DD>/<app>.json`: that day's `data/<app>.json`, the very same encrypted file (the tree points at the blob
-  already there); `backups/<YYYY-MM-DD>/kyoshi.json`: an envelope with `app: "kyoshi"` whose plain text is an Export all file
-  `{ kyoshiVersion, exportedAt, cloud: true, apps: { <id>: save } }` (every app with data, `K.sync.saveOf(A)`; after a check
-  got through, this device's saves are the cloud's). Kept: today's folder and the seven days before it (8 folders); older
-  folders leave in the same commit. Nothing in `backups/` is ever read by the sync (`APP_FILE` matches `data/` only).
+  already there; `kyoshi.json` is the hidden Kyoshi app's, the bug log); `backups/<YYYY-MM-DD>/all.json`: an envelope with
+  `app: "all"` whose plain text is an Export all file `{ kyoshiVersion, exportedAt, cloud: true, apps: { <id>: save } }`
+  (every app with data, `K.sync.saveOf(A)`; after a check got through, this device's saves are the cloud's). Kept: today's
+  folder and the seven days before it (8 folders); older folders leave in the same commit. Nothing in `backups/` is ever
+  read by the sync (`APP_FILE` matches `data/` only): the constant sync and the backups never meet.
 
 ### 6.2 New file `core/cloud-backups.js` (after `cloud-upkeep.js` in `index.html`; adds to `K.cloud`)
 - Chained on `afterCheck` (keep upkeep's: `const prev = cloud.afterCheck; cloud.afterCheck = c => { prev(c); daily(c); }`): once
@@ -438,7 +475,8 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
   1. `listDir("backups/<today>")`: files already there (another device made it) → record `backupDay` and stop.
   2. `branch()` → the head's `sha` and `tree`. The data files' blob shas from the check just done (`K.cloud.files()`, a new
      accessor returning a copy of cloud.js's `listing`) → entries `{ path: "backups/<today>/<app>.json", mode: "100644", type:
-     "blob", sha }`. The all-in-one: sealed here (`C.seal(allInOne, secret, "kyoshi")`), `newBlob(base64)` → one entry.
+     "blob", sha }`. The all-in-one: sealed here (`C.seal(allInOne, secret, "all")`), `newBlob(base64)` → one entry
+     (`backups/<today>/all.json`).
   3. Retention: `listDir("backups")`'s `dirs` whose name is a date before today − 7 → each one's files (`listDir` of it) as
      entries with `sha: null` (dropped from the tree).
   4. `newTree(head.tree, entries)` → `newCommit(treeSha, "Kyoshi: daily backup <today>", [head.sha])` →
@@ -447,7 +485,9 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
   5. On success `cloud.keep({ backupDay: today, backupAt: iso(now), backupTries: 0 })`; `cloud.ui()`.
   Pauses between the writes as the tidy does (`TIDY_GAP_MS`); a `GithubError` other than a refusal: the next check. Exposes
   `K.cloud.backupNow(tell)` (Developer Mode's button: the same steps now, "Backed up 9 apps into backups/2026-10-06." or a
-  refusal, "Today's backup is already there." when it is) and `K.cloud.backups()` → `{ day, at, tries }`.
+  refusal, "Today's backup is already there." when it is), `K.cloud.backups()` → `{ day, at, tries }`, and for the restore
+  (6.4) `K.cloud.backupDays()` → the folder names in `backups/`, newest first, and `K.cloud.backupFile(day, name)` → that
+  file's text (`getFile`), or a refusal naming the day when it has none.
 - `core/github.js` gains `newBlob(base64)` (POST `/git/blobs` → sha), `newTree(baseTree, entries)` (POST `/git/trees` with
   `base_tree`; an entry with `sha: null` drops that path), `listDir` also returning `dirs` (the names of `type === "dir"`
   entries), and `moveBranch(sha, { force = true } = {})`. Its header: the calls, and "There is still no call that deletes a
@@ -456,10 +496,11 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
   `backups/` is written once a day and never read by the sync". `K.cloud.files()` added.
 - `core/cloud-ui.js`: a hint line `#kDevCloudBackups` under the History line, shown while on: "Daily backups: the last 8 days
   in backups/ in the repository; today's is in (3:04 PM)." / "…today's hasn't been made yet: it's made after a check gets
-  through." A **Back up now** button (`#kDevCloudBackup`, in `BUTTONS.on`) → `act(tell => K.cloud.backupNow(tell))`.
-- `core/cloud-key.js GUIDE`: a `backups/` section (what's there, 8 days, one commit a day; how to bring one back: Import JSON /
-  Import all take these files as they are once the key is entered on that device, or `tools/decrypt.html`). `writeGuide`
-  rewrites `KYOSHI.md` once on every device, as it does when the text differs.
+  through." Two buttons in `BUTTONS.on`: **Back up now** (`#kDevCloudBackup`) → `act(tell => K.cloud.backupNow(tell))`, and
+  **Restore a day…** (`#kDevCloudRestore`, 6.4).
+- `core/cloud-key.js GUIDE`: a `backups/` section (what's there, 8 days, one commit a day; how to bring one back: Restore a
+  day… in Kyoshi, or Import JSON / Import all with one of these files as it is once the key is entered on that device, or
+  `tools/decrypt.html`). `writeGuide` rewrites `KYOSHI.md` once on every device, as it does when the text differs.
 
 ### 6.3 Encrypted files imported as they are
 - `core/backup.js`: `importText` and `importAllText` become `async`. After `JSON.parse`, when `K.cloudCrypto.isEnvelope(raw)`:
@@ -468,25 +509,47 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
   `alert("That file can't be read with this device's key: it was locked with another one.")`), then on as today: an app's
   envelope goes through its import, the all-in-one's plain text is an Export all file (the `raw.apps` branch). `onFile`
   already awaits the file; the callers (`importText(K.active(), text, date)`, `importAllText`) just return the promise.
-- `tools/decrypt.html` (lines 84–92): an envelope with `app: "kyoshi"` is already an Export all file: write it out as it is
-  (one file, named `kyoshi-cloud-<date>.json`) rather than nesting it under `apps.kyoshi`; the "every app above in one file"
-  line then leaves it out.
-- Changelog (three lines): the daily backup folder (what, how many days, one commit a day, Back up now); Import JSON and
-  Import all take the cloud's encrypted files as they are (with the key entered); `tools/decrypt.html` hands an all-in-one
-  file back as it is.
+- `tools/decrypt.html` (lines 84–92): an envelope with `app: "all"` is already an Export all file: write it out as it is (one
+  file, named `kyoshi-cloud-<date>.json`) rather than nesting it under `apps`; the "every app above in one file" line then
+  leaves it out. (`kyoshi.json` is an ordinary app file there: the hidden app's.)
+
+### 6.4 Restore a day… (D5: back to a day after a big mistake)
+- The Cloud block's **Restore a day…** opens the cloud pop-up (`#kCloudOverlay`) in a new mode, `restore` (cloud-ui's
+  `MODES`): a hint ("Brings an app's data back as it was at that day's backup. What's here now is replaced, after a question
+  naming the day; then the cloud and your other devices take the restored data as they take any change."), a `<select>`
+  `#kCloudDay` of the days found (`K.cloud.backupDays()`, newest first, "Tue Oct 6" each; "No backups yet" and no buttons when
+  none), and two Go buttons: **Restore <App on screen>** (`#kCloudGo`, reading the app's name) and **Restore every app**
+  (`#kCloudGoAll`, secondary). Either reads the file (`K.cloud.backupFile(day, "<app>.json")` / `"all.json"`) and hands its
+  text to the ordinary import: `K.backup.importText(A, text)` for one app (its own confirm, which names the backup's date
+  (`savedAt`) and how much newer what's here is) or `K.backup.importAllText(text)` for every app (one confirm naming them
+  all); 6.3 makes those decrypt the envelope with the key this device holds. Progress and the outcome in the pop-up's status
+  line ("Reading Oct 6's backup…", "Restored Hawky from Oct 6's backup."), the refusals too (a day with no file for that app:
+  "Oct 6's backup has nothing for Appa."; no key: as 6.3). A refused confirm changes nothing.
+- What follows needs no code: the import counts as a change on this device (core/sync.js), so the next cloud check saves the
+  restored data over `data/<app>.json`, and the other devices take it at their next check (behind → loaded; a device with
+  unsynced changes of its own combines, as the sync always does). The constant sync is what carries the restore around.
+- Changelog (four lines): the daily backup folder (what, how many days, one commit a day, beside the constant sync, Back up
+  now); Restore a day… (an app, or every app, as it was at a day's backup, then synced everywhere); Import JSON and Import
+  all take the cloud's encrypted files as they are (with the key entered); `tools/decrypt.html` hands an all-in-one file back
+  as it is.
 
 ### Docs & tests
 - Root `CLAUDE.md` map: `cloud-backups.js` line; cloud.js's line gains "and a dated backup folder a day (backups/)".
 - New `tests/cloud-backups.test.js` (made-up data; `tests/cloud.js` helpers): a computer with Hawky's and Momo's data sets the
-  cloud up on day D → after the check: `backups/D/hawky.json`, `…/momo.json` and `…/bugs.json` hold the same shas as their
-  `data/` files (`fake.files`), `backups/D/kyoshi.json` decrypts (`decryptInNode`) to `{ apps: { hawky, momo, bugs } }` with
-  Hawky's errands inside, the history gained one commit, `fake.odd` is 0; another check the same day adds nothing; a phone
-  the same day finds the folder and makes nothing (`fake.made` unchanged); the clock moved to D+1 and Sync now → a second
-  folder; plant files under `backups/<D−8>/` and `backups/<D−9>/` (`fake.plant`) → gone after the next day's backup while
-  `backups/<D−7>/` stays; Back up now with today's in → "already there"; a `moveBranch` with `force: false` the fake refuses
-  once (hold a save so the head moves: `fake.hold`) → the next check makes it; Import JSON of `backups/D/hawky.json`'s text on a
-  fresh device with the key → the errands come in; without a key → the alert's words; Import all of `kyoshi.json` → asks once
-  with every app's name, both apps in; `tools/decrypt.html` given `kyoshi.json` → an Export all file.
+  cloud up on day D → after the check: `backups/D/hawky.json`, `…/momo.json` and `…/kyoshi.json` hold the same shas as their
+  `data/` files (`fake.files`), `backups/D/all.json` decrypts (`decryptInNode`) to `{ apps: { hawky, momo, kyoshi } }` with
+  Hawky's errands inside, the history gained one commit, `fake.odd` is 0, and `data/hawky.json` is still saved and read as
+  before (add an errand: the data file changes within the usual delay, the backup folder doesn't); another check the same day
+  adds nothing; a phone the same day finds the folder and makes nothing (`fake.made` unchanged); the clock moved to D+1 and
+  Sync now → a second folder; plant files under `backups/<D−8>/` and `backups/<D−9>/` (`fake.plant`) → gone after the next
+  day's backup while `backups/<D−7>/` stays; Back up now with today's in → "already there"; a `moveBranch` with `force: false`
+  the fake refuses once (hold a save so the head moves: `fake.hold`) → the next check makes it. **Restore:** on D+1 the
+  computer deletes two errands and adds one (synced); Restore a day… lists D+1 and D; pick D, Restore Hawky → the confirm
+  names D's date, the errands are as on D, Momo untouched; after the check `data/hawky.json` carries the restored save and the
+  phone's list matches D; pick D, Restore every app → one confirm naming Hawky, Momo and Kyoshi, every app as on D; a day
+  with no file for the app on screen → the refusal. **Encrypted imports:** Import JSON of `backups/D/hawky.json`'s text on a
+  fresh device with the key → the errands come in; without a key → the alert's words; Import all of `all.json` → asks once
+  with every app's name, both apps in; `tools/decrypt.html` given `all.json` → an Export all file.
 - `tests/cloud.js`, the fake GitHub: POST `/git/blobs` (store bytes → sha), POST `/git/trees` (`base_tree` copied, entries
   applied, `sha: null` drops a path, → a new tree sha in `trees`), GET `contents/<dir>` for a folder with subfolders
   (`backups` → entries of `type: "dir"` by the folders' names; `backups/<date>` → its files; `data` stays as it is), PATCH
@@ -499,7 +562,7 @@ counts), `tests/cloud.test.js` (`onlyText`; the decrypted-copy and Decrypt a fil
 ---
 
 ## Phase 7 — Momo: PTO and sick time, lightly (Momo +0.100 → 10.484)
-Closes F8. Momo only. **Decide first: D6** (what the PTO balance means).
+Closes F8. Momo only. D6: every planned day off comes off the balance, and comes back when its weekend changes or is cleared.
 
 **Read first:** `apps/momo/CLAUDE.md` (Purpose: weekends; Invariants: Weekends, Days off), `model.js` header (`weekends`,
 `emptyData`), `data.js` (`cleanWeekends` ~180, `normalizeData`, `buildBackup`, `mergeVersions` / `dataKey` / `combine`
@@ -520,8 +583,9 @@ and ~74, `#weekendOverlay` 215–250), `momo.css` (`.weekends`, `.we-head`, `.of
 ### 7.2 Worked out, never decremented in storage (new `apps/momo/timeoff.js`, after `weekends.js`)
 - `ptoLeft()` = `timeOff.pto` − the hours of every day off on or after `asOf` over all weekend records (not just the
   upcoming ones): the set of dates from `offDays(sat)` of each weekend with days off, each counted once by `offOn(date)`
-  (whole 8h, a half 4h; a day two weekends reach counts once). `sickLeft()` = `timeOff.sick` (manual only). D6's other
-  answer: count only weekends whose `u` is after `timeOff.u`.
+  (whole 8h, a half 4h; a day two weekends reach counts once). `sickLeft()` = `timeOff.sick` (manual only). Because it's
+  worked out every time, a weekend whose days off are lowered, raised or cleared changes the balance at once: the refund D6
+  asks for happens by itself, and nothing is kept per weekend.
 - `fmtTimeOff(hours)`: 8-hour days by halves: "5½ days", "1 day", "½ day", "0"; a remainder that isn't a half: "1 day 2h"
   ("2h" alone under a day, "1 day 30m" never: hours to the quarter show as "2.25h"); negative with "−", in red (`.neg`).
 - Where it shows (only once `timeOff` is set): the end of both Upcoming weekends summary lines (`renderWeekends`): "· PTO 5½
@@ -554,9 +618,9 @@ and ~74, `#weekendOverlay` 215–250), `momo.css` (`.weekends`, `.we-head`, `.of
 ---
 
 ## How to run this plan, and the result
-**Running the plan:** one phase per session, in order, with the owner's answers to the phase's *Decide first* items:
-`Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md` (e.g. "Execute phase 3 …, D1 as proposed"). Each phase ends
-pushed to `main`, ticked under *Status*, with the reports it closes named. When every phase is ticked, move this file to
+**Running the plan:** one phase per session, in order: `Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md`
+(the owner's answers are already in *Decisions*; add a word only to change one of the assumptions). Each phase ends pushed
+to `main`, ticked under *Status*, with the reports it closes named. When every phase is ticked, move this file to
 `roadmap/archive/` (same name) with one commit.
 
 **Running and checking the result** (after any phase, and once all seven are done):
@@ -567,11 +631,12 @@ pushed to `main`, ticked under *Status*, with the reports it closes named. When 
   (Phase 7), and Bugs & requests' exports.
 - **A quick tour per phase:** 1 — take a decrypted copy, close the panel, open it: the line is gone. 2 — Hawky → Shopping:
   stores in distinct colours; quick add opens on This week; type a new store after an add: the topic clears; Momo's Tasks
-  show "due Fri" on an errand. 3 — Bosco: start-up info asks for your sites (the twelve thigh ones); the next doses follow
-  the X; Delete asks. 4 — Wan Shi Tong: add a movie with a director and year. 5 — tap a bug report's row, edit, Save; file one
-  on the phone, see it on the computer after a minute. 6 — Developer Mode → Cloud sync: today's backup; on GitHub, the
-  repository's `backups/` folder; Import JSON of one of its files. 7 — Momo → Upcoming weekends: PTO and sick time on the
-  fold; enter a day off on a weekend and watch PTO go down.
+  show "due Fri" on an errand. 3 — Bosco: start-up info asks for your sites (22 now); the next doses alternate body parts,
+  each in its X; Delete asks. 4 — Wan Shi Tong: add a movie with a director and year. 5 — tap a bug report's row, edit, Save;
+  file one on the phone, see it on the computer after a minute. 6 — Developer Mode → Cloud sync: today's backup; Restore a
+  day… brings an app back as it was; on GitHub, the repository's `backups/` folder; the constant sync carries on as before.
+  7 — Momo → Upcoming weekends: PTO and sick time on the fold; enter a day off on a weekend and watch PTO go down, clear it
+  and watch it come back.
 - **Tests:** `node tests/run.js` runs everything (Node 18+ and Playwright with its Chromium: installed in Claude's cloud
   sessions; elsewhere `npm i -g playwright && npx playwright install chromium`); `node tests/run.js cloud` or `… bosco`
   filters by name. Cloud tests run against a fake GitHub; nothing reaches the real one. The flow simulator,

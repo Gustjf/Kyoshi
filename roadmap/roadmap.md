@@ -102,7 +102,7 @@ the baseline saves the dragging each week.
 
 ## Phases (each gets its own detailed plan when started)
 Phases 0–8 are built; their Status lines above hold what was decided. A new one gets its brief here first.
-- **The 2026-10-06 feedback batch** (5 bugs, 9 requests: Bosco's sites in an X, bug reports edited and in the cloud, a daily cloud backup folder, Momo's PTO and sick time, …): `roadmap/2026-10-06_feedback_batch_plan.md`, seven phases, the bugs first. Moves to `archive/` once every phase is ticked.
+- **The 2026-10-06 feedback batch** (5 bugs, 9 requests: Bosco's sites by body part then in an X, bug reports edited and in the cloud through a hidden Kyoshi app, a daily cloud backup folder with Restore a day…, Momo's PTO and sick time, …): `roadmap/2026-10-06_feedback_batch_plan.md`, seven phases, the bugs first; the owner's answers are in its Decisions. Moves to `archive/` once every phase is ticked.
 
 ## Shared between apps (approved)
 - **Every app** may list needs for Momo's inbox, and may offer `open(id)`.
