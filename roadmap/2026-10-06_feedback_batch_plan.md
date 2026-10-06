@@ -141,7 +141,25 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   day's backup on), `fake.forced` counts those, any folder lists (files, then "dir" entries), and `hold(who, "tree")`
   holds a new tree; the upkeep test names each commit by its message (save, backup, trim) and moves GitHub's clock with
   the phone's; the retention is checked relative to the backup's own day (8 and 9 days before it gone, 7 kept).
-- [ ] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484)
+- [x] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484) — done 2026-10-06, as planned (D6, assumption 16), with
+  two fixes to the plan's own math. Clear keeps the record as cleared (0s, `asOf` "", its time) rather than `null`: a
+  `null` has no time, so combining with a device that still had the hours brought them back (a weekend's Clear works the
+  same way); `hasData` counts only a set one. The block's PTO field holds the hours today, before the days off from today
+  on (`ptoToday`), not `ptoLeft()`: prefilled with what's left after the days off ahead, Save as of today took those days
+  off a second time (44h with 1½ days ahead → 32 saved → 20 shown); now what's typed is the truth today ("Type the hours
+  you have today", the hint says), saving the fields as they are changes nothing, and the block's line shows what's left
+  ("Time off: PTO 4 days · Sick 2 days"). Along the way: Momo's Developer Mode tools are drawn again after a change only
+  when they'd look different (`checkDev`, where render.js redrew them on every draw), so what's typed isn't lost to a
+  sync or a tick; the fields step by 4 with no `min` (the arrow keys would count from −999); Enter saves; "(0 for none)"
+  in the refusal. A balance below 0 is red as a number (`.neg`) on the folds and in the pop-up; the pop-up's line shows
+  only "now" while a field isn't a number. `offDays(sat, off)` and `partOff(date, offFor)` let the pop-up's days off as
+  typed stand in for the weekend's (`offOn` keeps one argument: a test maps it). The block's styles are page-wide in
+  momo.css under `momo-` names (the panel is outside Momo's page). data.js came to 387 lines, so no clean.js. Bug reports:
+  "set up", "not set up" or "not set up (cleared)". Tests: three in tests/momo-weekends.test.js (helpers in tests/momo.js),
+  the two devices combined through `page.evaluate` and another tab's Save shown in the first. The full run caught a race
+  in Phase 2's phone check (`momo-week.test.js`): it measured a task right after the window narrowed, and Momo's redraw for
+  the phone could replace it in between (3 runs in 12 under load); it now waits for that redraw (the ruler at the phone's
+  hour) first.
 
 ## Decisions (the owner's answers, 2026-10-06; the executing model adds its own small ones under Status)
 - **D1 — Phase 3, the rotation: body parts first, then the X.** The thigh order proposed is right: left/right × front/side ×
