@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.364", date: "2026-10-06", changes: [
+      "A weekend's pop-up takes days off before and after it, by half days (half a day before is the afternoon, after the morning): the weekend's dates stretch over them, and each day off has a small gold sun by its date on the board and on Today (faded for half a day), the weekend's tile one before its dates; the fold counts the days off ahead. They take no hours.",
+      "Reload Momo on every device: an older copy would drop the days off."
+    ] },
     { version: "10.264", date: "2026-10-06", changes: [
       "The Baseline tab's Sleep routine… makes pinned Sleep cards for the nights you pick, split at midnight, with an optional wind-down before bed and morning routine after waking inside them; saving it again replaces them, Remove takes them out, and it opens as you last set it.",
       "Reload Momo on every device: an older copy would drop the mark that lets the routine replace its cards."

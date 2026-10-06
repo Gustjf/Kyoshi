@@ -10,13 +10,15 @@
   const { DAY_HOURS, DAYS, WEEKDAYS, BUTTON_STEP, snap, fmtH, thisWeekKey, nextWeekKey } = A;
 
   // − / + buttons next to a number field step it by half an hour, within its min and max;
-  // next to a time of day (an event's), or minutes (a card's before & after), by 15 minutes.
+  // next to a time of day (an event's), or minutes (a card's before & after), by 15 minutes; next to a weekend's
+  // days off, by half a day.
   function onStepper(e) {
     const btn = e.target.closest(".step-btn");
     if (!btn) return;
     const input = btn.parentElement.querySelector("input");
     if (input.dataset.clock !== undefined) return A.stepEventTime(+btn.dataset.step);
     if (input.dataset.minutes !== undefined) return A.stepMinutes(input, +btn.dataset.step);
+    if (input.dataset.days !== undefined) return A.stepOff(input, +btn.dataset.step);
     const min = parseFloat(input.min), max = parseFloat(input.max);
     const next = snap((parseFloat(input.value) || 0) + BUTTON_STEP * +btn.dataset.step);
     input.value = fmtNum(Math.min(isNum(max) ? max : DAY_HOURS, Math.max(isNum(min) ? min : 0, next)));
@@ -236,7 +238,7 @@
       `- Tasks to draw from: ${tasks.length} (${tasks.filter(t => !t.ongoing).length} short, ${tasks.filter(t => t.ongoing).length} ongoing; from ${A.appsIn(tasks).join(", ") || "no app"}); late needs: ${f.needs.filter(n => A.isLate(n)).length}`,
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}${A.laterToday() ? " (put off until tomorrow)" : ""}`,
-      `- Weekends: ${A.upcomingWeekends().filter(A.planOf).length} of the next ${A.WEEKENDS} planned; plans kept: ${Object.values(data.weekends).filter(w => w.plan).length} (${Object.values(data.weekends).filter(w => !w.plan).length} cleared)`,
+      `- Weekends: ${A.upcomingWeekends().filter(A.planOf).length} of the next ${A.WEEKENDS} planned, ${A.upcomingWeekends().filter(A.hasOff).length} with days off; kept with a plan: ${Object.values(data.weekends).filter(w => w.plan).length}, with days off: ${Object.values(data.weekends).filter(w => w.off.before || w.off.after).length}, cleared: ${Object.values(data.weekends).filter(w => !w.plan && !w.off.before && !w.off.after).length}`,
       `- Undo steps: ${S.undoStack.length}`
     ];
   };

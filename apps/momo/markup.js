@@ -1,6 +1,6 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
  * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends folded at its bottom, and
- * its pop-ups (card editor, an event, a card on Today, a weekend's plan, the sleep routine, close-out).
+ * its pop-ups (card editor, an event, a card on Today, a weekend's plan and days off, the sleep routine, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -8,6 +8,7 @@ Kyoshi.apps.momo.markup = `
   <!-- Icons from Lucide (lucide.dev) — ISC License, Copyright (c) Lucide Icons and Contributors. -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
   </svg>
 
   <section id="closeOutBanner" class="banner" hidden>
@@ -214,7 +215,7 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <!-- A weekend's plan (weekends.js): a brief note, kept by its Saturday. -->
+  <!-- A weekend's plan and days off around it (weekends.js): brief notes, kept by its Saturday. -->
   <div class="overlay" id="weekendOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="weekendTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
@@ -222,6 +223,30 @@ Kyoshi.apps.momo.markup = `
       <div class="field">
         <label for="weekendPlan">Plan</label>
         <input type="text" id="weekendPlan" maxlength="120" placeholder="Camping with …, or Rest" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Days off</label>
+        <div class="field-row off-row">
+          <div class="field">
+            <label for="weekendBefore">Before</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-step="-1" aria-label="Half a day less">&minus;</button>
+              <input type="number" id="weekendBefore" step="0.5" min="0" max="5" data-days>
+              <button type="button" class="step-btn" data-step="1" aria-label="Half a day more">+</button>
+            </div>
+            <div class="note" id="weekendBeforeNote"></div>
+          </div>
+          <div class="field">
+            <label for="weekendAfter">After</label>
+            <div class="stepper">
+              <button type="button" class="step-btn" data-step="-1" aria-label="Half a day less">&minus;</button>
+              <input type="number" id="weekendAfter" step="0.5" min="0" max="5" data-days>
+              <button type="button" class="step-btn" data-step="1" aria-label="Half a day more">+</button>
+            </div>
+            <div class="note" id="weekendAfterNote"></div>
+          </div>
+        </div>
+        <div class="note">Half days: the afternoon before, the morning after. Days off take no hours.</div>
       </div>
       <div class="modal-actions">
         <button id="weekendSaveBtn">Save</button>

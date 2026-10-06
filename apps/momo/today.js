@@ -3,9 +3,10 @@
  * and on the board on a computer; the Week and Today buttons switch at any time (S.today). Its times are
  * the board's (times.js): a card with cards inside it shows in its parts around them, and other apps'
  * events (agenda.js) sit at their times, with free time split around them. A card holding something late
- * is red-edged and says "Late", as on the board. Tapping a card shows its pop-up (#detailOverlay): when,
- * and what fills it (inbox.js fromHTML) with "Open in <App>", and a way to edit it (a card set in its app:
- * "Change it in <App>" instead); tapping an event opens its own (triage.js). Nothing here is stored. */
+ * is red-edged and says "Late", as on the board; a day off has its sun by its date (weekends.js). Tapping a
+ * card shows its pop-up (#detailOverlay): when, and what fills it (inbox.js fromHTML) with "Open in <App>",
+ * and a way to edit it (a card set in its app: "Change it in <App>" instead); tapping an event opens its own
+ * (triage.js). Nothing here is stored. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -111,7 +112,7 @@
     const today = todayStr(), tomorrow = addDays(today, 1), now = A.hoursNow(), weeks = new Map();
     const agendaOf = key => weeks.get(key) || weeks.set(key, A.weekAgenda(key)).get(key);
     const td = dayLine(today, agendaOf), tm = dayLine(tomorrow, agendaOf);
-    $("todayDate").textContent = fmtDate(today, { weekday: "long", month: "long", day: "numeric" });
+    $("todayDate").innerHTML = esc(fmtDate(today, { weekday: "long", month: "long", day: "numeric" })) + A.offHTML(today); // a day off's sun (weekends.js)
     let html = "", list = "";
     if (td.planned) {
       // Now: the card or free time on now (the latest to start, when one runs into another), else an event
@@ -129,7 +130,7 @@
       if (evs.length) list += `<h2>Later today</h2>` + rowsHTML(td, evs);
     }
     if (list) html += `<section class="t-list">${list}</section>`;
-    html += `<section class="t-list"><h2>Tomorrow <span class="t-in">${esc(fmtDate(tomorrow, { weekday: "long", month: "short", day: "numeric" }))}</span></h2>` +
+    html += `<section class="t-list"><h2>Tomorrow <span class="t-in">${esc(fmtDate(tomorrow, { weekday: "long", month: "short", day: "numeric" }))}${A.offHTML(tomorrow)}</span></h2>` +
       rowsHTML(tm, tm.any.concat(tm.items.filter(it => tm.planned || it.ev))) + (tm.planned ? "" : `<p class="empty-msg">Nothing's planned yet.</p>`) + `</section>`;
     $("todayBody").innerHTML = html;
   }

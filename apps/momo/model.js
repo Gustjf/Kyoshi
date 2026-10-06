@@ -17,9 +17,11 @@
  *           that week, as last seen while it was this week (truecost.js), for the true cost; "<app>|" (no
  *           title) is that app's own cards (its fill "card" needs), all together. A week Momo wasn't opened
  *           has none. Kept apart from the weeks, so recording it never touches a week's cards or their sync.
- * weekends: { "YYYY-MM-DD" (Saturday): { plan, u } } — a weekend's plan (weekends.js): a brief note on one line, at most
- *           PLAN_MAX characters; "" once cleared, kept so the clearing wins when two devices combine. Past weekends'
- *           stay. Apart from the weeks too; it takes no hours.
+ * weekends: { "YYYY-MM-DD" (Saturday): { plan, off: { before, after }, u } } — a weekend's plan (weekends.js): a brief
+ *           note on one line, at most PLAN_MAX characters; and the days off around it, before (Friday, then Thursday…)
+ *           and after (Monday, then Tuesday…), each 0 to OFF_MAX in half days (a half before is that Friday's afternoon,
+ *           after that Monday's morning); "" and 0s once cleared, kept so the clearing wins when two devices combine.
+ *           Past weekends' stay. Apart from the weeks too; it takes no hours, nor does a day off.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
@@ -67,7 +69,7 @@
   // cards) don't count, so a new device that just made them still takes a sync folder's data whole (core/sync.js).
   const yours = c => !c.slot && !c.auto;
   const hasData = d => d.goals.length > 0 || d.baseline.cards.some(yours) || Object.values(d.weeks).some(w => w.cards.some(yours)) ||
-    Object.values(d.weekends).some(w => w.plan);
+    Object.values(d.weekends).some(w => w.plan || w.off.before || w.off.after);
   // A week is planned once it has a card on a day besides the ones Momo placed by itself for the apps' needs.
   const isPlanned = list => list.cards.some(c => c.day !== null && !(c.auto && c.need));
 

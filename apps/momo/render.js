@@ -2,7 +2,8 @@
  * once every hour has a job and its Tasks are empty), the To Be Budgeted bank (with Tasks, see tasks.js)
  * and the board's days and cards (sized to the ruler, see times.js; filled with what other apps need, see
  * inbox.js, red-edged while that holds something late; other apps' events over them, see agenda.js; Saturday's
- * heading with its weekend's plan, see weekends.js); then Upcoming weekends, and Today when it's on screen (today.js). */
+ * heading with its weekend's plan, and a day off's with its sun, see weekends.js); then Upcoming weekends, and Today when
+ * it's on screen (today.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -208,7 +209,7 @@
       const date = isBase ? "" : d === today ? "Today" : fmtShort(addDays(key, d));
       return `<div class="${cls}" data-day="${d}" data-total="${total}">
         <div class="col-head">
-          <div class="col-day"><span>${DAY_NAMES[d]}</span>${A.headEventsHTML(d, locked)}<span class="col-date">${date}</span></div>
+          <div class="col-day"><span>${DAY_NAMES[d]}</span>${A.headEventsHTML(d, locked)}<span class="col-date">${date}${isBase ? "" : A.offHTML(addDays(key, d))}</span></div>
           <div class="col-total">Total: <span class="col-sum">${fmtNum(total)}</span>/24</div>
           <div class="col-bar"><span style="width:${Math.min(100, total / DAY_HOURS * 100)}%"></span></div>${A.headPlanHTML(key, d)}
         </div>

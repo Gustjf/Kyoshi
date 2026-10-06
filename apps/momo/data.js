@@ -8,7 +8,7 @@
   "use strict";
   const S = A.S;
   const { isNum, isPos, isObj, isDate, newId } = K.util;
-  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION, PLAN_MAX,
+  const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION, PLAN_MAX, OFF_MAX,
     snap, clampHours, cleanText, isDueDate, isWeekKey, dayIndex, thisWeekKey, nextWeekKey } = A;
 
   const STANDALONE_KEY = "momoData_v1"; // the standalone Momo's data: read (never changed) on the first open in Kyoshi
@@ -20,8 +20,8 @@
     S.lastSaved = JSON.parse(S.lastSavedJSON);
   }
 
-  // Stamps each week, the baseline, each goal, each colour, each week's asks and each weekend's plan that
-  // changed since the last save with the time, so sync knows which side's copy is newer.
+  // Stamps each week, the baseline, each goal, each colour, each week's asks and each weekend (its plan, its days off)
+  // that changed since the last save with the time, so sync knows which side's copy is newer.
   function stampChanges(prev) {
     if (!prev) return;
     const data = S.data, now = Date.now(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -174,13 +174,15 @@
     });
     return out;
   }
-  // Each weekend's plan by its Saturday (see model.js), in key order: one line, at most PLAN_MAX characters; "" once
-  // cleared (with its time, so the clearing wins over an older copy's plan). Older files simply have none.
+  // Each weekend's plan by its Saturday (see model.js), in key order: one line, at most PLAN_MAX characters; and its days
+  // off before and after it, in half days, up to OFF_MAX each (none when missing or not a number). "" and none once
+  // cleared (with its time, so the clearing wins over an older copy's). Older files simply have none, or no days off.
   function cleanWeekends(raw) {
-    const out = {};
+    const out = {}, halves = v => (isPos(v) ? Math.min(OFF_MAX, Math.round(v * 2) / 2) : 0);
     if (isObj(raw)) Object.keys(raw).sort().forEach(k => {
       const w = raw[k], plan = isObj(w) && typeof w.plan === "string" ? cleanText(w.plan, PLAN_MAX) : "";
-      if (isDate(k) && dayIndex(k) === 5 && isObj(w) && (plan || isPos(w.u))) out[k] = { plan, u: cleanU(w.u) };
+      const off = isObj(w) && isObj(w.off) ? { before: halves(w.off.before), after: halves(w.off.after) } : { before: 0, after: 0 };
+      if (isDate(k) && dayIndex(k) === 5 && isObj(w) && (plan || off.before || off.after || isPos(w.u))) out[k] = { plan, off, u: cleanU(w.u) };
     });
     return out;
   }
@@ -297,7 +299,7 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline and weekend plans — with this backup?")) return;
+    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline, weekend plans and days off — with this backup?")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];
@@ -314,7 +316,7 @@
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
   // Combines two versions changed separately: every week, the baseline, every
-  // goal, every title's colour, every week's asks and every weekend's plan is taken from
+  // goal, every title's colour, every week's asks and every weekend (plan and days off) is taken from
   // whichever side changed it last, and goal hours logged on either side are all kept. Gives
   // the same result on every device, so two devices combining at once still agree.
   function mergeVersions(a, b) {

@@ -1,6 +1,7 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Upcoming weekends · Pop-up fields · Phones */
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Upcoming weekends (days off too) · Pop-up
+ * fields · Phones */
 
 /* --- Tokens --- */
 /* Page-wide, read by times.js and colors.js: an hour's height on the board, Free time's slate,
@@ -278,6 +279,16 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .col-plan { display: block; width: 100%; height: 1.4em; margin: 4px 0 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--muted); font-size: .76em; line-height: 1.4em; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-momo button.col-plan:hover { background: none; color: var(--text); text-decoration: underline; }
 .app-momo button.col-plan:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* A day off (weekends.js offHTML): a small gold sun after its date, on the board's heading and on Today's, faded for half
+   a day; before a weekend's days on its tile when it has any. Never green: that's a plan's, and a full day's. */
+.app-momo .off-sun { display: inline-flex; margin-left: 4px; color: #d4a017; vertical-align: -1px; }
+.app-momo .off-sun.half { opacity: .55; }
+.app-momo .off-sun svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.app-momo .we-days .off-sun { margin: 0 4px 0 0; }
+/* Its pop-up's days off: Before and After side by side (on phones too), each with the days it takes under it. */
+.app-momo .off-row { flex-direction: row; }
+.app-momo .off-row > .field { margin: 0; }
+.app-momo .off-row .note { margin-top: 4px; }
 
 /* --- Pop-up fields: steppers, day pills, presets, colours, close-out rows --- */
 /* A card set in its app shows its fields greyed out: only looked at here. */

@@ -41,6 +41,7 @@
     EVENT_WINDOW: 3,   // hours another app's event can move from its own time, either way, so doses stay on schedule (agenda.js)
     WEEKENDS: 13,      // the weekends Upcoming weekends shows, this one first: about three months (weekends.js)
     PLAN_MAX: 120,     // a weekend's plan, in characters
+    OFF_MAX: 5,        // the days off a weekend can take before it, and after it, each in half days (weekends.js)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // the old goals' finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.

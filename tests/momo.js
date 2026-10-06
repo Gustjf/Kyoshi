@@ -3,12 +3,13 @@
  * board's days and cards (title, hours, what fills them, ✓, start–end), dragging a task onto a day (Momo drags with
  * Pointer Events: the mouse down, a few moves past its threshold, up), New card and the card editor's Before & after,
  * the bank's actions (Load or Reload baseline, Copy previous week, Fill gaps with Free time, Save as baseline, Clear), the
- * sleep routine's pop-up (its fields and status line, Save, Remove), the close-out (its banner, the pop-up's rows, the
- * Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's pop-up), the card
- * editor's From section, "Open in <App>" and read-only state (a card set in its app), and the switcher's dots with their
- * tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a card looks, trying to drag
- * one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps' needs) is read too, for
- * checks. Selectors live here, so a markup change is fixed in one place. */
+ * sleep routine's pop-up (its fields and status line, Save, Remove), Upcoming weekends (the fold's line and tiles, a
+ * weekend's pop-up with its days off, the days-off marks on the board and on Today), the close-out (its banner, the
+ * pop-up's rows, the Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's
+ * pop-up), the card editor's From section, "Open in <App>" and read-only state (a card set in its app), and the
+ * switcher's dots with their tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a
+ * card looks, trying to drag one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps'
+ * needs) is read too, for checks. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -273,6 +274,52 @@ async function sleepRoutine(tab, fields = {}, save = true) {
 const removeSleep = tab => tab.page.click(`${M} #sleepRemoveBtn`);
 const closeSleep = tab => tab.page.click(`${M} #sleepCancelBtn`);
 
+// --- Upcoming weekends and their days off (weekends.js) ---
+// The fold on screen (under the board, or under Today), opened as the user does: { summary, tiles: [{ sat, days, plan, none
+// ("No plan"), sun (the days-off mark before its days), title (its tooltip) }] }.
+async function weekends(tab) {
+  const box = tab.page.locator(`${M} ${(await isToday(tab)) ? "#todayView" : "#boardView"} details.weekends`);
+  if (!(await box.evaluate(d => d.open))) await box.locator("summary").click();
+  return box.evaluate(el => ({
+    summary: el.querySelector("summary").textContent.replace(/\s+/g, " ").trim(),
+    tiles: [...el.querySelectorAll(".weekend")].map(b => ({ sat: b.dataset.weekend, days: b.querySelector(".we-days").textContent.trim(), plan: b.querySelector(".we-plan").textContent.trim(),
+      none: b.querySelector(".we-plan").classList.contains("none"), sun: !!b.querySelector(".we-days .off-sun"), title: b.getAttribute("title") }))
+  }));
+}
+// A weekend's pop-up, opened from its tile (by its Saturday) in the fold on screen.
+async function openWeekend(tab, sat) {
+  await weekends(tab);
+  await tab.page.click(`${M} ${(await isToday(tab)) ? "#todayView" : "#boardView"} details.weekends [data-weekend="${sat}"]`);
+  await tab.page.waitForSelector(`${M} #weekendOverlay.open`);
+}
+// The pop-up as it is: { open, title, plan, before, after (as the fields show them), beforeNote, afterNote (the days they
+// take, in words), clear (Clear shown) }.
+const weekendForm = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`), text = id => $(id).textContent.trim();
+  return { open: $("weekendOverlay").classList.contains("open"), title: text("weekendTitle"), plan: $("weekendPlan").value, before: $("weekendBefore").value,
+    after: $("weekendAfter").value, beforeNote: text("weekendBeforeNote"), afterNote: text("weekendAfterNote"), clear: !$("weekendClearBtn").hidden };
+});
+// Its − / + beside Before or After ("before" | "after"), n times (n < 0: −); typing in { plan, before, after }, each field
+// then left, as the user does; its buttons.
+const stepOff = async (tab, which, n) => { for (let i = 0; i < Math.abs(n); i++) await tab.page.click(`${M} .stepper:has(#weekend${which === "before" ? "Before" : "After"}) [data-step="${Math.sign(n)}"]`); };
+async function fillWeekend(tab, fields) {
+  for (const [k, v] of Object.entries(fields)) {
+    const f = tab.page.locator(`${M} #weekend${k[0].toUpperCase()}${k.slice(1)}`);
+    await f.fill(String(v));
+    await f.press("Tab");
+  }
+}
+const [saveWeekend, clearWeekend, cancelWeekend] = ["Save", "Clear", "Cancel"].map(b => tab => tab.page.click(`${M} #weekend${b}Btn`));
+// The days-off marks (a sun) on the board's headings, Monday first, and on Today ([by its date, by Tomorrow's]): { off: "" |
+// "whole" | "am" | "pm", tip, half (faded) } each.
+const offMarks = tab => tab.page.$$eval(`${M} #board .col`, cols => cols.map(c => c.querySelector(".col-date .off-sun"))
+  .map(s => ({ off: s ? s.dataset.off : "", tip: s ? s.title : "", half: !!s && s.classList.contains("half") })));
+const todayOff = tab => tab.page.evaluate(() => {
+  const h2 = [...document.querySelectorAll("#kMount #todayBody h2")].find(h => /^Tomorrow/.test(h.textContent.trim()));
+  return [document.querySelector("#kMount #todayDate .off-sun"), h2 && h2.querySelector(".off-sun")]
+    .map(s => ({ off: s ? s.dataset.off : "", tip: s ? s.title : "", half: !!s && s.classList.contains("half") }));
+});
+
 // --- The close-out ---
 // The banner's words ("" while it's hidden).
 async function banner(tab) {
@@ -347,5 +394,6 @@ module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
   newCard, sides, setSides, saveCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
   fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible, sleepForm, sleepRoutine, removeSleep, closeSleep,
+  weekends, openWeekend, weekendForm, stepOff, fillWeekend, saveWeekend, clearWeekend, cancelWeekend, offMarks, todayOff,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };
