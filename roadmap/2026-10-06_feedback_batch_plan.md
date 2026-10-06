@@ -103,7 +103,25 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   search reads name, director, year, info, then the category's word. The "already on your list" check still goes by name
   (a remake with another year still asks; Yes adds it). Tests: `gen.library` takes `info` (its items stay in the
   pre-2.472 shape, with no director or year, for the older backup); helpers in `tests/wanshitong.js`.
-- [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070)
+- [x] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070) —
+  done 2026-10-06, as planned (D4, assumptions 12–13), split as 5.1 foresaw (in one file it came to ~396 lines):
+  `core/record.js` (`K.record`: the hidden app, registered by `K.start` before `K.bugs.init`; the log, its markers, the
+  carry-over, its `A.data`) and `core/bugs.js` (the pop-up, the list, the exports, a report's text and its rewrite). Along
+  the way: `hasData()` counts markers too (the plan said live reports only, but then a device whose only news is a Clear
+  takes a diverged cloud file whole and brings the cleared reports back; the cloud test covers it); the log is in id order
+  (an id is the moment it was logged, above every one before it on its device), not by timestamp; `K.register` takes
+  `hidden: true` only with the id `kyoshi`, and `kyoshi` only hidden; the hidden app has an `A.init` besides load and
+  reload: a change kept while it couldn't be counted (a report in test mode, the carried-over log: its `pending` key)
+  counts once the sync identity is read, at start or in a tab outside test mode that reloads the log; the old key is
+  merged in whenever it's there (an older tab may still write it), then removed, counting a change only when it brought
+  reports (an empty old log goes quietly); Import all in test mode leaves the log as it is (its writes would be real);
+  Save with nothing changed saves nothing; a report cleared elsewhere while open isn't brought back by Save (the words
+  stay in the box for Submit); tapping another row asks first when what's typed would be lost; `K.modal.define`'s `ask`
+  may be a function; `tools/decrypt.html`'s fallback name is "file" too; the pop-up's hint says the list is synced like
+  the data, Developer Mode's that Clear reaches the other devices once they sync. Tests: the cloud test also clears on
+  the phone while the computer files another (both keep only the new one) and files one in test mode (it goes up at the
+  next start); the Badgermole and Turtleduck report tests read the log from the hidden app. The simulator starts; its 5
+  "sim errors" a week (`standing.js` `inMomo`) were there before this phase.
 - [ ] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi 5.170)
 - [ ] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484)
 
