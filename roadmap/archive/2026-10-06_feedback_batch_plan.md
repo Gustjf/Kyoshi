@@ -4,7 +4,7 @@ Planned 2026-10-06 by the architect model from `kyoshi-bug-reports-2026-10-06.md
 Momo 10.374 · Bosco 7.400 · Hawky 2.220 · Wan Shi Tong 2.372). Seven phases, each sized for one coding session; the bugs
 first (Phases 1–2), then the feature requests, grouped by the app or core file they touch. Nothing is built yet.
 
-**The owner runs a phase by saying:** `Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md`. The owner's answers to
+**The owner runs a phase by saying:** `Execute phase N of roadmap/archive/2026-10-06_feedback_batch_plan.md`. The owner's answers to
 the plan's questions (D1–D6) are under *Decisions*; nothing is left to decide before a phase runs.
 
 ## How to use this file (you, the executing model — Claude Opus)
@@ -710,7 +710,7 @@ and ~74, `#weekendOverlay` 215–250), `momo.css` (`.weekends`, `.we-head`, `.of
 ---
 
 ## How to run this plan, and the result
-**Running the plan:** one phase per session, in order: `Execute phase N of roadmap/2026-10-06_feedback_batch_plan.md`
+**Running the plan:** one phase per session, in order: `Execute phase N of roadmap/archive/2026-10-06_feedback_batch_plan.md`
 (the owner's answers are already in *Decisions*; add a word only to change one of the assumptions). Each phase ends pushed
 to `main`, ticked under *Status*, with the reports it closes named. When every phase is ticked, move this file to
 `roadmap/archive/` (same name) with one commit.

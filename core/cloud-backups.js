@@ -1,6 +1,6 @@
 /* Kyoshi · core/cloud-backups.js — the cloud's daily backups, added to K.cloud (core/cloud.js): a dated folder a day
  * beside the constant sync, for going back to a day after a big mistake (the owner's D5 in
- * roadmap/2026-10-06_feedback_batch_plan.md). The constant sync isn't touched: data/<app>.json is still saved within
+ * roadmap/archive/2026-10-06_feedback_batch_plan.md). The constant sync isn't touched: data/<app>.json is still saved within
  * seconds of every change and read on every check, and nothing in backups/ is ever read by it.
  * backups/<YYYY-MM-DD>/ holds that day's data/<app>.json (the very same encrypted files: the day's tree points at the
  * blobs already there; kyoshi.json is the hidden Kyoshi app's, the bug log) and all.json (an envelope, app "all", whose
