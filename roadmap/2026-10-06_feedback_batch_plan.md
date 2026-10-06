@@ -79,7 +79,20 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   row (`max-width: 100%`): on a phone the longest title Momo keeps had 3 px to spare, and the due word pushed it 32 px off
   screen, so now the title gives way with an ellipsis. The Momo test drags onto Saturday (today's Sleep card put today's
   free time below the test's window).
-- [ ] Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask (Bosco 7.500)
+- [x] Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask
+  (Bosco 7.500) — done 2026-10-06, as planned (D1, assumptions 7–11). Along the way: a part's last site that's off now
+  doesn't send the part back to its first site: the next one on after it in the X (so legs and heights keep
+  alternating); a dose at a site from a newer version has no part (the first part on comes next, as before). The skip
+  is the next dose's only (the later cards don't pass over it: it's forgotten once that dose is logged); Skip this site
+  is greyed out when the next site is the last one left unskipped, and should every site on end up skipped (a sync, a
+  site turned off) the skips wait. An old id in `profile.sites` turns on the new ids holding all its words (`abd-l` →
+  both left heights, `thigh-l-upper` → both left upper faces); only `LEGACY_SITES` ids are widened. Pills read "L front
+  upper" in their part's group, the full name as a tooltip; the note under them says what a thigh's front and side are.
+  The 7-day averages are kept to 1 decimal (as weights and the stat are), so a goal equal to the average shown counts
+  as reached; the progress image goes by them too, as the page does. Bosco's Developer Mode tools redraw from
+  `renderAll` (as Momo's and Appa's do), so "Next dose" stays current. Tests: (d) and (e) went to a new
+  `tests/bosco-goals.test.js` (not doses); `gen.bosco`'s `lastSite` became `doseSites` (the last doses' sites, the
+  latest last); the sync test also covers the skip's merge rule.
 - [ ] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472)
 - [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070)
 - [ ] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi 5.170)
