@@ -3,9 +3,10 @@
  * it, the save inside; no secret in a bug report), a phone filling up from the key, changes both ways (a combine, and a
  * clash: read again, combined, saved), a decrypted copy of every app (Import all takes it) and Decrypt a file…, a wrong
  * key and other bad pastes refused, a refused token (the banner and the glyph; Update token… mends it), the cloud lost
- * (at once when Kyoshi opens offline, after CLOUD_LOST_MS in use; Try now), test mode and another copy's key doing
- * nothing, a key not remembered, and text only (Appa's photo stays on its device). Nothing shows on the page while all
- * is well (D1). */
+ * (at once when Kyoshi opens offline, after CLOUD_LOST_MS in use, saves failing alone too; Try now), Disconnect while a
+ * check reads, two tabs (a save coming back after the other's change), a file from a newer Kyoshi (it stops: Reload),
+ * test mode and another copy's key doing nothing, a key not remembered, and text only (Appa's photo stays on its
+ * device). Nothing shows on the page while all is well (D1). */
 "use strict";
 const fs = require("fs");
 const { TODAY, DESKTOP, PHONE, eq, ok, has, lacks, open, devPanel, importBackup, travel, text } = require("./lib");
@@ -70,10 +71,10 @@ module.exports = [
       has(fake.files.get("data/hawky.json").message, "Kyoshi: hawky from desktop-", "each save is a commit naming the app and the device");
       eq(await cl.alarms(computer), [false, false], "nothing on the page while all is well");
 
-      // A change goes up a few seconds later; a second save carries a fresh nonce.
+      // A change goes up a few seconds later (and no sooner than 15 s after the app's last save); a fresh nonce for it.
       const puts = fake.puts;
       await hk.addErrand(computer, "Buy stamps");
-      await p.clock.runFor(5000);
+      await p.clock.runFor(16000);
       await cl.settled(computer);
       eq(fake.puts, puts + 1, "a change goes up on its own, once");
       const again = JSON.parse(fake.text("data/hawky.json"));
@@ -275,6 +276,97 @@ module.exports = [
       await p.click("#kCloudBannerBtn");
       await cl.settled(phone);
       eq(await cl.alarms(phone), [false, false], "Try now: gone");
+
+      // Saves failing while reading works: a blip at first, lost after CLOUD_LOST_MS too.
+      fake.mode = "nosave";
+      await hk.addErrand(phone, "Sweep the porch");
+      await cl.syncNow(phone);
+      eq(await cl.alarms(phone), [false, false], "one save that fails is a blip");
+      await p.clock.runFor(await p.evaluate(() => Kyoshi.cloud.LOST_MS) + 1000);
+      eq(await cl.alarms(phone), [true, true], "saves failing for CLOUD_LOST_MS: the banner and the glyph");
+      has(await cl.bannerText(phone), "and 1 change made here is waiting to go up.", "the change still waits");
+      fake.mode = "ok";
+      await p.click("#kCloudBannerBtn");
+      await cl.settled(phone);
+      eq(await cl.alarms(phone), [false, false], "gone once it's saved");
+      ok(cl.decryptInNode(fake.text("data/hawky.json"), cl.secretOf(key)).items.some(i => i.text === "Sweep the porch"), "and the errand is in the cloud");
+    }
+  },
+  {
+    name: "cloud: Disconnect while a check is still reading leaves it off and quiet (nothing taken in); the key again brings the news",
+    async run(t) {
+      const { fake, computer, key } = await computerWithCloud(t);
+      const phone = await phoneWith(t, fake, key), p = phone.page;
+      await hk.addErrand(computer, "Oil the hinges");
+      await cl.syncNow(computer); // news for the phone
+      const release = fake.hold("phone", "read");
+      await p.evaluate(() => Kyoshi.cloud.syncNow());
+      await until(() => fake.held === 1, "the phone's read reached GitHub");
+      await devPanel(phone, true);
+      await p.click("#kDevCloudOff"); // Disconnect: its question answered yes
+      release();
+      await cl.settled(phone);
+      eq(await cl.cloudState(phone), "off", "off");
+      eq(await cl.alarms(phone), [false, false], "no banner, no glyph (the cut-off check stops quietly)");
+      ok(!(await errands(phone)).includes("Oil the hinges"), "the cut-off read brought nothing in");
+      eq(await cl.enterKey(phone, key), "", "the key again");
+      ok((await errands(phone)).includes("Oil the hinges"), "brings the news");
+    }
+  },
+  {
+    name: "cloud: two tabs — a save that comes back after the other tab's change neither marks that change sent nor moves its counter back",
+    async run(t) {
+      const { fake, computer, key } = await computerWithCloud(t), a = computer.page;
+      const second = await open(t, { app: "hawky", size: DESKTOP, ctx: computer.ctx });
+      await cl.settled(second);
+      // This device's counter for Hawky as a tab's store holds it (another tab's writes land there before it reloads).
+      const stored = tab => tab.page.evaluate(() => { const A = Kyoshi.apps.hawky; return (A.store.json("sync").clock || {})[A._sync.meta.device] || 0; });
+      const mine = tab => tab.page.evaluate(() => Kyoshi.sync.version(Kyoshi.apps.hawky));
+      const waitFor = async (fn, what) => { for (let i = 0; i < 250; i++) { if (await fn()) return; await new Promise(r => setTimeout(r, 20)); } throw new Error(`${what}: not within 5s`); };
+      // Time stands still, so a tab reloads another's change only when the test lets the clock run.
+      await a.clock.pauseAt(await a.evaluate(() => Date.now()) + 1000);
+      await hk.addErrand(computer, "Paint the fence");
+      const v = await mine(computer);
+      await waitFor(async () => (await stored(second)) === v, "the other tab's store has the change");
+      await a.clock.runFor(100);
+      eq(await mine(second), v, "and it reloaded it");
+      const release = fake.hold("computer");
+      await a.evaluate(() => Kyoshi.cloud.syncNow());
+      await until(() => fake.held === 1, "the save reached GitHub");
+      await hk.addErrand(second, "Fix the gutter");
+      await waitFor(async () => (await stored(computer)) === v + 1, "the saving tab's store has the other tab's change");
+      eq(await mine(computer), v, "which it hasn't reloaded yet");
+      release();
+      await cl.settled(computer);
+      eq(await stored(computer), v + 1, "the save that came back didn't move the counter back");
+      await a.clock.resume();
+      await cl.syncNow(second);
+      const texts = cl.decryptInNode(fake.text("data/hawky.json"), cl.secretOf(key)).items.map(i => i.text);
+      ok(texts.includes("Paint the fence") && texts.includes("Fix the gutter"), "both tabs' changes reached the cloud");
+    }
+  },
+  {
+    name: "cloud: a file saved by a newer Kyoshi stops it here (Reload), so this older version never sends what it would drop",
+    async run(t) {
+      t.allowProblems = true; // for the one console line, checked below
+      const { fake, key } = await computerWithCloud(t);
+      // Another device, on a later version of Hawky, saved the file.
+      const save = cl.decryptInNode(fake.text("data/hawky.json"), cl.secretOf(key));
+      fake.plant("data/hawky.json", Buffer.from(cl.encryptInNode({ ...save, appVersion: "99.000" }, "hawky", cl.secretOf(key))));
+      const puts = fake.puts, phone = await open(t, { app: "hawky", size: PHONE });
+      await fake.route(phone.ctx, "phone");
+      eq(await cl.enterKey(phone, key), "", "the key fits");
+      eq(await cl.cloudState(phone), "needs you", "it stops");
+      has(await cl.bannerText(phone), "saved by a newer Kyoshi: reload this page to get it", "the banner says why");
+      eq(await text(phone, "#kCloudBannerBtn"), "Reload", "with Reload");
+      eq(await errands(phone), [], "nothing taken in");
+      await hk.addErrand(phone, "Mow the lawn");
+      await phone.page.clock.runFor(20000);
+      await cl.settled(phone);
+      eq(fake.puts, puts, "nothing sent");
+      const lines = phone.problems.filter(l => !/^error: Failed to load resource/.test(l));
+      eq(lines.length, 1, `one console line (${lines})`);
+      has(lines[0], "Cloud sync stopped (newer)", "it says why");
     }
   },
   {

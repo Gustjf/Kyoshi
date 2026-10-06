@@ -4,8 +4,9 @@
  * key…, Set up a new cloud…, Show key, Update token…, Download decrypted copy, Decrypt a file…, Disconnect.
  * While all is well nothing shows on the page. While the cloud needs the owner (K.cloud.status().attention: GitHub out
  * of reach, or the key refused, or a file it can't read) the banner above the app (#kCloudBanner) says so in plain
- * words, with Try now (or Open Developer Mode), and the header shows the cloud-off glyph (#kCloudBtn, opening the
- * block); both go away on their own once a check gets through or the key is fixed: they can't be dismissed.
+ * words, with Try now (or Reload, for a file a newer Kyoshi saved; else Open Developer Mode), and the header shows the
+ * cloud-off glyph (#kCloudBtn, opening the block); both go away on their own once a check gets through or the key is
+ * fixed: they can't be dismissed.
  * One pop-up (#kCloudOverlay), in one of four modes: setup (Set up a new cloud…: the three steps on GitHub, the
  * repository and token, then the new key to keep), enter (Enter key…), token (Update token…, then the new key), show
  * (Show key). The token is never shown again once saved: the key's box is the only place it's readable, on purpose.
@@ -66,7 +67,7 @@
     $("kCloudBanner").hidden = $("kCloudBtn").hidden = !s.attention;
     if (!s.attention) return;
     $("kCloudBannerText").textContent = s.message;
-    $("kCloudBannerBtn").textContent = s.lost ? "Try now" : "Open Developer Mode";
+    $("kCloudBannerBtn").textContent = s.lost ? "Try now" : s.why === "newer" ? "Reload" : "Open Developer Mode";
     $("kCloudBtn").title = s.message;
     $("kCloudBtn").setAttribute("aria-label", s.message);
   }
@@ -194,7 +195,10 @@
     });
     $("kDevCloudOff").addEventListener("click", () => { if (K.cloud.disconnect()) say(""); });
     $("kCloudBtn").addEventListener("click", showBlock);
-    $("kCloudBannerBtn").addEventListener("click", () => (K.cloud.status().lost ? K.cloud.syncNow() : showBlock()));
+    $("kCloudBannerBtn").addEventListener("click", () => {
+      const s = K.cloud.status();
+      if (s.lost) K.cloud.syncNow(); else if (s.why === "newer") location.reload(); else showBlock();
+    });
     render();
   }
 

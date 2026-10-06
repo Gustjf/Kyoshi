@@ -48,7 +48,7 @@ core/                 the shared DNA — K = window.Kyoshi
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
-  sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf, relation) and its transports (K.sync.use). No UI.
+  sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf, saved, relation) and its transports (K.sync.use). No UI.
   sync-folder.js      K.folder: folder autosave & sync, a transport of K.sync (one subfolder per app, apps' files). No UI.
   github.js           K.github: a small GitHub REST client (one repository, a token; list, read, write a file; no delete). No UI.
   cloud-crypto.js     K.cloudCrypto: the cloud's key string (kyoshi1.<owner>/<repo>.<token>.<secret>) and its locked files (AES-256-GCM, gzip)

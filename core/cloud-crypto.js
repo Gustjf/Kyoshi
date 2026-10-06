@@ -11,14 +11,16 @@
  * writes it) → base64. open undoes it, reading zip "gzip" and "none" forever: a wrong key or a changed file throws an
  * error with code "key", anything else that isn't a readable envelope code "format".
  * Text only: there is no binary variant, and nothing here takes a Blob. Needs Web Crypto (crypto.subtle), which browsers
- * give a page over https or opened from a file, not one over plain http (supported says so). */
+ * give a page over https or opened from a file, not one over plain http, and DecompressionStream (supported says so). */
 (function (K) {
   "use strict";
   const FORMAT = "kyoshi1", ALG = "AES-256-GCM", IV_BYTES = 12, SECRET_BYTES = 32;
   const OWNER = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/, NAME = /^(?!\.+$)[A-Za-z0-9._-]{1,100}$/; // GitHub's rules; never "." or ".."
   const TOKEN = /^[A-Za-z0-9_]+$/, SECRET = /^[A-Za-z0-9_-]{43}$/;
-  const supported = !!(window.crypto && window.crypto.subtle);
-  const unsupported = "Cloud sync needs the site over https, or Kyoshi opened from a file."; // why, when it isn't
+  // Web Crypto, and the browser's own unzipping (every device's files are gzipped). Why, when it can't:
+  const supported = !!(window.crypto && window.crypto.subtle) && typeof DecompressionStream === "function";
+  const unsupported = !(window.crypto && window.crypto.subtle) ? "Cloud sync needs the site over https, or Kyoshi opened from a file."
+    : "Cloud sync needs a newer browser: this one can't unzip the cloud's files.";
   const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
   const fail = code => Object.assign(new Error(code === "key" ? "This key doesn't open that file." : "That isn't a readable Kyoshi cloud file."), { code });
 

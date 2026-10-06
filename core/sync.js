@@ -130,6 +130,17 @@
   }
   // How many changes this device has made to an app (its own counter).
   const version = A => A._sync.meta.clock[A._sync.meta.device] || 0;
+  // A transport saved this device's version v of an app: marks that in its meta (fields: the folder's { dirty: false },
+  // the cloud's { pushed: v }) unless the app changed since, here or in another tab of this browser (whose meta is in the
+  // store before this tab has reloaded it). Only those fields are written, so the stored counters never go back. True
+  // when it marked it.
+  function saved(A, v, fields) {
+    const s = A.store.json("sync"), stored = isObj(s) && cleanClock(s.clock);
+    if (version(A) !== v || (stored && (stored[A._sync.meta.device] || 0) !== v)) return false;
+    Object.assign(A._sync.meta, fields);
+    if (stored) A.store.set("sync", JSON.stringify({ ...s, ...fields })); else storeMeta(A);
+    return true;
+  }
   // Where an app's version here stands against a save's counters: "same", "ahead" (it has changes the save lacks),
   // "behind" or "diverged".
   const relation = (A, clock) => compareClocks(A._sync.meta.clock, cleanClock(clock) || {});
@@ -157,5 +168,5 @@
     transports.forEach(t => t.init());
   }
 
-  K.sync = { use, init, apps, loadMeta, storeMeta, changed, incorporate, settle, saveOf, version, relation, request, flush, stopTimers, on, state, dirty };
+  K.sync = { use, init, apps, loadMeta, storeMeta, changed, incorporate, settle, saveOf, version, saved, relation, request, flush, stopTimers, on, state, dirty };
 })(Kyoshi);

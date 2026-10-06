@@ -10,7 +10,9 @@
       "One key per cloud: Developer Mode's Cloud block sets a new cloud up (making the key, and a KYOSHI.md saying what the repository is), takes the key on another device (remembered unless you untick it), shows it again, and takes a new token when GitHub's expires.",
       "While all is well nothing shows; when GitHub can't be reached, or the key is refused, a banner above the app says so in plain words (when it was last reached, how many changes are waiting) with Try now, and a cloud glyph shows in the header, both until it's fixed.",
       "Download decrypted copy (every app, in one file that Import all takes back) and Decrypt a file… (one file from the repository) give plain copies of the cloud's data.",
-      "The cloud carries text only: photos and documents stay on the device they were added on (and in the sync folder, if you use one)."
+      "The cloud carries text only: photos and documents stay on the device they were added on (and in the sync folder, if you use one).",
+      "A device still running an older Kyoshi stops cloud sync (its banner says to reload) once another device saves with a newer one, so it never sends back data it doesn't fully understand.",
+      "Folder sync: with two tabs open, a save finishing just after a change in the other tab no longer counts that change as saved."
     ] },
     { version: "3.860", date: "2026-10-06", changes: [
       "Backup & sync left the apps' pages: Developer Mode (Ctrl+9, or the DEV badge) holds Export JSON and Import JSON for the app on screen, Export all and Import all, and the sync folder.",

@@ -4,21 +4,21 @@
  * one, a new token, Disconnect and the decrypted copies are core/cloud-key.js's (added to K.cloud).
  * Each app's save (K.sync.saveOf: what the sync folder writes) is locked with the key's secret (core/cloud-crypto.js)
  * and kept as one file, data/<app id>.json, in the repository (core/github.js), one commit per save. A device with the
- * key checks every CLOUD_CHECK_MS while Kyoshi is in view, when it's back in view or online, and CLOUD_PUSH_DELAY_MS
- * after a change: one listing of data/ tells which apps' files changed; each of those is read and brought in first
+ * key checks every CLOUD_CHECK_MS while Kyoshi is in view, when it's back in view or online, and a few seconds after a
+ * change: one listing of data/ tells which apps' files changed; each of those is read and brought in first
  * (K.sync.incorporate: the newer taken, both sides' changes combined), then an app with changes the cloud lacks is
  * saved, guarded by GitHub's own check (the file's sha): a clash reads again and tries again. One check at a time (and
- * one tab at a time, where the browser has locks). GitHub out of reach: tried again after RETRY_MS, then waiting longer;
- * lost() (the banner and the glyph) once nothing got through since Kyoshi opened, for CLOUD_LOST_MS after a failure,
- * or while the browser says it's offline.
+ * one tab at a time, where the browser has locks). A check that doesn't get through is tried again after RETRY_MS,
+ * then waiting longer; lost() (the banner and the glyph) once none got through since Kyoshi opened, for CLOUD_LOST_MS
+ * after a failure, or while the browser says it's offline.
  * The key: localStorage "kyoshi.cloud" (a preference, never taken for data: core/storage.js) = { key, at, remember,
- * okAt } (at: this page's address; okAt: when GitHub was last reached), or sessionStorage (checked first; gone with
+ * okAt } (at: this page's address; okAt: when a check last got through), or sessionStorage (checked first; gone with
  * the tab) when Remember on this device is unticked.
  * Per app (A._sync.cloud): sha and clock (version counters) of its file as this device last read or wrote it, note (the
- * last thing done), timer; and in the engine's meta, pushed: this device's own counter at its last save to the cloud.
+ * last thing done), timer, savedAt; and in the engine's meta, pushed: this device's own counter at its last save there.
  * Safety rules:
  * - Only data/<app>.json and KYOSHI.md are ever written: no photo, PDF or other binary, and K.files is never read.
- * - Never push over a file this key can't read: the cloud stops ("error") until the key is entered again.
+ * - Never push over a file this key can't read, or one saved by a newer Kyoshi: the cloud stops ("error") until then.
  * - Never delete a file (core/github.js has no call for it).
  * - A public repository is refused.
  * - Test mode (time travel) does nothing.
@@ -32,10 +32,12 @@
   const { isObj, isPos, clockTime } = K.util;
   const C = K.cloudCrypto;
   const CLOUD_CHECK_MS = 60000;     // how often the cloud is checked while Kyoshi is in view
-  const CLOUD_PUSH_DELAY_MS = 4000; // changes made in a row go up as one save
-  const CLOUD_LOST_MS = 90000;      // GitHub out of reach this long after a failure: lost
+  const CLOUD_PUSH_DELAY_MS = 4000; // changes made in a row go up as one save…
+  const CLOUD_GAP_MS = 15000;       // …and an app is saved at most this often (GitHub allows 500 saves an hour)
+  const CLOUD_LOST_MS = 90000;      // a check failing this long: lost
   const RETRY_MS = 30000, RETRY_MAX_MS = 600000; // after a failure: again in 30 s, then waiting longer, up to 10 minutes
   const TRIES = 3;                  // a save that clashes with another device's is read again and tried, at most this often
+  const LOCK_TRIES = 15;            // another tab checking this many times in a row (a minute): check anyway
   const PREF = "kyoshi.cloud";
   const APP_FILE = /^data\/([a-z][a-z0-9]*)\.json$/; // an app's file in the repository (the only kind written but KYOSHI.md)
   const pathOf = A => `data/${A.id}.json`;
@@ -50,23 +52,25 @@
   let key = null;      // its parts: { repo, token, secret }
   let client = null;   // core/github.js, for its repository
   let lock = null;     // the secret as a Web Crypto key (a promise)
-  let state = "off";   // "off" | "on" | "needs-key" (the token or repository refused) | "error" (a file this key can't read)
+  let state = "off";   // "off" | "on" | "needs-key" (the token or repository refused) | "error" (a file it mustn't save over)
+  let why = "";        // the code that stopped it (auth, forbidden, notfound; key, format, newer)
   let message = "";    // why, in needs-key and error; when off, a word about a key saved here for another copy
   let busy = "";       // "Saving Momo…", while a check runs
-  let okAt = 0, failedAt = 0, failure = "", until = 0; // GitHub last reached; the first failure since (and its code); a rate limit's end
-  let reachedSinceOpen = false; // GitHub reached since the key was taken up here (Kyoshi opened, or a key entered)
+  let okAt = 0, failedAt = 0, failure = "", until = 0; // a check last got through; the first failure since (and its code); a rate limit's end
+  let reachedSinceOpen = false; // a check got through since the key was taken up here (Kyoshi opened, or a key entered)
   let checkedAt = 0, etag = "", listing = new Map(); // the last check: when, and data/'s files (path → sha)
-  let queue = Promise.resolve(), queued = false, retryTimer = 0, retryDue = 0, lostTimer = 0;
+  let queue = Promise.resolve(), queued = false, retryTimer = 0, retryDue = 0, lostTimer = 0, lockMisses = 0;
   let generation = 0;  // a new key or none: a check still running for the old one stops
 
   const ui = () => { if (K.cloudUI) K.cloudUI.render(); };
   const say = text => { busy = text; ui(); };
   const apps = () => K.sync.apps();
-  const cl = A => A._sync.cloud || (A._sync.cloud = { sha: "", clock: null, note: "", timer: 0 });
+  const cl = A => A._sync.cloud || (A._sync.cloud = { sha: "", clock: null, note: "", timer: 0, savedAt: 0 });
   const live = () => state === "on" && !!client && !K.testMode;
   const waiting = A => K.sync.version(A) > (A._sync.meta.pushed || 0); // changes made here, not in the cloud yet
   const fail = code => Object.assign(new Error(`cloud: ${code}`), { code });
-  const here =() => location.origin + location.pathname.replace(/index\.html$/i, ""); // with or without index.html
+  const later = (a, b) => parseFloat(a) > parseFloat(b); // "10.380" after "10.374" (false when either isn't a version)
+  const here = () => location.origin + location.pathname.replace(/index\.html$/i, ""); // with or without index.html
   // A moment for people: "3:04 PM" today, "Oct 4, 3:04 PM" before.
   function timeOf(ms) {
     const d = new Date(ms), t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -111,9 +115,10 @@
     stopTimers();
     clearTimeout(lostTimer);
     rec = key = client = lock = null;
-    state = "off"; message = ""; busy = ""; failure = "";
+    state = "off"; why = message = busy = failure = etag = "";
     okAt = failedAt = until = checkedAt = 0;
-    reachedSinceOpen = false; etag = ""; listing = new Map();
+    reachedSinceOpen = false;
+    listing = new Map();
     apps().forEach(A => Object.assign(cl(A), { sha: "", clock: null, note: "" }));
   }
 
@@ -127,16 +132,17 @@
     request();
   }
 
-  function setState(next, why = "", text = "") {
-    if (next !== state && (next === "needs-key" || next === "error")) console.error(`Cloud sync stopped (${why}): ${text}`);
+  function setState(next, code = "", text = "") {
+    if (next !== state && (next === "needs-key" || next === "error")) console.error(`Cloud sync stopped (${code}): ${text}`);
     state = next;
+    why = code;
     message = text;
     busy = "";
     if (next !== "on") stopTimers();
     ui();
   }
 
-  // --- Reaching GitHub, or not ---
+  // --- Getting through, or not ---
   function lost() {
     if (state !== "on" || K.testMode) return false;
     if (navigator.onLine === false) return true;
@@ -154,10 +160,12 @@
     retryDue = Date.now() + ms;
     retryTimer = setTimeout(() => { retryTimer = 0; request(); }, ms);
   }
-  // GitHub answered: whatever was failing is over (and when goes in the key's record, for after a reload).
+  // A whole check got through (every app read and saved): whatever was failing is over, and when goes in the key's
+  // record, for "last reached" after a reload.
   function gotThrough() {
-    okAt = Date.now();
-    failedAt = 0; failure = ""; until = 0;
+    okAt = checkedAt = Date.now();
+    failedAt = until = 0;
+    failure = "";
     reachedSinceOpen = true;
     clearTimeout(lostTimer);
     const r = readRecord();
@@ -168,7 +176,7 @@
   function failed(err) {
     const code = err && err.code;
     if (NEEDS[code]) return setState("needs-key", code, NEEDS[code]);
-    if (code !== "network" && code !== "server" && code !== "ratelimit") console.error("Cloud sync failed.", err); // not GitHub's doing
+    if (!["network", "server", "ratelimit", "busy"].includes(code)) console.error("Cloud sync failed.", err); // not GitHub's doing
     failure = code || "server";
     failedAt = failedAt || Date.now();
     if (code === "ratelimit") until = err.until > Date.now() ? err.until : Date.now() + 60000;
@@ -179,9 +187,9 @@
   function lostText(changes) {
     const since = reachedSinceOpen ? `since ${timeOf(failedAt || Date.now())}` : "since you opened Kyoshi";
     const last = okAt ? `last reached at ${timeOf(okAt)}` : "never reached from this device";
-    const why = navigator.onLine === false ? " This browser says it's offline." : failure === "ratelimit" && until > Date.now() ? ` GitHub asks us to wait until ${timeOf(until)}.` : "";
+    const also = navigator.onLine === false ? " This browser says it's offline." : failure === "ratelimit" && until > Date.now() ? ` GitHub asks us to wait until ${timeOf(until)}.` : "";
     const left = changes ? `, and ${changes} change${changes === 1 ? "" : "s"} made here ${changes === 1 ? "is" : "are"} waiting to go up` : "";
-    return `Cloud sync can't reach GitHub (${since}; ${last}).${why} What you see may be behind your other devices${left}.`;
+    return `Cloud sync can't reach GitHub (${since}; ${last}).${also} What you see may be behind your other devices${left}.`;
   }
 
   // --- Checking ---
@@ -192,59 +200,73 @@
     queued = true;
     queue = queue.then(() => { queued = false; return check(); }).catch(err => console.error("Cloud sync failed.", err));
   }
-  // Checks now, holding the browser's lock where it has one (another tab already checking: again in a moment).
+  // Checks now, holding the browser's lock where it has one: another tab checking means again in a moment, until that
+  // has gone on for a minute (a tab stuck with it): then anyway (GitHub's sha check keeps two saves apart).
   async function check() {
     if (!live()) return;
     const gen = generation;
-    if (!(navigator.locks && navigator.locks.request)) return checkNow(gen);
-    const ran = await navigator.locks.request("kyoshi-cloud", { ifAvailable: true }, async held => {
-      if (!held) return false;
-      await checkNow(gen);
-      return true;
-    });
-    if (!ran) retryIn(CLOUD_PUSH_DELAY_MS);
-  }
-  // data/'s listing (asked with its last ETag: when nothing changed, it costs nothing), then each app in turn.
-  async function checkNow(gen) {
-    const stale = () => gen !== generation || !live();
-    try {
-      await list();
-      if (stale()) return;
-      gotThrough();
-      for (const A of apps()) {
-        await pass(A, stale);
-        if (stale()) return;
-      }
-      checkedAt = Date.now();
-    } catch (err) {
-      if (!stale()) failed(err);
+    if (navigator.locks && navigator.locks.request && lockMisses < LOCK_TRIES) {
+      let ran = null;
+      try {
+        ran = await navigator.locks.request("kyoshi-cloud", { ifAvailable: true }, async held => {
+          if (!held) return false;
+          await checkNow(gen);
+          return true;
+        });
+      } catch (err) { /* no locks here after all */ }
+      if (ran === false) { lockMisses++; return retryIn(CLOUD_PUSH_DELAY_MS); }
+      if (ran === true) { lockMisses = 0; return; }
     }
-    if (!stale()) say("");
+    lockMisses = 0;
+    await checkNow(gen);
   }
-  async function list(fresh = false) {
-    const res = await client.listDir("data", fresh ? "" : etag);
-    if (res.status === 304) return; // nothing changed since the last listing
+  // data/'s listing (asked with its last ETag: when nothing changed, it costs nothing), then each app in turn, with this
+  // check's own client and secret (a key changed meanwhile makes it stale: it stops). It gets through only when every
+  // app does.
+  async function checkNow(gen) {
+    const run = { client, secret: await lock, stale: () => gen !== generation || !live() };
+    if (run.stale()) return;
+    let trouble = null;
+    try {
+      await list(run);
+      for (const A of apps()) {
+        if (run.stale()) return;
+        trouble = (await pass(A, run)) || trouble;
+      }
+      if (run.stale()) return;
+      if (trouble) throw trouble;
+      gotThrough();
+    } catch (err) {
+      if (!run.stale()) failed(err);
+    }
+    if (!run.stale()) say("");
+  }
+  async function list(run, fresh = false) {
+    const res = await run.client.listDir("data", fresh ? "" : etag);
+    if (run.stale() || res.status === 304) return; // 304: nothing changed since the last listing
     etag = res.etag;
     listing = new Map(res.files.filter(f => APP_FILE.test(f.path)).map(f => [f.path, f.sha]));
   }
 
   // One app: its file, when it changed since this device last read or wrote it, comes in first; then what this device
-  // has that the cloud lacks goes up. A clash (another device saved meanwhile) reads the listing again and tries again.
-  async function pass(A, stale) {
+  // has that the cloud lacks goes up (once its change's delay is over). A clash (another device saved meanwhile) reads
+  // the listing again and tries again; still clashing, the check didn't get through (returned, the other apps go on).
+  async function pass(A, run) {
     const c = cl(A);
     for (let n = 1; ; n++) {
       try {
         const sha = listing.get(pathOf(A)) || "";
         if (!sha) Object.assign(c, { sha: "", clock: null }); // nothing up there (yet, or any more)
-        else if (sha !== c.sha) await pull(A, stale);
-        if (!stale() && unsent(A)) await push(A, stale);
-        return;
+        else if (sha !== c.sha) await pull(A, run);
+        if (!run.stale() && !c.timer && unsent(A)) await push(A, run);
+        return null;
       } catch (err) {
-        if (err.code === "key" || err.code === "format" || err.code === "newer") return setState("error", err.code, unreadable(A, err.code));
+        if (run.stale()) return null;
+        if (err.code === "key" || err.code === "format" || err.code === "newer") { setState("error", err.code, unreadable(A, err.code)); return null; }
         if (err.code !== "conflict" && err.code !== "invalid" && err.code !== "gone") throw err;
-        if (n >= TRIES) { c.note = "The cloud was busy; trying again soon"; return retryIn(RETRY_MS); }
-        await list(true);
-        if (stale()) return;
+        if (n >= TRIES) { c.note = "The cloud was busy; trying again soon"; return fail("busy"); }
+        await list(run, true);
+        if (run.stale()) return null;
       }
     }
   }
@@ -263,23 +285,25 @@
     return `The cloud's file for ${name} isn't a ${name} save Kyoshi can read. Nothing is saved to the cloud until that's fixed: enter the key again, or Disconnect.`;
   }
 
-  // A file's save, unlocked: this app's (else code "format"; "key" for the wrong key; "newer" for a later format).
-  async function readSave(bytes, A) {
+  // A file's save, unlocked: this app's (else code "format"; "key": the wrong key; "newer": a later file format, or a
+  // later version of the app, which this one might strip of what it doesn't know and send to every device).
+  async function readSave(bytes, A, secret) {
     let env = null;
     try { env = JSON.parse(C.fromUtf8(bytes)); } catch (err) { /* not JSON, so not an envelope */ }
     if (isObj(env) && isPos(env.kyoshi) && env.kyoshi > 1) throw fail("newer");
-    const raw = await C.open(env, await lock);
+    const raw = await C.open(env, secret);
     if (!isObj(raw) || env.app !== A.id || !A.data.looksLike(raw)) throw fail("format");
+    if (later(raw.appVersion, A.VERSION) || later(raw.schemaVersion, A.data.schemaVersion)) throw fail("newer");
     return raw;
   }
   // Brings an app's file in, combined with what's here (the engine decides which is newer).
-  async function pull(A, stale) {
+  async function pull(A, run) {
     const c = cl(A);
     say(`Loading ${A.meta.name}…`);
     let file;
-    try { file = await client.getFile(pathOf(A)); } catch (err) { throw err.code === "notfound" ? fail("gone") : err; } // taken out meanwhile
-    const raw = await readSave(file.bytes, A);
-    if (stale()) return;
+    try { file = await run.client.getFile(pathOf(A)); } catch (err) { throw err.code === "notfound" ? fail("gone") : err; } // taken out meanwhile
+    const raw = await readSave(file.bytes, A, run.secret);
+    if (run.stale()) return;
     const before = JSON.stringify(A._sync.meta.clock), result = K.sync.incorporate(A, raw);
     Object.assign(c, { sha: file.sha, clock: (raw.sync && raw.sync.clock) || null });
     listing.set(pathOf(A), file.sha);
@@ -290,42 +314,40 @@
     c.note = `${result.what === "Loaded" ? "Loaded from the cloud" : "Combined changes with the cloud's"} at ${clockTime()}`;
   }
   // Saves an app's file: this device's save, locked, over the file it last read (GitHub refuses it if that changed).
-  async function push(A, stale) {
-    const c = cl(A), secret = await lock;
-    if (stale()) return;
-    const v = K.sync.version(A), save = K.sync.saveOf(A), clock = { ...save.sync.clock };
+  async function push(A, run) {
+    const c = cl(A), v = K.sync.version(A), save = K.sync.saveOf(A), clock = { ...save.sync.clock };
     say(`Saving ${A.meta.name}…`);
-    const env = await C.seal(save, secret, A.id); // reads the save before anything else can change it
-    if (stale()) return;
+    const env = await C.seal(save, run.secret, A.id); // reads the save at once, before anything else can change it
+    if (run.stale()) return;
     const kind = /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ? "phone" : "desktop";
     const text = `${JSON.stringify(env, null, 2)}\n`;
-    const res = await client.putFile(pathOf(A), C.toBase64(C.utf8(text)), { sha: c.sha, message: `Kyoshi: ${A.id} from ${kind}-${A._sync.meta.device}` });
-    if (stale()) return;
-    Object.assign(c, { sha: res.sha, clock, note: `Saved to the cloud at ${clockTime()}` });
+    const res = await run.client.putFile(pathOf(A), C.toBase64(C.utf8(text)), { sha: c.sha, message: `Kyoshi: ${A.id} from ${kind}-${A._sync.meta.device}` });
+    if (run.stale()) return;
+    Object.assign(c, { sha: res.sha, clock, savedAt: Date.now(), note: `Saved to the cloud at ${clockTime()}` });
     listing.set(pathOf(A), res.sha);
-    const m = A._sync.meta;
-    if (K.sync.version(A) === v && v > (m.pushed || 0)) { m.pushed = v; K.sync.storeMeta(A); }
+    if (v > (A._sync.meta.pushed || 0)) K.sync.saved(A, v, { pushed: v }); // unless it changed meanwhile, here or in another tab
     if (!waiting(A)) K.backup.setUnsaved(A, false);
   }
 
   // --- The engine's calls ---
-  // A change: saved to the cloud once changes stop coming for CLOUD_PUSH_DELAY_MS (the banner counts it meanwhile).
+  // A change: saved once changes stop coming for CLOUD_PUSH_DELAY_MS, and CLOUD_GAP_MS after the app's last save (the
+  // banner counts it meanwhile).
   function changed(A) {
     if (!live()) return;
     const c = cl(A);
     clearTimeout(c.timer);
-    c.timer = setTimeout(() => { c.timer = 0; request(); }, CLOUD_PUSH_DELAY_MS);
+    c.timer = setTimeout(() => { c.timer = 0; request(); }, Math.max(CLOUD_PUSH_DELAY_MS, c.savedAt + CLOUD_GAP_MS - Date.now()));
     if (lost()) ui();
   }
-  // The page is being hidden or closed: changes waiting for their delay go now (one cut off is sent at the next start).
+  // The page is being hidden or closed: what's waiting goes now (a save cut off by a closing tab goes at the next start).
   function flush() {
-    const due = live() ? apps().filter(A => cl(A).timer) : [];
-    if (!due.length) return;
-    due.forEach(A => { clearTimeout(cl(A).timer); cl(A).timer = 0; });
+    if (!live() || !apps().some(A => cl(A).timer || unsent(A))) return;
+    stopAppTimers();
     request();
   }
+  const stopAppTimers = () => apps().forEach(A => { clearTimeout(cl(A).timer); cl(A).timer = 0; });
   function stopTimers() {
-    apps().forEach(A => { clearTimeout(cl(A).timer); cl(A).timer = 0; });
+    stopAppTimers();
     clearTimeout(retryTimer);
     retryTimer = 0;
   }
@@ -339,7 +361,7 @@
     rec = { key: C.makeKey(k), at: here(), remember: !!remember, okAt: new Date().toISOString() };
     writeRecord(rec);
     key = k; client = c; lock = Promise.resolve(secret);
-    okAt = Date.now(); failedAt = until = 0; failure = ""; reachedSinceOpen = true; etag = ""; listing = new Map();
+    okAt = Date.now(); failedAt = until = lockMisses = 0; failure = etag = ""; reachedSinceOpen = true; listing = new Map();
     if (fresh) apps().forEach(A => { Object.assign(cl(A), { sha: "", clock: null, note: "" }); A._sync.meta.pushed = 0; K.sync.storeMeta(A); });
     setState("on");
     request();
@@ -353,21 +375,20 @@
   }
   // The key in use { key, client, lock, remember }, or null (in needs-key and error too: its secret still opens files).
   const held = () => (key ? { key, client, lock, remember: !!(rec && rec.remember) } : null);
-  // Sync now, and the banner's Try now: a check straight away, whatever the wait after a failure.
+  // Sync now, and the banner's Try now: a check straight away, changes waiting for their delay included.
   function syncNow() {
-    clearTimeout(retryTimer);
-    retryTimer = 0;
+    stopTimers();
     request();
   }
 
   // --- What the UI and bug reports read ---
-  // { state, message (the banner's, or why), busy, waiting (apps with changes not in the cloud), changes (how many),
-  // okAt, failedAt, checkedAt, lost, attention (the banner and the glyph show), repo }.
+  // { state, why, message (the banner's, or why it stopped), busy, waiting (apps with changes not in the cloud), changes
+  // (how many), okAt, failedAt, checkedAt, lost, attention (the banner and the glyph show), repo }.
   function status() {
     const late = state === "off" ? [] : apps().filter(waiting), changes = late.reduce((n, A) => n + K.sync.version(A) - (A._sync.meta.pushed || 0), 0);
     const isLost = lost();
     return {
-      state, busy, waiting: late.length, changes, okAt, failedAt, checkedAt, lost: isLost,
+      state, why, busy, waiting: late.length, changes, okAt, failedAt, checkedAt, lost: isLost,
       attention: !K.testMode && (isLost || state === "needs-key" || state === "error"),
       message: !C.supported ? C.unsupported : state === "on" ? (isLost ? lostText(changes) : "") : message,
       repo: key ? key.repo : ""

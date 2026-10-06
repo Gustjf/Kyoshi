@@ -80,7 +80,7 @@
   async function writeAutosave(A) {
     const root = dir, ch = fo(A), m = A._sync.meta;
     if (state !== "on" || !m.dirty || K.testMode) return;
-    const version = m.clock[m.device];
+    const version = K.sync.version(A);
     const text = JSON.stringify(K.sync.saveOf(A), null, 2);
     const sub = await root.getDirectoryHandle(A.id, { create: true });
     const handle = await sub.getFileHandle(m.file, { create: true });
@@ -90,11 +90,7 @@
     const file = await handle.getFile();
     if (root !== dir) return;
     ch.seen.set(m.file, `${file.lastModified}:${file.size}`); // our own save isn't news
-    if (m.clock[m.device] === version) { // nothing changed while writing
-      m.dirty = false;
-      K.sync.storeMeta(A);
-      K.backup.setUnsaved(A, false);
-    }
+    if (K.sync.saved(A, version, { dirty: false })) K.backup.setUnsaved(A, false); // nothing changed while writing, here or in another tab
     ch.note = `Saved at ${clockTime()}`;
     ui();
   }

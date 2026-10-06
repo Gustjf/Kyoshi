@@ -1,7 +1,7 @@
 /* Kyoshi · tests/cloud.js — cloud sync as the tests drive it: a fake GitHub that Playwright answers in place of
  * api.github.com (the real one is never reached), Developer Mode's Cloud block (Set up a new cloud…, Enter key…, Sync
  * now, its state), and decrypting a file in Node, as the repository's KYOSHI.md describes it (AES-256-GCM: the
- * ciphertext, then its 16-byte tag; gzip inside), to check what the cloud holds. Made-up keys only: a made-up token and
+ * ciphertext, then its 16-byte tag; gzip inside), to check what the cloud holds (or locking one, as another device would). Made-up keys only: a made-up token and
  * fixed secrets, never real ones. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 const crypto = require("crypto");
@@ -17,17 +17,17 @@ const KEY = keyOf();
 const secretOf = key => Buffer.from(key.split(".").pop(), "base64url");
 
 // A fake GitHub for one private repository: { files: Map<path, { sha, bytes }>, puts, clashes, gets, requests, odd, mode,
-// token, isPrivate, big, held, route(ctx, who), hold(who) }. route answers https://api.github.com/** in that browser
+// token, isPrivate, big, held, route(ctx, who), hold(who, what) }. route answers https://api.github.com/** in that browser
 // context (who: a name for it): the CORS preflight, GET /repos/o/r, the listing of data/ (404 while empty, 304 for its
 // ETag), a file (base64 with GitHub's line breaks; left out over `big` bytes, then fetched as a blob), PUT of a file (a
 // stale sha: 409, none for one that's there: 422; both count in clashes), and a blob. Anything else answers 404 and counts
-// in odd, so a test can check nothing unexpected was sent. mode: "ok", "auth" (401 to everything) or "offline" (no
-// answer). token: the one it accepts. hold(who): that device's saves wait (counted in held) until the function it returns
-// is called, so another device can save meanwhile.
+// in odd, so a test can check nothing unexpected was sent. mode: "ok", "auth" (401 to everything), "offline" (no answer)
+// or "nosave" (saves answer 502; reading works). token: the one it accepts. hold(who, what): that device's saves ("save")
+// or file reads ("read") wait (counted in held) until the function it returns is called, so something can happen meanwhile.
 function fakeGithub({ repo = REPO } = {}) {
   const base = `/repos/${repo}`;
   const fake = { files: new Map(), puts: 0, clashes: 0, gets: 0, requests: 0, odd: 0, mode: "ok", token: TOKEN, isPrivate: true, big: Infinity, held: 0 };
-  const holds = new Map(); // who → the promise their saves wait on
+  const holds = new Map(); // "who what" → the promise those requests wait on
   const sha1 = bytes => crypto.createHash("sha1").update(bytes).digest("hex");
   const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "etag, x-ratelimit-remaining, x-ratelimit-reset" };
   const reply = (route, status, body, headers = {}) =>
@@ -53,6 +53,7 @@ function fakeGithub({ repo = REPO } = {}) {
         return reply(route, 200, list, { etag });
       }
       if (method === "GET") {
+        if (holds.has(`${who} read`)) { fake.held++; await holds.get(`${who} read`); }
         if (!f) return reply(route, 404, { message: "Not Found" });
         fake.gets++;
         const whole = f.bytes.length <= fake.big;
@@ -60,7 +61,8 @@ function fakeGithub({ repo = REPO } = {}) {
           content: whole ? f.bytes.toString("base64").replace(/(.{60})/g, "$1\n") : "" });
       }
       if (method === "PUT") {
-        if (holds.has(who)) { fake.held++; await holds.get(who); }
+        if (holds.has(`${who} save`)) { fake.held++; await holds.get(`${who} save`); }
+        if (fake.mode === "nosave") return reply(route, 502, { message: "Server Error" });
         const body = JSON.parse(req.postData() || "{}"), now = fake.files.get(p);
         if ((now && body.sha !== now.sha) || (!now && body.sha)) {
           fake.clashes++;
@@ -81,11 +83,13 @@ function fakeGithub({ repo = REPO } = {}) {
   }
 
   fake.route = (ctx, who = "") => ctx.route("https://api.github.com/**", route => handle(route, who));
-  fake.hold = who => {
+  fake.hold = (who, what = "save") => {
     let release;
-    holds.set(who, new Promise(resolve => { release = resolve; }));
-    return () => { holds.delete(who); release(); };
+    holds.set(`${who} ${what}`, new Promise(resolve => { release = resolve; }));
+    return () => { holds.delete(`${who} ${what}`); release(); };
   };
+  // Puts a file there as another device would (bytes: a Buffer).
+  fake.plant = (path, bytes) => fake.files.set(path, { sha: sha1(bytes), bytes });
   fake.text = path => (fake.files.has(path) ? fake.files.get(path).bytes.toString("utf8") : "");
   fake.paths = () => [...fake.files.keys()].sort();
   return fake;
@@ -98,6 +102,13 @@ function decryptInNode(text, secret = SECRET) {
   d.setAuthTag(data.subarray(data.length - 16));
   const plain = Buffer.concat([d.update(data.subarray(0, data.length - 16)), d.final()]);
   return JSON.parse((env.zip === "gzip" ? zlib.gunzipSync(plain) : plain).toString("utf8"));
+}
+
+// A save locked in Node as Kyoshi locks it: the envelope's text (another device's file, for a test to plant).
+function encryptInNode(save, app, secret = SECRET) {
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv("aes-256-gcm", secret, iv);
+  const data = Buffer.concat([c.update(zlib.gzipSync(Buffer.from(JSON.stringify(save)))), c.final(), c.getAuthTag()]);
+  return JSON.stringify({ kyoshi: 1, app, alg: "AES-256-GCM", zip: "gzip", iv: iv.toString("base64"), data: data.toString("base64") }, null, 2);
 }
 
 // Waits until the cloud checks asked for so far are done.
@@ -141,4 +152,4 @@ async function syncNow(tab) {
   await devPanel(tab, was);
 }
 
-module.exports = { REPO, TOKEN, SECRET, KEY, keyOf, secretOf, fakeGithub, decryptInNode, settled, cloudState, cloudText, alarms, bannerText, setUp, enterKey, updateToken, syncNow };
+module.exports = { REPO, TOKEN, SECRET, KEY, keyOf, secretOf, fakeGithub, decryptInNode, encryptInNode, settled, cloudState, cloudText, alarms, bannerText, setUp, enterKey, updateToken, syncNow };
