@@ -17,7 +17,7 @@
     "This private repository is where Kyoshi (small apps that run in a web browser) keeps each app's data current across its owner's devices.", "",
     "**Every file here is encrypted** with AES-256-GCM, under a key that is not in this repository: only the owner's devices hold it. Without that key nobody can read these files, GitHub included.", "",
     "## What's here",
-    "- `data/<app>.json`: one file per app (momo, bosco, hawky, …), saved again by Kyoshi after each change; each save is a commit. The history keeps the last 8 days of saves: about once a day Kyoshi folds older ones into one commit (the files stay as they are).",
+    "- `data/<app>.json`: one file per app (momo, bosco, hawky, …; `kyoshi` is Kyoshi's own record: the Bugs & requests log), saved again by Kyoshi after each change; each save is a commit. The history keeps the last 8 days of saves: about once a day Kyoshi folds older ones into one commit (the files stay as they are).",
     "- `KYOSHI.md`: this file, written by Kyoshi.", "",
     "Kyoshi writes nothing else here. Photos and documents (such as the proof attached to Appa's records) are never kept here: they stay on the device they were added on.", "",
     "## A file in data/",
@@ -155,7 +155,7 @@
     try { save = await C.open(env, await held.lock); } catch (err) {
       throw refuse(err.code === "key" ? "That file can't be read with this device's key: it was locked with another one." : "That file is damaged: it can't be read.");
     }
-    const id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "kyoshi";
+    const id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "file"; // not "kyoshi": that's the hidden Kyoshi app's (core/record.js)
     downloadJSON(save, `${id}-cloud-${todayStr()}.json`);
     return `Decrypted ${K.apps[id] ? `${K.apps[id].meta.name}'s file` : "the file"}: its plain copy is downloading.`;
   }

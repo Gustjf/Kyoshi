@@ -81,7 +81,7 @@
       if (env && typeof env === "object" && env.kyoshi > 1) { line(`${f.name}: saved by a newer Kyoshi: use the decrypt page that came with it.`, "bad"); continue; }
       if (!C.isEnvelope(env)) { line(`${f.name}: not a Kyoshi cloud file (KYOSHI.md and other files are left as they are).`, "bad"); continue; }
       try {
-        const save = await C.open(env, secret), id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "kyoshi";
+        const save = await C.open(env, secret), id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "file"; // "kyoshi" is the bug log's
         apps[id] = save;
         line(`${f.name}: ${id}'s data, decrypted.`, "good", { name: `${id}-cloud-${today()}.json`, data: save });
       } catch (err) {

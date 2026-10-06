@@ -252,7 +252,7 @@ module.exports = [
       await p.click("#kReportBug");
       await p.fill("#kBugText", "Testing the report");
       await p.click("#kBugSubmit");
-      const report = await p.evaluate(() => Kyoshi.store.json("bugReports").pop().markdown);
+      const report = await p.evaluate(() => Kyoshi.apps.kyoshi.store.json("bugReports").pop().markdown);
       has(report, "state: Recipes: 8 (1 archived)", "the app's counts");
       has(report, "| Trips: 1 (1 upcoming", "and its trips");
       has(report, "| Times: trip schedule 0 day(s)", "and its times, counted");

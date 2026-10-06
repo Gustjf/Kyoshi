@@ -179,7 +179,7 @@ module.exports = [
       await p.click("#kReportBug");
       await p.fill("#kBugText", "Testing the report");
       await p.click("#kBugSubmit");
-      const report = await p.evaluate(() => Kyoshi.store.json("bugReports").pop().markdown);
+      const report = await p.evaluate(() => Kyoshi.apps.kyoshi.store.json("bugReports").pop().markdown);
       has(report, "state: Exercises: 8 (2 bodyweight); routines: 3; programs: 1 (active 1), rotation 3", "the app's counts, on one dense line");
       for (const name of ["Bench press", "Squat", "Push", "Pull-up"]) lacks(report, name, "no names in a bug report");
     }

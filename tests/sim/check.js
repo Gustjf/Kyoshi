@@ -46,7 +46,7 @@ function SNAP() {
   // The signals: each app's dot (the switcher's), its meetings (as bug reports word them), and the switch button's tooltip.
   K.order.forEach(id => {
     const A = K.apps[id];
-    if (!A.started) return;
+    if (!A.started || A.meta.hidden) return; // the hidden Kyoshi app (core's record) has no icon, no dot
     let why = "";
     try { why = (typeof A.attention === "function" ? A.attention() : "") || K.meetings.attention(A); } catch (err) { why = ""; }
     out.signals[id] = why;

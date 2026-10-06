@@ -6,8 +6,9 @@
  * key and other bad pastes refused, a refused token (the banner and the glyph; Update token… mends it), the cloud lost
  * (at once when Kyoshi opens offline, after CLOUD_LOST_MS in use, saves failing alone too; Try now), Disconnect while a
  * check reads, two tabs (a save coming back after the other's change), a file from a newer Kyoshi (it stops: Reload),
- * test mode and another copy's key doing nothing, a key not remembered, and text only (Appa's photo stays on its
- * device). Nothing shows on the page while all is well (D1). */
+ * test mode and another copy's key doing nothing, a key not remembered, text only (Appa's photo stays on its
+ * device), and Bugs & requests going up as the hidden Kyoshi app's file (on the phone after its check, cleared on both).
+ * Nothing shows on the page while all is well (D1). */
 "use strict";
 const fs = require("fs");
 const { TODAY, DESKTOP, PHONE, eq, ok, has, lacks, open, devPanel, importBackup, travel, text } = require("./lib");
@@ -438,6 +439,82 @@ module.exports = [
       eq(await q.evaluate(id => Kyoshi.apps.appa.files.has(id), PHOTO), false, "the photo isn't on the phone");
       await q.click('#kMount tr[data-act="open-record"][data-id="rec00001"]');
       eq(await q.locator("#kMount .proof-missing").first().textContent(), "Not on this device", "the record shows where its photo would be");
+      onlyText(fake);
+    }
+  },
+  {
+    name: "cloud: Bugs & requests go up as the hidden Kyoshi app's file (locked), reach the phone, and a Clear there empties the computer's too; Export all holds them",
+    async run(t) {
+      const { fake, computer, key } = await computerWithCloud(t), p = computer.page, WORDS = "Errands should say which store they belong to";
+      eq(fake.paths().includes("data/kyoshi.json"), false, "no file for the log while it's empty");
+      await p.click("#kReportBug");
+      await p.fill("#kBugText", WORDS);
+      await p.click("#kBugSubmit");
+      await p.locator("#kBugStatus", { hasText: "Saved bug" }).waitFor({ timeout: 5000 });
+      await p.click("#kBugOverlay .modal-close");
+      await cl.syncNow(computer);
+      ok(fake.paths().includes("data/kyoshi.json"), "the log went up as data/kyoshi.json");
+      onlyText(fake);
+      const envelope = fake.text("data/kyoshi.json"), save = cl.decryptInNode(envelope, cl.secretOf(key));
+      eq(JSON.parse(envelope).app, "kyoshi", "its envelope names the hidden Kyoshi app");
+      lacks(envelope, "which store", "its words aren't readable in the cloud's file");
+      eq(save.bugReports.map(r => [r.description, r.kind, r.deleted]), [[WORDS, "bug", false]], "decrypted: the report, as typed");
+      ok(save.bugReports[0].markdown.includes(`\n${WORDS}\nenv: `) && save.sync && save.appVersion === (await p.evaluate(() => Kyoshi.VERSION)), "its text, version counters and Kyoshi's version");
+      [cl.TOKEN, cl.REPO, key.split(".").pop()].forEach(s => lacks(JSON.stringify(save), s, "no secret in it"));
+
+      const phone = await phoneWith(t, fake, key), q = phone.page;
+      eq(await text(phone, "#kReportBug"), "Bugs & requests · 1", "the phone counts it after its check");
+      await q.click("#kReportBug");
+      eq(await q.$$eval("#kBugList .bug-row .bug-body", els => els.map(e => e.textContent)), [`Hawky · ${TODAY} ${WORDS}`], "and lists it");
+      await q.click("#kBugOverlay .modal-close");
+      const exportAll = async tab => {
+        await devPanel(tab, true);
+        const [file] = await Promise.all([tab.page.waitForEvent("download"), tab.page.click("#kDevExportAll")]);
+        return JSON.parse(fs.readFileSync(await file.path(), "utf8")).apps.kyoshi;
+      };
+      eq((await exportAll(phone)).bugReports.map(r => r.description), [WORDS], "the phone's Export all holds it, under apps.kyoshi");
+      const file = async (tab, words) => {
+        await tab.page.click("#kReportBug");
+        await tab.page.fill("#kBugText", words);
+        await tab.page.click("#kBugSubmit");
+        await tab.page.locator("#kBugStatus", { hasText: "Saved" }).waitFor({ timeout: 5000 });
+        await tab.page.click("#kBugOverlay .modal-close");
+      };
+      const listed = tab => tab.page.evaluate(() => Kyoshi.record.live().map(r => r.description));
+
+      // Clear on the phone (its question answered yes; its clock stopped, so it doesn't save yet) while the computer files
+      // another: once both have checked, the cleared one stays cleared and the new one is on both.
+      await q.clock.pauseAt(await q.evaluate(() => Date.now()) + 1000);
+      await q.click("#kDevClearBugs");
+      await file(computer, "Quick add could keep the last store");
+      await cl.syncNow(computer);
+      await cl.syncNow(phone);
+      await cl.syncNow(computer);
+      eq([await listed(phone), await listed(computer)], [["Quick add could keep the last store"], ["Quick add could keep the last store"]], "the clear and the new one, on both");
+      await q.clock.resume();
+
+      // Clear on the phone again: the computer's list empties at its next check.
+      await q.click("#kDevClearBugs");
+      await cl.syncNow(phone);
+      await cl.syncNow(computer);
+      eq(await text(computer, "#kReportBug"), "Bugs & requests", "the computer's footer count goes");
+      await p.click("#kReportBug");
+      eq([await p.locator("#kBugList .bug-row").count(), await p.locator("#kBugListHead").isHidden()], [0, true], "and its list");
+      await p.click("#kBugOverlay .modal-close");
+      eq(cl.decryptInNode(fake.text("data/kyoshi.json"), cl.secretOf(key)).bugReports.map(r => [r.deleted, r.description, r.markdown]), [[true, "", ""], [true, "", ""]], "the cloud keeps markers, with no words");
+      eq((await exportAll(computer)).bugReports.map(r => r.deleted), [true, true], "and so does the computer's Export all");
+
+      // Filed in test mode: kept, but nothing goes up until the next start.
+      const asked = fake.requests;
+      await travel(computer, 1);
+      await file(computer, "Filed while time travelling");
+      await p.clock.runFor(70000);
+      await cl.settled(computer);
+      eq([fake.requests, await listed(computer)], [asked, ["Filed while time travelling"]], "test mode: listed, nothing sent");
+      await p.reload();
+      await ready(computer);
+      await cl.settled(computer);
+      eq(cl.decryptInNode(fake.text("data/kyoshi.json"), cl.secretOf(key)).bugReports.filter(r => !r.deleted).map(r => r.description), ["Filed while time travelling"], "it went up at the next start");
       onlyText(fake);
     }
   }

@@ -3,7 +3,8 @@
  * Define each overlay once — K.modal.define(el, { dismiss, pending, ask, backdrop }) — then
  * K.modal.open(el) / K.modal.close(el). Esc (core/shell.js), its × (.modal-close) and a click
  * on the dimmed backdrop all request a dismiss: when pending() says something would be lost,
- * confirm(ask) first; then dismiss() (default: just close). A Cancel button calls K.modal.dismiss. */
+ * confirm(ask) first (ask: the question, or a function giving it); then dismiss() (default: just close). A Cancel button
+ * calls K.modal.dismiss. */
 (function (K) {
   "use strict";
   const defs = new Map(); // overlay -> { dismiss, pending, ask }
@@ -38,7 +39,7 @@
   // Asks first when closing would lose something, then dismisses.
   function requestDismiss(overlay) {
     const d = defs.get(overlay) || {};
-    if (d.pending && d.pending() && !confirm(d.ask)) return;
+    if (d.pending && d.pending() && !confirm(typeof d.ask === "function" ? d.ask() : d.ask)) return;
     dismiss(overlay);
   }
   function dismiss(overlay) {

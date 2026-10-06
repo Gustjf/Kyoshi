@@ -31,7 +31,7 @@ const FINGERPRINT = () => {
   const hash = text => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return h >>> 0; };
   Kyoshi.order.forEach(id => {
     const A = Kyoshi.apps[id];
-    if (!A.started || !A.data) return;
+    if (!A.started || !A.data || A.meta.hidden) return; // the apps on screen (not core's hidden record, the bug log)
     const b = A.data.build(), { colors, ...rest } = { ...b, appVersion: "" };
     out[id] = { hash: hash(canon(rest)), colors: hash(canon(colors || {})), sizes: Object.fromEntries(Object.entries(b).filter(([, v]) => Array.isArray(v) || (v && typeof v === "object")).map(([k, v]) => [k, Array.isArray(v) ? v.length : Object.keys(v).length])) };
   });

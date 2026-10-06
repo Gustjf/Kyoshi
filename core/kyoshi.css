@@ -166,7 +166,11 @@ footer a:hover { color: var(--text); text-decoration: underline; }
 .bug-kinds .mode-btn { padding: 8px 10px; }
 .bug-list-head { margin: 14px 0 2px; }
 .bug-list { list-style: none; margin: 0; padding: 0; }
-.bug-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); font-size: .85em; line-height: 1.4; }
+/* Each row a button: a tap opens its report in the box above to edit (outlined while it's open there). */
+.bug-row { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 7px 4px; border-top: 1px solid var(--border); border-radius: 0; background: none; color: var(--text); font-size: .85em; line-height: 1.4; text-align: left; }
+.bug-row:hover { background: var(--card-bg); }
+[data-theme="dark"] .bug-row:hover { background: var(--border); }
+.bug-row.editing { border-radius: 4px; outline: 2px solid var(--accent); outline-offset: -2px; }
 .bug-kind { flex: 0 0 auto; min-width: 20px; padding: 0 4px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: .8em; font-weight: 700; text-align: center; }
 .bug-kind.request { border-color: var(--accent); color: var(--accent); }
 .bug-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }

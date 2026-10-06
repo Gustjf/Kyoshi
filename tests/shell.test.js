@@ -1,20 +1,25 @@
 /* Kyoshi · tests/shell.test.js — the whole of Kyoshi, every app: each opens through the switcher with a clean console
- * at phone and desktop width (and after a week of time travel), the switcher lists every app in order, a new device
- * opens on the first, Export all / Import all (Developer Mode) carry every app's data, Backup & sync is Developer Mode's
- * (no app's page has it) and follows the app on screen, the tab always reads "Kyoshi",
- * a checkup done today shows a green ✓, Bugs & requests (the pop-up's list, Developer Mode's exports and Clear), and
- * Developer Mode's changelog (the latest three entries, then how many older ones the file holds). */
+ * at phone and desktop width (and after a week of time travel), the switcher lists every app in order (never the hidden
+ * Kyoshi app: #kyoshi shows the first), a new device opens on the first, Export all / Import all (Developer Mode) carry
+ * every app's data, Backup & sync is Developer Mode's (no app's page has it) and follows the app on screen, the tab always
+ * reads "Kyoshi", a checkup done today shows a green ✓, Bugs & requests (the pop-up's list, a report edited in place,
+ * Developer Mode's exports and Clear; the log kept by the hidden Kyoshi app, the old one carried over), and Developer
+ * Mode's changelog (the latest three entries, then how many older ones the file holds). */
 "use strict";
 const fs = require("fs");
-const { TODAY, PHONE, DESKTOP, eq, ok, has, open, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
+const { TODAY, PHONE, DESKTOP, eq, ok, has, open, lastDialog, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
 const gen = require("./generate");
+// The apps with a page, in order (the hidden Kyoshi app, core's own record, has none).
+const shown = p => p.evaluate(() => Kyoshi.order.filter(id => !Kyoshi.apps[id].meta.hidden));
+// The bug log as the hidden Kyoshi app keeps it.
+const stored = p => p.evaluate(() => Kyoshi.apps.kyoshi.store.json("bugReports"));
 
 module.exports = [
   {
     name: "shell: every app opens with a clean console, on a phone and a computer, and after time travel",
     async run(t) {
       for (const size of [PHONE, DESKTOP]) {
-        const tab = await open(t, { size }), p = tab.page, order = await p.evaluate(() => Kyoshi.order.slice());
+        const tab = await open(t, { size }), p = tab.page, order = await shown(p);
         await importBackup(tab, gen.history({ weeks: 3, thisWeek: 1 }));
         for (const id of order) {
           await switchTo(tab, id);
@@ -29,14 +34,26 @@ module.exports = [
     }
   },
   {
-    name: "shell: the switcher lists every app in order; a new device opens on the first",
+    name: "shell: the switcher lists every app in order, never the hidden Kyoshi app (#kyoshi shows the first); a new device opens on the first",
     async run(t) {
-      const tab = await open(t, { app: "" }), p = tab.page, order = await p.evaluate(() => Kyoshi.order.slice());
+      const tab = await open(t, { app: "" }), p = tab.page, order = await shown(p);
       eq(await p.evaluate(() => Kyoshi.active().id), order[0], "a new device opens on the first app");
       ok(order.includes("badgermole"), "Badgermole is one of them");
+      eq(await p.evaluate(() => [Kyoshi.order.includes("kyoshi"), Kyoshi.apps.kyoshi.started, Kyoshi.apps.kyoshi.meta.hidden]), [true, true, true], "the hidden Kyoshi app started too");
       await p.click("#kSwitchBtn");
-      eq(await p.$$eval("#kSwitchMenu [data-app]", els => els.map(e => e.dataset.app)), order, "the switcher's order");
+      eq(await p.$$eval("#kSwitchMenu [data-app]", els => els.map(e => e.dataset.app)), order, "the switcher's order, without it");
       await p.click("#kSwitchBtn");
+      // #kyoshi in the URL: the first app, whether the hash changes or the page opens with it (the last app was Hawky).
+      const where = () => p.evaluate(() => [Kyoshi.active().id, location.hash]);
+      await switchTo(tab, "hawky");
+      await p.evaluate(() => { location.hash = "kyoshi"; });
+      await p.waitForFunction(() => Kyoshi.active().id === "momo");
+      eq(await where(), ["momo", "#momo"], "a change of hash to #kyoshi shows the first app");
+      await switchTo(tab, "hawky");
+      await p.evaluate(() => history.replaceState(null, "", "#kyoshi"));
+      await p.reload();
+      await p.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started);
+      eq(await where(), ["momo", "#momo"], "and so does opening index.html#kyoshi");
     }
   },
   {
@@ -136,11 +153,11 @@ module.exports = [
       const rows = () => p.$$eval("#kBugList .bug-row", els => els.map(r => [r.querySelector(".bug-kind").textContent, r.querySelector(".bug-body").textContent]));
       eq(await rows(), [["R", `Hawky · ${TODAY} A five-minute chip on quick add`]], "one R row: the app, the day, the first line");
       eq(await p.textContent("#kBugListHead"), "Submitted · 1", "under its heading");
-      eq(await p.locator("#kBugList button").count(), 0, "nothing to tick off one by one");
+      eq(await p.locator("#kBugList button:not(.bug-row)").count(), 0, "nothing to tick off one by one (the row itself opens it)");
       eq(await text(tab, "#kReportBug"), "Bugs & requests · 1", "the footer link counts it");
-      const [stored] = await p.evaluate(() => Kyoshi.store.json("bugReports"));
-      eq(stored.kind, "request", "kept as a request");
-      ok(stored.markdown.split("\n")[0].endsWith(" · feature request"), "the report's first line ends with what it is");
+      const [kept] = await stored(p);
+      eq(kept.kind, "request", "kept as a request, by the hidden Kyoshi app");
+      ok(kept.markdown.split("\n")[0].endsWith(" · feature request"), "the report's first line ends with what it is");
       eq(await p.evaluate(() => { const m = document.querySelector("#kBugOverlay .modal"); return m.scrollWidth - m.clientWidth; }), 0, "no sideways scrolling on a phone");
       await p.click("#kBugOverlay .modal-close");
       await p.click("#kReportBug");
@@ -164,18 +181,77 @@ module.exports = [
     }
   },
   {
-    name: "shell: Developer Mode exports every bug and request, requests first, then Clear empties the list; older reports are bugs",
+    name: "shell: a report opens in the pop-up to edit — its whole description and its kind; Save keeps both and what it captured; Esc asks, Cancel leaves",
+    async run(t) {
+      const tab = await open(t, { app: "hawky" }), p = tab.page, ROW = "#kBugList .bug-row";
+      const rows = () => p.$$eval(ROW, els => els.map(r => [r.querySelector(".bug-kind").textContent, r.querySelector(".bug-body").textContent]));
+      const pressed = () => p.$$eval("#kBugKind [aria-pressed=true]", els => els.map(b => b.dataset.kind));
+      await p.click("#kReportBug");
+      await p.click('#kBugKind [data-kind="request"]');
+      await p.fill("#kBugText", "Group the errands by place\nso one trip covers them");
+      await p.click("#kBugSubmit");
+      await p.locator("#kBugStatus", { hasText: "Saved request" }).waitFor({ timeout: 5000 });
+      const [before] = await stored(p), was = before.markdown.split("\n");
+
+      // A tap on its row: the pop-up edits it, its whole description in the box.
+      await p.click(ROW);
+      eq(await p.inputValue("#kBugText"), "Group the errands by place\nso one trip covers them", "the box holds its whole description");
+      eq([await text(tab, "#kBugTitle"), await text(tab, "#kBugSubmit"), await p.isVisible("#kBugCancel"), await pressed()],
+        ["Bugs & requests · editing", "Save", true, ["request"]], "edit mode: the title says so, Save and Cancel, its kind");
+      eq(await text(tab, "#kBugStatus"), `Editing the Hawky request from ${TODAY}. What it captured (versions, state, console) stays as it was.`, "the status line says which");
+      ok(await p.evaluate(() => document.querySelector("#kBugList .bug-row").classList.contains("editing")), "its row is marked");
+
+      // New words, and a bug now: Save.
+      await p.click('#kBugKind [data-kind="bug"]');
+      await p.fill("#kBugText", "Errands at the same place go together\nnot apart");
+      await p.click("#kBugSubmit");
+      eq(await text(tab, "#kBugStatus"), "Saved the change.", "saved");
+      eq(await rows(), [["B", `Hawky · ${TODAY} · edited Errands at the same place go together`]], "the row: B now, edited, its new first line");
+      eq([await text(tab, "#kBugTitle"), await text(tab, "#kBugSubmit"), await p.isVisible("#kBugCancel"), await p.inputValue("#kBugText"), await pressed()],
+        ["Bugs & requests", "Submit", false, "", ["request"]], "back to a new one, with the kind last picked for one");
+      const [after] = await stored(p), now = after.markdown.split("\n");
+      eq(now[0], was[0].replace(/ · feature request$/, " · bug"), "its first line says bug now, the rest of it as it was");
+      eq(now.slice(1, 3), ["Errands at the same place go together", "not apart"], "its description is the new text");
+      eq(now.slice(3), was.slice(3), "what it captured (env: on) is unchanged");
+      ok(now[3].startsWith("env: "), "starting with its env: line");
+      eq([after.id, after.kind, after.description, after.u > before.u, !!Date.parse(after.edited)], [before.id, "bug", "Errands at the same place go together\nnot apart", true, true], "kept: the same report, changed now");
+
+      // A change, then Esc: asked first; No keeps editing, Cancel leaves it (unchanged).
+      await p.click(ROW);
+      await p.fill("#kBugText", "Errands at the same place go together\nnot far apart");
+      tab.answers.push(false);
+      await p.keyboard.press("Escape");
+      has(lastDialog(tab), "Discard your changes to this report?", "Esc asks first");
+      eq([await p.evaluate(() => Kyoshi.bugs.isOpen()), await text(tab, "#kBugSubmit"), await p.inputValue("#kBugText")],
+        [true, "Save", "Errands at the same place go together\nnot far apart"], "No keeps it open, editing");
+      await p.click("#kBugCancel");
+      eq([await text(tab, "#kBugSubmit"), await p.inputValue("#kBugText"), await p.locator(`${ROW}.editing`).count()], ["Submit", "", 0], "Cancel leaves edit mode, the box emptied");
+      eq((await stored(p))[0].description, "Errands at the same place go together\nnot apart", "nothing changed");
+      // Unchanged, Esc closes without asking; open again: a new one.
+      await p.click(ROW);
+      await p.keyboard.press("Escape");
+      eq([await p.evaluate(() => Kyoshi.bugs.isOpen()), tab.dialogs.length], [false, 0], "nothing changed: Esc closes without asking");
+      await p.click("#kReportBug");
+      eq([await text(tab, "#kBugTitle"), await text(tab, "#kBugSubmit"), await p.inputValue("#kBugText")], ["Bugs & requests", "Submit", ""], "opened again: a new one");
+    }
+  },
+  {
+    name: "shell: Developer Mode exports every bug and request, requests first, then Clear empties the list; older reports are bugs, the old log carried over",
     async run(t) {
       const tab = await open(t, { app: "pabu", size: DESKTOP }), p = tab.page;
-      // Kept before Kyoshi 3.760: one from before 3.750 (no kind: a bug), one marked done in 3.750 (listed like any other now).
+      // Kept before Kyoshi 3.760 (in core's own store, before 5.070): one from before 3.750 (no kind: a bug), one marked
+      // done in 3.750 (listed like any other now).
       await p.evaluate(() => {
         Kyoshi.store.set("bugReports", JSON.stringify([
           { id: 1, timestamp: "2026-09-01T12:00:00.000Z", app: "momo", description: "Old one", markdown: "Kyoshi 3.650 · Momo 10.064\nOld one" },
           { id: 2, timestamp: "2026-10-05T12:00:00.000Z", app: "hawky", description: "Marked done", markdown: "Kyoshi 3.750 · Hawky 2.110 · feature request\nMarked done", kind: "request", done: "2026-10-05T13:00:00.000Z" }
         ]));
-        Kyoshi.bugs.load();
+        Kyoshi.record.load();
       });
       eq(await text(tab, "#kReportBug"), "Bugs & requests · 2", "both count");
+      eq((await stored(p)).map(r => [r.id, r.kind, r.u]), [[1, "bug", Date.parse("2026-09-01T12:00:00.000Z")], [2, "request", Date.parse("2026-10-05T12:00:00.000Z")]],
+        "carried over to the hidden Kyoshi app's store, each changed when it was logged");
+      eq(await p.evaluate(() => Kyoshi.store.get("bugReports")), null, "and gone from the old one");
       for (const [kind, words] of [["request", "Request one"], ["bug", "Bug two"]]) {
         await p.click("#kReportBug");
         await p.click(`#kBugKind [data-kind="${kind}"]`);
@@ -205,7 +281,9 @@ module.exports = [
       eq(await head(), "Bugs & requests: 4", "No keeps them");
       await p.click("#kDevClearBugs");
       eq(await head(), "Bugs & requests: 0", "Yes clears them");
-      eq(await p.evaluate(() => Kyoshi.store.json("bugReports")), [], "the log is empty");
+      const markers = await stored(p);
+      eq(markers.map(r => [r.deleted, r.description, r.markdown]), [[true, "", ""], [true, "", ""], [true, "", ""], [true, "", ""]],
+        "each kept as a marker with no words, so a device that still has it can't bring it back");
       tab.dialogs.length = 0;
       await p.click("#kDevDownloadBugs");
       has(tab.dialogs.map(d => d[1]).join(" | "), "No bugs or requests logged", "nothing left to download");

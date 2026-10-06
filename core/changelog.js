@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.070", date: "2026-10-06", changes: [
+      "Bugs & requests travel with the rest of your data: cloud sync, the sync folder and Export all carry them, so every device lists the same ones, and Clear empties the list on all of them.",
+      "A report in the Bugs & requests list opens in the pop-up when you tap it: its whole description, to change its words or make it a bug or a feature request, then Save (or Cancel); what it captured stays as it was, and the list says it was edited.",
+      "Reload Kyoshi on every device after updating: the log moved to a store of its own (carried over by itself)."
+    ] },
     { version: "4.970", date: "2026-10-06", changes: [
       "Developer Mode's Cloud block no longer keeps its last word (“Downloaded 7 apps, decrypted.”) for good: it fades after 20 seconds, and goes when Developer Mode closes.",
       "Developer Mode's changelog shows the latest three entries, and says how many older ones the file holds."

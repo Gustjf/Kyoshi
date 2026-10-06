@@ -10,7 +10,8 @@
  * K.storage.get/set/remove/json are localStorage itself: only for tiny preferences read before the
  * page draws (theme, last app; also Bugs & requests' last pick) and for reading what the standalone apps left behind.
  * The cloud's key (kyoshi.cloud, core/cloud.js) is kept there too, as a preference: never taken for data.
- * In test mode (time travel) apps' writes stay in memory; core's (bug reports) are still kept. */
+ * In test mode (time travel) apps' writes stay in memory; core's are still kept: K.store's, and the hidden Kyoshi app's
+ * (its store isn't testable: the bug log, core/record.js). */
 (function (K) {
   "use strict";
   const DB_NAME = "kyoshi-data", STORE = "kv";
@@ -230,5 +231,5 @@
   ["pointerdown", "keydown"].forEach(t => document.addEventListener(t, onFirstInput, true));
 
   K.storage = { get, set, remove, json, open, scoped, startTest, onChange, usage, backend: () => backend };
-  K.store = scoped("kyoshi.", false); // core's own data: device id, bug reports
+  K.store = scoped("kyoshi.", false); // core's own: the device id (the bug log is the hidden Kyoshi app's, core/record.js)
 })(Kyoshi);

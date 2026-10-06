@@ -5,7 +5,9 @@
  * true (an app reading other apps waits for it: they start one at a time), shows one
  * (the URL's #id, else the last used), then runs the shared keyboard, minute tick and other-tab reloads.
  * Only the app on screen is in the page: the others' roots are kept aside (detached) but
- * keep running — so ids only need to be unique within an app, and A.$ looks only inside it. */
+ * keep running — so ids only need to be unique within an app, and A.$ looks only inside it.
+ * One app is hidden (meta.hidden): core's own record, the hidden Kyoshi app (core/record.js: the bug log, synced and
+ * backed up as an app's data is). It has no page, is never shown nor in the switcher, and its writes are kept in test mode. */
 (function (K) {
   "use strict";
   const { esc } = K.util;
@@ -15,14 +17,15 @@
   let menuOpen = false; // the switcher's list of apps
 
   // An app's id is its folder, storage prefix, sync subfolder, #id and CSS scope: lowercase letters and
-  // digits from a letter, one app each ("storage" is taken: core keeps kyoshi.storage.moved).
+  // digits from a letter, one app each ("storage" is taken: core keeps kyoshi.storage.moved; "kyoshi" is core's own
+  // record, the one hidden app, core/record.js).
   K.register = meta => {
-    if (!/^[a-z][a-z0-9]*$/.test(meta.id) || meta.id === "storage" || K.apps[meta.id]) {
+    if (!/^[a-z][a-z0-9]*$/.test(meta.id) || meta.id === "storage" || (meta.id === "kyoshi") !== (meta.hidden === true) || K.apps[meta.id]) {
       throw new Error(`Kyoshi can't add an app with the id "${meta.id}": use lowercase letters and digits, starting with a letter, that no other app uses.`);
     }
     const A = {
       id: meta.id, meta, S: {}, root: null, started: false, subtitle: meta.subtitle || "",
-      store: K.storage.scoped(`kyoshi.${meta.id}.`),
+      store: K.storage.scoped(`kyoshi.${meta.id}.`, !meta.hidden), // the hidden app's writes are kept in test mode
       files: K.files.scoped(meta.id), // photos and documents (core/files.js)
       $: id => A.root.querySelector(`#${CSS.escape(id)}`),
       isActive: () => active === A,
@@ -48,6 +51,7 @@
     clearTimeout(slow);
     K.backup.init();
     K.cloudUI.init();
+    K.record.init(); // core's own record, the hidden Kyoshi app (core/record.js): registered now, so it starts last
     K.bugs.init();
     K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));
@@ -60,7 +64,7 @@
     window.addEventListener("hashchange", () => show(K.apps[location.hash.slice(1)]));
     setInterval(tick, TICK_MS);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
-    show(K.apps[location.hash.slice(1)] || K.apps[K.storage.get("kyoshi.lastApp")] || K.apps[K.order[0]]);
+    show(K.apps[location.hash.slice(1)] || K.apps[K.storage.get("kyoshi.lastApp")] || first());
     K.sync.init();
     K.backup.checkStorage();
   };
@@ -97,8 +101,12 @@
     K.util.downloadJSON({ kyoshiApp: A.id, savedAt: new Date().toISOString(), keys }, `${A.id}-saved-data-${K.util.todayStr()}.json`);
   }
 
+  // The first app with a page: a new device's, and the one shown for the hidden app (#kyoshi in the URL, say).
+  const first = () => K.apps[K.order.find(id => !K.apps[id].meta.hidden)];
+
   // Puts an app on screen: its root, header (meetings too), width, and #id in the URL. The tab stays "Kyoshi" (index.html).
   function show(A) {
+    if (A && A.meta.hidden) A = first();
     if (!A || A === active) return;
     closeMenu();
     if (active) {
@@ -128,13 +136,14 @@
     try { return A[hook](...args); } catch (err) { console.error(`${A.meta.name}'s ${hook} failed.`, err); return undefined; }
   }
 
-  // --- Switcher: one button (the app on screen's icon) opening a list of every app ---
+  // --- Switcher: one button (the app on screen's icon) opening a list of every app (but the hidden one) ---
   // What an app says needs you ("" if nothing), else its overdue meeting: a dot on its icon, and on the button for others.
   const attention = A => call(A, "attention") || (A.started ? K.meetings.attention(A) : "");
+  const listed = () => K.order.map(id => K.apps[id]).filter(A => !A.meta.hidden);
 
   function renderSwitcher() {
     if (!active) return;
-    const waiting = K.order.map(id => K.apps[id]).filter(A => A !== active && attention(A));
+    const waiting = listed().filter(A => A !== active && attention(A));
     $("kSwitchIcon").innerHTML = active.meta.icon;
     $("kSwitchDot").hidden = !waiting.length;
     $("kSwitchBtn").title = waiting.length ? `Switch app (${waiting.map(A => `${A.meta.name}: ${attention(A)}`).join("; ")})` : "Switch app";
@@ -145,9 +154,9 @@
 
   function renderMenu() {
     const focused = document.activeElement && document.activeElement.dataset.app;
-    $("kSwitchMenu").innerHTML = K.order.map(id => {
-      const A = K.apps[id], why = attention(A), cur = A === active;
-      return `<button type="button" class="switch-item${cur ? " current" : ""}" role="menuitem" data-app="${id}"${why ? ` title="${esc(why)}"` : ""}${cur ? ' aria-current="true"' : ""}>` +
+    $("kSwitchMenu").innerHTML = listed().map(A => {
+      const why = attention(A), cur = A === active;
+      return `<button type="button" class="switch-item${cur ? " current" : ""}" role="menuitem" data-app="${A.id}"${why ? ` title="${esc(why)}"` : ""}${cur ? ' aria-current="true"' : ""}>` +
         `<span class="app-icon">${A.meta.icon}</span><span class="switch-name">${esc(A.meta.name)}</span>` +
         (why ? `<span class="attn-dot" role="img" aria-label="${esc(why)}"></span>` : "") +
         (cur ? `<span class="switch-check" aria-hidden="true">&#10003;</span>` : "") + `</button>`;
@@ -243,8 +252,7 @@
   function onStoreChange(keys) {
     if (K.testMode) return;
     const touched = prefix => keys === null || keys.some(k => k.startsWith(prefix));
-    if (touched("kyoshi.bugReports")) { K.bugs.load(); K.dev.refresh(); }
-    K.order.forEach(id => {
+    K.order.forEach(id => { // the hidden Kyoshi app too: the bug log
       const A = K.apps[id];
       if (!A.started || !touched(A.store.prefix)) return;
       clearTimeout(reloadTimers[id]);
