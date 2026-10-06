@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "4.970", date: "2026-10-06", changes: [
+      "Developer Mode's Cloud block no longer keeps its last word (“Downloaded 7 apps, decrypted.”) for good: it fades after 20 seconds, and goes when Developer Mode closes.",
+      "Developer Mode's changelog shows the latest three entries, and says how many older ones the file holds."
+    ] },
     { version: "4.960", date: "2026-10-06", changes: [
       "Cloud sync keeps the repository's history to the last 8 days on its own, about once a day, so it doesn't grow for good; the files stay as they are, and nothing shows unless GitHub refuses it.",
       "Where the browser can read when GitHub's token expires, Developer Mode's Cloud block says so from 14 days before, and the banner and the cloud glyph from 3 days before, until Update token….",

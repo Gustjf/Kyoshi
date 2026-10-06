@@ -1,7 +1,8 @@
 /* Kyoshi · tests/cloud.test.js — cloud sync through a private GitHub repository (plan_2026-10-06 Phase 2), against a
  * fake GitHub (tests/cloud.js): set up on a computer (the key; KYOSHI.md and Hawky's file, locked: no errand's words in
  * it, the save inside; no secret in a bug report), a phone filling up from the key, changes both ways (a combine, and a
- * clash: read again, combined, saved), a decrypted copy of every app (Import all takes it) and Decrypt a file…, a wrong
+ * clash: read again, combined, saved), a decrypted copy of every app (Import all takes it; the block's word on it fades,
+ * and goes when Developer Mode closes) and Decrypt a file…, a wrong
  * key and other bad pastes refused, a refused token (the banner and the glyph; Update token… mends it), the cloud lost
  * (at once when Kyoshi opens offline, after CLOUD_LOST_MS in use, saves failing alone too; Try now), Disconnect while a
  * check reads, two tabs (a save coming back after the other's change), a file from a newer Kyoshi (it stops: Reload),
@@ -148,7 +149,7 @@ module.exports = [
     }
   },
   {
-    name: "cloud: Download decrypted copy holds every app's save (Import all takes it); Decrypt a file… opens one (Import JSON takes it)",
+    name: "cloud: Download decrypted copy holds every app's save (Import all takes it; the block's word on it fades); Decrypt a file… opens one (Import JSON takes it)",
     async run(t) {
       const { fake, computer, key } = await computerWithCloud(t), p = computer.page;
       await devPanel(computer, true);
@@ -158,6 +159,15 @@ module.exports = [
       eq([all.cloud, all.apps.hawky.items.map(i => i.text).sort()], [true, TEXTS.slice().sort()], "Hawky's errands, decrypted");
       eq(Object.keys(all.apps).sort(), fake.paths().filter(x => x.startsWith("data/")).map(x => x.slice(5, -5)).sort(), "every app in the cloud");
       has(await text(computer, "#kDevCloudSaid"), "Downloaded", "the block says what it did");
+      // That last word goes when Developer Mode closes, and fades on its own while it stays open.
+      const said = () => p.evaluate(() => { const e = document.getElementById("kDevCloudSaid"); return [e.hidden, e.textContent]; });
+      await devPanel(computer, false);
+      await devPanel(computer, true);
+      eq(await said(), [true, ""], "closing Developer Mode clears it");
+      await Promise.all([p.waitForEvent("download"), p.click("#kDevCloudExport")]);
+      await p.waitForFunction(() => /^Downloaded/.test(document.getElementById("kDevCloudSaid").textContent));
+      await p.clock.runFor(await p.evaluate(() => Kyoshi.cloudUI.SAID_MS) + 1000);
+      eq([await said(), await p.evaluate(() => Kyoshi.dev.isOn())], [[true, ""], true], "it fades while the panel stays open");
       const fresh = await open(t, { app: "hawky" });
       await devPanel(fresh, true);
       const [chooser] = await Promise.all([fresh.page.waitForEvent("filechooser"), fresh.page.click("#kDevImportAll")]);

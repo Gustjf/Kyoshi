@@ -3,7 +3,8 @@
  * line on how it's going (the app on screen's last cloud news; the token's end, once it's near), a History line only
  * while GitHub refuses to trim the history (core/cloud-upkeep.js: quiet otherwise), and the buttons that state allows:
  * Sync now, Enter key…, Set up a new cloud…, Show key, Update token…, Download decrypted copy, Decrypt a file…,
- * Disconnect.
+ * Disconnect; under them the last word on what one did (a good one fades after SAID_MS, a refusal stays until the next
+ * action; either goes when Developer Mode closes).
  * While all is well nothing shows on the page. While the cloud needs the owner (K.cloud.status().attention: GitHub out
  * of reach, the key refused, a file it can't read, or the token's last days) the banner above the app (#kCloudBanner)
  * says so in plain words, with Try now (or Reload, for a file a newer Kyoshi saved; else Open Developer Mode), and the header shows the
@@ -35,9 +36,10 @@
       hint: "Make a new token on GitHub with the same settings (Settings → Developer settings → Fine-grained tokens), and paste it here. The repository and its data stay as they are; the key changes, so you'll paste the new one on your other devices." },
     show: { title: "Show key", parts: ["kCloudKeyBox"] }
   };
+  const SAID_MS = 20000; // how long the block's last good word stays
   let mode = "";   // the pop-up's
   let busy = false, done = false; // checking with GitHub; a key shown at the end
-  let said = "", saidBad = false; // the block's last word on Download decrypted copy or Decrypt a file…
+  let said = "", saidBad = false, saidTimer = 0; // the block's last word on Download decrypted copy or Decrypt a file…
 
   // --- The block, the banner and the glyph ---
   const ago = ms => { const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `at ${K.cloud.timeOf(ms)}`; };
@@ -64,6 +66,7 @@
 
   function render() {
     const s = K.cloud.status(), ok = K.cloudCrypto.supported;
+    if (!K.dev.isOn()) { clearTimeout(saidTimer); said = ""; saidBad = false; } // closing Developer Mode takes the last word
     $("kDevCloudState").textContent = !ok ? "unavailable" : s.state === "off" ? "off" : s.state === "on" ? `on · ${s.repo}` : "needs you";
     $("kDevCloudText").textContent = textOf(s);
     const history = ok && s.state === "on" && !K.testMode ? historyOf() : "";
@@ -88,9 +91,12 @@
     if (!K.dev.isOn()) K.dev.toggle();
     $("kDevCloud").scrollIntoView({ block: "nearest" });
   }
+  // The block's last word: a good one fades after SAID_MS (each new one, progress too, starts the wait again).
   function say(text, bad = false) {
+    clearTimeout(saidTimer);
     said = text;
     saidBad = bad;
+    if (text && !bad) saidTimer = setTimeout(() => { said = ""; render(); }, SAID_MS);
     render();
   }
   // Runs one of the block's actions, its progress and outcome in the block's last line.
@@ -213,5 +219,5 @@
     render();
   }
 
-  K.cloudUI = { init, render, open: openPop };
+  K.cloudUI = { init, render, open: openPop, SAID_MS };
 })(Kyoshi);

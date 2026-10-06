@@ -2,7 +2,8 @@
  * at phone and desktop width (and after a week of time travel), the switcher lists every app in order, a new device
  * opens on the first, Export all / Import all (Developer Mode) carry every app's data, Backup & sync is Developer Mode's
  * (no app's page has it) and follows the app on screen, the tab always reads "Kyoshi",
- * a checkup done today shows a green ✓, and Bugs & requests (the pop-up's list, Developer Mode's exports and Clear). */
+ * a checkup done today shows a green ✓, Bugs & requests (the pop-up's list, Developer Mode's exports and Clear), and
+ * Developer Mode's changelog (the latest three entries, then how many older ones the file holds). */
 "use strict";
 const fs = require("fs");
 const { TODAY, PHONE, DESKTOP, eq, ok, has, open, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
@@ -101,6 +102,20 @@ module.exports = [
       eq(await count(fresh), 5, "Import JSON takes the export back, on another device");
       await switchTo(tab, "momo");
       eq(await text(tab, "#kDevBackup .dev-block-head"), "Backup & sync: Momo", "a switch of app redraws the block");
+    }
+  },
+  {
+    name: "shell: Developer Mode's changelog shows the latest three entries, and how many older ones the file holds",
+    async run(t) {
+      const tab = await open(t, { app: "momo" }), p = tab.page;
+      await devPanel(tab, true);
+      const shown = () => p.evaluate(() => [...document.querySelectorAll("#kDevChangelog > *")].map(e =>
+        e.classList.contains("changelog-entry") ? e.querySelector(".changelog-version").textContent : e.textContent));
+      const [momo, kyoshi] = await p.evaluate(() => [Kyoshi.apps.momo.CHANGELOG, Kyoshi.CHANGELOG].map(log => log.map(c => `v${c.version}`)));
+      ok(momo.length > 3, "Momo's log holds more than three");
+      eq(await shown(), [...momo.slice(0, 3), `… and ${momo.length - 3} older entries, in apps/momo/changelog.js`], "Momo's latest three, then the older count");
+      await p.click('#kDevLogPills [data-log="kyoshi"]');
+      eq(await shown(), [...kyoshi.slice(0, 3), `… and ${kyoshi.length - 3} older entries, in core/changelog.js`], "and Kyoshi's");
     }
   },
   {
