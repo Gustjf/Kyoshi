@@ -24,7 +24,7 @@
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
  * colors:   { key: { c, u } } — each title's colour (see colors.js)
- * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin, need, app, auto, slot, fixed }
+ * card:     { id, title, hours, day: 0-6 | null (parked), goalId, base, parentId, pos, pin, need, app, auto, slot, fixed, sleep }
  *           — goalId: the old goal it was for, kept as it was; nothing sets one any more
  *           — need: "<app>:<need id>" on a card of its own for another app's need (fill "card", core/inbox.js:
  *           an errand, a meal…), else null; app: that app's id (its icon, and its colour: colors.js), else
@@ -35,6 +35,9 @@
  *           on its date (inbox.js) — fixed: true when its app sets its day, time and length (a slot's card, and
  *           a card Momo placed for a fixed need: a cooking session at its time), so it can't be dragged, resized,
  *           pinned, cut or deleted here, nor hold another card ("Change it in <App>"), else false
+ *           — sleep: true on a card made by the sleep routine (sleep.js: a night's part on a day, in the baseline and
+ *           its copies in the weeks it's loaded into), replaced when it's saved again; else false. Still an ordinary
+ *           card of yours (moved, edited, deleted as any); a pasted copy, or one made in the card editor, isn't one
  * A day's cards show in the order they're listed, which sets their times
  * (see times.js). `u` is when that week, baseline, goal, colour, week's asks or weekend's plan
  * last changed, which is how sync combines two devices' edits.

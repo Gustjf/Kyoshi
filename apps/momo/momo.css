@@ -300,6 +300,14 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo label.check { display: inline-flex; align-items: center; gap: 6px; font-size: .82em; color: var(--text); cursor: pointer; }
 .app-momo .sides-row { flex-direction: row; gap: 10px; margin-top: 8px; }
 .app-momo .sides-row > .field { margin: 0; }
+/* The sleep routine (sleep.js): bedtime and wake up side by side (on phones too), the night's length under them, and
+   each of its wind-down and morning routine as its minutes beside its title. */
+.app-momo .sleep-row { flex-direction: row; }
+.app-momo .sleep-note { margin: -4px 0 12px; }
+.app-momo .sleep-note:empty { display: none; }
+.app-momo .sleep-side { display: flex; gap: 10px; }
+.app-momo .sleep-side .stepper { flex: 0 0 128px; }
+.app-momo .sleep-side input[type=text] { flex: 1; min-width: 0; }
 .app-momo .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .app-momo .swatch { width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 2px solid var(--panel); background: var(--c); box-shadow: 0 0 0 1px var(--border); transition: transform .1s; }
 .app-momo .swatch:hover { background: var(--c); transform: scale(1.12); }

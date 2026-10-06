@@ -93,7 +93,7 @@
       gaps.forEach(([gap, beforeId]) => {
         const hours = Math.min(gap, room);
         if (hours <= 0) return;
-        const c = { id: newId(), title: FREE_TIME, hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false };
+        const c = { id: newId(), title: FREE_TIME, hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false, sleep: false };
         const into = A.mergeTarget(week, c, d, null, "bottom", beforeId);
         if (into) into.hours += hours;
         else A.insertCard(week, c, beforeId);
@@ -121,7 +121,7 @@
   // The sample's titles take its colours, where no other title has them.
   function startSampleBaseline() {
     S.data.baseline.cards = DAYS.flatMap(d => SAMPLE_BASELINE.filter(s => s.days.includes(d))
-      .map(s => ({ id: newId(), title: s.title, hours: s.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false })));
+      .map(s => ({ id: newId(), title: s.title, hours: s.hours, day: d, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: null, app: null, auto: false, slot: null, fixed: false, sleep: false })));
     SAMPLE_BASELINE.forEach(s => {
       const key = A.titleKey(s.title);
       if (!S.data.colors[key] && !Object.values(S.data.colors).some(e => e.c === s.color)) S.data.colors[key] = { c: s.color, u: 0 };

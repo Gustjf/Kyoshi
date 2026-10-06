@@ -302,7 +302,7 @@
     // keeps its own, and a new one has none. Only a card on its own on a day has one.
     const pin = setPin ? pinAt : card ? card.pin : null;
     const pinOn = d => (d === null || parentOn(d) ? null : pin);
-    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false, slot: null, fixed: false });
+    const newCard = day => ({ id: newId(), title, hours, day, goalId: null, base: false, parentId: parentOn(day), pos, pin: pinOn(day), need: editing.need, app: editing.app, auto: false, slot: null, fixed: false, sleep: false });
     // Adds a new card before the card `before` (AUTO: wherever autoSpot puts
     // it; a pinned one always goes there), or into a matching card next to that
     // spot. Returns the card that holds it.

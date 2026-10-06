@@ -1,6 +1,6 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
  * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends folded at its bottom, and
- * its pop-ups (card editor, an event, a card on Today, a weekend's plan, close-out).
+ * its pop-ups (card editor, an event, a card on Today, a weekend's plan, the sleep routine, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports; the
  * [data-kyoshi="backup"] section is filled in by core/backup.js.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -48,6 +48,7 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="copyPrevBtn">Copy previous week</button>
         <button id="gotoBaselineBtn">Set up baseline &rarr;</button>
         <button id="sampleBaselineBtn">Start from a sample</button>
+        <button class="secondary" id="sleepBtn">Sleep routine…</button>
         <button class="secondary" id="fillGapsBtn">Fill gaps with Free time</button>
         <button class="secondary" id="reopenBtn">Reopen week</button>
         <button class="secondary" id="saveAsBaseBtn">Save as baseline</button>
@@ -227,6 +228,66 @@ Kyoshi.apps.momo.markup = `
         <button class="secondary" id="weekendCancelBtn">Cancel</button>
         <span class="spacer"></span>
         <button class="secondary" id="weekendClearBtn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The sleep routine (sleep.js): pinned Sleep cards in the baseline, one per night split at midnight, with a wind-down
+       before bed and a morning routine after waking inside them if you like. -->
+  <div class="overlay" id="sleepOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sleepModalTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="sleepModalTitle">Sleep routine</h3>
+      <p class="modal-hint">Makes pinned Sleep cards in the baseline, one per night, split at midnight. Load or reload the baseline to bring them into a week.</p>
+      <div class="field-row sleep-row">
+        <div class="field">
+          <label for="sleepBed">Bedtime</label>
+          <input type="text" id="sleepBed" maxlength="5" inputmode="numeric" placeholder="e.g. 2230" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="sleepWake">Wake up</label>
+          <input type="text" id="sleepWake" maxlength="5" inputmode="numeric" placeholder="e.g. 0700" autocomplete="off">
+        </div>
+      </div>
+      <div class="note sleep-note" id="sleepNote"></div>
+      <div class="field">
+        <label>Nights</label>
+        <div class="day-pills" id="sleepNights"></div>
+        <div class="note">A night goes by the evening it starts: Fri is Friday night into Saturday.</div>
+      </div>
+      <div class="field">
+        <label for="sleepWind">Wind down before bed</label>
+        <div class="sleep-side">
+          <div class="stepper">
+            <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
+            <input type="number" id="sleepWind" step="15" min="0" max="240" data-minutes aria-label="Minutes before bed">
+            <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
+          </div>
+          <input type="text" id="sleepWindTitle" maxlength="40" placeholder="Wind down" autocomplete="off" aria-label="What it's called">
+        </div>
+      </div>
+      <div class="field">
+        <label for="sleepRise">Morning routine after waking</label>
+        <div class="sleep-side">
+          <div class="stepper">
+            <button type="button" class="step-btn" data-step="-1" aria-label="Less">&minus;</button>
+            <input type="number" id="sleepRise" step="15" min="0" max="240" data-minutes aria-label="Minutes after waking">
+            <button type="button" class="step-btn" data-step="1" aria-label="More">+</button>
+          </div>
+          <input type="text" id="sleepRiseTitle" maxlength="40" placeholder="Morning routine" autocomplete="off" aria-label="What it's called">
+        </div>
+        <div class="note">In minutes, inside the night's cards: 0 for none.</div>
+      </div>
+      <div class="field">
+        <label for="sleepName">The cards' title</label>
+        <input type="text" id="sleepName" maxlength="40" placeholder="Sleep" autocomplete="off">
+      </div>
+      <div class="modal-status" id="sleepStatus" role="status"></div>
+      <div class="modal-actions">
+        <button id="sleepSaveBtn">Save</button>
+        <button class="secondary" id="sleepCancelBtn">Cancel</button>
+        <span class="spacer"></span>
+        <button class="danger" id="sleepRemoveBtn">Remove</button>
       </div>
     </div>
   </div>

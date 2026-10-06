@@ -117,6 +117,7 @@
     $("loadBaselineBtn").classList.toggle("secondary", baseLoaded);
     $("gotoBaselineBtn").hidden = isBase || locked || hasBaseline;
     $("sampleBaselineBtn").hidden = !isBase || ownCards;
+    $("sleepBtn").hidden = !isBase; // the sleep routine (sleep.js)
     $("fillGapsBtn").hidden = isBase || locked || !onDays || b.free === 0;
     $("reopenBtn").hidden = !locked || !A.reviewRows(key).length; // with no goals to review, it would only close again quietly, its logged hours gone
     $("copyPrevBtn").hidden = isBase || locked || !A.weekOf(addDays(key, -7)).cards.some(c => !c.need); // the apps' own cards aren't copied

@@ -94,7 +94,8 @@
       app,
       auto: (!!need || !!slot) && c.auto === true,
       slot,
-      fixed: !!app && c.fixed === true
+      fixed: !!app && c.fixed === true,
+      sleep: !app && c.sleep === true // made by the sleep routine (sleep.js): always one of yours
     };
   }
   function cleanCards(list, allowParked) {

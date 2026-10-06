@@ -46,7 +46,7 @@
     [...slots.keys()].sort().forEach(key => {
       const r = slots.get(key), f = slotFields(r), card = list.cards.find(c => c.slot === key);
       if (!card) {
-        const c = { id: newId(), title: f.title, hours: f.hours, day: f.day, goalId: null, base: false, parentId: null, pos: "bottom", pin: f.pin, need: null, app: r.app, auto: true, slot: key, fixed: true };
+        const c = { id: newId(), title: f.title, hours: f.hours, day: f.day, goalId: null, base: false, parentId: null, pos: "bottom", pin: f.pin, need: null, app: r.app, auto: true, slot: key, fixed: true, sleep: false };
         A.insertCard(list, c, A.timeSpot(list, c.day, c));
         changed = true;
         return;

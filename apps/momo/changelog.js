@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.264", date: "2026-10-06", changes: [
+      "The Baseline tab's Sleep routine… makes pinned Sleep cards for the nights you pick, split at midnight, with an optional wind-down before bed and morning routine after waking inside them; saving it again replaces them, Remove takes them out, and it opens as you last set it.",
+      "Reload Momo on every device: an older copy would drop the mark that lets the routine replace its cards."
+    ] },
     { version: "10.164", date: "2026-10-05", changes: [
       "Cards show when they end as well as when they start, on the board and on Today, and so do other apps' events; a card too narrow for its end still shows its start and hours.",
       "A card can have time before and after it inside it (a commute, by default), the same both ways or not, set in its pop-up; none is the default."

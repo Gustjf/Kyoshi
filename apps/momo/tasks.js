@@ -65,7 +65,7 @@
 
   // A new card drawn from a task: its title, as long as the task says (else DRAW_HOURS), not on a day yet; for a need
   // of its own, that need's card.
-  const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: t.need || null, app: t.need ? t.app : null, auto: false, slot: null, fixed: false });
+  const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: t.need || null, app: t.need ? t.app : null, auto: false, slot: null, fixed: false, sleep: false });
 
   // A task is the outline of a card, in its title's colour (once a card has one; a need of its own, its app's): its
   // title (and a whole block's need's name), and what's short of a block its hours. Its chunk shows its app.

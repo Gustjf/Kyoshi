@@ -39,7 +39,7 @@
       if (keep) return Object.assign(keep, { title, hours });
       if (hours <= 0) return;
       const ahead = pos === "top" ? list.cards.find(c => mine(c, pos)) : null;
-      A.insertCard(list, { id: newId(), title, hours, day: card.day, goalId: null, base: card.base, parentId: card.id, pos, pin: null, need: null, app: null, auto: false, slot: null, fixed: false }, ahead ? ahead.id : null);
+      A.insertCard(list, { id: newId(), title, hours, day: card.day, goalId: null, base: card.base, parentId: card.id, pos, pin: null, need: null, app: null, auto: false, slot: null, fixed: false, sleep: false }, ahead ? ahead.id : null);
     });
     A.tidyNesting(list);
   }
@@ -72,7 +72,8 @@
     after.parentElement.querySelectorAll(".step-btn").forEach(b => { b.disabled = same; });
   }
 
-  // Minutes typed in Before or After: on the 15-minute grid, 0 to SIDE_MAX (empty is 0); NaN when it isn't a number.
+  // Minutes typed in Before or After (or the sleep routine's): on the 15-minute grid, 0 to SIDE_MAX (empty is 0); NaN when
+  // it isn't a number.
   function readMinutes(id) {
     const v = A.readNumber(id);
     if (v === null) return 0;
@@ -116,5 +117,5 @@
     $("cardIn").addEventListener("change", () => { renderSidesField(); A.renderInnerNote(); });
   }
 
-  Object.assign(A, { sidesOf, setSides, renderSidesField, openSides, readSides, innerAfter, stepMinutes, initSides });
+  Object.assign(A, { sidesOf, setSides, renderSidesField, openSides, readMinutes, readSides, innerAfter, stepMinutes, initSides });
 })(Kyoshi, Kyoshi.apps.momo);

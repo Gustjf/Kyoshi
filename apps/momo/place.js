@@ -52,7 +52,7 @@
   // A need's card, on its day in the week list: one its app sets, pinned at its time (in time order); any other where
   // spotFor puts it.
   function placeOne(list, n) {
-    const card = { id: newId(), title: cleanText(n.title), hours: A.upHours(n.minutes || 60), day: dayIndex(n.date), goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: `${n.app}:${n.id}`, app: n.app, auto: true, slot: null, fixed: n.fixed };
+    const card = { id: newId(), title: cleanText(n.title), hours: A.upHours(n.minutes || 60), day: dayIndex(n.date), goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: `${n.app}:${n.id}`, app: n.app, auto: true, slot: null, fixed: n.fixed, sleep: false };
     if (n.fixed && n.time) {
       card.pin = A.pinOf(n.time);
       return A.insertCard(list, card, A.timeSpot(list, card.day, card));

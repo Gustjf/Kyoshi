@@ -2,7 +2,7 @@
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
  * onHide (place other apps' dated cards, redraw; drop any drag), onTick (other apps' dated cards; a new day or
  * week; what other apps need; their events; Today), onReload (another tab saved), attention (a week to close
- * out, an event's conflict), renderDev (Undo in Developer Mode) and bugState. */
+ * out, an event's conflict), renderDev (Undo in Developer Mode) and bugState (counts only). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -87,6 +87,7 @@
     A.defineCloseOutOverlay();
     A.initToday(); // Today, its buttons and its card pop-up; on a phone Momo opens on it
     A.initWeekends(); // a weekend's pop-up, opened from Upcoming weekends or the board's Saturday
+    A.initSleep(); // the sleep routine's pop-up, from the Baseline tab
 
     $("cardSaveBtn").addEventListener("click", A.saveCard);
     $("cardDeleteBtn").addEventListener("click", A.deleteCard);
@@ -162,6 +163,7 @@
       if (top === $("cardOverlay")) { e.preventDefault(); A.saveCard(); return true; }
       if (top === $("eventOverlay")) { e.preventDefault(); A.onEventTime(true); A.moveEvent(); return true; }
       if (top === $("weekendOverlay")) { e.preventDefault(); A.saveWeekend(); return true; }
+      if (top === $("sleepOverlay")) { e.preventDefault(); A.saveSleep(); return true; }
     }
     return false;
   };
@@ -225,6 +227,7 @@
       `- Cards this week / next week / baseline: ${A.weekOf(tk).cards.length} / ${A.weekOf(nk).cards.length} / ${data.baseline.cards.length}`,
       `- Apps' own cards this week / next week: ${apps.map(l => l.length).join(" / ")} (${apps.flat().filter(c => c.auto).length} placed by Momo, untouched); card needs: ${cardNeeds.length} (${cardNeeds.filter(n => n.date).length} dated, ${f.short.filter(n => n.fill === "card").length} in Tasks); missed on screen: ${f.missed.size}`,
       `- Pinned this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.pinned).length).join(" / ")}`,
+      `- Sleep routine's cards this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(c => c.sleep).length).join(" / ")}`,
       `- Slots in the apps' routines / the baseline's slot cards: ${A.slotsNow().size} / ${data.baseline.cards.filter(c => c.slot).length}; set in their app this week / next week / baseline: ${[A.weekOf(tk), A.weekOf(nk), data.baseline].map(l => l.cards.filter(A.isFixed).length).join(" / ")} (${[A.weekOf(tk), A.weekOf(nk)].map(l => l.cards.filter(c => c.slot).length).join(" / ")} slot copies)`,
       `- Old goals kept (from before Iroh): ${data.goals.length}`,
       `- Colours kept: ${Object.keys(data.colors).length} (${A.colorKeys(data).shown.length} titles on show)`,

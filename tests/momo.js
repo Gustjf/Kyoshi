@@ -2,13 +2,13 @@
  * (To Be Budgeted, its line and message), Tasks (each task's title, hours, apps and overdue edge; parked cards), the
  * board's days and cards (title, hours, what fills them, ✓, start–end), dragging a task onto a day (Momo drags with
  * Pointer Events: the mouse down, a few moves past its threshold, up), New card and the card editor's Before & after,
- * the bank's actions (Load or Reload baseline, Copy previous week, Fill gaps with Free time, Save as baseline, Clear),
- * the close-out (its banner, the pop-up's rows, the Done stepper, Confirm, Later; Close out this week; Reopen), Today
- * (its sections and rows, a card's pop-up), the card editor's From section, "Open in <App>" and read-only state (a
- * card set in its app), and the switcher's dots with their tooltips; for cards set in their app: the baseline's and a
- * week's cards as stored, how a card looks, trying to drag one, Alt+click and the clipboard's shortcuts. What Momo
- * drew from (its fill of other apps' needs) is read too, for checks. Selectors live here, so a markup change is fixed
- * in one place. */
+ * the bank's actions (Load or Reload baseline, Copy previous week, Fill gaps with Free time, Save as baseline, Clear), the
+ * sleep routine's pop-up (its fields and status line, Save, Remove), the close-out (its banner, the pop-up's rows, the
+ * Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's pop-up), the card
+ * editor's From section, "Open in <App>" and read-only state (a card set in its app), and the switcher's dots with their
+ * tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a card looks, trying to drag
+ * one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps' needs) is read too, for
+ * checks. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -206,9 +206,11 @@ async function altClick(tab, id) {
   const p = tab.page, card = p.locator(`${M} #board .card[data-id="${id}"]`).first();
   await card.click({ modifiers: ["Alt"], position: { x: 12, y: 8 } });
 }
-// Ctrl+C / Ctrl+X / Ctrl+V with the mouse over an element (Momo's clipboard goes by where the mouse is).
+// Ctrl+C / Ctrl+X / Ctrl+V with the mouse over an element, scrolled into view (Momo's clipboard goes by where the mouse is).
 async function shortcut(tab, key, selector) {
-  const p = tab.page, box = await p.locator(selector).first().boundingBox();
+  const p = tab.page, el = p.locator(selector).first();
+  await el.scrollIntoViewIfNeeded();
+  const box = await el.boundingBox();
   await p.mouse.move(box.x + Math.min(12, box.width / 2), box.y + Math.min(8, box.height / 2));
   await p.keyboard.press(`Control+${key}`);
 }
@@ -232,6 +234,44 @@ const copyPrevious = tab => action(tab, "copyPrevBtn");
 const fillGaps = tab => action(tab, "fillGapsBtn");
 const saveAsBaseline = tab => action(tab, "saveAsBaseBtn");
 const clearWeek = tab => action(tab, "clearBtn");
+
+// --- The sleep routine (the Baseline tab's Sleep routine…: sleep.js) ---
+// Its pop-up as it is: { open, bed, wake, nights (the days picked, 0 = Monday), wind, windTitle, rise, riseTitle, title (the
+// cards'), note (the night's length), status, remove (Remove shown), cancel (that button's words) }.
+const sleepForm = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`);
+  return {
+    open: $("sleepOverlay").classList.contains("open"), bed: $("sleepBed").value, wake: $("sleepWake").value,
+    nights: [...document.querySelectorAll("#kMount #sleepNights .day-pill.active")].map(b => +b.dataset.night),
+    wind: +$("sleepWind").value, windTitle: $("sleepWindTitle").value, rise: +$("sleepRise").value, riseTitle: $("sleepRiseTitle").value,
+    title: $("sleepName").value, note: $("sleepNote").textContent.trim(), status: $("sleepStatus").textContent.trim(),
+    remove: !$("sleepRemoveBtn").hidden, cancel: $("sleepCancelBtn").textContent.trim()
+  };
+});
+// Opens it from the bank (the Baseline tab on screen), unless it's open, and fills in what's given as the user does (typed,
+// then the field left; nights: the days to pick, the rest unpicked): { bed: "2200", wake, nights, wind (minutes), windTitle,
+// rise, riseTitle, title }. Then Save, unless save is false. The pop-up after, as sleepForm reads it.
+async function sleepRoutine(tab, fields = {}, save = true) {
+  const p = tab.page, ids = { bed: "sleepBed", wake: "sleepWake", wind: "sleepWind", windTitle: "sleepWindTitle", rise: "sleepRise", riseTitle: "sleepRiseTitle", title: "sleepName" };
+  if (!(await p.locator(`${M} #sleepOverlay.open`).count())) {
+    await p.click(`${M} #sleepBtn`);
+    await p.waitForSelector(`${M} #sleepOverlay.open`);
+  }
+  for (const [k, v] of Object.entries(fields)) {
+    if (k !== "nights") {
+      await p.fill(`${M} #${ids[k]}`, String(v));
+      await p.press(`${M} #${ids[k]}`, "Tab");
+    } else {
+      for (let d = 0; d < 7; d++) {
+        if ((await p.locator(`${M} #sleepNights .day-pill.active[data-night="${d}"]`).count() > 0) !== v.includes(d)) await p.click(`${M} #sleepNights .day-pill[data-night="${d}"]`);
+      }
+    }
+  }
+  if (save) await p.click(`${M} #sleepSaveBtn`);
+  return sleepForm(tab);
+}
+const removeSleep = tab => tab.page.click(`${M} #sleepRemoveBtn`);
+const closeSleep = tab => tab.page.click(`${M} #sleepCancelBtn`);
 
 // --- The close-out ---
 // The banner's words ("" while it's hidden).
@@ -306,6 +346,6 @@ const switchTip = tab => tab.page.getAttribute("#kSwitchBtn", "title");
 module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
   newCard, sides, setSides, saveCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
-  fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible,
+  fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible, sleepForm, sleepRoutine, removeSleep, closeSleep,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };

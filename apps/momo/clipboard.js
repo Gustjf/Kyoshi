@@ -136,7 +136,7 @@
       card.auto = false;
       into = placeCard(list, group, spot);
     } else {
-      placeCard(list, A.copyCards(group, { base: false, need: null, auto: false, slot: null, fixed: false }), spot);
+      placeCard(list, A.copyCards(group, { base: false, need: null, auto: false, slot: null, fixed: false, sleep: false }), spot);
     }
     if (!clip.cut) holdClip(clip.key, clip.id, false);
     else if (into) clearClip();

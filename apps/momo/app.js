@@ -113,6 +113,7 @@
     triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }
     detail: null,          // a card's pop-up on Today (today.js): { key: its week, id }
     weekend: null,         // the weekend in its pop-up (weekends.js): its Saturday
+    sleep: null,           // the sleep routine's pop-up while it's open (sleep.js): { nights (a Set of days), snapshot }
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
 
