@@ -5,6 +5,13 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.500", date: "2026-10-06", changes: [
+      "Injection sites: the body parts you keep on take turns (abdomen, thigh, buttock, upper arm), and within each the doses go in an X; the thighs are twelve sites (left/right, front/side, upper/middle/lower) and the abdomen and buttocks four each (left/right, upper/lower). Start-up info asks once more for your sites; a dose logged at an old site still reads as it did.",
+      "Bosco's Developer Mode tools can skip the next site (for a week when it isn't a good candidate): the dose goes to that body part's next site, and the skip is forgotten once a dose is logged.",
+      "A goal reads Reached once the 7-day rolling average passes it, not a single day's weigh-in; projections start from that average too.",
+      "Deleting a weigh-in or removing a goal asks first.",
+      "Reload Bosco on every device after updating."
+    ] },
     { version: "7.400", date: "2026-10-06", changes: [
       "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
     ] },

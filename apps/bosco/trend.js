@@ -1,11 +1,11 @@
 /* Bosco · trend.js — the numbers behind the views: Current Trend's weekly rate, the weekly
- * pace goal, goal status & ETAs, and dose totals. model() derives what renders need, once
- * per render. Pure math over A.S — nothing here draws or saves. */
+ * pace goal, the 7-day averages goals go by, goal status & ETAs, and dose totals. model()
+ * derives what renders need, once per render. Pure math over A.S — nothing here draws or saves. */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { mean, daysBetween, addDays, todayStr, fmtNum } = K.util;
-  const { TREND_MIN_WEIGHINS, DEFAULT_PACE_GOAL, MAX_ETA_WEEKS, hasWeight, hasDose } = A;
+  const { TREND_MIN_WEIGHINS, DEFAULT_PACE_GOAL, MAX_ETA_WEEKS, GOAL_AVG_DAYS, hasWeight, hasDose } = A;
 
   const weightEntries = () => S.entries.filter(hasWeight);
   const customRate = () => parseFloat(A.$("customRate").value) || 0;
@@ -67,7 +67,18 @@
     return off <= 2 * g.rangePct ? (fast ? "fast" : "slow") : fast ? "tooFast" : "tooSlow";
   }
 
-  // Everything the views need, derived once per render.
+  // The weigh-ins, each weight replaced by the mean of those in the GOAL_AVG_DAYS days ending on its
+  // day (the first days average what there is), to 1 decimal as weights are kept: what goals are
+  // reached by, and where their ETAs and the season projections start from.
+  function averaged(w) {
+    let from = 0;
+    return w.map((e, i) => {
+      while (daysBetween(w[from].date, e.date) >= GOAL_AVG_DAYS) from++;
+      return { date: e.date, weight: Math.round(mean(w.slice(from, i + 1).map(x => x.weight)) * 10) / 10 };
+    });
+  }
+
+  // Everything the views need, derived once per render: w, the weigh-ins; wa, their 7-day averages.
   function model() {
     const w = weightEntries();
     const trend = weeklyTrend(w, +S.trendWindow);
@@ -75,22 +86,23 @@
     // The slider is signed like the display (negative = lose); rates are positive = lose.
     const rate = S.rateMode === "trend" ? (trend ? trend.rate : 0) : -customRate() / 100;
     const sorted = S.goals.slice().sort((a, b) => (dir === "gain" ? a - b : b - a)); // nearest goal first
-    return { w, trend, dir, rate, goals: sorted };
+    return { w, wa: averaged(w), trend, dir, rate, goals: sorted };
   }
 
-  // A goal is reached once the latest weigh-in has moved from the starting
-  // weight to (or past) it; returns the first weigh-in date that got there.
-  function reachedDate(goal, w) {
-    const start = w[0].weight, cur = w[w.length - 1].weight;
+  // A goal is reached once the latest 7-day average (wa: averaged) has moved from the
+  // first one to (or past) it; returns the first day the average got there.
+  function reachedDate(goal, wa) {
+    const start = wa[0].weight, cur = wa[wa.length - 1].weight;
     if (goal < Math.min(start, cur) || goal > Math.max(start, cur)) return null;
-    return w.find(e => (goal <= start ? e.weight <= goal : e.weight >= goal)).date;
+    return wa.find(e => (goal <= start ? e.weight <= goal : e.weight >= goal)).date;
   }
 
-  function goalStatus(goal, w, rate) {
-    const reached = reachedDate(goal, w);
+  // A goal's status by the 7-day averages (wa), its ETA counted from the latest one.
+  function goalStatus(goal, wa, rate) {
+    const reached = reachedDate(goal, wa);
     if (reached) return { status: "reached", date: reached };
     if (!rate) return { status: "flat" };
-    const last = w[w.length - 1];
+    const last = wa[wa.length - 1];
     const weeks = Math.log(goal / last.weight) / Math.log1p(-rate);
     if (!(weeks > 0)) return { status: "unreachable" }; // moving away from it
     if (weeks > MAX_ETA_WEEKS) return { status: "flat" };
@@ -107,6 +119,6 @@
 
   Object.assign(A, {
     weightEntries, customRate, lastDays, weeklyTrend, paceGoal, fmtPacePct, fmtPaceGoal, fmtPaceBand,
-    PACE_STATUS, paceStatus, model, reachedDate, goalStatus, cumulativeDoseMg
+    PACE_STATUS, paceStatus, averaged, model, reachedDate, goalStatus, cumulativeDoseMg
   });
 })(Kyoshi, Kyoshi.apps.bosco);

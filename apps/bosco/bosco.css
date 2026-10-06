@@ -70,8 +70,10 @@
 .app-bosco .dose-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; }
 @media (max-width: 600px) { .app-bosco .dose-fields { grid-template-columns: 1fr 1fr; } }
 .app-bosco .vial-head, .app-bosco .sites-head { margin-top: 14px; }
-/* Injection sites: four to a row, two on phones, so each site's left and right sit side by side
-   and the rotation reads left to right, top to bottom. */
+/* Injection sites: a group per body part under a small heading, four to a row, two on phones, so
+   each site's left and right sit side by side and a part's order reads left to right, top to bottom. */
+.app-bosco .site-part + .site-part { margin-top: 10px; }
+.app-bosco .site-part-head { margin-bottom: 4px; font-size: .78em; color: var(--muted); }
 .app-bosco .site-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 @media (max-width: 600px) { .app-bosco .site-pills { grid-template-columns: 1fr 1fr; } }
 .app-bosco .site-pills .mode-btn { padding: 8px 6px; }

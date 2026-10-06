@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S;
   const { isNum, isPos, isDate, isTime, todayStr } = K.util;
-  const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
+  const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, LEGACY_SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
     byDate, convertWeight, isDoseInterval, weeklyFor, hasDose } = A;
 
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
@@ -62,13 +62,28 @@
       dosePlan: cleanDosePlan(raw.dosePlan),
       vial: cleanVial(raw.vial),
       paceGoal: cleanPaceGoal(raw.paceGoal),
-      sites: cleanSites(raw.sites)
+      sites: cleanSites(raw.sites),
+      skipSites: cleanSkips(raw.skipSites)
     };
   }
 
-  // The injection sites on, from storage or a backup: known ones only, in the order doses rotate
-  // through them; null if there's no list (never picked, or an older version's file).
-  const cleanSites = list => (Array.isArray(list) ? SITES.map(s => s[0]).filter(id => list.includes(id)) : null);
+  // The injection sites on, from storage or a backup: known ones only, in SITES' order; null if there's
+  // no list (never picked, or an older version's file). A site of a version before 7.500 turns on every
+  // site it's now split into ("abd-l": the left abdomen's two heights; "thigh-l-upper": the left thigh's
+  // two upper faces), so what was on stays on.
+  function cleanSites(list) {
+    if (!Array.isArray(list)) return null;
+    const words = id => id.split("-");
+    const on = list.flatMap(id => (LEGACY_SITES.some(s => s[0] === id) ? SITES.map(s => s[0]).filter(s => words(id).every(w => words(s).includes(w))) : [id]));
+    return SITES.map(s => s[0]).filter(id => on.includes(id));
+  }
+  // The sites the next dose passes over (Developer Mode's Skip this site): known ones, null for none;
+  // undefined from a copy older than skips, so combining keeps the other save's.
+  function cleanSkips(list) {
+    if (list === undefined) return undefined;
+    const ids = Array.isArray(list) ? SITES.map(s => s[0]).filter(id => list.includes(id)) : [];
+    return ids.length ? ids : null;
+  }
 
   // A dosing plan or vial from storage or a backup, or null if it's unusable.
   // Each keeps when it was saved: where two meet, the more recent one wins.
@@ -126,6 +141,7 @@
     S.profile.vial = cleanVial(S.profile.vial);
     S.profile.paceGoal = cleanPaceGoal(S.profile.paceGoal);
     S.profile.sites = cleanSites(S.profile.sites);
+    S.profile.skipSites = cleanSkips(S.profile.skipSites) ?? null;
     // Older versions only asked "Do you take Tirzepatide?"; carry that answer over.
     if ("usesTirzepatide" in S.profile) {
       if (!S.profile.medication) S.profile.medication = S.profile.usesTirzepatide === false ? "none" : LEGACY_MEDICATION;
@@ -166,6 +182,7 @@
       vial: S.profile.vial,
       paceGoal: S.profile.paceGoal,
       sites: S.profile.sites,
+      skipSites: S.profile.skipSites,
       entries: S.entries,
       goals: S.goals,
       cumulativeDoseMgByMedication: A.cumulativeDoseMg() // derived totals for reference; not read on import
@@ -181,6 +198,7 @@
     if (clean.name) S.profile.name = clean.name; // older backups have no name; keep ours
     if (clean.paceGoal) S.profile.paceGoal = clean.paceGoal; // nor a pace goal
     if (clean.sites) S.profile.sites = clean.sites; // nor injection sites
+    if (clean.skipSites !== undefined) S.profile.skipSites = clean.skipSites; // nor skips
     // The most recently saved dosing plan and vial are kept, so an older backup
     // never brings back an old vial's concentration.
     S.profile.dosePlan = latest(S.profile.dosePlan, clean.dosePlan);
@@ -239,10 +257,12 @@
       dosePlan: latest(older.dosePlan, newer.dosePlan),
       vial: latest(older.vial, newer.vial),
       paceGoal: newer.paceGoal || older.paceGoal,
-      sites: newer.sites || older.sites
+      sites: newer.sites || older.sites,
+      // The newer save's skips whenever it knows them: a device that logged the dose (and so forgot them) wins.
+      skipSites: newer.skipSites === undefined ? older.skipSites : newer.skipSites
     };
   }
-  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites]);
+  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -250,14 +270,15 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites };
+    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites };
     const next = replace
       ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial) } // as on import
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
     return {
       same: dataKey(next) === dataKey(their),
       apply() {
-        const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites };
+        const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites,
+          skipSites: next.skipSites === undefined ? S.profile.skipSites : next.skipSites };
         if (!backupUnit && dataKey({ ...next, ...kept }) === dataKey(ours)) return false; // nothing new here
         applyBackup(next, backupUnit);
         return true;

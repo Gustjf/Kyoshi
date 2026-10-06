@@ -6,14 +6,16 @@
  * dose spread over the days between doses. None is logged until it's confirmed in
  * the pop-up once due: on its day, or today for a late one taken late (the
  * schedule then counts on from today). A due dose waits to be confirmed until it's
- * three intervals old; after that it counts as missed. Each goes to the next injection site that's
- * on, after the one the last dose was logged at (also worked out, never stored); the pop-up can
- * log it at another. Momo's board shows the doses (agenda). */
+ * three intervals old; after that it counts as missed. Each goes to an injection site (also worked
+ * out from the log, never stored): the body parts with a site on take turns, and within a part the
+ * doses go on through its sites in its own order (an X); Developer Mode can skip the next dose's
+ * site until a dose is logged, and the pop-up can log it at another. Momo's board shows the doses (agenda). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { addDays, daysBetween, todayStr, now, fmtWeekday, fmtTime } = K.util;
-  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, SITES, hasDose, byDate, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief, activeSites, siteLabel } = A;
+  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, SITES, PARTS, hasDose, byDate, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief,
+    activeSites, siteLabel, standsFor, partOf, sitesIn } = A;
 
   // When a dose comes due: its day at the usual dose time (the start of the day
   // without one), on this device's clock.
@@ -27,13 +29,32 @@
   // The day a plan's next dose was set to, "" once a dose has been logged since.
   const setNextDose = (plan, lastTaken) => (plan && plan.nextDose && lastTaken <= plan.nextDose.after ? plan.nextDose.date : "");
 
-  // Where the last dose logged with a site went, null if none has one.
-  const lastSite = () => S.entries.filter(e => hasDose(e) && e.site && e.date <= todayStr()).map(e => e.site).pop() || null;
-  // The next site that's on after `after` in the rotation (SITES' order, starting over after the
-  // last): the first one on without `after` (or for one this version doesn't know); null while all are off.
-  function nextSite(after) {
-    const on = activeSites(), from = SITES.findIndex(s => s[0] === after) + 1;
-    return SITES.map((_, i) => SITES[(from + i) % SITES.length][0]).find(id => on.includes(id)) || null;
+  // Where the doses logged with a site went: { part: the latest one's body part, in: { part: the latest
+  // site in each } } (an old site counts as the one it stands for; one from a newer version has no part).
+  function lastSites() {
+    const last = { part: null, in: {} };
+    S.entries.filter(e => hasDose(e) && e.site && e.date <= todayStr()).forEach(e => {
+      last.part = partOf(e.site);
+      if (last.part) last.in[last.part] = standsFor(e.site);
+    });
+    return last;
+  }
+  // The next site on in a body part after `after`, in the part's order (starting over after its last;
+  // its first one on without `after`), passing over those in `skip`; null while none is.
+  function nextSiteIn(part, after, skip = []) {
+    const ids = sitesIn(part), on = activeSites(), from = ids.indexOf(after) + 1;
+    return ids.map((_, i) => ids[(from + i) % ids.length]).find(id => on.includes(id) && !skip.includes(id)) || null;
+  }
+  // Where the dose after `last` (as lastSites says) goes: the next body part with a site on after the
+  // last dose's part (PARTS' order, starting over), at that part's next site; a part whose sites on are
+  // all in `skip` gives its turn to the next. null while every site is off.
+  function nextSite(last, skip = []) {
+    const parts = PARTS.map(p => p[0]), from = parts.indexOf(last.part) + 1;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[(from + i) % parts.length], site = nextSiteIn(part, last.in[part], skip);
+      if (site) return site;
+    }
+    return null;
   }
 
   // The next three doses as { date, doseMg, weeklyMg, due, after, site }, `after` being
@@ -47,10 +68,16 @@
     if (!after && !set) return [];
     const next = set || addDays(after, every);
     const missed = Math.max(0, Math.floor(daysBetween(next, today) / every) - MAX_UPCOMING_DOSES + 1);
-    let site = lastSite(); // each dose at the site after the one before it
+    // Each dose at the site after the one before it; the first passes over the sites skipped for it in
+    // Developer Mode (unless every site on is skipped: then none is).
+    const last = lastSites(), skip = S.profile.skipSites || [];
     return Array.from({ length: MAX_UPCOMING_DOSES }, (_, i) => {
       const date = addDays(next, (missed + i) * every);
-      site = nextSite(site);
+      const site = (!i && nextSite(last, skip)) || nextSite(last);
+      if (site) {
+        last.part = partOf(site);
+        last.in[last.part] = site;
+      }
       return { date, doseMg: eachDoseMg(plan.weeklyMg, every), weeklyMg: plan.weeklyMg, due: at >= dueAt(date, plan.doseTime), after, site };
     });
   }
@@ -113,13 +140,13 @@
     K.refreshSwitcher(); // a dot on Bosco's icon while you're in another app
   }
 
-  // The pop-up's injection site: a menu of the sites that are on, then the others; hidden while all are
-  // off. The menu is only refilled when that changes, so the minute's update can't close it while open.
+  // The pop-up's injection site: a menu of the sites that are on, by body part, then the others; hidden while
+  // all are off. The menu is only refilled when that changes, so the minute's update can't close it while open.
   let siteMenu = "";
   function renderDoseSite() {
-    const site = S.doseAsking.site, on = activeSites(), ids = SITES.map(s => s[0]), others = ids.filter(id => !on.includes(id));
-    const option = id => `<option value="${id}">${siteLabel(id)}</option>`;
-    const menu = ids.filter(id => on.includes(id)).map(option).join("") + (others.length ? `<optgroup label="Other">${others.map(option).join("")}</optgroup>` : "");
+    const site = S.doseAsking.site, on = activeSites(), others = SITES.map(s => s[0]).filter(id => !on.includes(id));
+    const group = (label, ids) => (ids.length ? `<optgroup label="${label}">${ids.map(id => `<option value="${id}">${siteLabel(id)}</option>`).join("")}</optgroup>` : "");
+    const menu = PARTS.map(([part, heading]) => group(heading, sitesIn(part).filter(id => on.includes(id)))).join("") + group("Other", others);
     if (menu !== siteMenu) $("doseSiteSelect").innerHTML = siteMenu = menu;
     $("doseSiteSelect").value = site || "";
     $("doseSiteField").hidden = !site;
@@ -146,7 +173,7 @@
   }
 
   // Logs the dose as scheduled, on its day or (a late one taken late) today,
-  // which moves the schedule on from the day it's logged.
+  // which moves the schedule on from the day it's logged. Its sites skipped are forgotten.
   function confirmDose(takenToday) {
     if (!S.doseAsking || !stillAsked()) return;
     const date = takenToday ? todayStr() : S.doseAsking.date, doseMg = S.doseAsking.doseMg, site = S.doseAsking.site || null;
@@ -157,6 +184,7 @@
       S.entries.push({ date, weight: null, doseMg, medication: A.currentMedication(), site });
       S.entries.sort(byDate);
     }
+    S.profile.skipSites = null;
     closeDoseModal();
     A.save();
     S.currentPage = 1;
@@ -181,6 +209,6 @@
   }
 
   Object.assign(A, {
-    lastDoseDate, setNextDose, lastSite, nextSite, doseSchedule, agenda, promptDueDose, openDoseModal, pickDoseSite, closeDoseModal, confirmDose, postponeDose, snoozeDose
+    lastDoseDate, setNextDose, lastSites, nextSiteIn, nextSite, doseSchedule, agenda, promptDueDose, openDoseModal, pickDoseSite, closeDoseModal, confirmDose, postponeDose, snoozeDose
   });
 })(Kyoshi, Kyoshi.apps.bosco);

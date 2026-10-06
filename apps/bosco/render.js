@@ -26,6 +26,7 @@
     renderStats(m);
     renderGoals(m);
     renderChart(m);
+    A.refreshDev(); // the next dose's site in Developer Mode
   }
 
   function renderHistory({ w, dir }) {
@@ -118,11 +119,13 @@
     $("statAvgLabel").textContent = `${S.avgWindow}-day rolling avg`;
   }
 
-  function renderGoals({ w, trend, rate, goals: sorted }) {
+  // Goals go by the 7-day averages (wa): reached once the average passes one, and the ETAs and the
+  // projections start from the latest average.
+  function renderGoals({ w, wa, trend, rate, goals: sorted }) {
     const unit = S.unit;
     $("goalsSection").hidden = !w.length;
     if (!w.length) return;
-    const last = w[w.length - 1];
+    const last = wa[wa.length - 1];
     $("goalsRateNote").textContent = S.rateMode === "custom" ? "Using the custom weekly rate above."
       : trend ? `Using the ${S.trendWindow}d weekly rate from Current Trend (set above).`
       : `Current Trend has no ${S.trendWindow}d weekly rate yet, so there's nothing to project from.`;
@@ -141,7 +144,7 @@
     $("goalsBody").innerHTML = !sorted.length
       ? `<tr><td colspan="4" class="empty-msg">No goals added yet.</td></tr>`
       : sorted.map(g => {
-        const s = A.goalStatus(g, w, rate);
+        const s = A.goalStatus(g, wa, rate);
         const [label, eta] =
           s.status === "reached" ? ["Reached", fmtDate(s.date)] :
           s.status === "projected" ? ["In progress", `${s.weeks.toFixed(1)} wks (${fmtDate(s.date)})`] :
@@ -156,13 +159,13 @@
       }).join("");
   }
 
-  // Weigh-in history plus lines for goals not yet reached, as inline SVG.
-  function renderChart({ w }) {
+  // Weigh-in history plus lines for goals not yet reached (by the 7-day averages, wa), as inline SVG.
+  function renderChart({ w, wa }) {
     $("chartSection").hidden = !w.length;
     if (!w.length) return;
     const W = 640, H = 320, padL = 45, padR = 20, padT = 20, padB = 35;
     const innerW = W - padL - padR, innerH = H - padT - padB;
-    const active = S.goals.filter(g => !A.reachedDate(g, w));
+    const active = S.goals.filter(g => !A.reachedDate(g, wa));
     const [min, max] = weightRange(w.map(e => e.weight).concat(active), 0.1);
     const first = w[0].date, span = daysBetween(first, w[w.length - 1].date);
     const x = d => padL + (span ? daysBetween(first, d) / span : 0.5) * innerW; // a single day sits mid-chart
@@ -183,8 +186,8 @@
     parts.push(`<path class="line" d="M${pts.map(p => p.join(",")).join(" L")}"/>`);
     pts.forEach(([cx, cy]) => parts.push(`<circle cx="${cx}" cy="${cy}" r="2.5"/>`));
     // Goal tags go on top, hanging off the side of their line away from the latest
-    // weigh-in, where the recent data isn't.
-    const right = W - padR - 4, current = w[w.length - 1].weight;
+    // 7-day average, where the recent data isn't.
+    const right = W - padR - 4, current = wa[wa.length - 1].weight;
     active.forEach(g => {
       const label = `Goal: ${+g.toFixed(1)} ${S.unit}`, tagW = label.length * 5 + 4;
       const top = g < current ? y(g) + 2 : y(g) - 18;

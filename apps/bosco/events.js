@@ -1,12 +1,12 @@
 /* Bosco · events.js — loads last: wires Bosco's buttons and fields (A.init), and the hooks
  * Kyoshi calls: onTick (a new day, doses coming due), onKeydown (Enter submits), onReload
- * (another tab saved), attention (a due dose), renderDev (its Developer Mode tools) and
- * bugState (its lines in bug reports). */
+ * (another tab saved), attention (a due dose), renderDev (its Developer Mode tools: start-up
+ * info, skipping the next dose's site) and bugState (its lines in bug reports). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { isDate, isPos, todayStr, fmtDate } = K.util;
-  const { hasWeight, hasDose, byDate, medLabel, readNumber } = A;
+  const { hasWeight, hasDose, byDate, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
 
   // Adds a weigh-in. Doses aren't added here: they're logged by confirming them.
   function addEntry() {
@@ -107,9 +107,12 @@
     $("saveVialBtn").addEventListener("click", A.saveVial);
 
     onButton($("historyBody"), "button[data-date]", btn => {
-      // Doses are only logged by confirming them, so deleting one asks first.
+      // Deleting always asks: a dose (only ever logged by confirming it) with that day's weigh-in, or the weigh-in.
       const day = S.entries.find(e => e.date === btn.dataset.date);
-      if (day && hasDose(day) && !confirm(`Delete the ${day.doseMg} mg ${medLabel(day.medication)} dose logged ${fmtDate(day.date)}${hasWeight(day) ? ", and that day's weigh-in" : ""}? This can't be undone.`)) return;
+      if (!day) return;
+      const what = hasDose(day) ? `the ${day.doseMg} mg ${medLabel(day.medication)} dose logged ${fmtDate(day.date)}${hasWeight(day) ? ", and that day's weigh-in" : ""}`
+        : `the weigh-in of ${day.weight.toFixed(1)} ${S.unit} on ${fmtDateBrief(day.date)}`;
+      if (!confirm(`Delete ${what}? This can't be undone.`)) return;
       S.entries = S.entries.filter(e => e.date !== btn.dataset.date);
       A.save();
       A.renderAll();
@@ -131,7 +134,9 @@
     $("dosePostponeBtn").addEventListener("click", A.postponeDose);
     $("doseSiteSelect").addEventListener("change", e => A.pickDoseSite(e.target.value));
     onButton($("goalsBody"), "button[data-goal]", btn => {
-      S.goals = S.goals.filter(g => g !== parseFloat(btn.dataset.goal));
+      const goal = parseFloat(btn.dataset.goal);
+      if (!confirm(`Remove the ${goal.toFixed(1)} ${S.unit} goal? This can't be undone.`)) return;
+      S.goals = S.goals.filter(g => g !== goal);
       A.save();
       A.renderAll();
     });
@@ -169,13 +174,35 @@
 
   A.attention = () => (S.doseAsking ? "a dose is waiting to be confirmed" : "");
 
+  // Sites the next dose passes over (null: none), kept and shown at once (Developer Mode too: renderAll).
+  function setSkips(list) {
+    S.profile.skipSites = list;
+    A.save();
+    A.renderAll();
+  }
+
+  // Developer Mode: start-up info; the next dose's injection site, with a skip for a week it isn't a good
+  // one (another press skips the new one too; never the last site left).
   A.renderDev = box => {
-    box.innerHTML = `<div class="dev-block"><button class="secondary small">Edit start-up info</button></div>`;
-    box.querySelector("button").addEventListener("click", () => {
+    const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [];
+    const canSkip = !!site && A.activeSites().some(id => id !== site && !skips.includes(id));
+    box.innerHTML = `<div class="dev-block"><button class="secondary small" id="boscoStartupBtn">Edit start-up info</button></div>
+      <div class="dev-block">
+        <div class="dev-block-head">Next dose: <strong>${!next ? "no dose scheduled" : site ? siteLabel(site) : "no site (every site is off)"}</strong></div>
+        ${skips.length ? `<div class="dev-hint">Skipped: ${skips.map(siteLabel).join("; ")}.</div>` : ""}
+        <div class="dev-actions">
+          <button class="secondary small" id="boscoSkipBtn"${canSkip ? "" : " disabled"}>Skip this site</button>
+          ${skips.length ? `<button class="secondary small" id="boscoUnskipBtn">Undo skips</button>` : ""}
+        </div>
+        <div class="dev-hint">For when a site isn't a good candidate this week: the next dose goes to that body part's next site. Forgotten once a dose is logged.</div>
+      </div>`;
+    box.querySelector("#boscoStartupBtn").addEventListener("click", () => {
       K.dev.toggle();
       A.renderOneTimeInfo(true);
       $("oneTimeInfoSection").scrollIntoView({ behavior: "smooth", block: "center" });
     });
+    box.querySelector("#boscoSkipBtn").addEventListener("click", () => setSkips(skips.concat(site)));
+    if (skips.length) box.querySelector("#boscoUnskipBtn").addEventListener("click", () => setSkips(null));
   };
 
   // Bug reports leave out every weight, dose, and date.
@@ -187,6 +214,7 @@
       `- Dosing plan / active vial saved: ${A.planFor(med) ? "yes" : "no"} / ${A.activeVial() ? "yes" : "no"}`,
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
       `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
+      `- Sites skipped: ${(S.profile.skipSites || []).length}`,
       `- Entry count: ${S.entries.length}`,
       `- Goal count: ${S.goals.length}`,
       `- Rate mode: ${S.rateMode}`,

@@ -27,16 +27,36 @@
     semaglutide: { label: "Semaglutide", example: "0.5" },
     retatrutide: { label: "Retatrutide", example: "4" }
   };
-  // Injection sites, in the order doses rotate through them: each spot's left then right before
-  // the next, the thighs from upper to lower. [id, label, short label]; ids are what backups
-  // store, so never change one (add new sites anywhere in the order).
+  // Injection sites, part by part in the order body parts take turns (PARTS), each part's sites in the
+  // order its doses take them: an X, the other side every time and another height (the thighs also
+  // swap faces on each leg; front: facing the ceiling when sitting, side: between buttock and thigh).
+  // [id, label, short label, part]; ids are what backups store, so never change one (a retired one
+  // goes to LEGACY_SITES).
   const SITES = [
-    ["abd-l", "Abdomen · left", "Abdomen L"], ["abd-r", "Abdomen · right", "Abdomen R"],
-    ["thigh-l-upper", "Thigh · left, upper", "Thigh L upper"], ["thigh-r-upper", "Thigh · right, upper", "Thigh R upper"],
-    ["thigh-l-middle", "Thigh · left, middle", "Thigh L middle"], ["thigh-r-middle", "Thigh · right, middle", "Thigh R middle"],
-    ["thigh-l-lower", "Thigh · left, lower", "Thigh L lower"], ["thigh-r-lower", "Thigh · right, lower", "Thigh R lower"],
-    ["arm-l", "Upper arm · left", "Upper arm L"], ["arm-r", "Upper arm · right", "Upper arm R"],
-    ["glute-l", "Buttock · left", "Buttock L"], ["glute-r", "Buttock · right", "Buttock R"]
+    ["abd-l-upper", "Abdomen · left, upper", "Abd L upper", "abd"], ["abd-r-lower", "Abdomen · right, lower", "Abd R lower", "abd"],
+    ["abd-l-lower", "Abdomen · left, lower", "Abd L lower", "abd"], ["abd-r-upper", "Abdomen · right, upper", "Abd R upper", "abd"],
+    ["thigh-l-front-upper", "Thigh · left front, upper", "Thigh L front upper", "thigh"], ["thigh-r-side-middle", "Thigh · right side, middle", "Thigh R side middle", "thigh"],
+    ["thigh-l-side-lower", "Thigh · left side, lower", "Thigh L side lower", "thigh"], ["thigh-r-front-upper", "Thigh · right front, upper", "Thigh R front upper", "thigh"],
+    ["thigh-l-front-middle", "Thigh · left front, middle", "Thigh L front middle", "thigh"], ["thigh-r-side-lower", "Thigh · right side, lower", "Thigh R side lower", "thigh"],
+    ["thigh-l-side-upper", "Thigh · left side, upper", "Thigh L side upper", "thigh"], ["thigh-r-front-middle", "Thigh · right front, middle", "Thigh R front middle", "thigh"],
+    ["thigh-l-front-lower", "Thigh · left front, lower", "Thigh L front lower", "thigh"], ["thigh-r-side-upper", "Thigh · right side, upper", "Thigh R side upper", "thigh"],
+    ["thigh-l-side-middle", "Thigh · left side, middle", "Thigh L side middle", "thigh"], ["thigh-r-front-lower", "Thigh · right front, lower", "Thigh R front lower", "thigh"],
+    ["glute-l-upper", "Buttock · left, upper", "Buttock L upper", "glute"], ["glute-r-lower", "Buttock · right, lower", "Buttock R lower", "glute"],
+    ["glute-l-lower", "Buttock · left, lower", "Buttock L lower", "glute"], ["glute-r-upper", "Buttock · right, upper", "Buttock R upper", "glute"],
+    ["arm-l", "Upper arm · left", "Upper arm L", "arm"], ["arm-r", "Upper arm · right", "Upper arm R", "arm"]
+  ];
+  // Body parts, in the order they take turns (one with no site on is left out):
+  // [id, heading, the word its sites' short labels start with].
+  const PARTS = [["abd", "Abdomen", "Abd"], ["thigh", "Thighs", "Thigh"], ["glute", "Buttocks", "Buttock"], ["arm", "Upper arms", "Upper arm"]];
+  // Sites of versions before 7.500, kept forever in logged doses and backups: [id, label, short label,
+  // the site it stands for in the rotation]. The abdomen and buttocks had a side each (now its upper),
+  // the thighs a height each (now its front).
+  const LEGACY_SITES = [
+    ["abd-l", "Abdomen · left", "Abdomen L", "abd-l-upper"], ["abd-r", "Abdomen · right", "Abdomen R", "abd-r-upper"],
+    ["thigh-l-upper", "Thigh · left, upper", "Thigh L upper", "thigh-l-front-upper"], ["thigh-r-upper", "Thigh · right, upper", "Thigh R upper", "thigh-r-front-upper"],
+    ["thigh-l-middle", "Thigh · left, middle", "Thigh L middle", "thigh-l-front-middle"], ["thigh-r-middle", "Thigh · right, middle", "Thigh R middle", "thigh-r-front-middle"],
+    ["thigh-l-lower", "Thigh · left, lower", "Thigh L lower", "thigh-l-front-lower"], ["thigh-r-lower", "Thigh · right, lower", "Thigh R lower", "thigh-r-front-lower"],
+    ["glute-l", "Buttock · left", "Buttock L", "glute-l-upper"], ["glute-r", "Buttock · right", "Buttock R", "glute-r-upper"]
   ];
   Object.assign(A, {
     DEFAULT_GOALS: [200, 175, 160, 150], // lb
@@ -46,10 +66,14 @@
     MAX_DOSE_INTERVAL_DAYS: 14, // days between doses: a whole number from 1
     DOSE_SNOOZE_MS: 3600000,    // "Not yet" asks about a due dose again an hour later
     // Bumped when a dosing question is added, so start-up info asks once more. 2: usual dose time. 3: injection sites.
-    DOSING_QUESTIONS_VERSION: 3,
-    SITES,
+    // 4: injection sites by body part.
+    DOSING_QUESTIONS_VERSION: 4,
+    SITES, PARTS, LEGACY_SITES,
     // The sites on until you pick yours in start-up info: the abdomen and the thighs.
     DEFAULT_SITES: SITES.map(s => s[0]).filter(id => /^(abd|thigh)-/.test(id)),
+    // A goal counts as reached once the average of this many days' weigh-ins passes it. Fixed: the
+    // Average window on the page starts at 7 on every load and isn't stored.
+    GOAL_AVG_DAYS: 7,
     BAC_ML_RANGE: [1, 3],       // BAC water a vial can be mixed with, as on its slider
     MAX_ETA_WEEKS: 5200,        // ~100 years; anything slower counts as a flat rate
     TREND_MIN_WEIGHINS: 3,      // in each of the two 7-day averages Current Trend's weekly rate compares
@@ -143,11 +167,18 @@
     return doseMg * 7 / intervalDays;
   }
   // The injection sites on: the default ones until changed in start-up info (an empty list: sites off).
-  // A site's labels: "Thigh · left, upper", or "Thigh L upper" (one from a newer version: its id).
+  // A site's labels: "Thigh · left front, upper", or "Thigh L front upper" (an old one's as it read
+  // then; one from a newer version: its id).
   const activeSites = () => S.profile.sites || A.DEFAULT_SITES;
-  const siteOf = id => SITES.find(s => s[0] === id);
+  const currentSite = id => SITES.find(s => s[0] === id), legacySite = id => LEGACY_SITES.find(s => s[0] === id);
+  const siteOf = id => currentSite(id) || legacySite(id);
   const siteLabel = id => (siteOf(id) ? siteOf(id)[1] : id);
   const siteShort = id => (siteOf(id) ? siteOf(id)[2] : id);
+  // The site an id stands for in the rotation: itself, an old one's stand-in, or null (one from a newer version).
+  const standsFor = id => (currentSite(id) ? id : legacySite(id) ? legacySite(id)[3] : null);
+  // A site's body part (null for one from a newer version), and a part's sites in the order its doses take them.
+  const partOf = id => (standsFor(id) ? currentSite(standsFor(id))[3] : null);
+  const sitesIn = part => SITES.filter(s => s[3] === part).map(s => s[0]);
   const fmtConc = mgPerMl => `${fmtNum(mgPerMl, 3)} mg/mL`; // as precise as it can be entered
   // A dose drawn from a vial, in U-100 insulin syringe units (100 units = 1 mL):
   // to the nearest half unit, then the exact amount when that differs, "12.5 units (12.36)".
@@ -161,6 +192,6 @@
   Object.assign(A, {
     hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight,
     currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
-    isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, fmtConc, fmtUnits, readNumber
+    isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber
   });
 })(Kyoshi);

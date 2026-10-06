@@ -6,8 +6,8 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { isPos, daysBetween, fmtDate, fmtWeekday, localDate, fmtNum, SEP } = K.util;
-  const { ONE_TIME_FIELDS, MEDICATIONS, SITES, DOSING_QUESTIONS_VERSION, MAX_DOSE_INTERVAL_DAYS, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
-    medLabel, planFor, vialFor, isDoseInterval, eachDoseMg, fmtConc, fmtUnits, fmtDateBrief, readNumber } = A;
+  const { ONE_TIME_FIELDS, MEDICATIONS, PARTS, DOSING_QUESTIONS_VERSION, MAX_DOSE_INTERVAL_DAYS, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
+    medLabel, planFor, vialFor, isDoseInterval, eachDoseMg, fmtConc, fmtUnits, fmtDateBrief, readNumber, siteLabel, siteShort, sitesIn } = A;
 
   // Shows the unanswered start-up questions — or all of them, prefilled, when
   // editing from Developer Mode.
@@ -60,11 +60,15 @@
     renderVial();
   }
 
-  // The injection sites in the dosing: a button each, in the order doses rotate through them, those on lit.
+  // The injection sites in the dosing: a group per body part, in the order they take turns, under its
+  // heading; a button per site ("L front upper"), in the order its doses take them, those on lit.
   function renderSites() {
     const on = A.activeSites();
-    $("sitePills").innerHTML = SITES.map(([id, , short]) =>
-      `<button type="button" class="mode-btn${on.includes(id) ? " active" : ""}" data-site="${id}" aria-pressed="${on.includes(id)}">${short}</button>`).join("");
+    $("sitePills").innerHTML = PARTS.map(([part, heading, word]) => `<div class="site-part">
+      <div class="site-part-head" id="sitesOf_${part}">${heading}</div>
+      <div class="site-pills" role="group" aria-labelledby="sitesOf_${part}">${sitesIn(part).map(id =>
+        `<button type="button" class="mode-btn${on.includes(id) ? " active" : ""}" data-site="${id}" aria-pressed="${on.includes(id)}" title="${siteLabel(id)}">${siteShort(id).slice(word.length + 1)}</button>`).join("")}</div>
+    </div>`).join("");
   }
 
   // What the schedule counts from, with a button that shows the anchor dose date

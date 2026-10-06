@@ -37,10 +37,10 @@ Kyoshi.apps.bosco.markup = `
         </div>
         <div class="note">Only for starting or restarting doses: your schedule starts over with a dose on this day.</div>
       </div>
-      <!-- Where doses go: a button per injection site (as many on as you like), in the order doses rotate through them. -->
+      <!-- Where doses go: a button per injection site (as many on as you like), grouped by body part, in the order doses take them. -->
       <div class="subhead sites-head" id="sitesLabel">Injection sites</div>
-      <div class="site-pills" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
-      <div class="note">Doses rotate through the sites that are on, in this order.</div>
+      <div class="site-parts" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
+      <div class="note">Body parts with a site on take turns, top to bottom; within each, doses go through its sites that are on, in this order. A thigh's front faces the ceiling when you sit; its side is between buttock and thigh.</div>
       <div class="subhead vial-head">Active vial</div>
       <div id="vialSummary">
         <div class="summary-line">
@@ -214,6 +214,7 @@ Kyoshi.apps.bosco.markup = `
       <thead><tr><th>Goal</th><th>Status</th><th>ETA / Date Achieved</th><th></th></tr></thead>
       <tbody id="goalsBody"></tbody>
     </table>
+    <div class="note">A goal counts as reached once the 7-day average passes it.</div>
   </section>
 
   <section id="chartSection" hidden>

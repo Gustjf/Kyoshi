@@ -30,7 +30,7 @@
     }
   }
 
-  function drawReport({ w, rate, goals: list }) {
+  function drawReport({ w, wa, rate, goals: list }) {
     const FONT = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
     const TEXT = "#1f2430", MUTED = "#6b7280", BORDER = "#dcdfe4", ACCENT = "#2563eb";
     const unit = S.unit, last = w[w.length - 1];
@@ -134,7 +134,7 @@
       unreachable: ["Off track", "#fee2e2", "#dc2626"]
     };
     list.forEach((g, i) => {
-      const s = A.goalStatus(g, w, rate);
+      const s = A.goalStatus(g, wa, rate); // by the 7-day averages, as on the page
       const [label, bg, fg] = PILLS[s.status];
       const mid = rowY + rowH / 2;
       text(`${+g.toFixed(1)} ${unit}`, tableLeft, mid + 11, "700 32px", TEXT);
