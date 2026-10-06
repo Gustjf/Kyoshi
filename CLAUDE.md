@@ -54,6 +54,7 @@ core/                 the shared DNA — K = window.Kyoshi
   cloud-crypto.js     K.cloudCrypto: the cloud's key string (kyoshi1.<owner>/<repo>.<token>.<secret>) and its locked files (AES-256-GCM, gzip)
   cloud.js            K.cloud: cloud sync through a private GitHub repository, a transport of K.sync (data/<app>.json each, text only; lost or not). No UI.
   cloud-key.js        K.cloud's key: Enter key, Set up a new cloud (KYOSHI.md), Update token, Disconnect; Download decrypted copy, Decrypt a file
+  cloud-upkeep.js     K.cloud's upkeep: the repository's history trimmed to the last 8 days (daily, on its own), the token's expiry notice
   cloud-ui.js         K.cloudUI: Developer Mode's Cloud block, its pop-up, and the banner and header glyph while the cloud needs you
   backup.js           K.backup: Developer Mode's "Backup & sync" block (the app on screen's Export/Import JSON, Export/Import all, Sync Folder…), sync & storage banners (imports dated; K.backup.ask: the import question)
   bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared) and log
@@ -77,6 +78,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips (a weekly schedule too) with a grocery list each, a cook view; Times & trips sets when (its meals and scheduled trips are slots in Momo's baseline, filled once a week is confirmed; cooking and extra trips pinned cards of their own)
   pabu/               keep in touch: people (a group and notes each) with calls, texts or visits, each on its own cadence (each a card of its own in Momo; This week at the top); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
+tools/decrypt.html    the cloud's files decrypted with the key, from disk, with no network (not loaded by index.html)
 tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), cloud.js (a fake GitHub), *.test.js
   sim/                the flow simulator (testplan.md): made-up lives through the real page; `node tests/sim/run.js` writes report.md and bundles/
 ```

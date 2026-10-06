@@ -12,8 +12,8 @@
  * then waiting longer; lost() (the banner and the glyph) once none got through since Kyoshi opened, for CLOUD_LOST_MS
  * after a failure, or while the browser says it's offline.
  * The key: localStorage "kyoshi.cloud" (a preference, never taken for data: core/storage.js) = { key, at, remember,
- * okAt } (at: this page's address; okAt: when a check last got through), or sessionStorage (checked first; gone with
- * the tab) when Remember on this device is unticked.
+ * okAt } (at: this page's address; okAt: when a check last got through; core/cloud-upkeep.js adds the token's end and
+ * the history's tidy), or sessionStorage (checked first; gone with the tab) when Remember on this device is unticked.
  * Per app (A._sync.cloud): sha and clock (version counters) of its file as this device last read or wrote it, note (the
  * last thing done), timer, savedAt; and in the engine's meta, pushed: this device's own counter at its last save there.
  * Safety rules:
@@ -94,6 +94,11 @@
     try { window[keep].setItem(PREF, JSON.stringify(r)); } catch (err) { console.warn("This browser won't keep the cloud's key: it works until the page closes."); }
   }
   const forgetRecord = () => ["sessionStorage", "localStorage"].forEach(where => { try { window[where].removeItem(PREF); } catch (err) { /* nothing there */ } });
+  // Adds fields to the key's record (okAt, and core/cloud-upkeep.js's), unless another tab changed the key meanwhile.
+  function keep(fields) {
+    const r = readRecord();
+    if (rec && r && r.key === rec.key) writeRecord(rec = { ...r, ...fields });
+  }
 
   // Takes up the key kept here: on when it's whole and saved for this page (nothing goes to GitHub until the first
   // check), else off (with a word when it's another copy's).
@@ -168,8 +173,7 @@
     failure = "";
     reachedSinceOpen = true;
     clearTimeout(lostTimer);
-    const r = readRecord();
-    if (rec && r && r.key === rec.key) writeRecord(rec = { ...r, okAt: new Date(okAt).toISOString() });
+    keep({ okAt: new Date(okAt).toISOString() });
   }
   // A check that didn't get through: a refused token or repository waits for a new key; anything else is tried again
   // later, with no console line (phones drop off all the time; the banner says so once it matters).
@@ -236,6 +240,7 @@
       if (run.stale()) return;
       if (trouble) throw trouble;
       gotThrough();
+      if (K.cloud.afterCheck) K.cloud.afterCheck(run.client); // the token's expiry, the daily tidy (core/cloud-upkeep.js)
     } catch (err) {
       if (!run.stale()) failed(err);
     }
@@ -383,14 +388,15 @@
 
   // --- What the UI and bug reports read ---
   // { state, why, message (the banner's, or why it stopped), busy, waiting (apps with changes not in the cloud), changes
-  // (how many), okAt, failedAt, checkedAt, lost, attention (the banner and the glyph show), repo }.
+  // (how many), okAt, failedAt, checkedAt, lost, expiry (the token's end, once it's near: a line), attention (the banner
+  // and the glyph show), repo }.
   function status() {
     const late = state === "off" ? [] : apps().filter(waiting), changes = late.reduce((n, A) => n + K.sync.version(A) - (A._sync.meta.pushed || 0), 0);
-    const isLost = lost();
+    const isLost = lost(), soon = state === "on" && K.cloud.expiry ? K.cloud.expiry() : null; // core/cloud-upkeep.js
     return {
-      state, why, busy, waiting: late.length, changes, okAt, failedAt, checkedAt, lost: isLost,
-      attention: !K.testMode && (isLost || state === "needs-key" || state === "error"),
-      message: !C.supported ? C.unsupported : state === "on" ? (isLost ? lostText(changes) : "") : message,
+      state, why, busy, waiting: late.length, changes, okAt, failedAt, checkedAt, lost: isLost, expiry: soon ? soon.text : "",
+      attention: !K.testMode && (isLost || state === "needs-key" || state === "error" || !!(soon && soon.urgent)),
+      message: !C.supported ? C.unsupported : state === "on" ? (isLost ? lostText(changes) : soon && soon.urgent ? soon.text : "") : message,
       repo: key ? key.repo : ""
     };
   }
@@ -408,13 +414,15 @@
   }
 
   // The transport (core/sync.js), what the UI reads, and for core/cloud-key.js (which adds connect, setup, updateToken,
-  // disconnect, exportDecrypted and decryptFile here) take, forget, held, appOf and timeOf. settled: resolves once the
-  // checks asked for so far are done (the tests wait on it).
+  // disconnect, exportDecrypted and decryptFile here) take, forget, held, appOf and timeOf; for core/cloud-upkeep.js
+  // (which adds tidied, history, expiry and afterCheck) record, keep and ui. settled: resolves once the checks
+  // asked for so far are done (the tests wait on it).
   K.cloud = {
     id: "cloud", init, changed, request, flush, stopTimers,
     state: () => (C.supported ? state : "unsupported"), message: () => status().message, dirty: A => state !== "off" && !!A._sync && waiting(A),
     status, note: A => (A._sync && A._sync.cloud ? A._sync.cloud.note : ""), keyString: () => (rec ? rec.key : ""), syncNow, LOST_MS: CLOUD_LOST_MS,
-    take, forget, held, appOf: path => (APP_FILE.exec(path) || [])[1] || "", timeOf, settled: () => queue
+    take, forget, held, appOf: path => (APP_FILE.exec(path) || [])[1] || "", timeOf, settled: () => queue,
+    record: () => rec, keep, ui
   };
   K.sync.use(K.cloud);
 })(Kyoshi);

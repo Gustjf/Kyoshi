@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "4.960", date: "2026-10-06", changes: [
+      "Cloud sync keeps the repository's history to the last 8 days on its own, about once a day, so it doesn't grow for good; the files stay as they are, and nothing shows unless GitHub refuses it.",
+      "Where the browser can read when GitHub's token expires, Developer Mode's Cloud block says so from 14 days before, and the banner and the cloud glyph from 3 days before, until Update token….",
+      "tools/decrypt.html decrypts the cloud's files with the key, opened from disk with no network and no Kyoshi running: each file as plain JSON, or all in one for Import all."
+    ] },
     { version: "4.860", date: "2026-10-06", changes: [
       "Cloud sync: every app's data stays current on your phone and computers through a private GitHub repository, each app's file encrypted (AES-256-GCM) with a key only your devices hold.",
       "One key per cloud: Developer Mode's Cloud block sets a new cloud up (making the key, and a KYOSHI.md saying what the repository is), takes the key on another device (remembered unless you untick it), shows it again, and takes a new token when GitHub's expires.",

@@ -16,7 +16,8 @@ birthdays coming up). You only see the app you're using; switch apps from the ic
   DEV badge) holds *Cloud sync*: every app kept current on your phone and computers through a private
   GitHub repository, each app's file encrypted (AES-256-GCM) with a key only your devices hold (one key
   string, pasted once per device; photos and PDFs never go up: they stay on their device, and in the sync
-  folder). It also holds *Backup & sync*: Export/Import JSON for the app on screen, Export/Import all
+  folder; the repository keeps the last 8 days of saves; `tools/decrypt.html`, opened from disk, decrypts
+  its files with the key, no network needed). It also holds *Backup & sync*: Export/Import JSON for the app on screen, Export/Import all
   (every app in one file), and the sync folder (e.g. shared by Syncthing), which keeps every app up to
   date across devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as
   plain files, in `<folder>/<app>/files/`. Developer Mode also shows how much storage Kyoshi uses.

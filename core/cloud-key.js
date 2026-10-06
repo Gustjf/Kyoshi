@@ -17,7 +17,7 @@
     "This private repository is where Kyoshi (small apps that run in a web browser) keeps each app's data current across its owner's devices.", "",
     "**Every file here is encrypted** with AES-256-GCM, under a key that is not in this repository: only the owner's devices hold it. Without that key nobody can read these files, GitHub included.", "",
     "## What's here",
-    "- `data/<app>.json`: one file per app (momo, bosco, hawky, …), saved again by Kyoshi after each change; each save is a commit.",
+    "- `data/<app>.json`: one file per app (momo, bosco, hawky, …), saved again by Kyoshi after each change; each save is a commit. The history keeps the last 8 days of saves: about once a day Kyoshi folds older ones into one commit (the files stay as they are).",
     "- `KYOSHI.md`: this file, written by Kyoshi.", "",
     "Kyoshi writes nothing else here. Photos and documents (such as the proof attached to Appa's records) are never kept here: they stay on the device they were added on.", "",
     "## A file in data/",
@@ -33,7 +33,8 @@
     "## The key",
     "One string, `kyoshi1.<owner>/<repository>.<token>.<secret>`: this repository, a GitHub token that may read and write it, and the secret (32 random bytes, base64url) that locks the files.", "",
     "## Reading a file",
-    "In Kyoshi: Developer Mode (Ctrl+9, or the DEV badge) → Cloud sync → *Decrypt a file…* (one file from here), or *Download decrypted copy* (every app in one file, which Import all takes back).", ""
+    "In Kyoshi: Developer Mode (Ctrl+9, or the DEV badge) → Cloud sync → *Decrypt a file…* (one file from here), or *Download decrypted copy* (every app in one file, which Import all takes back).", "",
+    "Without Kyoshi running: `tools/decrypt.html` in Kyoshi's own repository (download it with the rest of Kyoshi and open that page from disk). It takes the key and files from here (a Download ZIP of this repository, unzipped), needs no network, and gives each file back as plain JSON.", ""
   ].join("\n");
 
   // --- Checking a key against GitHub ---

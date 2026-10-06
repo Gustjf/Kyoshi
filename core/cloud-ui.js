@@ -1,10 +1,12 @@
 /* Kyoshi · core/cloud-ui.js — cloud sync's UI, as K.cloudUI (core/cloud.js does the work).
  * Developer Mode's Cloud block (#kDevCloud, above Backup & sync): the state ("off", "on · owner/repo", "needs you"), a
- * line on how it's going (and the app on screen's last cloud news), and the buttons that state allows: Sync now, Enter
- * key…, Set up a new cloud…, Show key, Update token…, Download decrypted copy, Decrypt a file…, Disconnect.
+ * line on how it's going (the app on screen's last cloud news; the token's end, once it's near), a History line only
+ * while GitHub refuses to trim the history (core/cloud-upkeep.js: quiet otherwise), and the buttons that state allows:
+ * Sync now, Enter key…, Set up a new cloud…, Show key, Update token…, Download decrypted copy, Decrypt a file…,
+ * Disconnect.
  * While all is well nothing shows on the page. While the cloud needs the owner (K.cloud.status().attention: GitHub out
- * of reach, or the key refused, or a file it can't read) the banner above the app (#kCloudBanner) says so in plain
- * words, with Try now (or Reload, for a file a newer Kyoshi saved; else Open Developer Mode), and the header shows the
+ * of reach, the key refused, a file it can't read, or the token's last days) the banner above the app (#kCloudBanner)
+ * says so in plain words, with Try now (or Reload, for a file a newer Kyoshi saved; else Open Developer Mode), and the header shows the
  * cloud-off glyph (#kCloudBtn, opening the block); both go away on their own once a check gets through or the key is
  * fixed: they can't be dismissed.
  * One pop-up (#kCloudOverlay), in one of four modes: setup (Set up a new cloud…: the three steps on GitHub, the
@@ -49,15 +51,24 @@
     if (s.busy) return s.busy;
     if (s.lost) return s.message;
     const left = s.waiting ? `${plural(s.waiting, "app has", "apps have")} changes waiting` : "Up to date";
-    if (s.failedAt) return `Couldn't reach GitHub at ${K.cloud.timeOf(s.failedAt)}; trying again soon.${s.waiting ? ` ${left}.` : ""}`;
+    const end = s.expiry ? ` ${s.expiry}` : ""; // the token's, once it's near
+    if (s.failedAt) return `Couldn't reach GitHub at ${K.cloud.timeOf(s.failedAt)}; trying again soon.${s.waiting ? ` ${left}.` : ""}${end}`;
     const A = K.active(), note = A && A.data ? K.cloud.note(A) : "";
-    return `${left}; ${s.checkedAt ? `checked ${ago(s.checkedAt)}` : "checking…"}.${note ? ` ${A.meta.name}: ${note[0].toLowerCase()}${note.slice(1)}.` : ""}`;
+    return `${left}; ${s.checkedAt ? `checked ${ago(s.checkedAt)}` : "checking…"}.${note ? ` ${A.meta.name}: ${note[0].toLowerCase()}${note.slice(1)}.` : ""}${end}`;
+  }
+  // The History line: only while GitHub refuses to trim the history (the trim is quiet otherwise).
+  function historyOf() {
+    const h = K.cloud.history();
+    return h.refused ? `History: GitHub won't let Kyoshi trim it to the last ${h.days} days (the token needs Contents: Read and write, and no rule may protect the branch), so it's kept whole; tried again in a week.` : "";
   }
 
   function render() {
     const s = K.cloud.status(), ok = K.cloudCrypto.supported;
     $("kDevCloudState").textContent = !ok ? "unavailable" : s.state === "off" ? "off" : s.state === "on" ? `on · ${s.repo}` : "needs you";
     $("kDevCloudText").textContent = textOf(s);
+    const history = ok && s.state === "on" && !K.testMode ? historyOf() : "";
+    $("kDevCloudHistory").textContent = history;
+    $("kDevCloudHistory").hidden = !history;
     $("kDevCloudSaid").textContent = said;
     $("kDevCloudSaid").hidden = !said;
     $("kDevCloudSaid").classList.toggle("bad", saidBad);

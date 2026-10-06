@@ -20,18 +20,46 @@ const secretOf = key => Buffer.from(key.split(".").pop(), "base64url");
 // token, isPrivate, big, held, route(ctx, who), hold(who, what) }. route answers https://api.github.com/** in that browser
 // context (who: a name for it): the CORS preflight, GET /repos/o/r, the listing of data/ (404 while empty, 304 for its
 // ETag), a file (base64 with GitHub's line breaks; left out over `big` bytes, then fetched as a blob), PUT of a file (a
-// stale sha: 409, none for one that's there: 422; both count in clashes), and a blob. Anything else answers 404 and counts
-// in odd, so a test can check nothing unexpected was sent. mode: "ok", "auth" (401 to everything), "offline" (no answer)
-// or "nosave" (saves answer 502; reading works). token: the one it accepts. hold(who, what): that device's saves ("save")
-// or file reads ("read") wait (counted in held) until the function it returns is called, so something can happen meanwhile.
+// stale sha: 409, none for one that's there: 422; both count in clashes), and a blob; and the history: each save (and
+// plant) is a commit on main dated fake.now (history() lists them, newest first), the branch, its commits (since, until,
+// pages), a new commit (made counts them) and moving the branch (moves; its files become that commit's). Anything else
+// answers 404 and counts in odd, so a test can check nothing unexpected was sent. mode: "ok", "auth" (401 to everything),
+// "offline" (no answer), "nosave" (saves answer 502; reading works) or "notidy" (moving the branch answers 403). token:
+// the one it accepts. expires: the token's end as GitHub writes it, sent on every answer when set. hold(who, what): that
+// device's saves ("save") or file reads ("read") wait (counted in held) until the function it returns is called, so
+// something can happen meanwhile.
 function fakeGithub({ repo = REPO } = {}) {
   const base = `/repos/${repo}`;
-  const fake = { files: new Map(), puts: 0, clashes: 0, gets: 0, requests: 0, odd: 0, mode: "ok", token: TOKEN, isPrivate: true, big: Infinity, held: 0 };
+  const fake = { files: new Map(), puts: 0, clashes: 0, gets: 0, requests: 0, odd: 0, mode: "ok", token: TOKEN, isPrivate: true, big: Infinity, held: 0,
+    now: Date.parse("2026-09-30T07:00:00Z"), commits: new Map(), head: "", made: 0, moves: 0, expires: "" };
   const holds = new Map(); // "who what" → the promise those requests wait on
+  const trees = new Map(), blobs = new Map(); // tree sha → { path: blob sha }; blob sha → bytes
   const sha1 = bytes => crypto.createHash("sha1").update(bytes).digest("hex");
-  const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "etag, x-ratelimit-remaining, x-ratelimit-reset" };
-  const reply = (route, status, body, headers = {}) =>
-    route.fulfill({ status, headers: { ...CORS, "content-type": "application/json; charset=utf-8", ...headers }, body: body === null ? "" : JSON.stringify(body) });
+  const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "etag, link, x-ratelimit-remaining, x-ratelimit-reset, github-authentication-token-expiration" };
+  const reply = (route, status, body, headers = {}) => route.fulfill({ status, body: body === null ? "" : JSON.stringify(body),
+    headers: { ...CORS, "content-type": "application/json; charset=utf-8", ...(fake.expires ? { "github-authentication-token-expiration": fake.expires } : {}), ...headers } });
+  const iso = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const person = date => ({ name: "Tester", email: "tester@example.com", date });
+  // A commit of the files as they are now, on the branch, dated fake.now (a second after the last, at the least).
+  function commitFiles(message) {
+    const snap = Object.fromEntries([...fake.files].sort().map(([p, f]) => [p, f.sha])), tree = sha1(JSON.stringify(snap));
+    trees.set(tree, snap);
+    const last = fake.commits.get(fake.head), date = iso(Math.max(fake.now, last ? Date.parse(last.committer.date) + 1000 : 0));
+    return (fake.head = addCommit({ tree, parents: fake.head ? [fake.head] : [], message, author: person(date), committer: person(date) }));
+  }
+  // A commit, not on the branch (yet).
+  function addCommit(c) {
+    const sha = sha1(JSON.stringify(c) + fake.commits.size);
+    fake.commits.set(sha, { sha, ...c });
+    return sha;
+  }
+  // The branch's history, newest first: [{ sha, tree, parents, message, date }].
+  fake.history = () => {
+    const out = [];
+    for (let c = fake.commits.get(fake.head); c; c = fake.commits.get(c.parents[0])) out.push({ sha: c.sha, tree: c.tree, parents: c.parents, message: c.message, date: c.committer.date });
+    return out;
+  };
+  const asListed = c => ({ sha: c.sha, commit: { message: c.message, tree: { sha: c.tree }, author: c.author, committer: c.committer }, parents: c.parents.map(sha => ({ sha })) });
 
   async function handle(route, who) {
     const req = route.request(), method = req.method(), path = decodeURIComponent(new URL(req.url()).pathname);
@@ -49,7 +77,7 @@ function fakeGithub({ repo = REPO } = {}) {
         const list = [...fake.files].filter(([k]) => k.startsWith("data/")).map(([k, v]) => ({ type: "file", name: k.slice(5), path: k, sha: v.sha, size: v.bytes.length }));
         if (!list.length) return reply(route, 404, { message: "Not Found" });
         const etag = `W/"${sha1(JSON.stringify(list))}"`;
-        if (req.headers()["if-none-match"] === etag) return route.fulfill({ status: 304, headers: { ...CORS, etag } });
+        if (req.headers()["if-none-match"] === etag) return route.fulfill({ status: 304, headers: { ...CORS, ...(fake.expires ? { "github-authentication-token-expiration": fake.expires } : {}), etag } });
         return reply(route, 200, list, { etag });
       }
       if (method === "GET") {
@@ -70,9 +98,43 @@ function fakeGithub({ repo = REPO } = {}) {
         }
         const bytes = Buffer.from(body.content, "base64"), sha = sha1(bytes);
         fake.files.set(p, { sha, bytes, message: body.message });
+        blobs.set(sha, bytes);
+        commitFiles(body.message);
         fake.puts++;
         return reply(route, now ? 200 : 201, { content: { type: "file", name: p.split("/").pop(), path: p, sha, size: bytes.length }, commit: { sha: sha1(`commit ${fake.puts}`) } });
       }
+    }
+    // The history: the branch, its commits (newest first; since and until on the commit's date, both taking it), a new
+    // commit (made, not on the branch), and moving the branch (mode "notidy": refused, as a rule protecting it would).
+    const q = new URL(req.url()).searchParams;
+    if (method === "GET" && path === `${base}/branches/main`) {
+      const head = fake.commits.get(fake.head);
+      return reply(route, 200, { name: "main", commit: { sha: fake.head, commit: { tree: { sha: head.tree } } } });
+    }
+    if (method === "GET" && path === `${base}/commits`) {
+      if (!fake.head) return reply(route, 409, { message: "Git Repository is empty." });
+      const since = q.get("since") ? Date.parse(q.get("since")) : -Infinity, until = q.get("until") ? Date.parse(q.get("until")) : Infinity;
+      const per = +q.get("per_page") || 30, page = +q.get("page") || 1;
+      const all = fake.history().filter(c => Date.parse(c.date) >= since && Date.parse(c.date) <= until).map(c => asListed(fake.commits.get(c.sha)));
+      return reply(route, 200, all.slice((page - 1) * per, page * per));
+    }
+    if (method === "POST" && path === `${base}/git/commits`) {
+      const body = JSON.parse(req.postData() || "{}"), date = iso(fake.now);
+      if (!trees.has(body.tree) || !(body.parents || []).every(sha => fake.commits.has(sha))) return reply(route, 422, { message: "Tree or parent not found" });
+      const sha = addCommit({ tree: body.tree, parents: body.parents || [], message: body.message, author: body.author || person(date), committer: body.committer || person(date) });
+      fake.made++;
+      return reply(route, 201, { sha, tree: { sha: body.tree }, parents: (body.parents || []).map(s => ({ sha: s })), message: body.message });
+    }
+    if (method === "PATCH" && path === `${base}/git/refs/heads/main`) {
+      if (fake.mode === "notidy") return reply(route, 403, { message: "Resource not accessible by personal access token" });
+      const body = JSON.parse(req.postData() || "{}"), c = fake.commits.get(body.sha);
+      if (!c) return reply(route, 422, { message: "Object does not exist" });
+      fake.head = c.sha;
+      fake.moves++;
+      const snap = trees.get(c.tree);
+      for (const p of [...fake.files.keys()]) if (!(p in snap)) fake.files.delete(p);
+      for (const [p, sha] of Object.entries(snap)) if (!fake.files.has(p) || fake.files.get(p).sha !== sha) fake.files.set(p, { sha, bytes: blobs.get(sha) });
+      return reply(route, 200, { ref: "refs/heads/main", object: { sha: c.sha, type: "commit" } });
     }
     if (method === "GET" && path.startsWith(`${base}/git/blobs/`)) {
       const sha = path.split("/").pop(), f = [...fake.files.values()].find(v => v.sha === sha);
@@ -89,7 +151,7 @@ function fakeGithub({ repo = REPO } = {}) {
     return () => { holds.delete(`${who} ${what}`); release(); };
   };
   // Puts a file there as another device would (bytes: a Buffer).
-  fake.plant = (path, bytes) => fake.files.set(path, { sha: sha1(bytes), bytes });
+  fake.plant = (path, bytes) => { fake.files.set(path, { sha: sha1(bytes), bytes }); blobs.set(sha1(bytes), bytes); commitFiles(`Kyoshi: ${path} planted`); };
   fake.text = path => (fake.files.has(path) ? fake.files.get(path).bytes.toString("utf8") : "");
   fake.paths = () => [...fake.files.keys()].sort();
   return fake;
@@ -111,8 +173,8 @@ function encryptInNode(save, app, secret = SECRET) {
   return JSON.stringify({ kyoshi: 1, app, alg: "AES-256-GCM", zip: "gzip", iv: iv.toString("base64"), data: data.toString("base64") }, null, 2);
 }
 
-// Waits until the cloud checks asked for so far are done.
-const settled = tab => tab.page.evaluate(() => Kyoshi.cloud.settled());
+// Waits until the cloud checks asked for so far are done, and the history's trim one may have started.
+const settled = tab => tab.page.evaluate(async () => { await Kyoshi.cloud.settled(); await Kyoshi.cloud.tidied(); });
 // The Cloud block's state ("off", "on · owner/repo", "needs you") and line.
 const cloudState = tab => tab.page.evaluate(() => document.getElementById("kDevCloudState").textContent);
 const cloudText = tab => tab.page.evaluate(() => document.getElementById("kDevCloudText").textContent);

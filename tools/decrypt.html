@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!-- Kyoshi · tools/decrypt.html — the cloud's files, decrypted without Kyoshi running: open this page from disk (it isn't
+     part of the site's pages, and index.html never loads it), paste the key, pick data/<app>.json files from the cloud's
+     repository (a Download ZIP of it, unzipped), and save each as plain JSON (Import JSON takes it; several in one file:
+     Import all takes that). Needs nothing but ../core/base.js and ../core/cloud-crypto.js (the key and the locked files)
+     and a browser with Web Crypto: no network at all, and nothing leaves the page. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kyoshi · Decrypt cloud files</title>
+<style>
+  :root { --bg: #fafaf7; --fg: #1d1d1b; --muted: #66665f; --border: #d9d9d2; --good: #2d6a3e; --bad: #a2332b; --accent: #2d6a3e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1c1a; --fg: #e9e9e4; --muted: #a3a39b; --border: #3b3c38; --good: #7cc48f; --bad: #f08a80; --accent: #7cc48f; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.4em; margin: 0 0 8px; }
+  p, li { color: var(--muted); }
+  label { display: block; font-weight: 600; margin: 16px 0 4px; }
+  textarea, input[type=file] { width: 100%; box-sizing: border-box; font: inherit; color: inherit; background: transparent; }
+  textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-family: ui-monospace, monospace; font-size: .85em; }
+  button { margin-top: 16px; font: inherit; padding: 8px 18px; border-radius: 6px; border: 0; background: var(--accent); color: var(--bg); cursor: pointer; }
+  #out { padding-left: 20px; } #out li { color: var(--fg); margin: 6px 0; overflow-wrap: anywhere; }
+  .good { color: var(--good) !important; } .bad { color: var(--bad) !important; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Decrypt Kyoshi's cloud files</h1>
+  <p>For reading the cloud's data without Kyoshi: the key made when the cloud was set up, and the <code>data/&lt;app&gt;.json</code> files from its GitHub repository. Each comes back as plain JSON. Nothing leaves this page.</p>
+  <label for="key">Key</label>
+  <textarea id="key" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="kyoshi1.&hellip;"></textarea>
+  <label for="files">Files (from the repository's <code>data</code> folder)</label>
+  <input type="file" id="files" accept=".json,application/json" multiple>
+  <button id="go">Decrypt</button>
+  <p id="said" role="status"></p>
+  <ul id="out"></ul>
+</main>
+<script src="../core/base.js"></script>
+<script src="../core/cloud-crypto.js"></script>
+<script>
+(function (C) {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, "0");
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  let urls = []; // the last run's links, let go of on the next
+
+  function say(text, cls = "") { $("said").textContent = text; $("said").className = cls; }
+  // A line in the list: its text, and a link to save a file (when there's one).
+  function line(text, cls, file) {
+    const li = document.createElement("li");
+    li.textContent = text;
+    li.className = cls;
+    if (file) {
+      const url = URL.createObjectURL(new Blob([`${JSON.stringify(file.data, null, 2)}\n`], { type: "application/json" })), a = document.createElement("a");
+      urls.push(url);
+      a.href = url;
+      a.download = file.name;
+      a.textContent = `Save ${file.name}`;
+      li.append(" ", a);
+    }
+    $("out").append(li);
+  }
+
+  async function go() {
+    urls.forEach(u => URL.revokeObjectURL(u));
+    urls = [];
+    $("out").textContent = "";
+    if (!C.supported) return say(C.unsupported, "bad");
+    const k = C.parseKey($("key").value);
+    if (!k) return say(C.keyError($("key").value), "bad");
+    const files = Array.from($("files").files);
+    if (!files.length) return say("Pick one or more files from the repository's data folder first.", "bad");
+    say("Decrypting…");
+    const secret = await C.importKey(k.secret), apps = {};
+    for (const f of files) {
+      let env = null;
+      try { env = JSON.parse(await f.text()); } catch (err) { /* not JSON */ }
+      if (env && typeof env === "object" && env.kyoshi > 1) { line(`${f.name}: saved by a newer Kyoshi: use the decrypt page that came with it.`, "bad"); continue; }
+      if (!C.isEnvelope(env)) { line(`${f.name}: not a Kyoshi cloud file (KYOSHI.md and other files are left as they are).`, "bad"); continue; }
+      try {
+        const save = await C.open(env, secret), id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "kyoshi";
+        apps[id] = save;
+        line(`${f.name}: ${id}'s data, decrypted.`, "good", { name: `${id}-cloud-${today()}.json`, data: save });
+      } catch (err) {
+        line(`${f.name}: ${err.code === "key" ? "can't be read with this key: it was locked with another one." : "damaged: it can't be read."}`, "bad");
+      }
+    }
+    const n = Object.keys(apps).length;
+    if (n > 1) line("Every app above in one file (Kyoshi's Import all takes it):", "", { name: `kyoshi-cloud-${today()}.json`, data: { exportedAt: new Date().toISOString(), cloud: true, apps } });
+    say(n ? `Decrypted ${n} file${n === 1 ? "" : "s"} of ${files.length}: save ${n === 1 ? "it" : "each"} below.` : "Nothing could be decrypted.", n ? "good" : "bad");
+  }
+
+  $("go").addEventListener("click", () => { go().catch(err => { console.error(err); say("Something went wrong: try again.", "bad"); }); });
+})(Kyoshi.cloudCrypto);
+</script>
+</body>
+</html>

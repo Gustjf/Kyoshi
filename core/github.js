@@ -1,8 +1,9 @@
 /* Kyoshi · core/github.js — a small client for GitHub's REST API, as K.github. No UI, no crypto: core/cloud.js keeps the
  * cloud's private repository with it.
  * K.github.client({ repo: "owner/name", token }) → { repo(), listDir(path, etag), getFile(path), getBlob(sha),
- * putFile(path, base64, { sha, message }), branch(), newCommit(treeSha, message), moveBranch(sha) } (the last three
- * for tidying the repository's history). There is no call that deletes a file.
+ * putFile(path, base64, { sha, message }), branch(), commits({ since, until, page }), newCommit(treeSha, message,
+ * parents, { author, committer }), moveBranch(sha), expiresAt() } (branch to moveBranch for tidying the repository's
+ * history: core/cloud-upkeep.js). There is no call that deletes a file.
  * Every request goes to https://api.github.com and nowhere else, with the token as a Bearer header, never from the
  * browser's cache (cache: "no-store": a listing asks with its last ETag instead, and a 304 comes back as { status: 304 }),
  * and gives up after REQUEST_MS.
@@ -14,7 +15,11 @@
  * As GitHub documents it (to confirm on the first real set-up from disk: the environment this was built in can't reach
  * api.github.com): a PUT whose sha is stale answers 409 (callers treat 409 and 422 alike: read again, then try again),
  * and the API answers CORS for any page, one opened from a file included (Access-Control-Allow-Origin: *, the
- * Authorization header allowed in the preflight; ETag and X-RateLimit-* exposed). */
+ * Authorization header allowed in the preflight; ETag and X-RateLimit-* exposed). Also to confirm there: the Git Data
+ * calls (a commit, moving the branch) work with a fine-grained token holding only Contents: Read and write (they should;
+ * a refusal turns the automatic tidy off and says so); and whether the browser may read the
+ * GitHub-Authentication-Token-Expiration header (GitHub's list of exposed headers didn't name it when this was written:
+ * then expiresAt() stays 0, and an expired token is caught when GitHub refuses it, as before). */
 (function (K) {
   "use strict";
   const API = "https://api.github.com";
@@ -51,6 +56,10 @@
   function client({ repo, token }) {
     const base = `/repos/${enc(repo)}`;
     let branchName = ""; // the repository's default branch, once repo() has read it
+    let expires = 0;     // when the token expires, as GitHub's last answer said
+
+    // GitHub's "2026-11-05 12:00:00 UTC" (or with an offset: "… -0700") → ms; 0 when it isn't one.
+    const when = text => Date.parse(String(text || "").trim().replace(" ", "T").replace(/\s*UTC$/, "Z").replace(/\s+([+-]\d{2})(\d{2})$/, "$1:$2")) || 0;
 
     // One request: { status, etag, data } (data: the JSON answer), or { status: 304 } when etag still holds.
     async function request(method, path, { body, etag = "" } = {}) {
@@ -62,6 +71,7 @@
       let res = null;
       try {
         res = await fetch(API + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store", signal: stop ? stop.signal : undefined });
+        expires = when(res.headers.get("github-authentication-token-expiration")) || expires;
         if (res.status === 304) return { status: 304, etag, data: null };
         if (!res.ok) throw await failure(res);
         return { status: res.status, etag: res.headers.get("etag") || "", data: res.status === 204 ? null : await res.json() };
@@ -106,20 +116,34 @@
         const { data } = await request("PUT", `${base}/contents/${enc(path)}`, { body: { message, content: base64, ...(sha ? { sha } : {}) } });
         return { sha: String((data && data.content && data.content.sha) || "") };
       },
-      // For tidying the history: the default branch's head { sha, tree }, a commit of a tree with no parents, and
-      // moving the branch to a commit.
+      // For tidying the history: the default branch's head { sha, tree }; its commits, newest first, 100 a page
+      // ({ since, until }: ISO moments, GitHub's own filter on the commit's date) as { sha, tree, parents (their shas),
+      // message, author, committer }; a commit of a tree (parents, author and committer as given: GitHub's defaults
+      // otherwise); and moving the branch to a commit, whatever it held.
       async branch() {
         if (!branchName) await this.repo();
         const { data } = await request("GET", `${base}/branches/${enc(branchName)}`);
         return { sha: String(data.commit.sha), tree: String(data.commit.commit.tree.sha) };
       },
-      async newCommit(treeSha, message) {
-        return String((await request("POST", `${base}/git/commits`, { body: { message, tree: treeSha, parents: [] } })).data.sha);
+      async commits({ since = "", until = "", page = 1, perPage = 100 } = {}) {
+        if (!branchName) await this.repo();
+        const q = new URLSearchParams({ sha: branchName, per_page: String(perPage), page: String(page) });
+        if (since) q.set("since", since);
+        if (until) q.set("until", until);
+        const { data } = await request("GET", `${base}/commits?${q}`);
+        return (Array.isArray(data) ? data : []).map(c => ({ sha: String(c.sha), tree: String(c.commit.tree.sha), parents: (c.parents || []).map(p => String(p.sha)),
+          message: String(c.commit.message || ""), author: c.commit.author || null, committer: c.commit.committer || null }));
+      },
+      async newCommit(treeSha, message, parents = [], { author = null, committer = null } = {}) {
+        const body = { message, tree: treeSha, parents, ...(author ? { author } : {}), ...(committer ? { committer } : {}) };
+        return String((await request("POST", `${base}/git/commits`, { body })).data.sha);
       },
       async moveBranch(sha) {
         if (!branchName) await this.repo();
         await request("PATCH", `${base}/git/refs/heads/${enc(branchName)}`, { body: { sha, force: true } });
-      }
+      },
+      // When the token expires (ms; 0 when GitHub didn't say, or the browser can't read it), from the last answer.
+      expiresAt: () => expires
     };
   }
 
