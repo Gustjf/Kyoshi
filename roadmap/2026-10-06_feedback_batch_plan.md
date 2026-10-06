@@ -93,7 +93,16 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   `renderAll` (as Momo's and Appa's do), so "Next dose" stays current. Tests: (d) and (e) went to a new
   `tests/bosco-goals.test.js` (not doses); `gen.bosco`'s `lastSite` became `doseSites` (the last doses' sites, the
   latest last); the sync test also covers the skip's merge rule.
-- [ ] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472)
+- [x] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472) — done 2026-10-06, as
+  planned (D3, assumption 15). Along the way: "Director, Year" and the info share the one `.item-info` span with core's
+  `SEP` ("|") between them, not the example's "·" (the house separator: a dot could pass for a decimal point); the row is
+  the shared `.field-row` (side by side on a computer, equal widths as Added / Finished are; stacked on a phone), so no new
+  CSS. `cleanItems` cleans the two on any category rather than dropping them (a newer version giving TV a director loses
+  nothing here) and the line shows them wherever present; only the pop-up writes "" for a category that isn't a movie
+  (what was typed in the row before switching away from Movie is left out at Save), and Delete's marker empties both. The
+  search reads name, director, year, info, then the category's word. The "already on your list" check still goes by name
+  (a remake with another year still asks; Yes adds it). Tests: `gen.library` takes `info` (its items stay in the
+  pre-2.472 shape, with no director or year, for the older backup); helpers in `tests/wanshitong.js`.
 - [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070)
 - [ ] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi 5.170)
 - [ ] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484)
