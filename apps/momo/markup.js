@@ -212,7 +212,8 @@ Kyoshi.apps.momo.markup = `
     </div>
   </div>
 
-  <!-- A weekend's plan and days off around it (weekends.js): brief notes, kept by its Saturday. -->
+  <!-- A weekend's plan and days off around it (weekends.js): brief notes, kept by its Saturday; what's left of PTO with
+       them, once it's set (timeoff.js). -->
   <div class="overlay" id="weekendOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="weekendTitle">
       <button class="modal-close" aria-label="Close">&times;</button>
@@ -244,6 +245,7 @@ Kyoshi.apps.momo.markup = `
           </div>
         </div>
         <div class="note">Half days: the afternoon before, the morning after. Days off take no hours.</div>
+        <div class="note" id="weekendPto" hidden></div>
       </div>
       <div class="modal-actions">
         <button id="weekendSaveBtn">Save</button>

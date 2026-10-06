@@ -4,13 +4,15 @@
  * Pointer Events: the mouse down, a few moves past its threshold, up), New card and the card editor's Before & after,
  * the bank's actions (Load or Reload baseline, Copy previous week, Fill gaps with Free time, Save as baseline, Clear), the
  * sleep routine's pop-up (its fields and status line, Save, Remove), Upcoming weekends (the fold's line and tiles, a
- * weekend's pop-up with its days off, the days-off marks on the board and on Today), the close-out (its banner, the
+ * weekend's pop-up with its days off and its PTO line, the days-off marks on the board and on Today), Developer Mode's Time
+ * off block (its line and fields, −½ day / −1 day, Save as of today, Clear), the close-out (its banner, the
  * pop-up's rows, the Done stepper, Confirm, Later; Close out this week; Reopen), Today (its sections and rows, a card's
  * pop-up), the card editor's From section, "Open in <App>" and read-only state (a card set in its app), and the
  * switcher's dots with their tooltips; for cards set in their app: the baseline's and a week's cards as stored, how a
  * card looks, trying to drag one, Alt+click and the clipboard's shortcuts. What Momo drew from (its fill of other apps'
  * needs) is read too, for checks. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
+const { devPanel } = require("./lib");
 
 const M = "#kMount";
 const flat = s => String(s || "").replace(/\s+/g, " ").trim();
@@ -322,6 +324,41 @@ const todayOff = tab => tab.page.evaluate(() => {
     .map(s => ({ off: s ? s.dataset.off : "", tip: s ? s.title : "", half: !!s && s.classList.contains("half") }));
 });
 
+// --- Time off (timeoff.js): a weekend's pop-up's PTO line, and Developer Mode's "Time off" block ---
+// The pop-up's line under its days off ("" while it's hidden).
+const ptoLine = tab => tab.page.evaluate(() => { const l = document.querySelector("#kMount #weekendPto"); return l.hidden ? "" : l.textContent.trim(); });
+// The block as it is: { head ("PTO 4 days · Sick 2 days", or "not set up"), pto, sick (its fields, as they show them), clear
+// (Clear shown) }; Developer Mode is left as it was.
+async function timeOff(tab) {
+  const was = await devPanel(tab, true);
+  const out = await tab.page.evaluate(() => {
+    const box = document.querySelector("#kDevAppTools .momo-timeoff");
+    return { head: box.querySelector(".dev-block-head strong").textContent.trim(), pto: box.querySelector("#momoPto").value, sick: box.querySelector("#momoSick").value,
+      clear: !!box.querySelector("#momoTimeOffClear") };
+  });
+  await devPanel(tab, was);
+  return out;
+}
+// In the block as the user does (Developer Mode opened, then left as it was): types { pto, sick } (each field filled, then
+// left), presses less ([which ("pto" | "sick"), "half" | "day"]: its −½ day or −1 day), then Save as of today unless save is
+// false (open: the panel stays open, to read what's typed).
+async function setTimeOff(tab, fields = {}, { less = [], save = true, open = false } = {}) {
+  const p = tab.page, was = await devPanel(tab, true), id = k => `#momo${k === "pto" ? "Pto" : "Sick"}`;
+  for (const [k, v] of Object.entries(fields)) {
+    await p.fill(`#kDevAppTools ${id(k)}`, String(v));
+    await p.press(`#kDevAppTools ${id(k)}`, "Tab");
+  }
+  for (const [k, by] of less) await p.click(`#kDevAppTools .momo-off-field:has(${id(k)}) [data-less="${by === "day" ? 8 : 4}"]`);
+  if (save) await p.click("#kDevAppTools #momoTimeOffSave");
+  if (!open) await devPanel(tab, was);
+}
+// Clear in the block (the question answered as tab.answers say).
+async function clearTimeOff(tab) {
+  const was = await devPanel(tab, true);
+  await tab.page.click("#kDevAppTools #momoTimeOffClear");
+  await devPanel(tab, was);
+}
+
 // --- The close-out ---
 // The banner's words ("" while it's hidden).
 async function banner(tab) {
@@ -396,6 +433,6 @@ module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
   newCard, sides, setSides, saveCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
   fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible, sleepForm, sleepRoutine, removeSleep, closeSleep,
-  weekends, openWeekend, weekendForm, stepOff, fillWeekend, saveWeekend, clearWeekend, cancelWeekend, offMarks, todayOff,
+  weekends, openWeekend, weekendForm, stepOff, fillWeekend, saveWeekend, clearWeekend, cancelWeekend, offMarks, todayOff, ptoLine, timeOff, setTimeOff, clearTimeOff,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };

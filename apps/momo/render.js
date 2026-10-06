@@ -23,7 +23,7 @@
     renderBank(list, key);
     renderBoard(list, key);
     A.renderCloseOutControls();
-    A.refreshDev(); // the undo count in Developer Mode
+    A.checkDev(); // Developer Mode's tools (the undo count, Time off), when they've changed (events.js)
     A.paintClip();
     A.renderWeekends(); // under the board and under Today (weekends.js)
     A.renderToday();

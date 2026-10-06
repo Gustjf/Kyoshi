@@ -9,7 +9,7 @@
   const S = A.S;
   const { isNum, isPos, isObj, isDate, newId } = K.util;
   const { DAY_HOURS, STEP, POSITIONS, OLD_COLORS, MAX_GOAL_HOURS, GOAL_MAX_WEEK, UNDO_MAX, UNDO_MAX_CHARS, DATA_SCHEMA_VERSION, PLAN_MAX, OFF_MAX,
-    snap, clampHours, cleanText, isDueDate, isWeekKey, dayIndex, thisWeekKey, nextWeekKey } = A;
+    TIME_OFF_MIN, TIME_OFF_MAX, snap, clampHours, cleanText, isDueDate, isWeekKey, dayIndex, thisWeekKey, nextWeekKey } = A;
 
   const STANDALONE_KEY = "momoData_v1"; // the standalone Momo's data: read (never changed) on the first open in Kyoshi
   const APP_ID = /^[a-z][a-z0-9]{0,30}$/; // an app's id, as Kyoshi.register takes it
@@ -20,8 +20,8 @@
     S.lastSaved = JSON.parse(S.lastSavedJSON);
   }
 
-  // Stamps each week, the baseline, each goal, each colour, each week's asks and each weekend (its plan, its days off)
-  // that changed since the last save with the time, so sync knows which side's copy is newer.
+  // Stamps each week, the baseline, each goal, each colour, each week's asks, each weekend (its plan, its days off) and the
+  // time off that changed since the last save with the time, so sync knows which side's copy is newer.
   function stampChanges(prev) {
     if (!prev) return;
     const data = S.data, now = Date.now(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -35,6 +35,7 @@
     Object.keys(data.asks).forEach(k => { if (!same(data.asks[k], asked[k])) data.asks[k].u = now; });
     const planned = prev.weekends || {};
     Object.keys(data.weekends).forEach(k => { if (!same(data.weekends[k], planned[k])) data.weekends[k].u = now; });
+    if (data.timeOff && !same(data.timeOff, prev.timeOff)) data.timeOff.u = now;
   }
 
   // Keeps a change made on this device, with colours for any new titles: the
@@ -186,6 +187,14 @@
     });
     return out;
   }
+  // PTO and sick time (see model.js): the hours as saved on asOf, on the 15-minute grid, TIME_OFF_MIN to TIME_OFF_MAX; once
+  // cleared, 0s and asOf "" with its time (so the clearing wins over an older copy's). null when never set, or damaged.
+  function cleanTimeOff(raw) {
+    const hours = v => Math.min(TIME_OFF_MAX, Math.max(TIME_OFF_MIN, snap(v)));
+    if (!isObj(raw)) return null;
+    if (isNum(raw.pto) && isNum(raw.sick) && isDate(raw.asOf)) return { pto: hours(raw.pto), sick: hours(raw.sick), asOf: raw.asOf, u: cleanU(raw.u) };
+    return raw.asOf === "" && isPos(raw.u) ? { pto: 0, sick: 0, asOf: "", u: raw.u } : null;
+  }
   function normalizeData(raw) {
     const out = A.emptyData();
     if (!isObj(raw)) return out;
@@ -201,6 +210,7 @@
     out.colors = isObj(raw.colors) ? cleanColors(raw.colors) : oldColors(raw, out);
     out.asks = cleanAsks(raw.asks);
     out.weekends = cleanWeekends(raw.weekends);
+    out.timeOff = cleanTimeOff(raw.timeOff);
     return out;
   }
   // Colours as saved (a title's, an old goal's or an app's: colors.js), in key order; ensureColors sorts out any two keys
@@ -285,7 +295,8 @@
       goals: S.data.goals,
       colors: S.data.colors,
       asks: S.data.asks,
-      weekends: S.data.weekends
+      weekends: S.data.weekends,
+      timeOff: S.data.timeOff
     };
   }
 
@@ -299,7 +310,7 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline, weekend plans and days off — with this backup?")) return;
+    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline, weekend plans, days off and time off — with this backup?")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];
@@ -316,7 +327,7 @@
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
   // Combines two versions changed separately: every week, the baseline, every
-  // goal, every title's colour, every week's asks and every weekend (plan and days off) is taken from
+  // goal, every title's colour, every week's asks, every weekend (plan and days off) and the time off is taken from
   // whichever side changed it last, and goal hours logged on either side are all kept. Gives
   // the same result on every device, so two devices combining at once still agree.
   function mergeVersions(a, b) {
@@ -333,10 +344,10 @@
     const colors = {};
     [older.colors, newer.colors].forEach(side => Object.keys(side).forEach(k => { colors[k] = pick(colors[k], side[k]); }));
     return { weeks: byKey(older.weeks, newer.weeks), baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors, asks: byKey(older.asks || {}, newer.asks || {}),
-      weekends: byKey(older.weekends || {}, newer.weekends || {}) };
+      weekends: byKey(older.weekends || {}, newer.weekends || {}), timeOff: pick(older.timeOff, newer.timeOff) || null };
   }
   const sorted = o => Object.keys(o).sort().map(k => [k, o[k]]);
-  const dataKey = d => JSON.stringify([sorted(d.weeks), d.baseline, d.goals, d.colors, sorted(d.asks), sorted(d.weekends)]);
+  const dataKey = d => JSON.stringify([sorted(d.weeks), d.baseline, d.goals, d.colors, sorted(d.asks), sorted(d.weekends), d.timeOff]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -349,7 +360,7 @@
       same: dataKey(next) === theirKey,
       apply() {
         if (dataKey(next) === dataKey(S.data)) return false; // nothing new here
-        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks, weekends: next.weekends };
+        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks, weekends: next.weekends, timeOff: next.timeOff };
         return true;
       }
     };

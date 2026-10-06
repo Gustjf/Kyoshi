@@ -155,7 +155,8 @@ module.exports = [
 
       // On a phone, the long one gives way: its title is cut short, and when it's due and its time stay in view.
       await p.setViewportSize(PHONE);
-      await p.waitForFunction(w => innerWidth === w, PHONE.width);
+      // Measured once Momo has redrawn for the phone (its hours are shorter there), which replaces the task measured.
+      await p.waitForFunction(w => innerWidth === w && Kyoshi.apps.momo.S.ruler.hour === Kyoshi.apps.momo.hourPx(), PHONE.width);
       const fit = await p.$eval('#kMount #taskCards .task[data-task="n:hawky:hk0003"]', c => {
         const row = c.parentElement.getBoundingClientRect(), r = c.getBoundingClientRect(), title = c.querySelector(".card-title");
         const inside = el => { const b = el.getBoundingClientRect(); return b.left >= r.left && b.right <= r.right + 0.5; };

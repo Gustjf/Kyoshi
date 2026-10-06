@@ -22,6 +22,10 @@
  *           and after (Monday, then Tuesday…), each 0 to OFF_MAX in half days (a half before is that Friday's afternoon,
  *           after that Monday's morning); "" and 0s once cleared, kept so the clearing wins when two devices combine.
  *           Past weekends' stay. Apart from the weeks too; it takes no hours, nor does a day off.
+ * timeOff:  { pto, sick, asOf, u } — PTO and sick time (timeoff.js): the hours you had on asOf ("YYYY-MM-DD", the day they
+ *           were saved in Developer Mode), on the 15-minute grid, TIME_OFF_MIN to TIME_OFF_MAX; never lowered here: what's
+ *           left is worked out (PTO less the days off entered on a weekend from asOf on). Once cleared, 0s and asOf "",
+ *           kept with its time so the clearing wins when two devices combine; null while never set.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
@@ -41,7 +45,7 @@
  *           its copies in the weeks it's loaded into), replaced when it's saved again; else false. Still an ordinary
  *           card of yours (moved, edited, deleted as any); a pasted copy, or one made in the card editor, isn't one
  * A day's cards show in the order they're listed, which sets their times
- * (see times.js). `u` is when that week, baseline, goal, colour, week's asks or weekend's plan
+ * (see times.js). `u` is when that week, baseline, goal, colour, week's asks, weekend's plan or the time off
  * last changed, which is how sync combines two devices' edits.
  * A card on its own on a day can be pinned: pin is the time it starts, in
  * hours after midnight (23.5 is 2330). Otherwise pin is null.
@@ -55,7 +59,7 @@
   const { sum } = K.util;
   const { DAY_HOURS, DAYS, AUTO, thisWeekKey, nextWeekKey, firstDay } = A;
 
-  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {}, weekends: {} }; }
+  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {}, weekends: {}, timeOff: null }; }
   const blankWeek = () => ({ cards: [], closed: false, u: 0 });
   const weekOf = key => S.data.weeks[key] || blankWeek(); // for reading: a week not planned yet reads as empty
   const ensureWeek = key => S.data.weeks[key] || (S.data.weeks[key] = blankWeek());
@@ -69,7 +73,7 @@
   // cards) don't count, so a new device that just made them still takes a sync folder's data whole (core/sync.js).
   const yours = c => !c.slot && !c.auto;
   const hasData = d => d.goals.length > 0 || d.baseline.cards.some(yours) || Object.values(d.weeks).some(w => w.cards.some(yours)) ||
-    Object.values(d.weekends).some(w => w.plan || w.off.before || w.off.after);
+    Object.values(d.weekends).some(w => w.plan || w.off.before || w.off.after) || !!(d.timeOff && d.timeOff.asOf);
   // A week is planned once it has a card on a day besides the ones Momo placed by itself for the apps' needs.
   const isPlanned = list => list.cards.some(c => c.day !== null && !(c.auto && c.need));
 

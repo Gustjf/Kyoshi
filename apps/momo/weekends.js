@@ -6,7 +6,8 @@
  * days off around it, by halves (Before: Friday, then Thursday…, half a day being the afternoon; After: Monday, then
  * Tuesday…, half a day the morning): Save, Clear, Cancel. Its days then run over them, after a small gold sun, and each
  * day off carries the sun on the board's heading and on Today (faded for half a day: offOn, offHTML). A plan and days off
- * are just notes, kept by the Saturday (data.weekends, model.js): they take none of the week's hours. */
+ * are just notes, kept by the Saturday (data.weekends, model.js): they take none of the week's hours. Days off come off
+ * PTO, once it's set (timeoff.js): the fold's line ends with what's left, and the pop-up says it under Days off. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -32,9 +33,10 @@
   const fmtDays = n => `${Math.floor(n) || ""}${n % 1 ? "½" : ""} day${n > 1 ? "s" : ""}`;
 
   // A weekend's days off, each { date, part }: "whole", "pm" (the first before it, with a half: its afternoon) or "am"
-  // (the last after it, with a half: its morning); before it from Friday back, after it from Monday on.
-  function offDays(sat) {
-    const { before, after } = offOf(sat), out = [];
+  // (the last after it, with a half: its morning); before it from Friday back, after it from Monday on. off: its days off
+  // as kept, or as its pop-up has them (timeoff.js).
+  function offDays(sat, off = offOf(sat)) {
+    const { before, after } = off, out = [];
     const add = (n, dateOf, part) => { for (let k = 1; k <= Math.ceil(n); k++) out.push({ date: dateOf(k), part: k === Math.ceil(n) && n % 1 ? part : "whole" }); };
     add(before, k => addDays(sat, -k), "pm");
     add(after, k => addDays(sat, 1 + k), "am");
@@ -46,12 +48,14 @@
 
   // Whether a day is off: "" (no, and never on a Saturday or Sunday: they're the weekend), "whole", "pm" or "am". It looks
   // at the weekend after it (its days before) and the one before it (its days after); a day both reach is off for both.
-  function offOn(date) {
+  // offFor: each weekend's days off by its Saturday (offOf, or with a pop-up's as typed: timeoff.js).
+  function partOff(date, offFor) {
     const d = dayIndex(date);
     if (d > 4) return "";
-    const sat = addDays(date, 5 - d), parts = new Set([sat, addDays(sat, -7)].flatMap(offDays).filter(x => x.date === date).map(x => x.part));
+    const sat = addDays(date, 5 - d), parts = new Set([sat, addDays(sat, -7)].flatMap(s => offDays(s, offFor(s))).filter(x => x.date === date).map(x => x.part));
     return parts.has("whole") || parts.size > 1 ? "whole" : [...parts][0] || "";
   }
+  const offOn = date => partOff(date, offOf);
 
   // A day off's mark on the board's heading and Today's (render.js, today.js): a small gold sun, faded for half a day,
   // its tooltip saying which; nothing on a day that isn't off.
@@ -65,7 +69,7 @@
   // How many days off are left from today on, over these weekends and the one before them (its days after it may be
   // today): half days count half, and a day two weekends reach counts once.
   function offAhead(sats) {
-    const today = todayStr(), dates = new Set([addDays(sats[0], -7), ...sats].flatMap(offDays).map(x => x.date));
+    const today = todayStr(), dates = new Set([addDays(sats[0], -7), ...sats].flatMap(sat => offDays(sat)).map(x => x.date));
     return sum([...dates].filter(d => d >= today).map(d => (offOn(d) === "whole" ? 1 : 0.5)));
   }
 
@@ -98,7 +102,7 @@
   function renderWeekends() {
     const sats = upcomingWeekends(), next = sats.find(sat => !planOf(sat)), ahead = offAhead(sats);
     const summary = `<span class="we-head">Upcoming weekends</span> · ${sats.filter(planOf).length} of ${sats.length} planned` +
-      (next ? ` · next without a plan: ${esc(fmtShort(next))}` : "") + (ahead ? ` · ${fmtDays(ahead)} off ahead` : "");
+      (next ? ` · next without a plan: ${esc(fmtShort(next))}` : "") + (ahead ? ` · ${fmtDays(ahead)} off ahead` : "") + A.timeOffWords();
     const tiles = sats.map(tileHTML).join(""), boxes = A.root.querySelectorAll("details.weekends");
     if (!boxes.length || summary + tiles === drawn) return; // unchanged: a tile keeps its focus
     drawn = summary + tiles;
@@ -144,6 +148,7 @@
     const { before, after } = typedOff();
     $("weekendBeforeNote").textContent = words(before, false);
     $("weekendAfterNote").textContent = words(after, true);
+    A.renderPtoLine(S.weekend, { before, after }); // PTO now and with these (timeoff.js)
   }
 
   function openWeekend(sat) {
@@ -221,5 +226,5 @@
     });
   }
 
-  Object.assign(A, { upcomingWeekends, planOf, hasOff, offOn, offHTML, renderWeekends, headPlanHTML, saveWeekend, stepOff, initWeekends });
+  Object.assign(A, { upcomingWeekends, planOf, offOf, hasOff, fmtDays, offDays, partOff, offOn, offHTML, renderWeekends, headPlanHTML, saveWeekend, stepOff, initWeekends });
 })(Kyoshi, Kyoshi.apps.momo);

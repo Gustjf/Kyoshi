@@ -2,7 +2,7 @@
  * hooks Kyoshi calls: onKeydown (Esc, undo, copy/cut/paste, Enter saves an editor), onShow /
  * onHide (place other apps' dated cards, redraw; drop any drag), onTick (other apps' dated cards; a new day or
  * week; what other apps need; their events; Today), onReload (another tab saved), attention (a week to close
- * out, an event's conflict), renderDev (Undo in Developer Mode) and bugState (counts only). */
+ * out, an event's conflict), renderDev (Undo and Time off in Developer Mode: timeoff.js) and bugState (counts only). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -205,15 +205,20 @@
 
   A.attention = () => (A.reviewWeeks().length ? "a week is ready to close out" : A.conflicts().length ? "an event conflicts with your plans" : "");
 
-  A.renderDev = box => {
-    const n = S.undoStack.length;
-    box.innerHTML = `<div class="dev-block">
-      <div class="dev-block-head">Undo steps: <strong>${n}</strong></div>
-      <div class="dev-actions"><button class="secondary small"${n ? "" : " disabled"}>Undo</button></div>
+  // Developer Mode's tools: Undo, and Time off (timeoff.js). After a change Momo draws them again only when they'd look
+  // different (render.js renderAll: checkDev), so what's typed in Time off isn't lost to a redraw.
+  const devHTML = () => `<div class="dev-block">
+      <div class="dev-block-head">Undo steps: <strong>${S.undoStack.length}</strong></div>
+      <div class="dev-actions"><button class="secondary small" id="momoUndoBtn"${S.undoStack.length ? "" : " disabled"}>Undo</button></div>
       <div class="dev-hint">Takes back your last change, the same as Ctrl+Z.</div>
-    </div>`;
-    box.querySelector("button").addEventListener("click", A.undo);
+    </div>${A.timeOffDevHTML()}`;
+  let devDrawn = "";
+  A.renderDev = box => {
+    box.innerHTML = devDrawn = devHTML();
+    box.querySelector("#momoUndoBtn").addEventListener("click", A.undo);
+    A.wireTimeOff(box);
   };
+  A.checkDev = () => { if (devHTML() !== devDrawn) A.refreshDev(); };
 
   // Bug reports leave out every card title and what events are.
   A.bugState = () => {
@@ -239,6 +244,7 @@
       `- Events this week / next week: ${evs.map(l => l.length).join(" / ")} (${all.filter(ev => ev.flag).length} conflicting, ${all.filter(ev => ev.moved).length} moved, ${all.filter(ev => ev.done).length} done)`,
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}${A.laterToday() ? " (put off until tomorrow)" : ""}`,
       `- Weekends: ${A.upcomingWeekends().filter(A.planOf).length} of the next ${A.WEEKENDS} planned, ${A.upcomingWeekends().filter(A.hasOff).length} with days off; kept with a plan: ${Object.values(data.weekends).filter(w => w.plan).length}, with days off: ${Object.values(data.weekends).filter(w => w.off.before || w.off.after).length}, cleared: ${Object.values(data.weekends).filter(w => !w.plan && !w.off.before && !w.off.after).length}`,
+      `- Time off: ${A.timeOffSet() ? "set up" : data.timeOff ? "not set up (cleared)" : "not set up"}`,
       `- Undo steps: ${S.undoStack.length}`
     ];
   };

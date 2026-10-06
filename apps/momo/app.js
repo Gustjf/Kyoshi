@@ -41,6 +41,8 @@
     WEEKENDS: 13,      // the weekends Upcoming weekends shows, this one first: about three months (weekends.js)
     PLAN_MAX: 120,     // a weekend's plan, in characters
     OFF_MAX: 5,        // the days off a weekend can take before it, and after it, each in half days (weekends.js)
+    DAY_OFF_HOURS: 8,  // a day off's hours of PTO, half that for half a day (timeoff.js)
+    TIME_OFF_MIN: -999, TIME_OFF_MAX: 9999, // PTO and sick time, in hours (below 0 is allowed: shown in red)
     YEAR_MIN: 2000, YEAR_MAX: 2999, // the old goals' finish-by years
     FREE_TIME: "Free time",
     // Where in a card the cards inside it go.
@@ -90,7 +92,7 @@
   // STATE
   // ==========================================================================
   Object.assign(A.S, {
-    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks, weekends } (model.js)
+    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks, weekends, timeOff } (model.js)
     view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
     today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
