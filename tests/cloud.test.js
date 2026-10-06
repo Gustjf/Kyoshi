@@ -280,6 +280,7 @@ module.exports = [
       await cl.syncNow(phone);
       eq(await cl.alarms(phone), [false, false], "a blip shows nothing");
       await p.clock.runFor(await p.evaluate(() => Kyoshi.cloud.LOST_MS) + 1000);
+      await cl.settled(phone); // a check the run started may still be reading or saving: done before the fake changes mode
       eq(await cl.alarms(phone), [true, true], "lost after CLOUD_LOST_MS: the banner and the glyph");
       has(await cl.bannerText(phone), "Cloud sync can't reach GitHub (since ", "since when");
       fake.mode = "ok";
@@ -293,6 +294,7 @@ module.exports = [
       await cl.syncNow(phone);
       eq(await cl.alarms(phone), [false, false], "one save that fails is a blip");
       await p.clock.runFor(await p.evaluate(() => Kyoshi.cloud.LOST_MS) + 1000);
+      await cl.settled(phone);
       eq(await cl.alarms(phone), [true, true], "saves failing for CLOUD_LOST_MS: the banner and the glyph");
       has(await cl.bannerText(phone), "and 1 change made here is waiting to go up.", "the change still waits");
       fake.mode = "ok";
