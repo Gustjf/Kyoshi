@@ -68,7 +68,17 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   CSS), "1 older entry" when there's one. The full run caught an older race in `cloud: lost` (a check the fake clock
   fired could still save after the fake GitHub turned back to "ok", hiding the banner before Try now): the test now lets
   the checks settle before changing the fake's mode.
-- [ ] Phase 2 — Hawky & Momo: the four list fixes (Hawky 2.230, Momo 10.384)
+- [x] Phase 2 — Hawky & Momo: the four list fixes (Hawky 2.230, Momo 10.384) — done 2026-10-06, as planned (assumptions
+  3–6). Along the way: the twelve colours kept as given (seen on both themes at their real size: none read alike; the
+  closest, orange/red, green/teal and pink/red, still tell apart); stores first used at the same moment go by name; quick
+  add's day is a constant, `DEFAULT_DAY`, beside `DEFAULT_MINUTES`. B3: the topic box is compared with the last add's
+  topic in any capitals (the list keeps its own spelling), and it clears once per add (`listLast.topic` emptied), which
+  is what lets a topic typed since survive a typo fixed in the store. B5: the weekday for the five days after tomorrow,
+  not six, so a weekday never names today's (on a Wednesday, next Wednesday reads "due Oct 7", not "due Wed"); an
+  overdue card task with no due day (an Appa job overdue by its meter) says "overdue" too; a task is never wider than its
+  row (`max-width: 100%`): on a phone the longest title Momo keeps had 3 px to spare, and the due word pushed it 32 px off
+  screen, so now the title gives way with an ellipsis. The Momo test drags onto Saturday (today's Sleep card put today's
+  free time below the test's window).
 - [ ] Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask (Bosco 7.500)
 - [ ] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472)
 - [ ] Phase 5 — core: Bugs & requests edited in place, and kept in the cloud through the hidden Kyoshi app (Kyoshi 5.070)
