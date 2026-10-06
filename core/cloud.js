@@ -1,7 +1,8 @@
 /* Kyoshi · core/cloud.js — cloud sync through a private GitHub repository, as K.cloud: a transport of the sync engine
  * (core/sync.js), beside the sync folder (core/sync-folder.js). No UI: core/cloud-ui.js draws Developer Mode's Cloud
  * block, the banner and the header's glyph (K.cloudUI.render(), called on every change here). Entering a key, making
- * one, a new token, Disconnect and the decrypted copies are core/cloud-key.js's (added to K.cloud).
+ * one, a new token, Disconnect and the decrypted copies are core/cloud-key.js's (added to K.cloud); the history's upkeep
+ * core/cloud-upkeep.js's, and a dated backup folder a day (backups/, beside this constant sync) core/cloud-backups.js's.
  * Each app's save (K.sync.saveOf: what the sync folder writes) is locked with the key's secret (core/cloud-crypto.js)
  * and kept as one file, data/<app id>.json, in the repository (core/github.js), one commit per save. A device with the
  * key checks every CLOUD_CHECK_MS while Kyoshi is in view, when it's back in view or online, and a few seconds after a
@@ -17,9 +18,11 @@
  * Per app (A._sync.cloud): sha and clock (version counters) of its file as this device last read or wrote it, note (the
  * last thing done), timer, savedAt; and in the engine's meta, pushed: this device's own counter at its last save there.
  * Safety rules:
- * - Only data/<app>.json and KYOSHI.md are ever written: no photo, PDF or other binary, and K.files is never read.
+ * - Only data/<app>.json, KYOSHI.md and backups/<date>/… are ever written (backups/ once a day, and never read by the
+ *   sync): no photo, PDF or other binary, and K.files is never read.
  * - Never push over a file this key can't read, or one saved by a newer Kyoshi: the cloud stops ("error") until then.
- * - Never delete a file (core/github.js has no call for it).
+ * - Never delete a file (core/github.js has no call for it): only a backups/ folder past its 8 days leaves, the day's
+ *   tree no longer holding it.
  * - A public repository is refused.
  * - Test mode (time travel) does nothing.
  * - A key saved for another page address (another copy of Kyoshi) stays unused.
@@ -414,15 +417,17 @@
   }
 
   // The transport (core/sync.js), what the UI reads, and for core/cloud-key.js (which adds connect, setup, updateToken,
-  // disconnect, exportDecrypted and decryptFile here) take, forget, held, appOf and timeOf; for core/cloud-upkeep.js
-  // (which adds tidied, history, expiry and afterCheck) record, keep and ui. settled: resolves once the checks
-  // asked for so far are done (the tests wait on it).
+  // disconnect, exportDecrypted, decryptFile and writeGuide here) take, forget, held, appOf and timeOf; for
+  // core/cloud-upkeep.js (which adds tidied, history, expiry and afterCheck) record, keep and ui; for
+  // core/cloud-backups.js (which adds backupNow, backups, backupDays, backupFile and backedUp, and chains afterCheck)
+  // files: data/'s files as the last check left them (path → sha, a copy). settled: resolves once the checks asked for
+  // so far are done (the tests wait on it).
   K.cloud = {
     id: "cloud", init, changed, request, flush, stopTimers,
     state: () => (C.supported ? state : "unsupported"), message: () => status().message, dirty: A => state !== "off" && !!A._sync && waiting(A),
     status, note: A => (A._sync && A._sync.cloud ? A._sync.cloud.note : ""), keyString: () => (rec ? rec.key : ""), syncNow, LOST_MS: CLOUD_LOST_MS,
     take, forget, held, appOf: path => (APP_FILE.exec(path) || [])[1] || "", timeOf, settled: () => queue,
-    record: () => rec, keep, ui
+    record: () => rec, keep, ui, files: () => new Map(listing)
   };
   K.sync.use(K.cloud);
 })(Kyoshi);

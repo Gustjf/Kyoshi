@@ -5,6 +5,12 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.170", date: "2026-10-06", changes: [
+      "Cloud sync keeps a daily backup beside the constant sync (which carries on exactly as before): once a day a dated folder in the repository's backups/ holds every app's file as it was that day, and all of them in one (all.json); the last 8 days are kept, in one commit a day, and Back up now (Developer Mode → Cloud sync) makes today's straight away.",
+      "Restore a day… (Developer Mode → Cloud sync) brings the app on screen, or every app, back as it was at a day's backup, after a question naming its date; the cloud then carries the restored data to your other devices.",
+      "Import JSON and Import all take the cloud's encrypted files as they are (from data/ or backups/), on a device that holds the key.",
+      "tools/decrypt.html hands a backup's all.json back as the Export all file it holds."
+    ] },
     { version: "5.070", date: "2026-10-06", changes: [
       "Bugs & requests travel with the rest of your data: cloud sync, the sync folder and Export all carry them, so every device lists the same ones, and Clear empties the list on all of them.",
       "A report in the Bugs & requests list opens in the pop-up when you tap it: its whole description, to change its words or make it a bug or a feature request, then Save (or Cancel); what it captured stays as it was, and the list says it was edited.",

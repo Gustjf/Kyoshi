@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <!-- Kyoshi · tools/decrypt.html — the cloud's files, decrypted without Kyoshi running: open this page from disk (it isn't
-     part of the site's pages, and index.html never loads it), paste the key, pick data/<app>.json files from the cloud's
-     repository (a Download ZIP of it, unzipped), and save each as plain JSON (Import JSON takes it; several in one file:
-     Import all takes that). Needs nothing but ../core/base.js and ../core/cloud-crypto.js (the key and the locked files)
-     and a browser with Web Crypto: no network at all, and nothing leaves the page. -->
+     part of the site's pages, and index.html never loads it), paste the key, pick data/<app>.json files (or a day's
+     backups/<day>/ files) from the cloud's repository (a Download ZIP of it, unzipped), and save each as plain JSON
+     (Import JSON takes it; several in one file: Import all takes that; a backup's all.json comes back as the Export all
+     file it holds, as it is). Needs nothing but ../core/base.js and ../core/cloud-crypto.js (the key and the locked
+     files) and a browser with Web Crypto: no network at all, and nothing leaves the page. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -28,10 +29,10 @@
 <body>
 <main>
   <h1>Decrypt Kyoshi's cloud files</h1>
-  <p>For reading the cloud's data without Kyoshi: the key made when the cloud was set up, and the <code>data/&lt;app&gt;.json</code> files from its GitHub repository. Each comes back as plain JSON. Nothing leaves this page.</p>
+  <p>For reading the cloud's data without Kyoshi: the key made when the cloud was set up, and the <code>data/&lt;app&gt;.json</code> files (or a day's files in <code>backups/</code>) from its GitHub repository. Each comes back as plain JSON. Nothing leaves this page.</p>
   <label for="key">Key</label>
   <textarea id="key" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="kyoshi1.&hellip;"></textarea>
-  <label for="files">Files (from the repository's <code>data</code> folder)</label>
+  <label for="files">Files (from the repository's <code>data</code> folder, or a day's in <code>backups</code>)</label>
   <input type="file" id="files" accept=".json,application/json" multiple>
   <button id="go">Decrypt</button>
   <p id="said" role="status"></p>
@@ -72,9 +73,10 @@
     const k = C.parseKey($("key").value);
     if (!k) return say(C.keyError($("key").value), "bad");
     const files = Array.from($("files").files);
-    if (!files.length) return say("Pick one or more files from the repository's data folder first.", "bad");
+    if (!files.length) return say("Pick one or more files from the repository's data or backups folder first.", "bad");
     say("Decrypting…");
     const secret = await C.importKey(k.secret), apps = {};
+    let done = 0;
     for (const f of files) {
       let env = null;
       try { env = JSON.parse(await f.text()); } catch (err) { /* not JSON */ }
@@ -82,15 +84,17 @@
       if (!C.isEnvelope(env)) { line(`${f.name}: not a Kyoshi cloud file (KYOSHI.md and other files are left as they are).`, "bad"); continue; }
       try {
         const save = await C.open(env, secret), id = /^[a-z][a-z0-9]*$/.test(env.app) ? env.app : "file"; // "kyoshi" is the bug log's
+        done++;
+        // A backup's all.json is already an Export all file: as it is (and not again in the one below).
+        if (id === "all") { line(`${f.name}: every app's data, decrypted (Kyoshi's Import all takes it).`, "good", { name: `kyoshi-cloud-${today()}.json`, data: save }); continue; }
         apps[id] = save;
         line(`${f.name}: ${id}'s data, decrypted.`, "good", { name: `${id}-cloud-${today()}.json`, data: save });
       } catch (err) {
         line(`${f.name}: ${err.code === "key" ? "can't be read with this key: it was locked with another one." : "damaged: it can't be read."}`, "bad");
       }
     }
-    const n = Object.keys(apps).length;
-    if (n > 1) line("Every app above in one file (Kyoshi's Import all takes it):", "", { name: `kyoshi-cloud-${today()}.json`, data: { exportedAt: new Date().toISOString(), cloud: true, apps } });
-    say(n ? `Decrypted ${n} file${n === 1 ? "" : "s"} of ${files.length}: save ${n === 1 ? "it" : "each"} below.` : "Nothing could be decrypted.", n ? "good" : "bad");
+    if (Object.keys(apps).length > 1) line("Every app above in one file (Kyoshi's Import all takes it):", "", { name: `kyoshi-cloud-${today()}.json`, data: { exportedAt: new Date().toISOString(), cloud: true, apps } });
+    say(done ? `Decrypted ${done} file${done === 1 ? "" : "s"} of ${files.length}: save ${done === 1 ? "it" : "each"} below.` : "Nothing could be decrypted.", done ? "good" : "bad");
   }
 
   $("go").addEventListener("click", () => { go().catch(err => { console.error(err); say("Something went wrong: try again.", "bad"); }); });

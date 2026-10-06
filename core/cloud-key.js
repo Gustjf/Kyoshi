@@ -4,8 +4,10 @@
  * (decryptFile). No UI (core/cloud-ui.js calls these): each resolves (the key to show, or what it did, in words) or
  * throws an Error whose message the pop-up shows as it is (refusal: true), GitHub's answers put in plain words.
  * The same safety rules as core/cloud.js: a public repository is refused, so is a key that can't open the data already
- * in its repository, and nothing is written there but data/<app>.json (core/cloud.js) and KYOSHI.md (here, kept equal to
- * GUIDE: written when missing, rewritten when it differs; GitHub's own README is left alone). */
+ * in its repository, and nothing is written there but data/<app>.json (core/cloud.js), backups/ (core/cloud-backups.js)
+ * and KYOSHI.md (here, kept equal to GUIDE: written when missing, rewritten when it differs, on entering or making a key
+ * and once per Kyoshi version on every device, through core/cloud-backups.js: guideVersion in the key's record; GitHub's
+ * own README is left alone). */
 (function (K) {
   "use strict";
   const { isObj, isPos, todayStr, downloadJSON } = K.util;
@@ -18,23 +20,27 @@
     "**Every file here is encrypted** with AES-256-GCM, under a key that is not in this repository: only the owner's devices hold it. Without that key nobody can read these files, GitHub included.", "",
     "## What's here",
     "- `data/<app>.json`: one file per app (momo, bosco, hawky, …; `kyoshi` is Kyoshi's own record: the Bugs & requests log), saved again by Kyoshi after each change; each save is a commit. The history keeps the last 8 days of saves: about once a day Kyoshi folds older ones into one commit (the files stay as they are).",
+    "- `backups/<YYYY-MM-DD>/`: a dated copy of every app's data, one folder a day (below).",
     "- `KYOSHI.md`: this file, written by Kyoshi.", "",
     "Kyoshi writes nothing else here. Photos and documents (such as the proof attached to Appa's records) are never kept here: they stay on the device they were added on.", "",
-    "## A file in data/",
+    "## Daily backups",
+    "Once a day, after a device's first sync of the day gets through, Kyoshi adds a folder named by that day's date, in one commit: each `data/<app>.json` as it was then (the very same encrypted files) and `all.json` (every app's data in one file: decrypted, it's an Export all file). Today's folder and the 7 days before it are kept; older ones leave in that day's commit. The sync never reads them: they're there for going back to a day after a big mistake.", "",
+    "To bring one back: in Kyoshi, Developer Mode → Cloud sync → *Restore a day…* (the app on screen, or every app); or, on a device that holds the key, one of these files as it is in *Import JSON* (an app's file) or *Import all* (`all.json`); or `tools/decrypt.html` (below).", "",
+    "## A file in data/ or backups/",
     "A small JSON text file:", "",
     "    { \"kyoshi\": 1, \"app\": \"momo\", \"alg\": \"AES-256-GCM\", \"zip\": \"gzip\", \"iv\": \"…\", \"data\": \"…\" }", "",
     "- `kyoshi`: the file format's version (1).",
-    "- `app`: the app whose data it holds.",
+    "- `app`: the app whose data it holds (`all` in `all.json`: every app's).",
     "- `alg`: AES-256-GCM, its key being the secret at the end of the owner's Kyoshi key (32 bytes).",
     "- `iv`: the 12-byte nonce (base64), new for every save.",
     "- `zip`: `gzip` (the data was gzipped before it was encrypted) or `none`.",
     "- `data`: the encrypted data (base64): the ciphertext, then GCM's 16-byte tag.", "",
-    "Decrypted (and unzipped), each file is an ordinary Kyoshi backup of that app, in JSON: Kyoshi's Import JSON takes it as it is.", "",
+    "Decrypted (and unzipped), each file is an ordinary Kyoshi backup of that app, in JSON, which Kyoshi's Import JSON takes (`all.json`: an Export all file, which Import all takes).", "",
     "## The key",
     "One string, `kyoshi1.<owner>/<repository>.<token>.<secret>`: this repository, a GitHub token that may read and write it, and the secret (32 random bytes, base64url) that locks the files.", "",
     "## Reading a file",
     "In Kyoshi: Developer Mode (Ctrl+9, or the DEV badge) → Cloud sync → *Decrypt a file…* (one file from here), or *Download decrypted copy* (every app in one file, which Import all takes back).", "",
-    "Without Kyoshi running: `tools/decrypt.html` in Kyoshi's own repository (download it with the rest of Kyoshi and open that page from disk). It takes the key and files from here (a Download ZIP of this repository, unzipped), needs no network, and gives each file back as plain JSON.", ""
+    "Without Kyoshi running: `tools/decrypt.html` in Kyoshi's own repository (download it with the rest of Kyoshi and open that page from disk). It takes the key and files from here (a Download ZIP of this repository, unzipped), needs no network, and gives each file back as plain JSON (`all.json` as the Export all file it holds).", ""
   ].join("\n");
 
   // --- Checking a key against GitHub ---
@@ -72,6 +78,9 @@
       if (err.code !== "conflict" && err.code !== "invalid") throw err; // another device wrote it just now
     }
   }
+  // A key taken up just after writing KYOSHI.md: its record says so (core/cloud-backups.js makes sure of it once per
+  // Kyoshi version otherwise).
+  const taken = key => { cloud.keep({ guideVersion: K.VERSION }); return key; };
 
   // --- Taking a key up, and letting it go ---
   // Enter key…: the key must fit its repository (private, and able to open the data already there); then this device
@@ -92,7 +101,7 @@
       }
     }
     await ask(() => writeGuide(c));
-    return cloud.take(k, remember, c, secret, true);
+    return taken(cloud.take(k, remember, c, secret, true));
   }
   // Set up a new cloud…: an empty private repository and its token make a new key (returned, for the owner to keep).
   async function setup({ repo = "", token = "", remember = true } = {}, tell = () => {}) {
@@ -105,7 +114,7 @@
     if ((await ask(() => c.listDir("data"))).files.length) throw refuse("That repository already holds Kyoshi data: use Enter key with the key you made for it, or empty it first.");
     tell("Writing KYOSHI.md…");
     await ask(() => writeGuide(c));
-    return cloud.take(k, remember, c, await C.importKey(k.secret), true);
+    return taken(cloud.take(k, remember, c, await C.importKey(k.secret), true));
   }
   // Update token…: the same repository and secret with a new token (GitHub's expire): the new key, for the other devices.
   async function updateToken(token = "", tell = () => {}) {
@@ -160,5 +169,5 @@
     return `Decrypted ${K.apps[id] ? `${K.apps[id].meta.name}'s file` : "the file"}: its plain copy is downloading.`;
   }
 
-  Object.assign(K.cloud, { connect, setup, updateToken, disconnect, exportDecrypted, decryptFile });
+  Object.assign(K.cloud, { connect, setup, updateToken, disconnect, exportDecrypted, decryptFile, writeGuide });
 })(Kyoshi);

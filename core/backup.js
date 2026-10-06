@@ -7,7 +7,10 @@
  * Uses each app's A.data: build() for exports, importBackup(raw, ask) for imports (true once it's in). A backup
  * also holds the app's meetings (core/meetings.js), which an import combines with ours, the later change winning, and
  * when it was made (savedAt, core's). Every import's confirm names that date and how much newer what's here is: an app's
- * importBackup asks through K.backup.ask(A, raw, question). */
+ * importBackup asks through K.backup.ask(A, raw, question).
+ * Import JSON and Import all also take the cloud's files as they are (an envelope, core/cloud-crypto.js: data/<app>.json,
+ * or a day's backups/<day>/<app>.json and all.json, core/cloud-backups.js), opened with the key held here (core/cloud.js);
+ * both resolve to whether it went in (Restore a day…, core/cloud-ui.js, says so). */
 (function (K) {
   "use strict";
   const { isObj, todayStr, downloadJSON, readFile, fmtBytes } = K.util;
@@ -54,14 +57,29 @@
   // An app's backup: its data, with when it was made and its meetings beside it.
   const backupOf = A => ({ ...A.data.build(), savedAt: new Date().toISOString(), meetings: K.meetings.build(A) });
 
-  // Brings in an app's backup (raw: its parsed JSON), asking first if ask; then its meetings, once it's in.
+  // Brings in an app's backup (raw: its parsed JSON), asking first if ask; then its meetings, once it's in (true).
   function importApp(A, raw, ask) {
-    if (A.data.importBackup(raw, ask) === true) K.meetings.take(A, raw.meetings);
+    if (A.data.importBackup(raw, ask) !== true) return false;
+    K.meetings.take(A, raw.meetings);
+    return true;
   }
   // While a picked file is brought in, its own date stands in for a backup that doesn't say when it was made.
   function withFile(date, fn) {
     fileDate = date > 0 ? date : 0;
-    try { fn(); } finally { fileDate = 0; }
+    try { return fn(); } finally { fileDate = 0; }
+  }
+  // A cloud file (an envelope) as the save or Export all file it holds, opened with the key held here; null, after saying
+  // why, when it can't be.
+  async function unlock(env) {
+    const held = K.cloud.held();
+    if (!held) {
+      alert("That file is encrypted. Enter the cloud key first (Developer Mode → Cloud sync → Enter key…), or use Decrypt a file… there.");
+      return null;
+    }
+    try { return await K.cloudCrypto.open(env, await held.lock); } catch (err) {
+      alert(err.code === "key" ? "That file can't be read with this device's key: it was locked with another one." : "That file is damaged: it can't be read.");
+      return null;
+    }
   }
 
   function exportApp(A) {
@@ -69,16 +87,18 @@
     setUnsaved(A, false);
   }
 
-  // Import JSON in an app: its own backup, or its part of an Export all file (dated by the file, if it isn't itself).
-  function importText(A, text, date = 0) {
+  // Import JSON in an app: its own backup, or its part of an Export all file (dated by the file, if it isn't itself); a
+  // cloud file as it is. Resolves to true once it's in.
+  async function importText(A, text, date = 0) {
     let raw;
-    try { raw = JSON.parse(text); } catch (err) { return alert(`That file isn't a valid ${A.meta.name} backup (it couldn't be read as JSON).`); }
+    try { raw = JSON.parse(text); } catch (err) { alert(`That file isn't a valid ${A.meta.name} backup (it couldn't be read as JSON).`); return false; }
+    if (K.cloudCrypto.isEnvelope(raw) && !(raw = await unlock(raw))) return false;
     if (isObj(raw) && isObj(raw.apps) && !A.data.looksLike(raw)) {
-      if (!isObj(raw.apps[A.id])) return alert(`That Kyoshi backup has nothing for ${A.meta.name} in it.`);
+      if (!isObj(raw.apps[A.id])) { alert(`That Kyoshi backup has nothing for ${A.meta.name} in it.`); return false; }
       date = madeAt(raw) || date;
       raw = raw.apps[A.id];
     }
-    withFile(date, () => importApp(A, raw, true));
+    return withFile(date, () => importApp(A, raw, true));
   }
 
   // One file with every app's backup, under apps.<id>.
@@ -89,18 +109,20 @@
     running().forEach(A => setUnsaved(A, false));
   }
 
-  // Replaces each app in an Export all file with its part, after asking once: with the file's date, and how much newer
-  // the newest of those apps' data here is.
-  function importAllText(text, date = 0) {
+  // Replaces each app in an Export all file (or a cloud backup's all.json, as it is) with its part, after asking once:
+  // with the file's date, and how much newer the newest of those apps' data here is. Resolves to true once it's in.
+  async function importAllText(text, date = 0) {
     let raw;
-    try { raw = JSON.parse(text); } catch (err) { return alert("That file isn't a valid Kyoshi backup (it couldn't be read as JSON)."); }
+    try { raw = JSON.parse(text); } catch (err) { alert("That file isn't a valid Kyoshi backup (it couldn't be read as JSON)."); return false; }
+    if (K.cloudCrypto.isEnvelope(raw) && !(raw = await unlock(raw))) return false;
     const apps = isObj(raw) && isObj(raw.apps) ? running().filter(A => isObj(raw.apps[A.id])) : [];
-    if (!apps.length) return alert("That file isn't an Export all backup. To bring in one app's backup, switch to that app and use Import JSON.");
+    if (!apps.length) { alert("That file isn't an Export all backup. To bring in one app's backup, switch to that app and use Import JSON."); return false; }
     const newest = apps.reduce((a, b) => (changedAt(b) > changedAt(a) ? b : a));
-    withFile(date, () => {
+    return withFile(date, () => {
       const note = ageNote(madeAt(raw), changedAt(newest), apps.length > 1 ? newest.meta.name : "");
-      if (!confirm([`Replace everything in ${nameList(apps.map(A => A.meta.name))} with this backup?`, note, "This can't be undone."].filter(Boolean).join(" "))) return;
+      if (!confirm([`Replace everything in ${nameList(apps.map(A => A.meta.name))} with this backup?`, note, "This can't be undone."].filter(Boolean).join(" "))) return false;
       apps.forEach(A => importApp(A, raw.apps[A.id], false));
+      return true;
     });
   }
 

@@ -24,9 +24,11 @@ const until = async (check, what) => {
   for (let i = 0; i < 250; i++) { if (check()) return; await new Promise(r => setTimeout(r, 20)); }
   throw new Error(`${what}: not within 5s`);
 };
-// Every file in the fake is KYOSHI.md or an app's data/<id>.json, and nothing else was asked of GitHub.
+// Every file in the fake is KYOSHI.md, an app's data/<id>.json or a day's backup of them (backups/<date>/<id>.json,
+// all.json), and nothing else was asked of GitHub.
 function onlyText(fake) {
-  ok(fake.paths().every(p => p === "KYOSHI.md" || /^data\/[a-z][a-z0-9]*\.json$/.test(p)), `only KYOSHI.md and data/<app>.json in the repository (${fake.paths()})`);
+  ok(fake.paths().every(p => p === "KYOSHI.md" || /^data\/[a-z][a-z0-9]*\.json$/.test(p) || /^backups\/\d{4}-\d{2}-\d{2}\/[a-z0-9]+\.json$/.test(p)),
+    `only KYOSHI.md, data/<app>.json and backups/<date>/ in the repository (${fake.paths()})`);
   eq(fake.odd, 0, "nothing else asked of GitHub");
 }
 

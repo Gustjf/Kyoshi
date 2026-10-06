@@ -18,20 +18,22 @@ const secretOf = key => Buffer.from(key.split(".").pop(), "base64url");
 
 // A fake GitHub for one private repository: { files: Map<path, { sha, bytes }>, puts, clashes, gets, requests, odd, mode,
 // token, isPrivate, big, held, route(ctx, who), hold(who, what) }. route answers https://api.github.com/** in that browser
-// context (who: a name for it): the CORS preflight, GET /repos/o/r, the listing of data/ (404 while empty, 304 for its
-// ETag), a file (base64 with GitHub's line breaks; left out over `big` bytes, then fetched as a blob), PUT of a file (a
-// stale sha: 409, none for one that's there: 422; both count in clashes), and a blob; and the history: each save (and
-// plant) is a commit on main dated fake.now (history() lists them, newest first), the branch, its commits (since, until,
-// pages), a new commit (made counts them) and moving the branch (moves; its files become that commit's). Anything else
-// answers 404 and counts in odd, so a test can check nothing unexpected was sent. mode: "ok", "auth" (401 to everything),
-// "offline" (no answer), "nosave" (saves answer 502; reading works) or "notidy" (moving the branch answers 403). token:
-// the one it accepts. expires: the token's end as GitHub writes it, sent on every answer when set. hold(who, what): that
-// device's saves ("save") or file reads ("read") wait (counted in held) until the function it returns is called, so
-// something can happen meanwhile.
+// context (who: a name for it): the CORS preflight, GET /repos/o/r, a folder's listing (its files, and its folders as
+// "dir" entries, by name: data/, backups/, a day's backups/<date>/; 404 while it holds nothing, 304 for its ETag), a file
+// (base64 with GitHub's line breaks; left out over `big` bytes, then fetched as a blob), PUT of a file (a stale sha:
+// 409, none for one that's there: 422; both count in clashes), and a blob; and the history: each save (and plant) is a
+// commit on main dated fake.now (history() lists them, newest first), the branch, its commits (since, until, pages), a
+// new blob, a new tree (from base_tree, its entries applied: sha null takes a path out), a new commit (made counts them)
+// and moving the branch (moves, forced: those by force; its files become that commit's; not by force, only on from the
+// head, else 422). Anything else answers 404 and counts in odd, so a test can check nothing unexpected was sent. mode:
+// "ok", "auth" (401 to everything), "offline" (no answer), "nosave" (saves answer 502; reading works) or "notidy" (moving
+// the branch by force answers 403, as a rule protecting it would). token: the one it accepts. expires: the token's end as
+// GitHub writes it, sent on every answer when set. hold(who, what): that device's saves ("save"), file reads ("read") or
+// new trees ("tree") wait (counted in held) until the function it returns is called, so something can happen meanwhile.
 function fakeGithub({ repo = REPO } = {}) {
   const base = `/repos/${repo}`;
   const fake = { files: new Map(), puts: 0, clashes: 0, gets: 0, requests: 0, odd: 0, mode: "ok", token: TOKEN, isPrivate: true, big: Infinity, held: 0,
-    now: Date.parse("2026-09-30T07:00:00Z"), commits: new Map(), head: "", made: 0, moves: 0, expires: "" };
+    now: Date.parse("2026-09-30T07:00:00Z"), commits: new Map(), head: "", made: 0, moves: 0, forced: 0, expires: "" };
   const holds = new Map(); // "who what" → the promise those requests wait on
   const trees = new Map(), blobs = new Map(); // tree sha → { path: blob sha }; blob sha → bytes
   const sha1 = bytes => crypto.createHash("sha1").update(bytes).digest("hex");
@@ -60,6 +62,30 @@ function fakeGithub({ repo = REPO } = {}) {
     return out;
   };
   const asListed = c => ({ sha: c.sha, commit: { message: c.message, tree: { sha: c.tree }, author: c.author, committer: c.committer }, parents: c.parents.map(sha => ({ sha })) });
+  // Whether commit `to` is `from` or one of its ancestors.
+  function reaches(from, to) {
+    const seen = new Set(), todo = [from];
+    while (todo.length) {
+      const sha = todo.pop();
+      if (sha === to) return true;
+      if (seen.has(sha) || !fake.commits.has(sha)) continue;
+      seen.add(sha);
+      todo.push(...fake.commits.get(sha).parents);
+    }
+    return false;
+  }
+  // A folder's listing as GitHub's contents API gives it: its files, then its folders as "dir" entries, by name.
+  function listing(p) {
+    const under = [...fake.files.keys()].filter(k => k.startsWith(`${p}/`)).sort(), out = new Map();
+    for (const k of under) {
+      const rest = k.slice(p.length + 1), name = rest.split("/")[0];
+      if (out.has(name)) continue;
+      out.set(name, rest.includes("/")
+        ? { type: "dir", name, path: `${p}/${name}`, sha: sha1(JSON.stringify(under.filter(x => x.startsWith(`${p}/${name}/`)).map(x => [x, fake.files.get(x).sha]))), size: 0 }
+        : { type: "file", name, path: k, sha: fake.files.get(k).sha, size: fake.files.get(k).bytes.length });
+    }
+    return [...out.values()];
+  }
 
   async function handle(route, who) {
     const req = route.request(), method = req.method(), path = decodeURIComponent(new URL(req.url()).pathname);
@@ -73,8 +99,8 @@ function fakeGithub({ repo = REPO } = {}) {
     const contents = `${base}/contents/`;
     if (path.startsWith(contents)) {
       const p = path.slice(contents.length), f = fake.files.get(p);
-      if (method === "GET" && p === "data") {
-        const list = [...fake.files].filter(([k]) => k.startsWith("data/")).map(([k, v]) => ({ type: "file", name: k.slice(5), path: k, sha: v.sha, size: v.bytes.length }));
+      if (method === "GET" && !f) { // no file there: a folder (or nothing)
+        const list = listing(p);
         if (!list.length) return reply(route, 404, { message: "Not Found" });
         const etag = `W/"${sha1(JSON.stringify(list))}"`;
         if (req.headers()["if-none-match"] === etag) return route.fulfill({ status: 304, headers: { ...CORS, ...(fake.expires ? { "github-authentication-token-expiration": fake.expires } : {}), etag } });
@@ -82,7 +108,6 @@ function fakeGithub({ repo = REPO } = {}) {
       }
       if (method === "GET") {
         if (holds.has(`${who} read`)) { fake.held++; await holds.get(`${who} read`); }
-        if (!f) return reply(route, 404, { message: "Not Found" });
         fake.gets++;
         const whole = f.bytes.length <= fake.big;
         return reply(route, 200, { type: "file", name: p.split("/").pop(), path: p, sha: f.sha, size: f.bytes.length, encoding: whole ? "base64" : "none",
@@ -118,6 +143,26 @@ function fakeGithub({ repo = REPO } = {}) {
       const all = fake.history().filter(c => Date.parse(c.date) >= since && Date.parse(c.date) <= until).map(c => asListed(fake.commits.get(c.sha)));
       return reply(route, 200, all.slice((page - 1) * per, page * per));
     }
+    // A new blob (its bytes kept), and a new tree: base_tree's paths with the entries applied (sha null: that path out).
+    if (method === "POST" && path === `${base}/git/blobs`) {
+      const body = JSON.parse(req.postData() || "{}"), bytes = Buffer.from(String(body.content || ""), body.encoding === "base64" ? "base64" : "utf8"), sha = sha1(bytes);
+      blobs.set(sha, bytes);
+      return reply(route, 201, { sha });
+    }
+    if (method === "POST" && path === `${base}/git/trees`) {
+      if (holds.has(`${who} tree`)) { fake.held++; await holds.get(`${who} tree`); }
+      const body = JSON.parse(req.postData() || "{}");
+      if (!trees.has(body.base_tree)) return reply(route, 422, { message: "base_tree is not a valid tree" });
+      const snap = { ...trees.get(body.base_tree) };
+      for (const e of body.tree || []) {
+        if (e.sha === null && e.path in snap) delete snap[e.path];
+        else if (e.sha !== null && blobs.has(e.sha) && e.type === "blob" && e.mode === "100644") snap[e.path] = e.sha;
+        else return reply(route, 422, { message: "GitRPC::BadObjectState" });
+      }
+      const sorted = Object.fromEntries(Object.entries(snap).sort(([a], [b]) => (a < b ? -1 : 1))), tree = sha1(JSON.stringify(sorted));
+      trees.set(tree, sorted);
+      return reply(route, 201, { sha: tree });
+    }
     if (method === "POST" && path === `${base}/git/commits`) {
       const body = JSON.parse(req.postData() || "{}"), date = iso(fake.now);
       if (!trees.has(body.tree) || !(body.parents || []).every(sha => fake.commits.has(sha))) return reply(route, 422, { message: "Tree or parent not found" });
@@ -126,19 +171,21 @@ function fakeGithub({ repo = REPO } = {}) {
       return reply(route, 201, { sha, tree: { sha: body.tree }, parents: (body.parents || []).map(s => ({ sha: s })), message: body.message });
     }
     if (method === "PATCH" && path === `${base}/git/refs/heads/main`) {
-      if (fake.mode === "notidy") return reply(route, 403, { message: "Resource not accessible by personal access token" });
       const body = JSON.parse(req.postData() || "{}"), c = fake.commits.get(body.sha);
+      if (fake.mode === "notidy" && body.force) return reply(route, 403, { message: "Resource not accessible by personal access token" });
       if (!c) return reply(route, 422, { message: "Object does not exist" });
+      if (!body.force && fake.head && !reaches(c.sha, fake.head)) return reply(route, 422, { message: "Update is not a fast forward" });
       fake.head = c.sha;
       fake.moves++;
+      if (body.force) fake.forced++;
       const snap = trees.get(c.tree);
       for (const p of [...fake.files.keys()]) if (!(p in snap)) fake.files.delete(p);
       for (const [p, sha] of Object.entries(snap)) if (!fake.files.has(p) || fake.files.get(p).sha !== sha) fake.files.set(p, { sha, bytes: blobs.get(sha) });
       return reply(route, 200, { ref: "refs/heads/main", object: { sha: c.sha, type: "commit" } });
     }
     if (method === "GET" && path.startsWith(`${base}/git/blobs/`)) {
-      const sha = path.split("/").pop(), f = [...fake.files.values()].find(v => v.sha === sha);
-      if (f) return reply(route, 200, { sha, size: f.bytes.length, encoding: "base64", content: f.bytes.toString("base64").replace(/(.{60})/g, "$1\n") });
+      const sha = path.split("/").pop(), bytes = blobs.get(sha);
+      if (bytes) return reply(route, 200, { sha, size: bytes.length, encoding: "base64", content: bytes.toString("base64").replace(/(.{60})/g, "$1\n") });
     }
     fake.odd++;
     return reply(route, 404, { message: "Not Found" });
@@ -173,8 +220,9 @@ function encryptInNode(save, app, secret = SECRET) {
   return JSON.stringify({ kyoshi: 1, app, alg: "AES-256-GCM", zip: "gzip", iv: iv.toString("base64"), data: data.toString("base64") }, null, 2);
 }
 
-// Waits until the cloud checks asked for so far are done, and the history's trim one may have started.
-const settled = tab => tab.page.evaluate(async () => { await Kyoshi.cloud.settled(); await Kyoshi.cloud.tidied(); });
+// Waits until the cloud checks asked for so far are done, and the history's trim and the day's backup one may have
+// started.
+const settled = tab => tab.page.evaluate(async () => { await Kyoshi.cloud.settled(); await Kyoshi.cloud.tidied(); await Kyoshi.cloud.backedUp(); });
 // The Cloud block's state ("off", "on · owner/repo", "needs you") and line.
 const cloudState = tab => tab.page.evaluate(() => document.getElementById("kDevCloudState").textContent);
 const cloudText = tab => tab.page.evaluate(() => document.getElementById("kDevCloudText").textContent);

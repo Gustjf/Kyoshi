@@ -1,9 +1,11 @@
 /* Kyoshi · core/github.js — a small client for GitHub's REST API, as K.github. No UI, no crypto: core/cloud.js keeps the
  * cloud's private repository with it.
  * K.github.client({ repo: "owner/name", token }) → { repo(), listDir(path, etag), getFile(path), getBlob(sha),
- * putFile(path, base64, { sha, message }), branch(), commits({ since, until, page }), newCommit(treeSha, message,
- * parents, { author, committer }), moveBranch(sha), expiresAt() } (branch to moveBranch for tidying the repository's
- * history: core/cloud-upkeep.js). There is no call that deletes a file.
+ * putFile(path, base64, { sha, message }), branch(), commits({ since, until, page }), newBlob(base64), newTree(baseTree,
+ * entries), newCommit(treeSha, message, parents, { author, committer }), moveBranch(sha, { force }), expiresAt() } (branch
+ * to moveBranch for tidying the repository's history, core/cloud-upkeep.js, and the daily backups,
+ * core/cloud-backups.js). There is still no call that deletes a file: a backups/ folder past the retention leaves because
+ * the day's tree no longer holds it (core/cloud-backups.js).
  * Every request goes to https://api.github.com and nowhere else, with the token as a Bearer header, never from the
  * browser's cache (cache: "no-store": a listing asks with its last ETag instead, and a 304 comes back as { status: 304 }),
  * and gives up after REQUEST_MS.
@@ -16,8 +18,10 @@
  * api.github.com): a PUT whose sha is stale answers 409 (callers treat 409 and 422 alike: read again, then try again),
  * and the API answers CORS for any page, one opened from a file included (Access-Control-Allow-Origin: *, the
  * Authorization header allowed in the preflight; ETag and X-RateLimit-* exposed). Also to confirm there: the Git Data
- * calls (a commit, moving the branch) work with a fine-grained token holding only Contents: Read and write (they should;
- * a refusal turns the automatic tidy off and says so); and whether the browser may read the
+ * calls (a blob, a tree, a commit, moving the branch) work with a fine-grained token holding only Contents: Read and
+ * write (they should; a refusal turns the automatic tidy off and says so, and leaves the day's backup unmade); that
+ * moving the branch with force false, after another save moved it, answers 422 (callers treat 409 and 422 alike, as a
+ * refusal); and whether the browser may read the
  * GitHub-Authentication-Token-Expiration header (GitHub's list of exposed headers didn't name it when this was written:
  * then expiresAt() stays 0, and an expired token is caught when GitHub refuses it, as before). */
 (function (K) {
@@ -89,18 +93,19 @@
         branchName = String((data && data.default_branch) || "main");
         return { private: !!data && data.private === true, branch: branchName };
       },
-      // A folder's files, { status, etag, files: [{ name, path, sha, size }] } (files [] when there's no such folder);
-      // given the last listing's etag, { status: 304, files: null } while nothing in it changed.
+      // A folder's files and folders, { status, etag, files: [{ name, path, sha, size }], dirs: [name] } (both [] when
+      // there's no such folder); given the last listing's etag, { status: 304, files: null, dirs: null } while nothing in
+      // it changed.
       async listDir(path, etag = "") {
         let res;
         try { res = await request("GET", `${base}/contents/${enc(path)}`, { etag }); } catch (err) {
-          if (err.code === "notfound") return { status: 404, etag: "", files: [] };
+          if (err.code === "notfound") return { status: 404, etag: "", files: [], dirs: [] };
           throw err;
         }
-        if (res.status === 304) return { status: 304, etag, files: null };
-        const files = (Array.isArray(res.data) ? res.data : []).filter(f => f && f.type === "file")
-          .map(f => ({ name: String(f.name), path: String(f.path), sha: String(f.sha), size: +f.size || 0 }));
-        return { status: res.status, etag: res.etag, files };
+        if (res.status === 304) return { status: 304, etag, files: null, dirs: null };
+        const list = (Array.isArray(res.data) ? res.data : []).filter(Boolean);
+        const files = list.filter(f => f.type === "file").map(f => ({ name: String(f.name), path: String(f.path), sha: String(f.sha), size: +f.size || 0 }));
+        return { status: res.status, etag: res.etag, files, dirs: list.filter(f => f.type === "dir").map(f => String(f.name)) };
       },
       // A file: { sha, size, bytes }. Over 1 MB GitHub leaves the content out, so it comes as a blob.
       async getFile(path) {
@@ -116,10 +121,12 @@
         const { data } = await request("PUT", `${base}/contents/${enc(path)}`, { body: { message, content: base64, ...(sha ? { sha } : {}) } });
         return { sha: String((data && data.content && data.content.sha) || "") };
       },
-      // For tidying the history: the default branch's head { sha, tree }; its commits, newest first, 100 a page
-      // ({ since, until }: ISO moments, GitHub's own filter on the commit's date) as { sha, tree, parents (their shas),
-      // message, author, committer }; a commit of a tree (parents, author and committer as given: GitHub's defaults
-      // otherwise); and moving the branch to a commit, whatever it held.
+      // For tidying the history and the daily backups: the default branch's head { sha, tree }; its commits, newest
+      // first, 100 a page ({ since, until }: ISO moments, GitHub's own filter on the commit's date) as { sha, tree,
+      // parents (their shas), message, author, committer }; a blob of bytes (base64) → its sha; a tree made from another
+      // (baseTree) with entries [{ path, mode, type, sha }] changed (sha null: that path leaves) → its sha; a commit of a
+      // tree (parents, author and committer as given: GitHub's defaults otherwise); and moving the branch to a commit:
+      // whatever it held (force), or only onward from its head (else GitHub refuses it: 422).
       async branch() {
         if (!branchName) await this.repo();
         const { data } = await request("GET", `${base}/branches/${enc(branchName)}`);
@@ -134,13 +141,19 @@
         return (Array.isArray(data) ? data : []).map(c => ({ sha: String(c.sha), tree: String(c.commit.tree.sha), parents: (c.parents || []).map(p => String(p.sha)),
           message: String(c.commit.message || ""), author: c.commit.author || null, committer: c.commit.committer || null }));
       },
+      async newBlob(base64) {
+        return String((await request("POST", `${base}/git/blobs`, { body: { content: base64, encoding: "base64" } })).data.sha);
+      },
+      async newTree(baseTree, entries) {
+        return String((await request("POST", `${base}/git/trees`, { body: { base_tree: baseTree, tree: entries } })).data.sha);
+      },
       async newCommit(treeSha, message, parents = [], { author = null, committer = null } = {}) {
         const body = { message, tree: treeSha, parents, ...(author ? { author } : {}), ...(committer ? { committer } : {}) };
         return String((await request("POST", `${base}/git/commits`, { body })).data.sha);
       },
-      async moveBranch(sha) {
+      async moveBranch(sha, { force = true } = {}) {
         if (!branchName) await this.repo();
-        await request("PATCH", `${base}/git/refs/heads/${enc(branchName)}`, { body: { sha, force: true } });
+        await request("PATCH", `${base}/git/refs/heads/${enc(branchName)}`, { body: { sha, force } });
       },
       // When the token expires (ms; 0 when GitHub didn't say, or the browser can't read it), from the last answer.
       expiresAt: () => expires

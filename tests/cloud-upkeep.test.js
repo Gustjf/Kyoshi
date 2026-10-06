@@ -1,8 +1,9 @@
 /* Kyoshi · tests/cloud-upkeep.test.js — the cloud's upkeep (plan_2026-10-06 Phase 3), against the fake GitHub
  * (tests/cloud.js): the history trimmed on its own to the last 8 days (one first commit for the older saves, the later
  * ones made again, the files untouched; nothing again the next day; GitHub refusing it: the History line, tried again a
- * week later), the token's expiry (a line from 14 days before; the banner and the glyph from 3), and tools/decrypt.html
- * opened from disk with no network. */
+ * week later; each day's first check also makes the day's backup commit, tests/cloud-backups.test.js), the token's
+ * expiry (a line from 14 days before; the banner and the glyph from 3), and tools/decrypt.html opened from disk with no
+ * network. */
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -15,9 +16,16 @@ const ERRANDS = gen.ERRANDS.slice(0, 3).map(([text, minutes]) => ({ text, minute
 const T = at(TODAY);
 const errands = tab => tab.page.evaluate(() => Kyoshi.apps.hawky.S.items.filter(i => !i.deleted).map(i => i.text).sort());
 const historyLine = tab => tab.page.evaluate(() => { const el = document.getElementById("kDevCloudHistory"); return el.hidden ? "" : el.textContent; });
-const shas = fake => Object.fromEntries([...fake.files].map(([p, f]) => [p, f.sha]));
-// The phone's clock moved on to ms (no timers fired on the way), then a check: the day's look at the history follows it.
-async function dayLater(tab, ms) {
+// The repository's files but the daily backups (data/ and KYOSHI.md): path → sha.
+const shas = fake => Object.fromEntries([...fake.files].filter(([p]) => !p.startsWith("backups/")).map(([p, f]) => [p, f.sha]));
+// The backups' days, oldest first.
+const days = fake => [...new Set(fake.paths().filter(p => p.startsWith("backups/")).map(p => p.split("/")[1]))];
+// Each commit of a history (newest first) as what made it: a save, the day's backup, or a trim's first commit.
+const kinds = list => list.map(c => (/^Kyoshi: daily backup /.test(c.message) ? "backup" : /^Kyoshi: trimmed /.test(c.message) ? "trim" : "save"));
+// The phone's clock (and GitHub's) moved on to ms (no timers fired on the way), then a check: the day's look at the
+// history and the day's backup follow it.
+async function dayLater(fake, tab, ms) {
+  fake.now = ms;
   await tab.page.clock.setSystemTime(ms);
   await cl.syncNow(tab);
 }
@@ -39,47 +47,53 @@ module.exports = [
         await hk.addErrand(computer, words);
         await cl.syncNow(computer);
       }
+      // The computer's clock stayed on its first day: one backup, at the first check.
       const before = fake.history(), files = shas(fake);
-      eq(before.length, 5, "five saves: KYOSHI.md, Hawky's first, and three changes");
-      eq(fake.moves, 0, "nothing trimmed while it all looked recent to the computer");
+      eq(kinds(before), ["save", "save", "save", "backup", "save", "save"], "six commits: KYOSHI.md, Hawky's first, the day's backup, and three changes");
+      eq(fake.forced, 0, "nothing trimmed while it all looked recent to the computer");
       eq(await historyLine(computer), "", "and nothing said about the history");
 
-      // A phone, today: its first check looks at the history and trims it.
-      const phone = await open(t, { app: "hawky", size: PHONE });
+      // A phone, today: its first check looks at the history and trims it, then makes the day's backup on top.
+      fake.now = T;
+      const made0 = fake.made, phone = await open(t, { app: "hawky", size: PHONE });
       await fake.route(phone.ctx, "phone");
       eq(await cl.enterKey(phone, key), "", "the phone took the key");
       const after = fake.history();
-      eq(fake.moves, 1, "the branch moved once");
-      eq(after.length, 3, "three commits left: the older saves in one, then the two of the last 7 days");
-      const root = after[2];
+      eq(fake.forced, 1, "the branch moved by force once");
+      eq(kinds(after), ["backup", "save", "save", "trim"], "the older saves in one, then the two of the last 7 days, then today's backup");
+      const root = after[3];
       eq([root.parents.length, root.tree], [0, before[2].tree], "the first holds the files as they were 10 days ago, with no parents");
       ok(Math.abs(Date.parse(root.date) - (T - 7 * DAY_MS)) < 5 * 60000, `dated 7 days ago (${root.date})`);
-      eq(after.slice(0, 2).map(c => [c.tree, c.message, c.date]), before.slice(0, 2).map(c => [c.tree, c.message, c.date]), "the later saves made again as they were");
+      eq(after.slice(1, 3).map(c => [c.tree, c.message, c.date]), before.slice(0, 2).map(c => [c.tree, c.message, c.date]), "the later saves made again as they were");
       eq(shas(fake), files, "every file the same (no device reads anything again)");
-      eq(fake.made, 3, "three commits written");
+      eq(days(fake), ["2026-09-30"], "today's backup in, the computer's of 20 days ago gone with it");
+      eq(fake.made - made0, 4, "four commits written: three for the trim, one for the backup");
       eq(fake.odd, 0, "nothing else asked of GitHub");
       eq((await errands(phone)).length, 6, "the phone has every errand");
       eq(await cl.alarms(phone), [false, false], "nothing on the page");
       eq(await historyLine(phone), "", "nor in the block");
 
-      // The next day: only the trim's own first commit is older than 8 days: nothing to do.
-      await dayLater(phone, T + DAY_MS + 60000);
-      eq(fake.moves, 1, "a day later, nothing trimmed again");
-      // Five days on, the save of 3 days ago is past 8 days: trimmed again, but GitHub refuses to move the branch.
+      // The next day: only the trim's own first commit is older than 8 days: nothing to do (but the day's backup).
+      await dayLater(fake, phone, T + DAY_MS + 60000);
+      eq([fake.forced, kinds(fake.history())], [1, ["backup", "backup", "save", "save", "trim"]], "a day later, nothing trimmed again");
+      // Five days on, the save of 3 days ago is past 8 days: trimmed again, but GitHub refuses to move the branch by
+      // force (a rule protecting it lets the day's backup on, made on top of the head).
       fake.mode = "notidy";
       const head = fake.head;
-      await dayLater(phone, T + 5 * DAY_MS + 60000);
-      eq([fake.moves, fake.head], [1, head], "refused: the history stays whole");
+      await dayLater(fake, phone, T + 5 * DAY_MS + 60000);
+      eq([fake.forced, fake.history()[1].sha, kinds(fake.history()).length], [1, head, 6], "refused: the history stays whole, the day's backup on top");
       has(await historyLine(phone), "GitHub won't let Kyoshi trim it to the last 8 days", "the block says so");
       eq(await cl.alarms(phone), [false, false], "and nothing on the page");
       fake.mode = "ok";
       const made = fake.made;
-      await dayLater(phone, T + 7 * DAY_MS + 60000);
-      eq([fake.moves, fake.made], [1, made], "two days later, not tried again yet");
-      await dayLater(phone, T + 13 * DAY_MS);
-      eq(fake.moves, 2, "a week after the refusal, trimmed");
-      eq(fake.history().map(c => c.parents.length), [0], "one commit left, holding the files as they are: every save was older than 7 days");
+      await dayLater(fake, phone, T + 7 * DAY_MS + 60000);
+      eq([fake.forced, fake.made - made], [1, 1], "two days later, not tried again yet: only the day's backup made");
+      await dayLater(fake, phone, T + 13 * DAY_MS);
+      eq(fake.forced, 2, "a week after the refusal, trimmed");
+      eq(kinds(fake.history()), ["backup", "backup", "trim"], "the first commit holds the files as they were 7 days ago (every save was older), then the backups since: Oct 7's, made again, and today's");
+      eq(fake.history().map(c => c.parents.length), [1, 1, 0], "on one line");
       eq(shas(fake), files, "the files still the same");
+      eq(days(fake), ["2026-10-07", "2026-10-13"], "the backups of the last 8 days only");
       eq(await historyLine(phone), "", "and the block says nothing again");
       eq(fake.odd, 0, "nothing else asked of GitHub");
     }
