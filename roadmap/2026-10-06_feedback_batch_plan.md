@@ -96,9 +96,10 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   changed or cleared.** Momo works the balance out every time (the hours typed on the day they were typed, less every day
   off entered on a weekend from that day on), so a changed or cleared weekend refunds by itself: nothing is decremented or
   stored per weekend.
+- **The movie's "info" field is not relabelled** (the owner, 2026-10-06: it doesn't matter where the content is watched): its
+  label, placeholder and what's typed in it stay exactly as they are; only the two new fields are added above it.
 - Small points answered by an assumption below unless the owner says otherwise: the order body parts take turns in
-  (assumption 8), the abdomen's and buttocks' own X (assumption 9), what a skip does with body parts (assumption 10), the
-  movie's "info" label once the director and year have fields (assumption 15).
+  (assumption 8), the abdomen's and buttocks' own X (assumption 9), what a skip does with body parts (assumption 10).
 - Assumptions the architect made, each one line to change if wrong:
   1. B1: a good message in the Cloud block fades after 20 s; a refusal stays until Developer Mode closes or the next action. *(Phase 1)*
   2. F9: the changelog shows the latest 3 entries and one muted line saying how many older ones the file holds; no Show all. *(Phase 1)*
@@ -114,7 +115,7 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   12. F7: editing a report changes its words and its kind (Bug ↔ Feature request); the versions, state and console lines it captured stay as they were. No per-report delete (Clear stays the only way: the owner's 2026-10-05 decision). *(Phase 5)*
   13. F6: a report filed during time travel (test mode) is still kept, and goes to the cloud at the next start. *(Phase 5)*
   14. F5: "today" is the device's local date; the all-in-one holds this device's saves right after a check that got through (equal to the cloud's then); a restore goes through the app's ordinary import (the same confirm, naming the backup's day), and the cloud then takes the restored data as it takes any change. *(Phase 6)*
-  15. F3: a movie's "info" field, no longer "Year or director", reads "Where to watch" (the other categories' labels stay). *(Phase 4)*
+  15. F3: nothing about the "info" field changes for any category, the movie's included (the owner's call, above). *(Phase 4)*
   16. F8: balances are kept in hours and shown in 8-hour days by halves; sick time never changes by itself. *(Phase 7)*
 
 ## Versions when planned
@@ -334,23 +335,23 @@ Closes F3. Wan Shi Tong only. Movies only (D3): books, TV/Anime and games stay e
 - For the **Movie** category only, one `.field-row` under Name: **`itemDirector`** (text, `maxlength` 80, label "Director",
   placeholder "e.g. Miyazaki") and **`itemYear`** (text, `inputmode="numeric"`, `maxlength` 12, label "Year", placeholder
   "e.g. 2001"). Both optional. The row is hidden for every other category (`renderCatFields`, which already redraws what
-  depends on the category), and saving another category writes "" to both. The movie's info line stays as the third field,
-  relabelled "Where to watch" now that the year and director have fields (assumption 15; `infoEg` e.g. "Netflix"); the other
-  categories' `CATS` entries don't change (Book "Author or edition", TV/Anime "Year or where to watch", Game "Platform").
-  `FIELDS` gains both ids (the discard snapshot), `openEditor` fills them, `saveItem` reads them through `cleanLine`, Add
-  another clears them. A movie with an older `info` holding "Miyazaki, 2001" keeps it: nothing is split or moved.
+  depends on the category), and saving another category writes "" to both. The info field stays exactly as it is for every
+  category, the movie's included: its label ("Year or director"), placeholder and `CATS` entry don't change (the owner's
+  call: it doesn't matter where the content is watched). `FIELDS` gains both ids (the discard snapshot), `openEditor` fills
+  them, `saveItem` reads them through `cleanLine`, Add another clears them. A movie with an older `info` holding "Miyazaki,
+  2001" keeps it: nothing is split or moved.
 
 ### 4.3 The line under the name (`render.js`, `app.js`)
 - `nameLine`: after the name, one `.item-info` span (the same class and look as today) reading
   `[director, year].filter(Boolean).join(", ")`, then `info` after `SEP` when present: "Spirited Away Miyazaki, 2001 ·
-  Netflix"; with only `info`, as today (so books, TV and games look exactly as they do). Active media, the backlog and
+  <info as typed>"; with only `info`, as today (so books, TV and games look exactly as they do). Active media, the backlog and
   Finished all use `nameLine`. `searchUrl` adds `director` and `year` to the search. Momo's details ("Active · Movie") don't
   change.
 - Changelog: "A movie has a Director and a Year of its own, optional, shown under its name as “Director, Year” before the rest.
   Reload on every device after updating: an older copy drops them."
 
 ### Docs & tests
-- `CLAUDE.md`: State (`director`, `year`: movies'), the pop-up's movie row, the movie's info label.
+- `CLAUDE.md`: State (`director`, `year`: movies'), the pop-up's movie row (the info field unchanged).
 - New `tests/wanshitong.test.js` (and `tests/wanshitong.js` helpers if two tests share selectors): add a movie with a director
   and a year → the backlog line reads the name, then "Miyazaki, 2001"; switch the pop-up to Book → the row is hidden, and a
   book saved shows its info line as before; Start the movie → Active media shows the same line; Export JSON holds `director`
