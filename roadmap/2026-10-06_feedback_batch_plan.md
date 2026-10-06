@@ -62,7 +62,12 @@ current bug: `apps/appa/thing-editor.js` exports `wireThingEditor`; the owner's 
 while `events.js` was new, before the build stamp changed. Nothing to do; if it ever comes back, a hard reload fixes it.
 
 ## Status (tick each phase off here, with what was decided)
-- [ ] Phase 1 — core: Developer Mode's two small things (Kyoshi 4.970)
+- [x] Phase 1 — core: Developer Mode's two small things (Kyoshi 4.970) — done 2026-10-06, as planned (assumptions 1–2).
+  Along the way: `K.cloudUI.SAID_MS` is exposed for the test (as `K.cloud.LOST_MS` is); a progress word that outlasts
+  20 s during a long action fades too (the outcome replaces it); the older-entries line is a plain `.dev-hint` (no new
+  CSS), "1 older entry" when there's one. The full run caught an older race in `cloud: lost` (a check the fake clock
+  fired could still save after the fake GitHub turned back to "ok", hiding the banner before Try now): the test now lets
+  the checks settle before changing the fake's mode.
 - [ ] Phase 2 — Hawky & Momo: the four list fixes (Hawky 2.230, Momo 10.384)
 - [ ] Phase 3 — Bosco: injection sites by body part, then in an X, with a skip; goals by the 7-day average; deletes that ask (Bosco 7.500)
 - [ ] Phase 4 — Wan Shi Tong: a movie's director and year as fields of their own (Wan Shi Tong 2.472)
