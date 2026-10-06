@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.121", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "2.111", date: "2026-10-04", changes: [
       "Saving someone's pop-up without changing anything no longer undoes a change made to them meanwhile on another device."
     ] },

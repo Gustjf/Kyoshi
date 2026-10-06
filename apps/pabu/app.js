@@ -13,7 +13,6 @@
     title: "Pabu — Keep in touch",
     subtitle: "The people you want to stay close to, and who's due a call, a text or a visit, for Momo to fit into your week.",
     width: 780,
-    backupNote: "Your people live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 15 }],
     // The "heart-handshake" icon from Lucide (ISC license) — Pabu is Bolin's fire ferret — in rose so it shows on light and dark tabs.

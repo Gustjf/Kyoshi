@@ -1,5 +1,5 @@
 /* Template · markup.js — the app's page (A.markup). The shell supplies the header, footer,
- * Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"].
+ * Developer Mode and bug reports.
  * Ids only need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.template.markup = `
   <section>
@@ -14,6 +14,4 @@ Kyoshi.apps.template.markup = `
     <div id="itemsEmpty" class="empty-msg">Nothing here yet.</div>
     <ul class="items" id="itemsList"></ul>
   </section>
-
-  <section data-kyoshi="backup"></section>
 `;

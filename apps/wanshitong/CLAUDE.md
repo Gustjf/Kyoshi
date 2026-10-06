@@ -13,7 +13,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | File | What's in it |
 |---|---|
 | `app.js` | `Kyoshi.register` (name, title, owl icon, 780px wide); constants (`CATS`, `OTHER`, `NOW_SPOTS`, `SLOTS`, `HAVE`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (formatting, Google links, where each item is: `nowSpots`, `nowItems`, `spotOf`, `freeSpot`, `backlog`, `finished`, `setSlot`, `unslot`); `inbox()` and `open(id)` for Momo |
-| `markup.js` | the page: Active media, Backlog, Finished, Backup & sync, the add / edit pop-up, and "Active media is full" |
+| `markup.js` | the page: Active media, Backlog, Finished, the add / edit pop-up, and "Active media is full" |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: Active media (and its free spots), the backlog's groups (`buildGroups`, made once), Finished |

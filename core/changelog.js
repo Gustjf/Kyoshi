@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "3.860", date: "2026-10-06", changes: [
+      "Backup & sync left the apps' pages: Developer Mode (Ctrl+9, or the DEV badge) holds Export JSON and Import JSON for the app on screen, Export all and Import all, and the sync folder.",
+      "Inside: the sync engine (counters, combining) is one file and the folder transport another, so a second way to sync can share it."
+    ] },
     { version: "3.760", date: "2026-10-05", changes: [
       "Bugs & requests are no longer ticked off one by one: everything submitted stays listed (and counted on the footer link) until you clear it in Developer Mode, whose Copy all and Download .md take them all, feature requests first, then bugs.",
       "Submit empties the box at once, so closing the pop-up right after never asks to discard a report that's already saved."

@@ -1,8 +1,9 @@
 /* Kyoshi · core/backup.js — backup & sync UI, as K.backup.
- * Fills each app's <section data-kyoshi="backup"></section> with Export JSON / Import JSON /
- * Sync Folder… and the sync status line; runs the banners above every app for sync
- * (#kSyncBanner) and storage (#kStorageBanner: slow to open, out of reach, or nearly full);
- * Export all / Import all (Developer Mode, see core/dev.js) put every app in one file.
+ * Fills Developer Mode's Backup & sync block (#kDevBackup, see core/dev.js) for the app on screen: Export JSON /
+ * Import JSON, Export all / Import all (every app in one file), Sync Folder… and the folder's status line
+ * (core/sync-folder.js), and where the app's data lives (its meta.backupNote, else DEFAULT_NOTE). The apps' pages hold
+ * none of it. Runs the banners above every app for sync (#kSyncBanner) and storage (#kStorageBanner: slow to open,
+ * out of reach, or nearly full).
  * Uses each app's A.data: build() for exports, importBackup(raw, ask) for imports (true once it's in). A backup
  * also holds the app's meetings (core/meetings.js), which an import combines with ours, the later change winning, and
  * when it was made (savedAt, core's). Every import's confirm names that date and how much newer what's here is: an app's
@@ -12,6 +13,7 @@
   const { isObj, todayStr, downloadJSON, readFile, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   const running = () => K.order.map(id => K.apps[id]).filter(A => A.started);
+  const DEFAULT_NOTE = "Your data lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too.";
   // "Bosco", "Bosco and Momo", "Bosco, Momo and Appa".
   const nameList = names => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
 
@@ -42,38 +44,12 @@
   // newer what's here is. True when the user says yes.
   const ask = (A, raw, question) => confirm([question, ageNote(madeAt(raw), changedAt(A)), "This can't be undone."].filter(Boolean).join(" "));
 
-  // Fills an app's backup section (if its markup has one); called once, when its root is made.
-  function mount(A) {
-    const box = A.root.querySelector('[data-kyoshi="backup"]');
-    if (!box) return;
-    box.innerHTML = `<h2>Backup &amp; sync</h2>
-      <div class="toolbar">
-        <button class="secondary">Export JSON</button>
-        <button class="secondary">Import JSON</button>
-        <button class="secondary" hidden>Sync Folder&hellip;</button>
-        <input type="file" accept=".json,application/json" hidden>
-      </div>
-      <div class="note"></div>
-      <div class="footnote">${A.meta.backupNote || "Your data lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too."}</div>`;
-    const [exportBtn, importBtn, syncBtn] = box.querySelectorAll("button"), file = box.querySelector("input");
-    A._backup = { exportBtn, syncBtn, status: box.querySelector(".note") };
-    exportBtn.addEventListener("click", () => exportApp(A));
-    importBtn.addEventListener("click", () => file.click());
-    file.addEventListener("change", async e => {
-      const f = e.target.files[0];
-      e.target.value = ""; // so picking the same file again still triggers an import
-      const text = f ? await readFile(f) : null;
-      if (typeof text === "string") importText(A, text, f.lastModified);
-    });
-    syncBtn.addEventListener("click", () => (K.sync.state() === "off" ? K.sync.choose() : K.sync.stop()));
-    setUnsaved(A, !!A._unsaved);
-  }
-
-  // Highlights an app's Export JSON while it has changes that aren't in a backup yet.
+  // Highlights an app's Export JSON (and Export all) while it has changes that aren't in a backup yet.
   function setUnsaved(A, value) {
     A._unsaved = value;
-    if (A._backup) A._backup.exportBtn.classList.toggle("unsaved", value);
+    render();
   }
+  const isUnsaved = A => !!A._unsaved;
 
   // An app's backup: its data, with when it was made and its meetings beside it.
   const backupOf = A => ({ ...A.data.build(), savedAt: new Date().toISOString(), meetings: K.meetings.build(A) });
@@ -119,7 +95,7 @@
     let raw;
     try { raw = JSON.parse(text); } catch (err) { return alert("That file isn't a valid Kyoshi backup (it couldn't be read as JSON)."); }
     const apps = isObj(raw) && isObj(raw.apps) ? running().filter(A => isObj(raw.apps[A.id])) : [];
-    if (!apps.length) return alert("That file isn't an Export all backup. To bring in one app's backup, use Import JSON in that app.");
+    if (!apps.length) return alert("That file isn't an Export all backup. To bring in one app's backup, switch to that app and use Import JSON.");
     const newest = apps.reduce((a, b) => (changedAt(b) > changedAt(a) ? b : a));
     withFile(date, () => {
       const note = ageNote(madeAt(raw), changedAt(newest), apps.length > 1 ? newest.meta.name : "");
@@ -128,23 +104,38 @@
     });
   }
 
-  // Every app's sync button and status line, and the banner shown while sync is paused or broken.
+  // Developer Mode's Backup & sync block, for the app on screen: its name, Export JSON highlighted while it has changes in
+  // no backup (Export all while any app has), the sync folder's button and status line, and where its data lives. Then
+  // the banner shown while sync is paused or broken. Called on every change, and by Developer Mode for a switch of app.
   function render() {
-    const state = K.sync.state(), folder = K.sync.folderName() ? `“${K.sync.folderName()}”` : "";
-    K.order.forEach(id => {
-      const A = K.apps[id], b = A._backup;
-      if (!b) return;
-      const note = K.sync.note(A);
-      const status = !K.sync.supported ? "Autosave & sync to a folder needs Chrome or Edge, on a computer or Android."
+    const A = K.active(), state = K.folder.state(), folder = K.folder.folderName() ? `“${K.folder.folderName()}”` : "";
+    if (A) {
+      const note = K.folder.note(A), usable = !!(A.started && A.data); // an app that couldn't start offers its data on its page
+      const status = !K.folder.supported ? "Autosave & sync to a folder needs Chrome or Edge, on a computer or Android."
         : state === "on" ? `Autosave & sync on with folder ${folder}${note ? ` | ${note}` : ""}` : "";
-      b.syncBtn.hidden = !K.sync.supported;
-      b.syncBtn.textContent = state === "off" ? "Sync Folder…" : "Stop Syncing";
-      b.status.textContent = status;
-      b.status.hidden = !status;
-    });
+      $("kDevBackupApp").textContent = A.meta.name;
+      $("kDevExportApp").classList.toggle("unsaved", isUnsaved(A));
+      $("kDevExportApp").disabled = $("kDevImportApp").disabled = !usable;
+      $("kDevSyncNote").textContent = status;
+      $("kDevSyncNote").hidden = !status;
+      $("kDevBackupNote").textContent = A.meta.backupNote || DEFAULT_NOTE;
+    }
+    $("kDevExportAll").classList.toggle("unsaved", running().some(isUnsaved));
+    $("kDevSyncFolder").hidden = !K.folder.supported;
+    $("kDevSyncFolder").textContent = state === "off" ? "Sync Folder…" : "Stop Syncing";
     $("kSyncBanner").hidden = state !== "paused" && state !== "error";
-    $("kSyncBannerText").textContent = state === "paused" ? `Autosave & sync with ${folder} is paused until you allow access again.` : K.sync.message();
+    $("kSyncBannerText").textContent = state === "paused" ? `Autosave & sync with ${folder} is paused until you allow access again.` : K.folder.message();
     $("kSyncBannerBtn").textContent = state === "paused" ? "Reconnect" : "Choose Folder";
+  }
+
+  // Picks a file through a hidden file input, then hands its text and date to fn.
+  function onFile(input, fn) {
+    input.addEventListener("change", async e => {
+      const f = e.target.files[0];
+      e.target.value = ""; // so picking the same file again still triggers an import
+      const text = f ? await readFile(f) : null;
+      if (typeof text === "string") fn(text, f.lastModified); // the file's date, for an old file that doesn't say
+    });
   }
 
   // The storage banner: the browser is slow to open Kyoshi's storage, it's out of reach (changes
@@ -160,8 +151,15 @@
   }
 
   function init() {
-    $("kSyncBannerBtn").addEventListener("click", () => (K.sync.state() === "paused" ? K.sync.reconnect() : K.sync.choose()));
+    $("kSyncBannerBtn").addEventListener("click", () => (K.folder.state() === "paused" ? K.folder.reconnect() : K.folder.choose()));
+    $("kDevExportApp").addEventListener("click", () => exportApp(K.active()));
+    $("kDevImportApp").addEventListener("click", () => $("kDevImportAppFile").click());
+    onFile($("kDevImportAppFile"), (text, date) => importText(K.active(), text, date)); // the app on screen once it's read
+    $("kDevExportAll").addEventListener("click", exportAll);
+    $("kDevImportAll").addEventListener("click", () => $("kDevImportFile").click());
+    onFile($("kDevImportFile"), importAllText);
+    $("kDevSyncFolder").addEventListener("click", () => (K.folder.state() === "off" ? K.folder.choose() : K.folder.stop()));
   }
 
-  K.backup = { init, mount, render, checkStorage, setUnsaved, isUnsaved: A => !!A._unsaved, exportApp, importText, exportAll, importAllText, nameList, ask };
+  K.backup = { init, render, checkStorage, setUnsaved, isUnsaved, exportApp, importText, exportAll, importAllText, nameList, ask };
 })(Kyoshi);

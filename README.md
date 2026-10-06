@@ -12,15 +12,15 @@ birthdays coming up). You only see the app you're using; switch apps from the ic
 **Theme**. No accounts, no servers, no CDN: plain HTML, CSS and JavaScript, built to keep working for years.
 
 - **Open it:** the GitHub Pages link, or `index.html` straight from a download of this repo.
-- **Your data:** stays in this browser, in its large storage (IndexedDB). Each app has Export/Import JSON
-  in its *Backup & sync* section, and one sync folder (e.g. shared by Syncthing) keeps every app up to
-  date across devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as
-  plain files, in `<folder>/<app>/files/`. Developer Mode (Ctrl+9, or the DEV badge) can export or import
-  every app at once, and shows how much storage Kyoshi uses.
+- **Your data:** stays in this browser, in its large storage (IndexedDB). Developer Mode (Ctrl+9, or the
+  DEV badge) holds *Backup & sync*: Export/Import JSON for the app on screen, Export/Import all (every app
+  in one file), and the sync folder (e.g. shared by Syncthing), which keeps every app up to date across
+  devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as plain files,
+  in `<folder>/<app>/files/`. Developer Mode also shows how much storage Kyoshi uses.
 - **Keep backups:** a browser can erase a site's data (clearing browsing data, a full device, or on
   iPhone a week or so without a visit). Kyoshi asks the browser to protect it, but export now and then.
 - **Coming from the standalone Bosco or Momo** on the same site? Your data comes over on first open;
-  otherwise, export it there and use Import JSON here.
+  otherwise, export it there and use Import JSON (Developer Mode) here.
 - **Updates:** just reload. Every file link carries a build stamp, so a reload gets the newest files.
 
 ## Hosting on GitHub Pages (free plan)

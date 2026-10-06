@@ -1,8 +1,7 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
  * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends folded at its bottom, and
  * its pop-ups (card editor, an event, a card on Today, a weekend's plan and days off, the sleep routine, close-out).
- * The shell supplies the header, footer, Developer Mode and bug reports; the
- * [data-kyoshi="backup"] section is filled in by core/backup.js.
+ * The shell supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within Momo (look them up with A.$). */
 Kyoshi.apps.momo.markup = `
   <!-- Icons from Lucide (lucide.dev) — ISC License, Copyright (c) Lucide Icons and Contributors. -->
@@ -74,8 +73,6 @@ Kyoshi.apps.momo.markup = `
   <!-- Upcoming weekends (weekends.js), folded: also at the bottom of Today. -->
   <details class="weekends"><summary></summary><div class="weekend-list"></div></details>
   </div>
-
-  <section data-kyoshi="backup"></section>
 
   <!-- Where a dragged card would land: one line per day it lands on (drop.js). -->
   <div id="dropLines"></div>

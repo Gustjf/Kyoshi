@@ -1,10 +1,11 @@
 /* Kyoshi · core/dev.js — the one Developer Mode for every app, as K.dev.
  * Ctrl+9 or the DEV badge (bottom-right, for phones) opens #kDevPanel: versions, the app on
- * screen's own tools (A.renderDev(box)), time travel (test mode), Export/Import all apps,
- * storage used, bugs & requests (core/bugs.js), and a changelog for the app or Kyoshi. The test banner lives here too. */
+ * screen's own tools (A.renderDev(box)), Backup & sync (core/backup.js: Export/Import JSON for the app on screen,
+ * Export/Import all apps, the sync folder), time travel (test mode), storage used, bugs & requests (core/bugs.js),
+ * and a changelog for the app or Kyoshi. The test banner lives here too. */
 (function (K) {
   "use strict";
-  const { fmtDate, todayStr, addMonths, daysBetween, readFile, fmtBytes } = K.util;
+  const { fmtDate, todayStr, addMonths, daysBetween, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   let on = false;
   let logFor = "app"; // the changelog shown: "app" (the one on screen) or "kyoshi"
@@ -16,9 +17,10 @@
     refresh();
   }
 
-  // Redraws the panel for the app on screen, while it's open.
+  // Redraws the panel for the app on screen, while it's open (its Backup & sync block always, core/backup.js).
   function refresh() {
     $("kDevBugCount").textContent = K.bugs.count();
+    K.backup.render();
     const A = K.active();
     if (!on || !A) return;
     $("kDevVersion").textContent = `${A.meta.name} ${A.VERSION} | Kyoshi ${K.VERSION}`;
@@ -81,14 +83,6 @@
     $("kDevPlusWeek").addEventListener("click", () => travel(7));
     $("kDevPlusMonth").addEventListener("click", () => travel(daysBetween(todayStr(), addMonths(todayStr(), 1))));
     $("kDevPlusSeason").addEventListener("click", () => travel(daysBetween(todayStr(), K.seasons.seasonAfter(todayStr())))); // to the next season's first day
-    $("kDevExportAll").addEventListener("click", K.backup.exportAll);
-    $("kDevImportAll").addEventListener("click", () => $("kDevImportFile").click());
-    $("kDevImportFile").addEventListener("change", async e => {
-      const f = e.target.files[0];
-      e.target.value = ""; // so picking the same file again still triggers an import
-      const text = f ? await readFile(f) : null;
-      if (typeof text === "string") K.backup.importAllText(text, f.lastModified); // the file's date, for an old file that doesn't say
-    });
     $("kDevCopyBugs").addEventListener("click", K.bugs.copyAll);
     $("kDevDownloadBugs").addEventListener("click", K.bugs.download);
     $("kDevClearBugs").addEventListener("click", K.bugs.clear);

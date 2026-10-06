@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.211", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "2.201", date: "2026-10-03", changes: [
       "Several programs, one followed at a time: tap one to switch to it (it starts from its first routine), make a new one (it starts empty), or rename or delete the one you follow; your rotation so far is now the program “Program”.",
       "Each exercise has its own progression step (+2.5, +5, +7.5 or +10 lb, shown in kg when you use kg): its weight goes up by that much, and − / + move by it during a workout.",

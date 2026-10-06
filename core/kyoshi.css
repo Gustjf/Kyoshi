@@ -65,7 +65,7 @@ button.secondary:hover:not(:disabled) { background: var(--border); }
 button.small { padding: 3px 8px; font-size: .8em; }
 button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); padding: 3px 8px; font-size: .8em; }
 button.danger:hover { background: var(--bad); color: #fff; }
-/* Export JSON while there are changes in no backup yet (core/backup.js). */
+/* Developer Mode's Export JSON and Export all while there are changes in no backup yet (core/backup.js). */
 button.secondary.unsaved { background: var(--unsaved-bg); border-color: var(--unsaved-border); }
 button.secondary.unsaved:hover:not(:disabled) { background: rgba(245, 158, 11, .28); border-color: rgba(245, 158, 11, .6); }
 button.pill { padding: 3px 8px; font-size: .78em; border-radius: 4px; background: transparent; border: 1px solid var(--border); color: var(--muted); }
@@ -178,6 +178,7 @@ body.dev-mode .dev-badge { padding: 4px 9px; border-color: var(--accent); backgr
 .dev-block { border-top: 1px solid var(--border); padding: 8px 0; }
 .dev-block-head { font-size: .85em; color: var(--muted); margin-bottom: 6px; }
 .dev-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.dev-actions + .dev-actions { margin-top: 6px; } /* a second row of buttons (Backup & sync) */
 .dev-hint { font-size: .78em; color: var(--muted); margin-top: 6px; line-height: 1.4; }
 .dev-panel .window-pills { margin: 0 0 4px; }
 .changelog-entry { border-top: 1px solid var(--border); padding: 8px 0; }

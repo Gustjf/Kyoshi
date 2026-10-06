@@ -12,7 +12,6 @@
     title: "Hawky — Errands",
     subtitle: "Errands for Momo to fit into your week, and shopping lists that cool off before you buy.",
     width: 780,
-    backupNote: "Your errands and shopping lists live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 15 }],
     // The "bird" icon from Lucide (ISC license) — Hawky is Sokka's messenger hawk — in teal so it shows on light and dark tabs.

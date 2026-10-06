@@ -18,7 +18,6 @@
     title: "Turtleduck — Meals",
     subtitle: "Recipes, the two weeks' meals and the grocery list, for Momo to fit into your week.",
     width: 1180,
-    backupNote: "Your recipes and meal plan live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 15 }],
     // The "cooking-pot" icon from Lucide (ISC license) — Zuko's turtleducks, fed by the pond — in amber.

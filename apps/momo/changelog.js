@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.374", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "10.364", date: "2026-10-06", changes: [
       "A weekend's pop-up takes days off before and after it, by half days (half a day before is the afternoon, after the morning): the weekend's dates stretch over them, and each day off has a small gold sun by its date on the board and on Today (faded for half a day), the weekend's tile one before its dates; the fold counts the days off ahead. They take no hours.",
       "Reload Momo on every device: an older copy would drop the days off."

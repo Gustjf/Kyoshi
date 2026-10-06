@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.220", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "1.210", date: "2026-10-03", changes: [
       "The goal pop-up gives a one-line SMART reminder."
     ] },

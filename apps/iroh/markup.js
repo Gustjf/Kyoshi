@@ -1,7 +1,7 @@
 /* Iroh · markup.js — the page (A.markup): This season (its goals, then Add), This year (its goals), Vision (the
- * areas), Earlier (past seasons' and years' goals, folded away), Backup & sync, and the pop-ups: a goal, its
+ * areas), Earlier (past seasons' and years' goals, folded away), and the pop-ups: a goal, its
  * reconcile, an area. The shell supplies the header (with Iroh's meetings), footer, Developer Mode and bug
- * reports; core/backup.js fills [data-kyoshi="backup"]. Ids only need to be unique within the app (look them up
+ * reports. Ids only need to be unique within the app (look them up
  * with A.$). Buttons drawn here and by render.js carry data-act (events.js). */
 Kyoshi.apps.iroh.markup = `
   <section>
@@ -41,8 +41,6 @@ Kyoshi.apps.iroh.markup = `
       <div class="footnote">Carry over copies an open goal into this season, with its year goal, hours and next step.</div>
     </details>
   </section>
-
-  <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="goalOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">

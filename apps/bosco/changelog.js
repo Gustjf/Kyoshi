@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.400", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "7.390", date: "2026-10-06", changes: [
       "Doses rotate through the injection sites you keep on in start-up info (left and right abdomen; the thighs' upper, middle and lower spots; upper arms; buttocks): upcoming doses, the dose pop-up (where you can pick another) and History say which. Start-up info asks once more to set them; reload on every device after updating."
     ] },

@@ -72,7 +72,6 @@
     A.root.innerHTML = A.markup || "";
     let loaded = false;
     try {
-      if (A.data) K.backup.mount(A);
       if (A.load) A.load();
       loaded = true;
       K.meetings.load(A);

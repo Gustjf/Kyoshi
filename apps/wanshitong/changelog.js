@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.372", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "2.362", date: "2026-10-03", changes: [
       "In progress is now Active media (the same three spots), all in purple.",
       "Up next is gone: anything waiting there is back in the backlog, and finishing something just frees its spot.",

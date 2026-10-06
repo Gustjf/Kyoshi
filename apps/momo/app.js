@@ -12,7 +12,6 @@
     title: "Momo — Weekly Time Budget",
     subtitle: "A weekly time budget. Give every hour a job.",
     width: 1180,
-    backupNote: "Your plans live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30, after: true }],
     // The "peach" icon from Lucide Lab (ISC license) — Aang named Momo after a peach ("momo" in Japanese) — in orange so it shows on light and dark tabs.

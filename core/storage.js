@@ -37,7 +37,7 @@
       localStorage.setItem(key, value);
     } catch (e) {
       console.error("Couldn't save to local storage.", e);
-      if (!warned) alert("This browser isn't letting Kyoshi save your data, so it will be lost when the page closes. Use Export JSON to keep a copy.");
+      if (!warned) alert("This browser isn't letting Kyoshi save your data, so it will be lost when the page closes. Use Export JSON in Developer Mode (Ctrl+9, or the DEV badge) to keep a copy.");
       warned = true;
     }
   }
@@ -142,7 +142,7 @@
       if (channel) channel.postMessage({ keys: entries.map(([k]) => k) });
     }).catch(err => {
       console.error("Couldn't save to the browser's storage.", err);
-      if (!failed) alert("Kyoshi couldn't save your latest change in this browser. Export JSON to keep a copy, then reload.");
+      if (!failed) alert("Kyoshi couldn't save your latest change in this browser. Export JSON in Developer Mode (Ctrl+9, or the DEV badge) to keep a copy, then reload.");
       failed = true;
     });
   }

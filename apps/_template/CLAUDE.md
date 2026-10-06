@@ -9,7 +9,7 @@ part of the contract: storage, backups, sync merging (with delete markers), and 
 | File | What's in it |
 |---|---|
 | `app.js` | `Kyoshi.register` (name, title, icon, width); constants; state `A.S`; small helpers |
-| `markup.js` | the page, with the Backup & sync section |
+| `markup.js` | the page |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll` |

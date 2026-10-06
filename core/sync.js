@@ -1,50 +1,21 @@
-/* Kyoshi · core/sync.js — folder autosave & sync engine, as K.sync. No UI (that's core/backup.js).
- * Changes are saved as JSON into a folder the user picks once (e.g. one Syncthing shares
- * between their phone and computer), each app in its own subfolder (<folder>/<app id>/),
- * and other devices' saves are loaded from it, checking every few seconds. Each device
- * writes only its own file per app, so a sync tool never sees two devices edit the same
- * file. Saves carry version counters (how many changes each device has made) that tell
+/* Kyoshi · core/sync.js — the sync engine, as K.sync: what every way of syncing shares. No UI (that's core/backup.js),
+ * and no folder of its own: each way of syncing is a transport (the sync folder: core/sync-folder.js).
+ * Saves carry version counters (how many changes each device has made) that tell
  * whether another device's save is newer (load it), older (ignore it), or was made while
  * this device also had unsynced changes (combine the two, via the app's A.data.combine).
- * An app with photos or documents (A.data.files) also has them copied both ways as plain files in
- * <folder>/<app id>/files/ (core/files.js mirror). Each save also carries the app's meetings (core/meetings.js),
- * combined meeting by meeting.
- * Per app (A._sync): meta { device, file, clock, changedAt, dirty } kept in A.store "sync",
- * seen (file name -> "lastModified:size" already read), note (last thing it did), queued, timer. */
+ * Each save also carries the app's meetings (core/meetings.js), combined meeting by meeting.
+ * A transport is { id, init(), state() → "off" | "on" | …, message(), changed(A), request(A?), flush(A?), stopTimers(),
+ * dirty(A) }, registered with K.sync.use(t): it brings other devices' saves in through incorporate, then settle, and
+ * writes saveOf(A). The engine tells every transport about each change, asks them all to check when the page comes back
+ * into view, and to save what's pending when it's hidden or closed.
+ * Per app (A._sync): meta { device, file, clock, changedAt, dirty } kept in A.store "sync" (dirty: not in the sync folder
+ * yet), plus one object per transport, made by it on first use (A._sync.folder). */
 (function (K) {
   "use strict";
-  const { isObj, isPos, clockTime } = K.util;
+  const { isObj, isPos } = K.util;
 
-  const SYNC_CHECK_MS = 5000;    // how often the folder is checked for other devices' saves
-  const AUTOSAVE_DELAY_MS = 400; // quick edits in a row are saved to the folder once
-  const RETRY_NOTE = "Couldn't reach the folder, retrying";
-
-  const supported = typeof window.showDirectoryPicker === "function";
-  let dir = null;       // the chosen folder
-  let state = "off";    // "off" | "on" | "paused" (needs permission again) | "error"
-  let message = "";     // banner text while in "error"
-  let queue = Promise.resolve();
+  const transports = []; // the ways of syncing (use)
   const apps = () => K.order.map(id => K.apps[id]).filter(A => A.started && A._sync);
-  const ui = () => K.backup.render();
-
-  // The folder's handle isn't text, so it has its own IndexedDB database ("kyoshi"), apart from the data (core/storage.js).
-  function folderStore(mode, action) {
-    return new Promise((resolve, reject) => {
-      const open = indexedDB.open("kyoshi", 1);
-      open.onupgradeneeded = () => open.result.createObjectStore("handles");
-      open.onerror = () => reject(open.error);
-      open.onsuccess = () => {
-        const db = open.result;
-        try {
-          const tx = db.transaction("handles", mode), req = action(tx.objectStore("handles"));
-          tx.oncomplete = () => { db.close(); resolve(req.result); };
-          tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
-        } catch (err) { db.close(); reject(err); }
-      };
-    });
-  }
-  const loadFolder = () => folderStore("readonly", store => store.get("syncFolder"));
-  const storeFolder = d => folderStore("readwrite", store => (d ? store.put(d, "syncFolder") : store.delete("syncFolder")));
 
   // --- Version counters ---
   // A save's counters, { deviceId: changes made there }, minus anything invalid.
@@ -77,7 +48,7 @@
   // Reads (or makes) an app's sync identity; call after its data is loaded. A new one counts
   // data already here as a change, so a sync folder's data is combined with it rather than replacing it.
   function loadMeta(A) {
-    const ch = A._sync || (A._sync = { meta: {}, seen: new Map(), note: "", queued: false, timer: 0 });
+    const ch = A._sync || (A._sync = { meta: {} });
     const s = A.store.json("sync"), clock = s && cleanClock(s.clock);
     if (clock && typeof s.device === "string" && typeof s.file === "string") {
       ch.meta = { device: s.device, file: s.file, clock, changedAt: String(s.changedAt || ""), dirty: !!s.dirty };
@@ -100,18 +71,21 @@
     storeMeta(A);
   }
 
+  // Whether some way of syncing is on (its autosave stands in for a backup).
+  const on = () => transports.some(t => t.state() === "on");
+
   // An app kept a change (A.changed): counts it, highlights Export JSON while it's in no
-  // backup (unless sync is on, whose autosave stands in for that), and autosaves it soon.
+  // backup (unless sync is on, whose autosave stands in for that), and each transport saves it soon.
   function changed(A, unsaved = true, quiet = false) {
     if (K.testMode || !A._sync) return;
     markLocalChange(A, quiet);
-    K.backup.setUnsaved(A, unsaved && state !== "on");
-    scheduleAutosave(A);
+    K.backup.setUnsaved(A, unsaved && !on());
+    transports.forEach(t => t.changed(A));
   }
 
-  // --- Reading & writing the folder ---
-  // Brings in a save found in the folder, and its meetings; returns what happened ({ what, data: whether the
-  // app's own data changed }), or null if nothing.
+  // --- Another device's save in, this device's out ---
+  // Brings in another device's save (one a transport found), and its meetings; returns what happened ({ what, data:
+  // whether the app's own data changed }), or null if nothing.
   function incorporate(A, raw) {
     const ch = A._sync, clock = raw.sync && cleanClock(raw.sync.clock);
     const rel = clock ? compareClocks(ch.meta.clock, clock) : "plain";
@@ -138,181 +112,45 @@
     return { what: replace ? "Loaded" : "Combined changes with", data };
   }
 
-  // Reads the app's saves that are new or changed since last time, most up to
-  // date first, and brings them in.
-  async function readFolder(A, root) {
-    const ch = A._sync, sub = await root.getDirectoryHandle(A.id, { create: true }), changedFiles = [];
-    for await (const [name, handle] of sub.entries()) {
-      if (handle.kind !== "file" || !/\.json$/i.test(name)) continue;
-      try {
-        const file = await handle.getFile();
-        const sig = `${file.lastModified}:${file.size}`;
-        if (ch.seen.get(name) !== sig) changedFiles.push({ name, file, sig });
-      } catch (err) { /* mid-transfer; the next check gets it */ }
-    }
-    changedFiles.sort((a, b) => b.file.lastModified - a.file.lastModified);
-    let what = "", data = false;
-    for (const { name, file, sig } of changedFiles) {
-      let raw = null;
-      try { raw = JSON.parse(await file.text()); } catch (err) { /* not a save, or changed while being read: retried once it changes */ }
-      if (root !== dir || K.testMode) return;
-      ch.seen.set(name, sig);
-      const result = isObj(raw) && A.data.looksLike(raw) ? incorporate(A, raw) : null;
-      if (!result) continue;
-      if (!what) what = `${result.what} “${name}”`;
-      data = data || result.data;
-    }
-    if (!what) return;
-    if (data) A.data.afterSync(); // the app stores and redraws what came in (meetings are already kept)
+  // Once a transport brought saves in: the app stores and redraws what came in, if its data changed (meetings are already
+  // kept), and the header's meetings and the switcher catch up.
+  function settle(A, data) {
+    if (data) A.data.afterSync();
     K.meetings.render();
-    ch.note = `${what} at ${clockTime()}`;
-    ui();
     K.refreshSwitcher();
   }
 
-  // Saves the app's file in its subfolder, if it has changes the folder lacks.
-  async function writeAutosave(A) {
-    const root = dir, ch = A._sync, m = ch.meta;
-    if (state !== "on" || !m.dirty || K.testMode) return;
-    const version = m.clock[m.device];
-    const text = JSON.stringify({ ...A.data.build(), savedAt: m.changedAt, sync: { device: m.device, clock: m.clock }, meetings: K.meetings.build(A) }, null, 2);
-    const sub = await root.getDirectoryHandle(A.id, { create: true });
-    const handle = await sub.getFileHandle(m.file, { create: true });
-    const out = await handle.createWritable();
-    await out.write(text);
-    await out.close();
-    const file = await handle.getFile();
-    if (root !== dir) return;
-    ch.seen.set(m.file, `${file.lastModified}:${file.size}`); // our own save isn't news
-    if (m.clock[m.device] === version) { // nothing changed while writing
-      m.dirty = false;
-      storeMeta(A);
-      K.backup.setUnsaved(A, false);
-    }
-    ch.note = `Saved at ${clockTime()}`;
-    ui();
+  // This device's save of an app, as a transport keeps it: its data, when it last changed here, its version counters and
+  // its meetings (Import JSON takes one as it is).
+  function saveOf(A) {
+    const m = A._sync.meta;
+    return { ...A.data.build(), savedAt: m.changedAt, sync: { device: m.device, clock: m.clock }, meetings: K.meetings.build(A) };
   }
+  // How many changes this device has made to an app (its own counter).
+  const version = A => A._sync.meta.clock[A._sync.meta.device] || 0;
 
-  // Other devices' saves come in first, then the app's photos and documents are copied both ways
-  // (core/files.js), so a save in the folder never names a file the folder doesn't have yet.
-  async function syncPass(A) {
-    if (state !== "on" || K.testMode) return;
-    await readFolder(A, dir);
-    const root = dir;
-    if (root && A.data.files && await K.files.mirror(A, root, () => root === dir && state === "on" && !K.testMode)) request(A);
-    await writeAutosave(A);
-    if (A._sync.note === RETRY_NOTE) { A._sync.note = ""; ui(); }
+  // --- The transports ---
+  const use = t => { transports.push(t); };
+  // Each one checks for an app (or every app) soon; saves what's pending now; stops its timers (time travel).
+  const request = (A = null) => transports.forEach(t => t.request(A));
+  const flush = (A = null) => transports.forEach(t => t.flush(A));
+  const stopTimers = () => transports.forEach(t => t.stopTimers());
+  // For bug reports: "off", or each way of syncing that isn't: "folder on", "folder unsupported".
+  function state() {
+    const live = transports.filter(t => t.state() !== "off").map(t => `${t.id} ${t.state()}`);
+    return live.length ? live.join(", ") : "off";
   }
+  // Whether an app has changes some way of syncing hasn't saved yet.
+  const dirty = A => transports.some(t => t.dirty(A));
 
-  // Folder work runs one step at a time, so saving and checking never overlap.
-  function task(A, fn) {
-    queue = queue.then(fn).catch(err => onError(A, err));
-  }
-
-  // Checks the folder for an app (or every app) soon.
-  function request(A = null) {
-    if (!A) return apps().forEach(x => request(x));
-    const ch = A._sync;
-    if (!ch || state !== "on" || ch.queued || K.testMode) return;
-    ch.queued = true;
-    task(A, () => { ch.queued = false; return syncPass(A); });
-  }
-
-  function scheduleAutosave(A) {
-    const ch = A._sync;
-    clearTimeout(ch.timer);
-    ch.timer = state === "on" && !K.testMode ? setTimeout(() => flush(A), AUTOSAVE_DELAY_MS) : 0;
-  }
-
-  // Saves a pending change now (e.g. when the page is being hidden or closed).
-  function flush(A = null) {
-    if (!A) return apps().forEach(x => flush(x));
-    const ch = A._sync;
-    if (!ch.timer) return;
-    clearTimeout(ch.timer);
-    ch.timer = 0;
-    task(A, () => writeAutosave(A));
-  }
-
-  const stopTimers = () => apps().forEach(A => { clearTimeout(A._sync.timer); A._sync.timer = 0; });
-
-  function onError(A, err) {
-    const ch = A._sync;
-    if (ch.meta.dirty) K.backup.setUnsaved(A, true);
-    if (ch.note !== RETRY_NOTE) console.error(`Folder sync failed (${A.meta.name}).`, err); // once per outage
-    if (state !== "on") return;
-    const name = err && err.name;
-    if (name === "NotAllowedError" || name === "SecurityError") setState("paused");
-    else if (name === "NotFoundError") setState("error", `Couldn't find the sync folder “${dir.name}”. It may have been moved or deleted.`);
-    else { ch.note = RETRY_NOTE; ui(); }
-  }
-
-  function setState(next, msg = "") {
-    state = next;
-    message = msg;
-    if (next !== "on") stopTimers(); // unsaved changes go once it's back on
-    ui();
-  }
-
-  // --- Choosing, reconnecting and stopping ---
-  async function choose() {
-    let picked;
-    try {
-      picked = await window.showDirectoryPicker({ id: "kyoshi-sync", mode: "readwrite" });
-    } catch (err) {
-      if (err.name === "AbortError") return; // picker cancelled
-      console.error("Couldn't open that folder.", err);
-      return alert("Couldn't use that folder. Try choosing another one.");
-    }
-    dir = picked;
-    apps().forEach(A => {
-      Object.assign(A._sync, { seen: new Map(), note: "" });
-      A._sync.meta.dirty = true; // so this device's data is in the folder from the start
-      storeMeta(A);
-    });
-    storeFolder(dir).catch(err => console.warn("Couldn't remember the sync folder for next time.", err));
-    setState("on");
-    request();
-  }
-
-  // Browsers ask again for folder access after a restart, and only on a click.
-  async function reconnect() {
-    let permission = "denied";
-    try { permission = await dir.requestPermission({ mode: "readwrite" }); } catch (err) { console.warn("Folder permission request failed.", err); }
-    if (permission !== "granted") return setState("error", `Access to “${dir.name}” wasn't allowed. Choose the folder again to resume autosave & sync.`);
-    setState("on");
-    request();
-  }
-
-  function stop() {
-    if (!confirm(`Stop autosave & sync with “${dir.name}”? Your data stays on this device, and the files already in that folder are left as they are.`)) return;
-    dir = null;
-    apps().forEach(A => Object.assign(A._sync, { seen: new Map(), note: "" }));
-    setState("off");
-    storeFolder(null).catch(err => console.warn("Couldn't forget the sync folder.", err));
-  }
-
-  // Picks up the folder chosen last time: straight away if the browser still allows
-  // access, otherwise once the user reconnects. Then keeps checking while on screen;
-  // a pending autosave is written straight away when the page is hidden or closed.
-  async function init() {
-    ui();
-    setInterval(() => { if (!document.hidden) request(); }, SYNC_CHECK_MS);
+  // Every way of syncing checks again when the page is back in view (or the window gets focus), and a pending save is
+  // made straight away when the page is hidden or closed. Then each one starts.
+  function init() {
     window.addEventListener("focus", () => request());
     window.addEventListener("pagehide", () => flush());
     document.addEventListener("visibilitychange", () => (document.hidden ? flush() : request()));
-    if (!supported) return;
-    try { dir = (await loadFolder()) || null; } catch (err) { console.warn("Couldn't load the sync folder setting.", err); }
-    if (!dir) return;
-    let permission = "prompt";
-    try { permission = await dir.queryPermission({ mode: "readwrite" }); } catch (err) { /* ask again */ }
-    setState(permission === "granted" ? "on" : "paused");
-    request();
+    transports.forEach(t => t.init());
   }
 
-  K.sync = {
-    supported, init, loadMeta, changed, request, flush, choose, reconnect, stop, stopTimers,
-    state: () => state, message: () => message, folderName: () => (dir ? dir.name : ""),
-    note: A => (A._sync ? A._sync.note : ""), dirty: A => !!(A._sync && A._sync.meta.dirty)
-  };
+  K.sync = { use, init, apps, loadMeta, storeMeta, changed, incorporate, settle, saveOf, version, request, flush, stopTimers, on, state, dirty };
 })(Kyoshi);

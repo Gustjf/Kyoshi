@@ -1,8 +1,8 @@
 /* Wan Shi Tong · markup.js — the page (A.markup): Active media, the backlog (a fold-away,
- * coloured group per category, filled in by render.js), the Finished list, Backup & sync, the
+ * coloured group per category, filled in by render.js), the Finished list, the
  * add / edit pop-up, and the one asking what makes room when Active media is full. The shell
- * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills
- * [data-kyoshi="backup"]. Ids only need to be unique within the app (look them up with A.$). */
+ * supplies the header, footer, Developer Mode and bug reports. Ids only need to be unique within the app (look them
+ * up with A.$). */
 Kyoshi.apps.wanshitong.markup = `
   <div class="spots">
     <section class="spot now">
@@ -27,8 +27,6 @@ Kyoshi.apps.wanshitong.markup = `
       <ul class="items" id="finishedList"></ul>
     </details>
   </section>
-
-  <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="itemOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="itemModalTitle">

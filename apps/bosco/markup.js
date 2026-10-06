@@ -1,6 +1,5 @@
 /* Bosco · markup.js — Bosco's page (A.markup): its sections and its dose pop-up.
- * The shell supplies the header, footer, Developer Mode and bug reports; the
- * [data-kyoshi="backup"] section is filled in by core/backup.js.
+ * The shell supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within Bosco (look them up with A.$). */
 Kyoshi.apps.bosco.markup = `
   <section id="oneTimeInfoSection" hidden>
@@ -225,8 +224,6 @@ Kyoshi.apps.bosco.markup = `
       <span><span class="swatch goal"></span> Active goals</span>
     </div>
   </section>
-
-  <section data-kyoshi="backup"></section>
 
   <!-- Asks about a scheduled dose once it's due; nothing is logged until it's confirmed,
        and then as scheduled (its amount, on its day or, for a late one taken late, today),

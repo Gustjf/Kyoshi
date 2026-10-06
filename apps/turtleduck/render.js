@@ -1,5 +1,5 @@
 /* Turtleduck · render.js — what's on screen: one view at a time (showView) — Plan (plan-view.js), Recipes (recipes.js),
- * Groceries (groceries.js) or the cook view (cook.js, with the nav and Backup & sync out of the way) — the nav under
+ * Groceries (groceries.js) or the cook view (cook.js, with the nav out of the way) — the nav under
  * the header, and the open pop-ups redrawn after a change (plan-popups.js). reveal(el) brings something into view with
  * core's flash. */
 (function (K, A) {

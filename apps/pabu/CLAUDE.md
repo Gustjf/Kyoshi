@@ -12,8 +12,8 @@ heart-handshake, in rose). Rules, versioning and the app contract: the root `CLA
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_NAME` 40, `MAX_GROUP` 30, `MAX_NOTE` 1000, `MAX_CADENCES` 6, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `OFTEN`, `HOW` with each one's minutes, `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`/`cadenceWords`, `needTitle`, `groupsInUse`, `lastTalk`, `nextDue`, `dueOf`, `allDue`, `nextDueOf`, `thisWeek`, `mondayOf`, the words for days, birthdays: `parseBirthday`, `birthdayIn`, `nextBirthday`, `ageOn`, `fmtBirthday`, `talkedOn`) |
-| `markup.js` | the page: This week, quick add with its chips, the Birthdays strip, People (group chips, the list), Backup & sync, the person pop-up (its foot, the hint and Save, Cancel, Delete, kept in view) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_NAME` 40, `MAX_GROUP` 30, `MAX_NOTE` 1000, `MAX_CADENCES` 6, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `OFTEN`, `HOW` with each one's minutes, `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`/`cadenceWords`, `needTitle`, `groupsInUse`, `lastTalk`, `nextDue`, `dueOf`, `allDue`, `nextDueOf`, `thisWeek`, `mondayOf`, the words for days, birthdays: `parseBirthday`, `birthdayIn`, `nextBirthday`, `ageOn`, `fmtBirthday`, `talkedOn`) |
+| `markup.js` | the page: This week, quick add with its chips, the Birthdays strip, People (group chips, the list), the person pop-up (its foot, the hint and Save, Cancel, Delete, kept in view) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (`cleanPeople`, `cleanCadences`: carries a version 1 person's one schedule over, `cleanTalks`, `cleanBirthday`), backups and sync merge (`A.data`) |
 | `share.js` | what Momo reads (`inbox`, `agenda`) and opens (`open`) |

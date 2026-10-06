@@ -1,9 +1,9 @@
 /* Hawky · markup.js — the page (A.markup): the nav (Errands | Shopping), then one view at a time. Errands: quick
  * add (the field and Add, then the day and estimate chips, each with the field its last chip asks for, and + Note),
  * the list (its groups filled in by render.js) and the Done fold. Shopping: the add row (store, topic, item, + Note or
- * link), the lists by store and the Done fold (filled in by lists-view.js). Then Backup & sync, and the pop-ups
- * (errand, list, item). The shell supplies the header, footer, Developer Mode and bug reports; core/backup.js fills
- * [data-kyoshi="backup"]. Ids only need to be unique within the app (look them up with A.$). */
+ * link), the lists by store and the Done fold (filled in by lists-view.js). Then the pop-ups
+ * (errand, list, item). The shell supplies the header, footer, Developer Mode and bug reports. Ids only need to be
+ * unique within the app (look them up with A.$). */
 Kyoshi.apps.hawky.markup = `
   <div class="mode-toggle hawky-nav" id="nav" role="group" aria-label="Hawky">
     <button type="button" class="mode-btn" data-view="errands">Errands</button>
@@ -89,8 +89,6 @@ Kyoshi.apps.hawky.markup = `
     </details>
   </section>
   </div>
-
-  <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="errandOverlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="errandModalTitle">

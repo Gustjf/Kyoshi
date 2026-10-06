@@ -1,8 +1,8 @@
 /* Badgermole · markup.js — the page (A.markup): two views, one on screen at a time (render.js) — Home (Next up, this
  * week and the streak, the calendar, the setup folds: Exercises, Routines, Program (the programs, then the rotation
- * followed), Settings; Backup & sync) and the session (session.js: the exercise, its steppers, ✓, the exercise list
+ * followed), Settings) and the session (session.js: the exercise, its steppers, ✓, the exercise list
  * and the sticky Back · Next · Finish) — and the pop-ups: exercise, routine, program, day and Pick a routine. The shell
- * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only
+ * supplies the header, footer, Developer Mode and bug reports. Ids only
  * need to be unique within the app (A.$). */
 (function (A) {
   "use strict";
@@ -75,8 +75,6 @@
           <input type="number" id="targetInput" min="1" max="${MAX_TARGET}" step="1" inputmode="numeric">
         </div>
         <div class="footnote">Changing the unit converts nothing: each set keeps the unit it was logged in, and shows in this one.</div>`)}
-
-    <section data-kyoshi="backup"></section>
   </div>
 
   <div id="sessionView" hidden>

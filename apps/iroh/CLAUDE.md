@@ -13,8 +13,8 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its three meetings); constants (limits, `HOURS_STEP`, `RECONCILE_DAYS` 30, `DATA_SCHEMA_VERSION`); state `A.S`; helpers: text (`cleanLine`, `cleanText`), hours (`cleanHours`, `fmtHours`), seasons (`seasonOf`, `currentSeason`, `thisYear`, `startOf`/`endOf`, `seasonLabel`, `seasonsOf`, `yearOf`, `isPast`, `mondayOf`, `weeksOf`), lookups (`liveAreas`, `goalsIn`, `childrenOf`, `parentOf`, `areaOf`, `chainOf`, `isStale`, `ago`, `progressOf` and `behindBy` (Momo's logged hours), `weeklyMinutes`, `hoursText`) |
-| `markup.js` | the page: This season, This year, Vision, Earlier (folded), Backup & sync; the goal (a one-line SMART reminder under its title, for both kinds), reconcile and area pop-ups |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its three meetings); constants (limits, `HOURS_STEP`, `RECONCILE_DAYS` 30, `DATA_SCHEMA_VERSION`); state `A.S`; helpers: text (`cleanLine`, `cleanText`), hours (`cleanHours`, `fmtHours`), seasons (`seasonOf`, `currentSeason`, `thisYear`, `startOf`/`endOf`, `seasonLabel`, `seasonsOf`, `yearOf`, `isPast`, `mondayOf`, `weeksOf`), lookups (`liveAreas`, `goalsIn`, `childrenOf`, `parentOf`, `areaOf`, `chainOf`, `isStale`, `ago`, `progressOf` and `behindBy` (Momo's logged hours), `weeklyMinutes`, `hoursText`) |
+| `markup.js` | the page: This season, This year, Vision, Earlier (folded); the goal (a one-line SMART reminder under its title, for both kinds), reconcile and area pop-ups |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (`cleanAreas`, `cleanGoals`: new items are made through them too), backups and sync merge (`A.data`) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |

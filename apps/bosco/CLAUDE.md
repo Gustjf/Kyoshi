@@ -9,7 +9,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | File | What's in it |
 |---|---|
 | `app.js` | `Kyoshi.register` (name, title, icon, 780px wide); constants (`MEDICATIONS`, `SITES` in rotation order, `DEFAULT_SITES`, `ONE_TIME_FIELDS`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (weights & units, medication/plan/vial lookups, dose math, `activeSites`, `siteLabel`/`siteShort`, `fmtUnits`, `readNumber`) |
-| `markup.js` | the page: Get Started, Add Entry, Upcoming Doses, Current Trend, History, Goal Weights, Chart, Backup & sync, and the dose pop-up |
+| `markup.js` | the page: Get Started, Add Entry, Upcoming Doses, Current Trend, History, Goal Weights, Chart, and the dose pop-up |
 | `changelog.js` | version history |
 | `data.js` | storage (`load` incl. first-run carry-over from the standalone, `persist`, `save`), cleaning (`normalizeBackup`, `cleanSites`, `cleanDosePlan`, `cleanVial`, `cleanPaceGoal`), backups (`A.data`: build/import) and sync merge (`combine`) |
 | `trend.js` | math: weekly trend, pace goal & status, `model()`, goal status/ETA, dose totals |

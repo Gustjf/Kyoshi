@@ -1,9 +1,9 @@
 /* Pabu · markup.js — the page (A.markup): This week (filled in by render.js; hidden while no one has a call, text or
  * visit), quick add (the name and Add, then the how-often and how chips), the Birthdays strip (shown when one is coming
- * up), People (the group chips and the list, filled in by render.js), Backup & sync, and the person pop-up (the name and
+ * up), People (the group chips and the list, filled in by render.js), and the person pop-up (the name and
  * group, the birthday as month, day and an optional year, notes, their calls, texts and visits — filled in by
  * editor.js — then the line saying what stopped Save, and Save, Cancel and Delete, kept in view at its foot). The shell
- * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only
+ * supplies the header, footer, Developer Mode and bug reports. Ids only
  * need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.pabu.markup = `
   <section id="weekSection" hidden>
@@ -48,8 +48,6 @@ Kyoshi.apps.pabu.markup = `
     <ul class="roster" id="roster"></ul>
     <div class="footnote">Tap someone to change their calls, texts and visits, group, notes or birthday, or to delete them.</div>
   </section>
-
-  <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="personOverlay">
     <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="personModalTitle">

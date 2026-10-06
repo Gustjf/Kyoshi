@@ -1,10 +1,11 @@
 /* Kyoshi · tests/shell.test.js — the whole of Kyoshi, every app: each opens through the switcher with a clean console
  * at phone and desktop width (and after a week of time travel), the switcher lists every app in order, a new device
- * opens on the first, Export all / Import all (Developer Mode) carry every app's data, the tab always reads "Kyoshi",
+ * opens on the first, Export all / Import all (Developer Mode) carry every app's data, Backup & sync is Developer Mode's
+ * (no app's page has it) and follows the app on screen, the tab always reads "Kyoshi",
  * a checkup done today shows a green ✓, and Bugs & requests (the pop-up's list, Developer Mode's exports and Clear). */
 "use strict";
 const fs = require("fs");
-const { TODAY, PHONE, DESKTOP, eq, ok, has, open, switchTo, importBackup, travel, text } = require("./lib");
+const { TODAY, PHONE, DESKTOP, eq, ok, has, open, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
 const gen = require("./generate");
 
 module.exports = [
@@ -75,6 +76,31 @@ module.exports = [
       const third = await open(t);
       await importBackup(third, all);
       eq(await third.page.evaluate(() => Kyoshi.apps.badgermole.sessions().length), 15, "Import JSON takes its part of an Export all file");
+    }
+  },
+  {
+    name: "shell: Backup & sync is in Developer Mode, for the app on screen: Export JSON there and Import JSON back carry Hawky's errands",
+    async run(t) {
+      const tab = await open(t, { app: "hawky" }), p = tab.page, order = await p.evaluate(() => Kyoshi.order.slice());
+      eq(await p.evaluate(ids => ids.filter(id => Kyoshi.apps[id].root.querySelector('[data-kyoshi="backup"]')), order), [], "no app's page has a backup section");
+      await importBackup(tab, gen.hawkyItems(gen.ERRANDS.slice(0, 4).map(([text, minutes]) => ({ text, minutes }))));
+      const count = x => x.page.evaluate(() => Kyoshi.apps.hawky.S.items.filter(i => !i.deleted).length);
+      eq(await count(tab), 4, "Import JSON in the panel brought the errands in");
+      // A change lights up Export JSON and Export all until it's in a backup.
+      await p.fill("#kMount #addText", "Buy stamps");
+      await p.press("#kMount #addText", "Enter");
+      const lit = id => p.evaluate(x => document.getElementById(x).classList.contains("unsaved"), id);
+      eq([await lit("kDevExportApp"), await lit("kDevExportAll")], [true, true], "a change lights up Export JSON and Export all");
+      await devPanel(tab, true);
+      eq(await text(tab, "#kDevBackup .dev-block-head"), "Backup & sync: Hawky", "the panel's block is the app on screen's");
+      has(await text(tab, "#kDevBackupNote"), "Your data lives only in this browser.", "with where its data lives");
+      const back = await exportBackup(tab);
+      eq([back.items.filter(i => !i.deleted).length, await lit("kDevExportApp")], [5, false], "Export JSON holds every errand, and is lit no more");
+      const fresh = await open(t, { app: "hawky" });
+      await importBackup(fresh, back);
+      eq(await count(fresh), 5, "Import JSON takes the export back, on another device");
+      await switchTo(tab, "momo");
+      eq(await text(tab, "#kDevBackup .dev-block-head"), "Backup & sync: Momo", "a switch of app redraws the block");
     }
   },
   {

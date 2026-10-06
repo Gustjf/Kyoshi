@@ -14,7 +14,6 @@
     title: "Iroh — Goals",
     subtitle: "Where you're headed: a vision for each part of your life, this year's goals and this season's, with the hours Momo makes time for.",
     width: 780,
-    backupNote: "Your goals live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too.",
     // Its meetings with you (core/meetings.js), on a schedule: each fills a "Meeting" card in Momo, and an overdue one
     // dots the icon. The season review comes up in each new season's first week.
     meetings: [

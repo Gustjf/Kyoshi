@@ -112,7 +112,7 @@ module.exports = [
       eq([c.name, c.meta, c.ingredients, c.steps], ["Chili", "Serves 4 · prep 15 min · cook 45 min",
         ["500 g ground beef", "2 cans kidney beans, drained", "200 g rice", "1 onion, diced", "salt"], ["Brown the beef.", "• Add the beans", "• Simmer 30 min", "Season to taste."]], "the recipe, big");
       ok(await p.evaluate(() => Kyoshi.apps.turtleduck.awake()), "the screen stays on");
-      ok(await p.locator("#kMount #nav").isHidden() && await p.locator('#kMount [data-kyoshi="backup"]').isHidden(), "nothing else to tap");
+      ok(await p.locator("#kMount #nav").isHidden(), "nothing else to tap");
       await p.click('#kMount [data-act="cook-back"]');
       ok(await p.locator("#kMount #recipesView").isVisible() && !(await p.evaluate(() => Kyoshi.apps.turtleduck.awake())), "Back goes back, and lets the screen sleep");
       // A batch ×2, read from its pop-up: the amounts doubled.

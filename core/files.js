@@ -3,7 +3,7 @@
  * own IndexedDB database "kyoshi-files" (store "files": "<app>/<id>" → { app, id, type, size, blob, at }),
  * opened the first time one is needed and read one at a time — never all into memory at start.
  * Folder sync copies them both ways as plain files, <folder>/<app>/files/<id>.<jpg|pdf> (mirror, called
- * by core/sync.js). Backups (Export JSON) hold only the apps' data, not these files.
+ * by core/sync-folder.js). Backups (Export JSON) hold only the apps' data, not these files.
  * An app lists the files its data uses in A.data.files() → { live: [{ id, type, size }], gone: [ids] }
  * (gone: marked deleted); gone ones are removed here and from the folder, and nothing else is ever
  * deleted on its own. In test mode (time travel) new files and removals stay in memory. */

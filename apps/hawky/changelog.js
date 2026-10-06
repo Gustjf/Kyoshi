@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.220", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "2.210", date: "2026-10-05", changes: [
       "Each store's shopping lists carry the store's own colour (a dot by its name, a coloured edge on its lists), so they're told apart while scrolling.",
       "Overdue errands have a Tomorrow → button that moves them to tomorrow and counts how often; past three times a warning mark says so (in the errand's pop-up and on its card in Momo too). Reload Hawky on every device after updating: an older copy drops the count.",

@@ -1,7 +1,7 @@
 /* Appa · markup.js — the page (A.markup): three views, one on screen at a time (render.js) — home (Coming
- * up, Things, Records, Backup & sync), a thing (its reading, Schedule and History) and a job (what to do,
+ * up, Things, Records), a thing (its reading, Schedule and History) and a job (what to do,
  * the timer) — and the pop-ups: thing, job, record (done / log / edit), reading and report. The shell
- * supplies the header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"].
+ * supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.appa.markup = `
   <div class="timer-bar" id="timerBar" hidden></div>
@@ -35,8 +35,6 @@ Kyoshi.apps.appa.markup = `
       </div>
       <div id="homeRecords"></div>
     </section>
-
-    <section data-kyoshi="backup"></section>
   </div>
 
   <div id="thingView" hidden>

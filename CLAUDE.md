@@ -47,10 +47,11 @@ core/                 the shared DNA — K = window.Kyoshi
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
-  sync.js             K.sync: folder autosave & sync engine (clocks, merge calls, one subfolder per app, apps' files). No UI.
-  backup.js           K.backup: each app's "Backup & sync" section, sync & storage banners, Export/Import JSON & all (dated; K.backup.ask: the import question)
+  sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf) and its transports (K.sync.use). No UI.
+  sync-folder.js      K.folder: folder autosave & sync, a transport of K.sync (one subfolder per app, apps' files). No UI.
+  backup.js           K.backup: Developer Mode's "Backup & sync" block (the app on screen's Export/Import JSON, Export/Import all, Sync Folder…), sync & storage banners (imports dated; K.backup.ask: the import question)
   bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared) and log
-  dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge), time travel & test mode
+  dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge): Backup & sync, time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key
@@ -83,7 +84,7 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 **The app defines on A** (all optional except `markup`):
 | Hook | When Kyoshi calls it |
 |---|---|
-| `A.markup` | HTML string → `A.root`. `<section data-kyoshi="backup"></section>` marks where Backup & sync goes. |
+| `A.markup` | HTML string → `A.root`. |
 | `A.load()` | at start and after another tab changed its keys: storage → `A.S` (no drawing) |
 | `A.init()` | once, after load: wire events, first render |
 | `A.onShow()` / `A.onHide()` | the app comes on / goes off screen |

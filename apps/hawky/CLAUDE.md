@@ -19,8 +19,8 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
-| `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), Backup & sync, the pop-ups (errand, list, item) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), the pop-ups (errand, list, item) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (errands, lists and their items), backups and sync merge (`A.data`) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |

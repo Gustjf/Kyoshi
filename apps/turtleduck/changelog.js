@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.510", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "2.500", date: "2026-10-05", changes: [
       "Store-bought items: in a recipe's pop-up, pick Cooked or Store-bought. A store-bought item shows a bag on the plan, never goes on the Cook row, keeps no leftovers, and takes a quick 20 minutes in Momo.",
       "Track how many you have on hand if you like: the plan uses them up day by day, the Recipes list says how many are left or the day they run out, and from then on the grocery list adds the item by count.",

@@ -15,7 +15,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | File | What's in it |
 |---|---|
 | `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `MAX_PROGRAMS` 20, `MAIN_PROGRAM` "main", `STEPS` 2.5/5/7.5/10 lb, `DEFAULT_STEP` 5, `STEP` 5 lb / 2.5 kg (an exercise gone), `MAX_PAIR` 9, `LB_PER_KG`, `DEFAULT_MINUTES` 60, `ESTIMATE_RUNS` 5, `MAX_SESSION_MINUTES` 300, `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; `stepOf` (an exercise's step in the unit shown); supersets: `fixPairs`, `pairClass`; lookups: `liveExercises`, `liveRoutines`, `livePrograms`, `…ById`, `activeProgram`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
-| `markup.js` | the page: Home (Next up, stats and calendar, the setup folds, Backup & sync), the session view, and the pop-ups (exercise, routine, program, day, Pick a routine) |
+| `markup.js` | the page: Home (Next up, stats and calendar, the setup folds), the session view, and the pop-ups (exercise, routine, program, day, Pick a routine) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too; the rotation from before programs becomes one), `load`, `persist`/`save`, `storeLive`, backups and sync merge (`A.data`) |
 | `stats.js` | the maths, remembered until the data or the day changes: session minutes and a routine's usual, week counts and the streak, `nextIndex`/`upNext`, bests and PRs, `prefill`, `monthCells` |

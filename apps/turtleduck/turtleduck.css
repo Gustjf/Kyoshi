@@ -8,7 +8,7 @@
 /* --- The nav: under the header, as wide as it (core's .header), out of the way in the cook view --- */
 .app-turtleduck .td-nav { max-width: var(--header-width, 780px); margin: 0 auto 14px; }
 .app-turtleduck .td-nav .mode-btn { padding: 10px; }
-.app-turtleduck.cooking .td-nav, .app-turtleduck.cooking [data-kyoshi="backup"] { display: none; }
+.app-turtleduck.cooking .td-nav { display: none; }
 .app-turtleduck h2 .count, .app-turtleduck summary .count { margin-left: 4px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .app-turtleduck .flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
 .app-turtleduck .more-link { padding: 4px 6px; background: none; color: var(--accent); font-size: .88em; }

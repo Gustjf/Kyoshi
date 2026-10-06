@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.342", date: "2026-10-06", changes: [
+      "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
+    ] },
     { version: "1.332", date: "2026-10-03", changes: [
       "Each maintenance job is its own card in Momo, titled with its thing (“Car: Oil change”) and as long as it takes: it waits in Momo's Tasks until you drag it onto a day, and shows ✓ once you record it."
     ] },

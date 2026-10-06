@@ -1,8 +1,8 @@
 /* Kyoshi · tests/lib.js — what the end-to-end tests share: opening Kyoshi from disk the way the user does (index.html,
  * no server) in a fresh browser profile (its own storage) with a fixed clock (so "today" is always TODAY, whatever the
  * real date), watching the console, answering dialogs (alert / confirm; a test can queue answers and read what was
- * asked), switching apps through the switcher, importing a backup through the file picker, exporting one, time travel
- * through Developer Mode, and small checks. Used by run.js and every *.test.js. */
+ * asked), switching apps through the switcher, opening Developer Mode, importing a backup through its file picker,
+ * exporting one, time travel, and small checks. Used by run.js and every *.test.js. */
 "use strict";
 const path = require("path");
 
@@ -74,19 +74,29 @@ async function switchTo(tab, id) {
   await tab.page.waitForFunction(x => Kyoshi.active() === Kyoshi.apps[x], id);
 }
 
-// Import JSON in the app on screen, picking a file made from data (an object, or text for a broken file).
-async function importBackup(tab, data, name = "backup.json") {
-  const [chooser] = await Promise.all([
-    tab.page.waitForEvent("filechooser"),
-    tab.page.click('#kMount [data-kyoshi="backup"] button:has-text("Import JSON")')
-  ]);
-  await chooser.setFiles({ name, mimeType: "application/json", buffer: Buffer.from(typeof data === "string" ? data : JSON.stringify(data)) });
-  await tab.page.waitForTimeout(150);
+// Opens (on) or closes Developer Mode through its DEV badge, as the user does; returns whether it was open. Closing
+// sends the badge its click straight away, as a pop-up an import opened may lie over it.
+async function devPanel(tab, on) {
+  const p = tab.page, was = await p.evaluate(() => document.body.classList.contains("dev-mode"));
+  if (was !== on) await (on ? p.click("#kDevBadge") : p.locator("#kDevBadge").dispatchEvent("click"));
+  return was;
 }
 
-// Export JSON in the app on screen: the backup, read back.
+// Import JSON for the app on screen (Developer Mode's Backup & sync), picking a file made from data (an object, or text
+// for a broken file); the panel is left as it was.
+async function importBackup(tab, data, name = "backup.json") {
+  const was = await devPanel(tab, true);
+  const [chooser] = await Promise.all([tab.page.waitForEvent("filechooser"), tab.page.click("#kDevImportApp")]);
+  await chooser.setFiles({ name, mimeType: "application/json", buffer: Buffer.from(typeof data === "string" ? data : JSON.stringify(data)) });
+  await tab.page.waitForTimeout(150);
+  await devPanel(tab, was);
+}
+
+// Export JSON for the app on screen (Developer Mode's Backup & sync): the backup, read back.
 async function exportBackup(tab) {
-  const [download] = await Promise.all([tab.page.waitForEvent("download"), tab.page.click('#kMount [data-kyoshi="backup"] button:has-text("Export JSON")')]);
+  const was = await devPanel(tab, true);
+  const [download] = await Promise.all([tab.page.waitForEvent("download"), tab.page.click("#kDevExportApp")]);
+  await devPanel(tab, was);
   const file = await download.path();
   return JSON.parse(require("fs").readFileSync(file, "utf8"));
 }
@@ -104,4 +114,4 @@ async function travel(tab, days) {
 // The page's visible text in an element.
 const text = (tab, selector) => tab.page.locator(selector).first().innerText();
 
-module.exports = { ROOT, PAGE, TODAY, PHONE, DESKTOP, eq, ok, has, lacks, DAY_MS, addDays, mondayOf, at, open, lastDialog, switchTo, importBackup, exportBackup, travel, text };
+module.exports = { ROOT, PAGE, TODAY, PHONE, DESKTOP, eq, ok, has, lacks, DAY_MS, addDays, mondayOf, at, open, lastDialog, switchTo, devPanel, importBackup, exportBackup, travel, text };

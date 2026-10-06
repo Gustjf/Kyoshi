@@ -13,7 +13,6 @@
     title: "Wan Shi Tong — Media Tracker",
     subtitle: "Recommended books, movies, TV/anime and games, in one place.",
     width: 780,
-    backupNote: "Your list lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30 }],
     // The "owl" icon from Lucide Lab (ISC license) — Wan Shi Tong is the owl spirit who keeps the library of all knowledge — in violet so it shows on light and dark tabs.

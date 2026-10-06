@@ -1,9 +1,9 @@
 /* Turtleduck · markup.js — the page (A.markup): the nav (Plan · Recipes · Groceries), then one view at a time
  * (render.js) — Plan (the tabs, the week's Confirm and its line about Momo, the ⋯ menu, the grid with its sidebar, or a
  * phone's list of days: plan-view.js), Recipes (recipes.js), Groceries (add by hand, the lists, Settings: groceries.js)
- * and the cook view (cook.js) — Backup & sync, and the pop-ups: the picker and a planned meal's (plan-popups.js), the
+ * and the cook view (cook.js) — and the pop-ups: the picker and a planned meal's (plan-popups.js), the
  * recipe (recipes.js), Paste recipes (paste.js), Save as template, and Times & trips (times.js). The shell supplies the
- * header, footer, Developer Mode and bug reports; core/backup.js fills [data-kyoshi="backup"]. Ids only need to be
+ * header, footer, Developer Mode and bug reports. Ids only need to be
  * unique within the app (A.$). */
 (function (A) {
   "use strict";
@@ -115,8 +115,6 @@ Season to taste.`;
     </div>
     <section class="cook-page" id="cookBox"></section>
   </div>
-
-  <section data-kyoshi="backup"></section>
 
   <div class="overlay" id="pickOverlay">
     <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
