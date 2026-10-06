@@ -4,7 +4,7 @@ Planned 2026-10-06 by the architect model from the owner's ask (Kyoshi 3.760 · 
 Hawky 2.210 · Iroh 1.210 · Badgermole 2.201 · Turtleduck 2.500 · Pabu 2.111). Three phases, each sized for one coding session. Nothing is built yet.
 **Text data only:** photos and documents (Appa's proof) never enter the cloud (the owner's decision, see *Decisions*); they stay on the device they were added on, and in the sync folder if one is used, as today.
 
-**The owner runs a phase by saying:** `Execute phase N of plan_2026-10-06.md` (optionally with answers: "…, button only" for Phase 3's D4).
+**The owner runs a phase by saying:** `Execute phase N of roadmap/archive/2026-10-06_cloud_sync_plan.md` (optionally with answers: "…, button only" for Phase 3's D4).
 
 ## How to use this file (you, the executing model — Claude Opus)
 1. Read the root `CLAUDE.md` (automatic), then **only** this file's top sections (down to the first phase) and **your phase**; skip the other phases. Then the phase's **Read first** list, and nothing else up front: every file's header comment says what it holds. Don't scan the workspace.

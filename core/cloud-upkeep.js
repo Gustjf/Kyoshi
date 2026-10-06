@@ -1,7 +1,7 @@
 /* Kyoshi · core/cloud-upkeep.js — the cloud repository's upkeep, added to K.cloud (core/cloud.js): a trimmed history and
  * the token's expiry. Both quiet while all is well: core/cloud-ui.js shows the expiry in the Cloud block once it's near
  * (and the banner and the glyph once it's close), and a History line only while GitHub refuses the trim.
- * The history (the owner's choice, D4 in plan_2026-10-06.md: the last 8 days of saves, no more, with no button). Every
+ * The history (the owner's choice, D4 in roadmap/archive/2026-10-06_cloud_sync_plan.md: the last 8 days of saves, no more, with no button). Every
  * save is a commit, and an encrypted file doesn't shrink in Git's history, so the repository would grow for good. Once a
  * day (TIDY_CHECK_MS), after a check gets through, GitHub is asked whether the history holds saves older than
  * HISTORY_DAYS; if it does, it's cut back to the last KEEP_DAYS: one new first commit holds the files as they were then

@@ -3,7 +3,7 @@
 Planned 2026-10-05 by the architect model from `kyoshi-bug-reports-2026-10-05_1.md` (the owner's 19 reports, Kyoshi 3.650 ·
 Momo 10.064 · Hawky 2.110 · Turtleduck 2.300 · Bosco 7.290). Eight phases, each sized for one coding session. Nothing is built yet.
 
-**The owner runs a phase by saying:** `Execute phase N of plan_2026-10-05.md` (optionally with answers: "…, option C" for Phase 7).
+**The owner runs a phase by saying:** `Execute phase N of roadmap/archive/2026-10-05_feedback_batch_plan.md` (optionally with answers: "…, option C" for Phase 7).
 
 ## How to use this file (you, the executing model — Claude Opus)
 1. Read the root `CLAUDE.md` (automatic), then **only** this file's top sections (down to the first phase) and **your phase**; skip the other phases. Then the phase's **Read first** list, and nothing else up front: every file's header comment says what it holds, and `apps/<id>/CLAUDE.md` has each app's map and data model. Don't scan the workspace.

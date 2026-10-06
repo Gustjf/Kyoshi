@@ -1,6 +1,7 @@
 # Kyoshi roadmap: a life system with Momo at the center
 The plan for the next phases and apps, agreed 2026-10-02; the detail for phases 3–7 was added the same day, once 0–2 were
 built. Read it when starting a phase (the top sections and your own phase; skip the other phases); tick the phase off when it's done.
+Finished plans live in `roadmap/archive/` (dated, kept for their decisions); new plans go in this folder and move there once every phase is ticked.
 
 ## Status
 Each finished phase gets a line saying what was decided along the way.

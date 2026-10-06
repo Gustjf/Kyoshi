@@ -1,7 +1,7 @@
 # Kyoshi flow test: simulated lives through Momo
 A test campaign, not a phase: a few made-up people live with Kyoshi for a year or more, the real page driven through time, to find where the flow breaks or rubs before the owner's own final testing. Run by one session, start to finish: build the simulator, run the lives, report, discuss with the owner, then build the agreed changes. Read the root CLAUDE.md (automatic), then this file, then **Read first**.
 
-**Status (2026-10-02): cut short by the owner.** The simulator was built (`tests/sim/`, `tests/momo.js`) and lives 4–6 ran a year or two, 1–3 a few weeks each: no crash, console error or data loss. No report or bundles were written; the discussion went straight to the findings, and its decisions are `roadmap.md`'s Phase 8 "Flow fixes". The simulator stays for rechecking (`node tests/sim/run.js`, or one life: `node tests/sim/run.js planner --weeks 6`). Phase 8 is built: the simulator reads Momo's window (from this Monday), checks cards' late marks, and finds done needs by their own ids too; the "How the flow works today" notes below describe the flow before it.
+**Status (2026-10-02): cut short by the owner.** The simulator was built (`tests/sim/`, `tests/momo.js`) and lives 4–6 ran a year or two, 1–3 a few weeks each: no crash, console error or data loss. No report or bundles were written; the discussion went straight to the findings, and its decisions are `roadmap/roadmap.md`'s Phase 8 "Flow fixes". The simulator stays for rechecking (`node tests/sim/run.js`, or one life: `node tests/sim/run.js planner --weeks 6`). Phase 8 is built: the simulator reads Momo's window (from this Monday), checks cards' late marks, and finds done needs by their own ids too; the "How the flow works today" notes below describe the flow before it.
 
 **Since v4 Phase 7 (2026-10-04): the simulator lags the app**, a follow-up before its next run (`node tests/run.js` doesn't run it). Turtleduck now sends Momo nothing until a week is confirmed (the plan's Confirm, a week at a time), its meals fill the baseline's slot cards (one per meal and day, made from its Times & trips) and its cooking sessions and extra trips are pinned cards of their own. So the evening sitting (`tests/sim/day.js`) should confirm this week and next once it plans them, and `tests/sim/world.js`'s baseline should drop its Breakfast, Lunch, Dinner, Cooking and Groceries blocks (the slots take their place), as well as its Workout, Errands and Keep in touch blocks, which nothing has filled since v4 Phase 1 (each need a card of its own).
 
@@ -13,7 +13,7 @@ Two things the owner must get from the system, in their words:
 Everything else (looks, performance tuning, sync folder) is out of scope unless it breaks those two.
 
 ## Read first
-- `roadmap.md`: Status, Decisions, "The shape of the system", "What each app sends Momo", Verification.
+- `roadmap/roadmap.md`: Status, Decisions, "The shape of the system", "What each app sends Momo", Verification.
 - `apps/momo/CLAUDE.md`, then the headers of `apps/momo/inbox.js`, `tasks.js`, `closeout.js`, `today.js`, `agenda.js`.
 - The headers of `core/inbox.js` (the contract), `core/meetings.js`, `core/agenda.js`, `core/shell.js` (attention, dots, the minute tick).
 - `tests/run.js`, `tests/lib.js`, `tests/generate.js`, and `tests/pabu-momo.test.js` as the pattern for a Momo test. The screen helpers `tests/badgermole.js`, `tests/turtleduck.js`, `tests/pabu.js`.
@@ -142,12 +142,12 @@ Lead it. Open with the summary and the five findings that matter most. Then one 
 3. **The close-out:** timing and interruptions, the backlog, past weeks on the board, Reopen's reach, what a quiet close hides.
 4. **The phone:** what Today lacks for running the day; what only the computer can do.
 5. **The obvious-fix list:** findings that need no decision; ask for a yes to the batch.
-Record every decision in `roadmap.md` as a new phase's brief (Phase 8 "Flow fixes", more if the owner splits them), in the Status style, before building anything.
+Record every decision in `roadmap/roadmap.md` as a new phase's brief (Phase 8 "Flow fixes", more if the owner splits them), in the Status style, before building anything.
 
 ## The changes
-After the decisions: build the phase(s) as `roadmap.md`'s "How we work" says: targeted edits, versions and changelogs bumped (the app's, core's, or both), a new build stamp in `index.html`, tests for each changed flow in `tests/` (using `tests/momo.js`), `node tests/run.js` green, the smoke run of life 1 green, the console clean at phone and desktop width, then push (`main`, or a branch with the reason). Tick the phase in `roadmap.md` with what was decided, and update the CLAUDE.md files that changed. Hand the owner the bundles to import for their final testing and say which browser profile to use.
+After the decisions: build the phase(s) as `roadmap/roadmap.md`'s "How we work" says: targeted edits, versions and changelogs bumped (the app's, core's, or both), a new build stamp in `index.html`, tests for each changed flow in `tests/` (using `tests/momo.js`), `node tests/run.js` green, the smoke run of life 1 green, the console clean at phone and desktop width, then push (`main`, or a branch with the reason). Tick the phase in `roadmap/roadmap.md` with what was decided, and update the CLAUDE.md files that changed. Hand the owner the bundles to import for their final testing and say which browser profile to use.
 
 ## Done when
 - The six lives ran to the end, with every check's result in the report, screenshots and bundles in place; `tests/sim/` and `tests/momo.js` committed; `node tests/run.js` passes.
 - Crashes, console errors and data loss found on the way are fixed, tested and pushed.
-- The report is written in plain words, the discussion has happened, the decisions are in `roadmap.md`, and the agreed changes are built, tested and pushed.
+- The report is written in plain words, the discussion has happened, the decisions are in `roadmap/roadmap.md`, and the agreed changes are built, tested and pushed.

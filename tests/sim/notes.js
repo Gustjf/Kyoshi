@@ -315,7 +315,7 @@ const BUNDLES = "Each life's Export all at the end of each of its years (made-up
 function AGENDA(list) {
   const themes = [T.STAND, T.TRUTH, T.CLOSE, T.PHONE, T.FIX];
   const id = g => `F-${String(list.indexOf(g) + 1).padStart(2, "0")}`;
-  return "Open with the summary and the five findings that matter most (the first five above), then one theme at a time, at most five questions a batch, waiting for the answers before the next. Decisions go into roadmap.md as Phase 8 (“Flow fixes”) before anything is built.\n\n" +
+  return "Open with the summary and the five findings that matter most (the first five above), then one theme at a time, at most five questions a batch, waiting for the answers before the next. Decisions go into roadmap/roadmap.md as Phase 8 (“Flow fixes”) before anything is built.\n\n" +
     themes.map(t => {
       const items = list.filter(g => finding(g.key).theme === t);
       const qs = items.map(g => finding(g.key).question).filter(Boolean);
