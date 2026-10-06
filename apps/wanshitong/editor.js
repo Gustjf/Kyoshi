@@ -1,14 +1,17 @@
-/* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, info, Available
- * to me now (yes or no), why it's here and, when editing, its dates. Add, Add another (keeps the
- * pop-up open for the next one), Save and Delete. */
+/* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, a movie's
+ * director and year (a row shown for movies only), info, Available to me now (yes or no), why it's
+ * here and, when editing, its dates. Add, Add another (keeps the pop-up open for the next one), Save
+ * and Delete. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, isDate, todayStr, newId } = K.util;
-  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, catOf, fmtDay } = A;
+  const { CATS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_DIRECTOR, MAX_YEAR, catOf, fmtDay } = A;
 
   const overlay = () => $("itemOverlay");
-  const FIELDS = ["itemName", "itemInfo", "itemWhy", "itemAdded", "itemDone"];
+  const FIELDS = ["itemName", "itemDirector", "itemYear", "itemInfo", "itemWhy", "itemAdded", "itemDone"];
+  // Only a movie has a Director and a Year of its own (the row under its name).
+  const isMovie = cat => cat === "movie";
   // What the pop-up holds, to tell whether closing it would lose something.
   const formState = () => JSON.stringify(FIELDS.map(id => $(id).value).concat(S.editing.cat, S.editing.have));
 
@@ -27,10 +30,11 @@
     $("itemStatus").className = `modal-status${text ? " good" : ""}`;
   }
 
-  // Everything that depends on the category: its pill and what the info field asks for.
+  // Everything that depends on the category: its pill, a movie's Director and Year, and what the info field asks for.
   function renderCatFields() {
     const e = S.editing, c = catOf(e.cat);
     $("itemCats").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === e.cat));
+    $("itemMovieRow").hidden = !isMovie(e.cat);
     $("itemInfoLabel").textContent = c.info;
     $("itemName").placeholder = c.nameEg ? `e.g. ${c.nameEg}` : "";
     $("itemInfo").placeholder = c.infoEg ? `e.g. ${c.infoEg}` : "";
@@ -49,6 +53,8 @@
     S.editing = { id: i ? i.id : null, cat: i ? i.cat : S.lastCat || CATS[0].id, have: i && i.have ? "yes" : "" };
     $("itemModalTitle").textContent = i ? "Edit recommendation" : "Add a recommendation";
     $("itemName").value = i ? i.name : "";
+    $("itemDirector").value = i ? i.director : "";
+    $("itemYear").value = i ? i.year : "";
     $("itemInfo").value = i ? i.info : "";
     $("itemWhy").value = i ? i.why : "";
     $("itemAdded").value = i ? i.added : "";
@@ -88,7 +94,12 @@
     }
     if (i && !isDate(added)) { $("itemAdded").focus(); return alert("Enter the day it was added."); }
     if (i && i.done && !isDate(done)) { $("itemDone").focus(); return alert("Enter the day you finished it."); }
-    const fields = { cat: e.cat, name, info: A.cleanLine($("itemInfo").value, MAX_INFO), have: e.have ? "yes" : "", why: A.cleanText($("itemWhy").value, MAX_WHY) };
+    // A movie's Director and Year; any other category keeps neither (what was typed before switching is left out).
+    const movieOnly = (id, max) => (isMovie(e.cat) ? A.cleanLine($(id).value, max) : "");
+    const fields = {
+      cat: e.cat, name, director: movieOnly("itemDirector", MAX_DIRECTOR), year: movieOnly("itemYear", MAX_YEAR),
+      info: A.cleanLine($("itemInfo").value, MAX_INFO), have: e.have ? "yes" : "", why: A.cleanText($("itemWhy").value, MAX_WHY)
+    };
     if (i) {
       Object.assign(i, fields, { added, done: i.done ? done : "", u: Date.now() });
     } else {
@@ -102,7 +113,7 @@
     A.renderAll();
     if (close || i) return closeEditor();
     // Add another: the same category, a clean form.
-    ["itemName", "itemInfo", "itemWhy"].forEach(id => { $(id).value = ""; });
+    ["itemName", "itemDirector", "itemYear", "itemInfo", "itemWhy"].forEach(id => { $(id).value = ""; });
     e.have = "";
     renderCatFields();
     setStatus(`Added “${name}” to ${c.group}.`);
@@ -114,7 +125,7 @@
     const i = S.editing && A.itemById(S.editing.id);
     if (!i || !confirm(`Delete “${i.name}”? This can't be undone.`)) return;
     // Kept as a marker, so another device's older copy can't bring it back.
-    Object.assign(i, { name: "", info: "", have: "", why: "", started: "", done: "", deleted: true, u: Date.now() });
+    Object.assign(i, { name: "", director: "", year: "", info: "", have: "", why: "", started: "", done: "", deleted: true, u: Date.now() });
     A.unslot(i.id);
     closeEditor();
     A.save();

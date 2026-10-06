@@ -8,7 +8,7 @@
   const OLD_CATS = { novel: "book", textbook: "book", elearning: "other", inperson: "other" };
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId } = K.util;
-  const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, DATA_SCHEMA_VERSION } = A;
+  const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_DIRECTOR, MAX_YEAR, DATA_SCHEMA_VERSION } = A;
 
   const persist = () => {
     A.store.set("items", JSON.stringify(S.items));
@@ -39,6 +39,8 @@
         id: typeof i.id === "string" && i.id ? i.id.slice(0, 40) : newId(),
         cat: typeof i.cat === "string" && /^[a-z0-9-]{1,20}$/.test(i.cat) ? (Object.hasOwn(OLD_CATS, i.cat) ? OLD_CATS[i.cat] : i.cat) : A.OTHER.id,
         name: gone ? "" : cleanLine(i.name, MAX_NAME),
+        director: gone ? "" : cleanLine(i.director, MAX_DIRECTOR), // a movie's (since 2.472; "" before, and for the rest)
+        year: gone ? "" : cleanLine(i.year, MAX_YEAR),
         info: gone ? "" : cleanLine(i.info, MAX_INFO),
         have: !gone && Object.hasOwn(HAVE, i.have) ? i.have : "", // "yes", or an older version's how (shown as yes)
         why: gone ? "" : cleanText(i.why, MAX_WHY),

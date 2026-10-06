@@ -47,6 +47,9 @@
     MAX_NAME: 120,
     MAX_INFO: 120,
     MAX_WHY: 500,
+    // A movie's own Director and Year (movies only: "" for the other categories); the year as typed ("2021", "1984–1985").
+    MAX_DIRECTOR: 80,
+    MAX_YEAR: 12,
     // Backup file format. Bump only when import has to migrate the data.
     DATA_SCHEMA_VERSION: 1
   });
@@ -55,7 +58,7 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    // Every recommendation: { id, cat, name, info, have, why, added, started, done, deleted, at, u }
+    // Every recommendation: { id, cat, name, director, year, info, have, why, added, started, done, deleted, at, u }
     // (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
     items: [],
     // Active media's spots (now, now2, now3) and next (the old Up next's, unused): the item each holds
@@ -76,8 +79,8 @@
   const groupOf = id => catOf(id).id;
   // A day, with its year only when it isn't this year: "Sep 28", "Mar 3, 2025".
   const fmtDay = d => (d.slice(0, 4) === todayStr().slice(0, 4) ? fmtShort(d) : fmtDate(d));
-  // A Google search for it: its name and info, plus what it is.
-  const searchUrl = i => `https://www.google.com/search?q=${encodeURIComponent([i.name, i.info, catOf(i.cat).search].filter(Boolean).join(" "))}`;
+  // A Google search for it: its name, a movie's director and year, its info, plus what it is.
+  const searchUrl = i => `https://www.google.com/search?q=${encodeURIComponent([i.name, i.director, i.year, i.info, catOf(i.cat).search].filter(Boolean).join(" "))}`;
   // Newest first (the day it was added, then the moment).
   const byNewest = (a, b) => b.added.localeCompare(a.added) || b.at - a.at;
 

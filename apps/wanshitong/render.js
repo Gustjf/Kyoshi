@@ -10,11 +10,15 @@
   const SEARCH_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>';
 
   // --- An item's parts ---
-  // Its name (click to edit), its info, and a Google search for it.
-  const nameLine = (i, cls) => `<div class="name-line">` +
-    `<button type="button" class="${cls}" data-act="edit" data-id="${esc(i.id)}" title="Edit">${esc(i.name)}</button>` +
-    (i.info ? `<span class="item-info">${esc(i.info)}</span>` : "") +
-    `<a class="search-link" href="${esc(searchUrl(i))}" target="_blank" rel="noopener noreferrer" title="Look it up on Google" aria-label="Look up ${esc(i.name)} on Google">${SEARCH_ICON}</a></div>`;
+  // Its name (click to edit), a movie's "Director, Year" then its info, and a Google search for it.
+  function nameLine(i, cls) {
+    const credits = [i.director, i.year].filter(Boolean).join(", ");
+    const info = [credits, i.info].filter(Boolean).map(esc).join(SEP);
+    return `<div class="name-line">` +
+      `<button type="button" class="${cls}" data-act="edit" data-id="${esc(i.id)}" title="Edit">${esc(i.name)}</button>` +
+      (info ? `<span class="item-info">${info}</span>` : "") +
+      `<a class="search-link" href="${esc(searchUrl(i))}" target="_blank" rel="noopener noreferrer" title="Look it up on Google" aria-label="Look up ${esc(i.name)} on Google">${SEARCH_ICON}</a></div>`;
+  }
   // Available now, and dates ([label, day]), "|" between.
   function metaLine(i, dates, first = "") {
     const bits = [first, i.have ? `<span class="badge have">${esc(HAVE[i.have] || HAVE.yes)}</span>` : ""]

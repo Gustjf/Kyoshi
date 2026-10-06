@@ -334,9 +334,10 @@ function appaWorld({ things = [], jobs = [], readings = [], meet = null } = {}) 
   };
 }
 
-// Wan Shi Tong: recommendations [{ name, cat, now: true (in progress) | next: true }].
+// Wan Shi Tong: recommendations [{ name, cat, info, now: true (in progress) | next: true }], in the shape before 2.472 (no
+// movie's director or year).
 function library(list, meet = null) {
-  const items = list.map((x, i) => ({ id: `ws${String(i).padStart(3, "0")}`, cat: x.cat || "book", name: x.name, info: "", have: "", why: "", added: addDays(TODAY, -60 + i), started: x.now ? addDays(TODAY, -10) : "", done: "", deleted: false, at: T0 + i, u: T0 }));
+  const items = list.map((x, i) => ({ id: `ws${String(i).padStart(3, "0")}`, cat: x.cat || "book", name: x.name, info: x.info || "", have: "", why: "", added: addDays(TODAY, -60 + i), started: x.now ? addDays(TODAY, -10) : "", done: "", deleted: false, at: T0 + i, u: T0 }));
   const spot = (k, i) => ({ id: i >= 0 ? items[i].id : "", u: T0 });
   const now = list.map((x, i) => (x.now ? i : -1)).filter(i => i >= 0);
   return {

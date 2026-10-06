@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.472", date: "2026-10-06", changes: [
+      "A movie has a Director and a Year of its own, optional, shown under its name as “Director, Year” before the rest. Reload on every device after updating: an older copy drops them."
+    ] },
     { version: "2.372", date: "2026-10-06", changes: [
       "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
     ] },

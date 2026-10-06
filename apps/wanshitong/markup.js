@@ -1,8 +1,8 @@
 /* Wan Shi Tong · markup.js — the page (A.markup): Active media, the backlog (a fold-away,
  * coloured group per category, filled in by render.js), the Finished list, the
- * add / edit pop-up, and the one asking what makes room when Active media is full. The shell
- * supplies the header, footer, Developer Mode and bug reports. Ids only need to be unique within the app (look them
- * up with A.$). */
+ * add / edit pop-up (a movie's Director and Year in a row under its name), and the one asking
+ * what makes room when Active media is full. The shell supplies the header, footer, Developer Mode
+ * and bug reports. Ids only need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.wanshitong.markup = `
   <div class="spots">
     <section class="spot now">
@@ -39,6 +39,16 @@ Kyoshi.apps.wanshitong.markup = `
       <div class="field">
         <label for="itemName">Name</label>
         <input type="text" id="itemName" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field-row" id="itemMovieRow">
+        <div class="field">
+          <label for="itemDirector">Director</label>
+          <input type="text" id="itemDirector" maxlength="80" autocomplete="off" placeholder="e.g. Miyazaki">
+        </div>
+        <div class="field">
+          <label for="itemYear">Year</label>
+          <input type="text" id="itemYear" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="e.g. 2001">
+        </div>
       </div>
       <div class="field">
         <label for="itemInfo" id="itemInfoLabel">Author</label>

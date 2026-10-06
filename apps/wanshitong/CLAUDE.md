@@ -17,14 +17,18 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning, backups and sync merge (`A.data`) |
 | `render.js` | `renderAll`: Active media (and its free spots), the backlog's groups (`buildGroups`, made once), Finished |
-| `editor.js` | the add / edit pop-up: category, name, info, Available to me now (Yes / No), why; Add another; delete; duplicate check |
+| `editor.js` | the add / edit pop-up: category, name, a movie's Director and Year (a row shown for movies only), info, Available to me now (Yes / No), why; Add another; delete; duplicate check |
 | `events.js` | `A.init` wiring; moving items (start → a free spot, or the "Active media is full" pop-up to swap one out; done frees its spot; back to backlog; put back); hooks `onTick`, `onKeydown`, `onReload`, `bugState` |
 | `wanshitong.css` | styles under `.app-wanshitong`: Active media's violet, each backlog group's colour (by `data-cat`) |
 
 ## State (`A.S`)
-`items` [{ id, cat, name, info, have, why, added, started, done, deleted, at, u }]:
-`cat` a `CATS` id (an unknown one from a newer version is kept and shown as Other) · `info` just enough to find it
-(author, year…) · `have` "" (not yet) | "yes" (available to me now; older values "downloaded" | "borrowed" |
+`items` [{ id, cat, name, director, year, info, have, why, added, started, done, deleted, at, u }]:
+`cat` a `CATS` id (an unknown one from a newer version is kept and shown as Other) · `director` (≤ `MAX_DIRECTOR` 80)
+and `year` (as typed, ≤ `MAX_YEAR` 12: "2001", "1984–1985"): a movie's own, optional, since 2.472; "" for every other
+category (saving one writes "") and in older data · `info` just enough to find it (author, year…; the movie's too,
+unchanged: an older "Miyazaki, 2001" in it stays there, nothing is split or moved) · the line under the name reads
+"Director, Year", then `info` after a "|" (only `info` when there's no director or year: books, TV and games look as
+before); the magnifier's search adds both · `have` "" (not yet) | "yes" (available to me now; older values "downloaded" | "borrowed" |
 "owned" are kept and read as yes, and saving the item writes "yes") · `why` optional note · `added` / `started` / `done`
 "YYYY-MM-DD" or "" (`done` set = finished) · deleted ones stay as markers · `at` when added, `u` when last changed.
 `slots` { now, now2, now3, next }: each { id ("" = empty), u } — Active media's spots (`NOW_SPOTS`), and `next`:
