@@ -29,6 +29,7 @@
     MIN_MINUTES: 5,
     MAX_MINUTES: 480,
     DEFAULT_MINUTES: 15,   // quick add's estimate until another chip is picked (one of its chips)
+    DEFAULT_DAY: "week",   // quick add's day until another chip is picked: This week (due this Sunday)
     DONE_PAGE: 50,         // done errands (and done shopping lists) shown at a time
     DOT_WHEN_OVERDUE: true, // a dot on Hawky's icon while an errand is overdue: false turns it off
     POSTPONE_WARN: 3,      // postponed (Tomorrow →) more times than this, an errand carries a warning mark, here and in Momo
@@ -52,10 +53,13 @@
     lists: [],
     view: "errands",        // what's on screen: "errands" | "lists" (this device only; it opens on errands)
     // Quick add's chips: day "none" | "today" | "week" (this Sunday) | "nextweek" (next Sunday) | "pick" (its date
-    // field); minutes 5, 15, 30, 60 or "other" (its number field); note: its note line shown. Back to no day, 15
+    // field); minutes 5, 15, 30, 60 or "other" (its number field); note: its note line shown. Back to This week, 15
     // minutes and no note after each add.
-    add: { day: "none", minutes: A.DEFAULT_MINUTES, note: false },
+    add: { day: A.DEFAULT_DAY, minutes: A.DEFAULT_MINUTES, note: false },
     listNote: false,        // the shopping add row's note line shown
+    // The store and topic of the shopping add row's last add (this device only): typing another store then clears
+    // that topic, once (lists-view.js).
+    listLast: { vendor: "", topic: "" },
     editing: null,          // the errand pop-up: { id, snapshot }
     listEditing: null,      // a list's pop-up (Rename): { id, snapshot }
     itemEditing: null,      // an item's pop-up: { listId, id, snapshot }

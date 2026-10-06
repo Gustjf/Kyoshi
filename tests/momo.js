@@ -43,8 +43,9 @@ const bank = tab => tab.page.evaluate(() => {
     buttons: [...document.querySelectorAll("#kMount .bank-actions button")].filter(b => !b.hidden).map(b => b.textContent.trim())
   };
 });
-// Tasks: [{ key, title, label (its words, as a screen reader says them), hours, overdue, ongoing, apps }], then the
-// parked cards [{ id, title, hours }].
+// Tasks: [{ key, title, label (its words, as a screen reader says them), hours, overdue, ongoing, apps, due (when a need of
+// its own is due, as it says: "due Fri", "overdue"; "" when it says nothing), dueLate (that in red) }], then the parked
+// cards [{ id, title, hours }].
 const tasks = tab => tab.page.evaluate(() => {
   const h = s => { const m = /^([\d.]+)(h|m)$/.exec((s || "").trim()); return m ? (m[2] === "m" ? +m[1] / 60 : +m[1]) : null; };
   const box = document.querySelector("#kMount #taskCards");
@@ -53,7 +54,8 @@ const tasks = tab => tab.page.evaluate(() => {
     tasks: [...box.querySelectorAll(".task")].map(t => ({
       key: t.dataset.task, title: t.querySelector(".card-title").childNodes.length ? [...t.querySelector(".card-title").childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim() : "",
       label: t.getAttribute("aria-label"), hours: h((t.querySelector(".task-hours") || {}).textContent), overdue: t.classList.contains("late"),
-      ongoing: !t.querySelector(".task-hours"), apps: t.querySelectorAll(":scope > .app-icon").length
+      ongoing: !t.querySelector(".task-hours"), apps: t.querySelectorAll(":scope > .app-icon").length,
+      due: (t.querySelector(".task-due") || {}).textContent || "", dueLate: !!t.querySelector(".task-due.late")
     })),
     parked: [...box.querySelectorAll(".card.parked:not(.task)")].map(c => ({ id: c.dataset.id, title: c.querySelector(".card-title").textContent.trim(), hours: h((c.querySelector(".card-hours") || {}).textContent) })),
     total: document.querySelector("#kMount #tasksTotal").textContent.trim()

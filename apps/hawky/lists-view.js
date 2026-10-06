@@ -1,7 +1,8 @@
 /* Hawky · lists-view.js — the Shopping view (lists.js has the model): the add row (store and topic, each suggesting
  * what's been used, the item, + Note or link; Add puts the item on that store and topic's list or starts one, and keeps
- * the store and topic for the next; a locked list's is refused), then the lists by store (stores A to Z, topics A to Z;
- * each store in its own colour: a dot by its name, the left edge of its lists, done ones' too), each a card: its topic,
+ * the store and topic for the next, until another store is typed, which clears that topic; a locked list's is refused),
+ * then the lists by store (stores A to Z, topics A to Z; each store in its own colour, given by the order stores were
+ * first used: a dot by its name, the left edge of its lists, done ones' too), each a card: its topic,
  * how many items and its state, Rename, its items (✓ once it's ready, ✕ to take one off, how long each has waited, its
  * note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days · Unlock early, in
  * amber, after a warning · Tick all); then the Done fold, newest first. The pop-ups: a list's (Rename: store and topic;
@@ -19,11 +20,17 @@
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: "base" });
 
-  // A store's own colour (a dot by its name, an edge on its lists), worked out from its name, never stored: the same
-  // store, in any capitals, gets the same one on every device. Eight from Momo's palette, read on light and dark;
-  // with more stores than that, two may share one.
-  const STORE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#22c55e", "#14b8a6", "#38bdf8", "#d4a017"];
-  const storeColor = name => STORE_COLORS[[...name.toLowerCase()].reduce((h, ch, k) => h + ch.codePointAt(0) * (k + 1), 0) % STORE_COLORS.length];
+  // Each store's own colour (a dot by its name, an edge on its lists), worked out, never stored. Twelve, read on dark and
+  // light, the most different first (blue, orange, green, pink, gold, violet, then teal, red, sky, lime, magenta, brown),
+  // given in the order stores were first used (each store's oldest list, done ones too), so a store keeps its colour as
+  // new ones come, every device agrees, and no two share one until there are more than twelve.
+  const STORE_COLORS = ["#3b82f6", "#f97316", "#22c55e", "#ec4899", "#d4a017", "#8b5cf6", "#14b8a6", "#ef4444", "#38bdf8", "#a3e635", "#c026d3", "#a16207"];
+  // { store in lower case → its colour }, for every list there is.
+  function storeColors() {
+    const first = new Map();
+    A.liveLists().forEach(l => { const k = l.vendor.toLowerCase(); if (!first.has(k) || l.at < first.get(k)) first.set(k, l.at); });
+    return new Map([...first].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1)).map(([k], i) => [k, STORE_COLORS[i % STORE_COLORS.length]]));
+  }
 
   // A note as HTML: its web addresses (http and https only) as links showing the site's name, less the punctuation
   // after one (as in Appa's notes); the rest as text.
@@ -60,15 +67,15 @@
       `</li>`;
   }
 
-  // One list as a card, edged in its store's colour: "Gifts · 3 items · locked · 18 days" and Rename, its items, then
-  // its state's buttons. In the Done fold it names its store too.
-  function cardHTML(l, today) {
+  // One list as a card, edged in its store's colour (colors: storeColors()): "Gifts · 3 items · locked · 18 days" and
+  // Rename, its items, then its state's buttons. In the Done fold it names its store too.
+  function cardHTML(l, today, colors) {
     const state = A.stateOf(l, today), items = A.liveItemsOf(l), id = `data-list="${esc(l.id)}"`;
     let actions = "";
     if (state === "open") actions = LOCK_DAYS.map((d, k) => `<button type="button"${k ? ' class="secondary"' : ""} data-act="list-lock" ${id} data-days="${d}">Lock ${d} days</button>`).join("");
     if (state === "locked") actions = `<span class="slist-lock">Unlocks ${esc(dayWords(A.unlockDay(l), today))}</span><button type="button" class="warn-btn" data-act="list-unlock" ${id}>Unlock early</button>`;
     if (state === "ready") actions = `<button type="button" data-act="list-tickall" ${id}>Tick all</button>`;
-    return `<div class="slist ${state}" data-id="${esc(l.id)}" style="--store:${storeColor(l.vendor)}">` +
+    return `<div class="slist ${state}" data-id="${esc(l.id)}" style="--store:${colors.get(l.vendor.toLowerCase())}">` +
       `<div class="slist-head"><span class="slist-topic">${esc(l.topic)}${state === "done" ? `<span class="slist-vendor"> · ${esc(l.vendor)}</span>` : ""}</span>` +
       `<span class="slist-meta">${plural(items.length, "item")} · <span class="slist-state">${esc(stateWords(l, state, today))}</span></span>` +
       `<button type="button" class="secondary small" data-act="list-rename" ${id}>Rename</button></div>` +
@@ -90,18 +97,18 @@
   // (DONE_PAGE at a time).
   function renderLists(today = todayStr()) {
     renderListAdd();
-    const active = A.activeLists(), stores = new Map();
+    const active = A.activeLists(), stores = new Map(), colors = storeColors();
     active.forEach(l => { const k = l.vendor.toLowerCase(); stores.set(k, (stores.get(k) || []).concat(l)); });
     const groups = [...stores.values()].map(ls => ({ name: ls.reduce((a, b) => (b.u > a.u ? b : a)).vendor, lists: ls.sort((a, b) => byName(a.topic, b.topic) || a.at - b.at) }))
       .sort((a, b) => byName(a.name, b.name));
     const items = active.reduce((n, l) => n + A.liveItemsOf(l).length, 0);
     $("listsEmpty").hidden = active.length > 0;
     $("listsCount").textContent = active.length ? `${active.length} · ${plural(items, "item")}` : "";
-    $("vendors").innerHTML = groups.map(g => `<div class="vendor" style="--store:${storeColor(g.name)}"><h3 class="vendor-name">${esc(g.name)}</h3>${g.lists.map(l => cardHTML(l, today)).join("")}</div>`).join("");
+    $("vendors").innerHTML = groups.map(g => `<div class="vendor" style="--store:${colors.get(g.name.toLowerCase())}"><h3 class="vendor-name">${esc(g.name)}</h3>${g.lists.map(l => cardHTML(l, today, colors)).join("")}</div>`).join("");
     const done = A.doneLists(), shown = done.slice(0, S.listsDoneShown);
     $("listsDoneSection").hidden = !done.length;
     $("listsDoneCount").textContent = `(${done.length})`;
-    $("listsDone").innerHTML = shown.map(l => cardHTML(l, today)).join("");
+    $("listsDone").innerHTML = shown.map(l => cardHTML(l, today, colors)).join("");
     $("listsDoneMore").hidden = shown.length >= done.length;
     $("listsDoneMore").textContent = `Show ${Math.min(DONE_PAGE, done.length - shown.length)} more`;
   }
@@ -113,7 +120,7 @@
   }
 
   // Add (or Enter): an empty box gets the focus first (so Enter moves on from the store to the topic to the item); then
-  // the item goes on its list, the item and note clear, and the store and topic stay for the next one.
+  // the item goes on its list, the item and note clear, and the store and topic stay for the next one (S.listLast).
   function add() {
     const vendor = cleanLine($("listVendor").value, MAX_VENDOR), topic = cleanLine($("listTopic").value, MAX_TOPIC);
     const text = cleanLine($("listItem").value, MAX_ITEM), note = S.listNote ? cleanText($("listNote").value, MAX_ITEM_NOTE) : "";
@@ -121,11 +128,21 @@
     if (empty) return $(empty[0]).focus();
     const r = A.addItem(vendor, topic, text, note);
     if (r.locked) return setStatus(`The ${r.locked.topic} list at ${r.locked.vendor} is locked until ${fmtDay(A.unlockDay(r.locked))}, so nothing was added.`, true);
+    S.listLast = { vendor: r.list.vendor, topic: r.list.topic };
     S.listNote = false;
     ["listItem", "listNote"].forEach(id => { $(id).value = ""; });
     A.renderAll();
     setStatus(`Added “${text}” to ${r.list.topic} at ${r.list.vendor}.`);
     $("listItem").focus();
+  }
+
+  // Another store typed after an add: the topic kept from that add goes, so the new store starts with a fresh topic.
+  // Once only: a topic typed since stays, and typing the same store back brings nothing back.
+  function storeTyped() {
+    const last = S.listLast, vendor = cleanLine($("listVendor").value, MAX_VENDOR).toLowerCase();
+    if (!last.topic || vendor === last.vendor.toLowerCase() || cleanLine($("listTopic").value, MAX_TOPIC).toLowerCase() !== last.topic.toLowerCase()) return;
+    $("listTopic").value = "";
+    last.topic = "";
   }
 
   // --- A list's pop-up (Rename) ---
@@ -262,7 +279,7 @@
     $("listForm").addEventListener("submit", e => { e.preventDefault(); add(); });
     // Tapping + Note or link or Add doesn't take the focus, so the phone's keyboard stays up while typing.
     $("listForm").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
-    $("listForm").addEventListener("input", e => { setStatus(""); if (e.target.id === "listVendor") renderTopics(); });
+    $("listForm").addEventListener("input", e => { setStatus(""); if (e.target.id === "listVendor") { storeTyped(); renderTopics(); } });
     $("listNoteBtn").addEventListener("click", () => { S.listNote = true; renderListAdd(); $("listNote").focus(); });
     $("listsView").addEventListener("click", onTap);
     $("listsDoneMore").addEventListener("click", () => { S.listsDoneShown += DONE_PAGE; A.renderAll(); });

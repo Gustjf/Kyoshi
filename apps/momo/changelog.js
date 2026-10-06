@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.384", date: "2026-10-06", changes: [
+      "A task for an errand or job says when it's due (“due Fri”, “overdue”) while it waits in Tasks; its card says nothing more once placed."
+    ] },
     { version: "10.374", date: "2026-10-06", changes: [
       "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
     ] },

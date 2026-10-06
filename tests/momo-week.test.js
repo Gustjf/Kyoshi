@@ -2,7 +2,8 @@
  * week's past days show what was done on them (Momo asks from Monday: a done errand gets a card on its day) while open
  * needs wait in Tasks from today, a card holding something late is red-edged and says so on the board, in its pop-up and
  * on Today, an errand due in a month takes none of this week's room; Tasks come in a chunk per app, each week's board
- * lists only what can go on it, and "all assigned ✓" waits until Tasks are empty and every day balances; the true cost:
+ * lists only what can go on it, and "all assigned ✓" waits until Tasks are empty and every day balances; an errand's
+ * task says when it's due ("due Sat", "overdue" in red) and its card, once placed, nothing more; the true cost:
  * each week's asks are kept (an app's own cards together, a block by its title), the Baseline tab shows the free time
  * the baseline leaves for the apps' cards and what block it's short of, a drag covers it, and Momo no longer saves
  * itself just for starting. */
@@ -120,6 +121,47 @@ module.exports = [
       await switchTo(tab, "momo");
       eq((await mo.tasks(tab)).tasks, [], "Tasks are empty");
       eq([(await mo.tabs(tab)).this.status, (await mo.bank(tab)).msg], ["all assigned ✓", "Every hour has a job ✓"], "all assigned ✓");
+    }
+  },
+  {
+    name: "momo week: an errand's task says when it's due (today, tomorrow, a weekday, a day; overdue in red), its card nothing more once placed; on a phone a long title gives way",
+    async run(t) {
+      const tab = await open(t, { app: "hawky", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, gen.hawkyItems([
+        { text: "Return library books", due: D(-2), minutes: 30 },       // overdue
+        { text: "Call the dentist", due: D(0) },                         // today
+        { text: "Pick up dry cleaning", due: D(1), minutes: 30 },        // tomorrow
+        { text: "Take the passport photos to the post box", due: D(2) }, // Friday, with as long a title as Momo keeps
+        { text: "Buy stamps", due: D(3) },                               // Saturday
+        { text: "Get a key cut", due: D(6), minutes: 30 },               // next Tuesday: still its weekday
+        { text: "Order printer ink", due: D(7) },                        // next Wednesday, today's weekday: its day
+        { text: "Buy light bulbs" }                                      // no date: nothing to say
+      ]));
+      await switchTo(tab, "momo");
+      await importBackup(tab, gen.momo([], [{ date: D(0), title: "Sleep", hours: 8 }]));
+      const due = async () => (await mo.tasks(tab)).tasks.map(x => [x.title, x.due, x.dueLate, x.overdue]);
+      eq(await due(), [
+        ["Return library books", "overdue", true, true], ["Call the dentist", "due today", false, false], ["Pick up dry cleaning", "due tomorrow", false, false],
+        ["Take the passport photos to the post box", "due Fri", false, false], ["Buy stamps", "due Sat", false, false], ["Get a key cut", "due Tue", false, false],
+        ["Order printer ink", "due Oct 7", false, false], ["Buy light bulbs", "", false, false]
+      ], "each says when it's due, the overdue one in red; the undated one nothing");
+      eq((await mo.tasks(tab)).tasks[4].label.replace(/ — drag.*$/, ""), "Buy stamps (from Hawky, due Oct 3)", "its label as before");
+
+      // Dragged onto Saturday, its card says nothing more: only the task did.
+      ok(await mo.dragTask(tab, "n:hawky:hk0004", 5), "Buy stamps dragged onto Saturday");
+      eq((await mo.days(tab))[5].cards.map(c => c.title), ["Buy stamps"], "its card is on Saturday");
+      eq(await p.locator("#kMount #board .task-due").count(), 0, "no due word on the board");
+      ok(!(await due()).some(x => x[0] === "Buy stamps"), "and its task is gone");
+
+      // On a phone, the long one gives way: its title is cut short, and when it's due and its time stay in view.
+      await p.setViewportSize(PHONE);
+      await p.waitForFunction(w => innerWidth === w, PHONE.width);
+      const fit = await p.$eval('#kMount #taskCards .task[data-task="n:hawky:hk0003"]', c => {
+        const row = c.parentElement.getBoundingClientRect(), r = c.getBoundingClientRect(), title = c.querySelector(".card-title");
+        const inside = el => { const b = el.getBoundingClientRect(); return b.left >= r.left && b.right <= r.right + 0.5; };
+        return [r.right <= row.right + 0.5, inside(c.querySelector(".task-due")), inside(c.querySelector(".task-hours")), title.scrollWidth > title.clientWidth];
+      });
+      eq(fit, [true, true, true, true], "within its row, its due day and time in view, its title cut short");
     }
   },
   {

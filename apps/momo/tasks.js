@@ -15,7 +15,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { esc, sum, newId, todayStr, addDays, fmtShort } = K.util;
+  const { esc, sum, newId, todayStr, addDays, daysBetween, fmtDate, fmtShort } = K.util;
   const { DAY_HOURS, DRAW_HOURS, STEP, fmtH, cleanText, weekKeyOf, thisWeekKey } = A;
 
   // Minutes as hours on the 15-minute grid, rounded up so they fit, within a day.
@@ -67,8 +67,17 @@
   // of its own, that need's card.
   const drawCard = t => ({ id: newId(), title: t.title, hours: t.hours || DRAW_HOURS, day: null, goalId: null, base: false, parentId: null, pos: "bottom", pin: null, need: t.need || null, app: t.need ? t.app : null, auto: false, slot: null, fixed: false, sleep: false });
 
+  // When a card of its own's need is due, in a word or two: "overdue", "due today", "due tomorrow", its weekday in the
+  // five days after tomorrow ("due Fri": never today's), else its day ("due Oct 14").
+  function dueWords(t, today = todayStr()) {
+    if (t.overdue) return "overdue";
+    const n = daysBetween(today, t.due);
+    return `due ${n === 0 ? "today" : n === 1 ? "tomorrow" : n > 1 && n < 7 ? fmtDate(t.due, { weekday: "short" }) : fmtShort(t.due)}`;
+  }
+
   // A task is the outline of a card, in its title's colour (once a card has one; a need of its own, its app's): its
-  // title (and a whole block's need's name), and what's short of a block its hours. Its chunk shows its app.
+  // title (and a whole block's need's name), when a need of its own is due (only here: its card, once placed, says
+  // nothing more), and what's short of a block its hours. Its chunk shows its app.
   function taskHTML(t) {
     if (t.cost) return A.costHTML(t);
     const needs = t.needs, from = A.fillParts({ title: t.label || t.title }, needs);
@@ -77,6 +86,7 @@
     const label = `${t.title}${t.label ? ` · ${t.label}` : ""} (${what}) — drag onto a day to add ${fmtH(t.hours || DRAW_HOURS)}, or click to ${t.need ? "pick a day" : "pick days"}`;
     return `<div class="card parked task${t.overdue ? " late" : ""}" data-task="${esc(t.key)}" role="button" tabindex="0" aria-label="${esc(label)}" title="${esc(label)}" style="--c:${A.cardColor({ title: t.title, app: t.need ? t.app : null })}">` +
       `<span class="card-title">${esc(t.title)}${t.label && t.label.toLowerCase() !== t.title.toLowerCase() ? `<span class="card-fill"> · ${esc(t.label)}</span>` : ""}</span>` +
+      (t.need && (t.overdue || t.due) ? `<span class="task-due${t.overdue ? " late" : ""}">${dueWords(t)}</span>` : "") +
       (t.ongoing ? "" : `<span class="task-hours">${fmtH(t.hours)}</span>`) + `</div>`;
   }
 

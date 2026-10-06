@@ -1,7 +1,8 @@
 /* Kyoshi · tests/hawky.js — Hawky's screens as the tests read and use them: quick add with its chips and status line, the
  * open errands by group (each line's text, its meta line, whether it has Tomorrow →), Tomorrow → itself, an errand as
- * Hawky keeps it (for checks), and the Shopping tab's add row and its stores (each with its colour and its lists' edges).
- * Errands are found by their ids, lists by their topics. Selectors live here, so a markup change is fixed in one place. */
+ * Hawky keeps it (for checks), and the Shopping tab's add row (its boxes, typed in and read) and its stores (each with its
+ * colour and its lists' edges). Errands are found by their ids, lists by their topics. Selectors live here, so a markup
+ * change is fixed in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -17,6 +18,11 @@ async function addErrand(tab, text, { day = "none", date = "", minutes = 15, oth
   await p.click(`${M} #addMinutes [data-minutes="${minutes}"]`);
   if (minutes === "other") await p.fill(`${M} #addOther`, String(other));
   await p.click(`${M} #addBtn`);
+}
+// Quick add with the chips as they are: the text, then Enter.
+async function quickAdd(tab, text) {
+  await tab.page.fill(`${M} #addText`, text);
+  await tab.page.press(`${M} #addText`, "Enter");
 }
 // The chips pressed: { day, minutes } (their data- values).
 const chips = tab => tab.page.evaluate(() => ({
@@ -43,14 +49,24 @@ const item = (tab, id) => tab.page.evaluate(x => Kyoshi.apps.hawky.S.items.find(
 
 // --- Shopping ---
 const showLists = tab => tab.page.click(`${M} #nav [data-view="lists"]`);
+// The add row's boxes.
+const ROW = { store: `${M} #listVendor`, topic: `${M} #listTopic`, item: `${M} #listItem` };
 // The add row: store, topic and item, then Add.
 async function addItem(tab, store, topic, text) {
   const p = tab.page;
-  await p.fill(`${M} #listVendor`, store);
-  await p.fill(`${M} #listTopic`, topic);
-  await p.fill(`${M} #listItem`, text);
+  await p.fill(ROW.store, store);
+  await p.fill(ROW.topic, topic);
+  await p.fill(ROW.item, text);
   await p.click(`${M} #listAddBtn`);
 }
+// Types into one of the add row's boxes ("store", "topic" or "item") in place of what it holds, as the user does.
+const typeIn = (tab, box, text) => tab.page.fill(ROW[box], text);
+// The add row's boxes as they read: { store, topic, item }.
+const addRow = tab => tab.page.evaluate(row => Object.fromEntries(Object.entries(row).map(([k, sel]) => [k, document.querySelector(sel).value])), ROW);
+// The topics the add row suggests (for the store in its box).
+const topics = tab => tab.page.$$eval(`${M} #hawkyTopics option`, els => els.map(o => o.value));
+// The line under the add row.
+const listStatus = tab => tab.page.locator(`${M} #listStatus`).innerText();
 // The stores as shown, each { name, color (its --store), dot (its name's dot, as computed), lists: [{ topic, edge (the left
 // border's colour and width, as computed) }] }; colours as the browser computes them ("rgb(20, 184, 166)").
 const stores = tab => tab.page.$$eval(`${M} #vendors .vendor`, els => els.map(v => ({
@@ -61,4 +77,4 @@ const stores = tab => tab.page.$$eval(`${M} #vendors .vendor`, els => els.map(v 
 // A "#rrggbb" colour as the browser computes it.
 const rgb = hex => `rgb(${[1, 3, 5].map(k => parseInt(hex.slice(k, k + 2), 16)).join(", ")})`;
 
-module.exports = { addErrand, chips, status, groups, postpone, item, showLists, addItem, stores, rgb };
+module.exports = { addErrand, quickAdd, chips, status, groups, postpone, item, showLists, ROW, addItem, typeIn, addRow, topics, listStatus, stores, rgb };

@@ -2,30 +2,31 @@
 Gets things out of your head, on the phone, in seconds. Two tabs: **Errands** and **Shopping** (it opens on Errands;
 Shopping says how many lists are ready to buy).
 **Errands** are one-off tasks and things promised: the text, a tap for the day (Today, This week or Next week: due that
-Sunday, Pick a day, or none), one for how long (5 min, 15 min, 30 min, 1 hour, Other) and, after + Note, a note. The list
-shows them by when they're due: Overdue, Today, This week (by Sunday) and Later (dated beyond, soonest first, then the
-undated, oldest first, each saying how long it has waited); ✓ ticks one off, and the done ones fold away. An overdue one
-has Tomorrow →, which moves it to tomorrow and counts; past three times its line carries a warning mark ("postponed 4×").
+Sunday, Pick a day, or none; This week unless another is tapped), one for how long (5 min, 15 min, 30 min, 1 hour, Other;
+15 min unless another is tapped) and, after + Note, a note. The list shows them by when they're due: Overdue, Today,
+This week (by Sunday) and Later (dated beyond, soonest first, then the undated, oldest first, each saying how long it
+has waited); ✓ ticks one off, and the done ones fold away. An overdue one has Tomorrow →, which moves it to tomorrow and
+counts; past three times its line carries a warning mark ("postponed 4×").
 **Momo** decides when: every open errand due by the end of next week (or undated) is a card of its own there, waiting in
 its Tasks until you drag it onto a day; a ticked one shows ✓.
 **Shopping lists** hold the products you spot (not groceries: Turtleduck's) for a cooling-off period before buying: each
 item goes on its store and topic's list, one list per topic; once everything's on it, a list is locked for 30 or 7 days,
 and while it's locked items can only come off (an amber Unlock early warns first); then each item is ticked as it's
-bought, and the done list folds away. Each store has its own colour (a dot by its name, the left edge of its lists).
-Lists never go to Momo.
+bought, and the done list folds away. Each store has its own colour (a dot by its name, the left edge of its lists). The
+add row keeps the store and topic for the next item; typing another store clears that topic. Lists never go to Momo.
 Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DEFAULT_DAY` "week", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
 | `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), the pop-ups (errand, list, item) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (errands, lists and their items), backups and sync merge (`A.data`) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `lists.js` | the shopping lists' model (its header documents it): lookups (`listFor`, `activeLists`, `doneLists`, `clashOf`, the names the add row suggests), `stateOf` (open, locked, ready, done), `unlockDay`, `daysLeft`, and the changes (`addItem`, `editItem`, `removeItem`, `lockList`, `unlockEarly`, `tickItem`, `tickAll`, `renameList`, `deleteList`) |
-| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions, the lists by store as cards, each store in its colour (`storeColor`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
+| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions (another store typed after an add clears its topic: `storeTyped`), the lists by store as cards, each store in its colour (`storeColors`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
 | `render.js` | `renderAll` (the nav and both views), `showView`, `renderAdd`: the chips and the note line, the groups (each with its total time; Tomorrow → on overdue errands, the warning mark past `POSTPONE_WARN`), the Done fold (a page at a time) |
 | `editor.js` | the errand pop-up: text, note, due, minutes, how often it was postponed; Save (Enter), Cancel, Delete |
 | `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo, Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState` |
@@ -46,10 +47,10 @@ Saved:
   or ""; `done` the day it was done, or ""; `u` when it or any of its items last changed. Deleted lists and items stay as
   markers. Done lists are kept for good.
 This device only: `view` ("errands" | "lists"; it opens on errands), `add` (quick add: `day` "none"|"today"|"week"|
-"nextweek"|"pick", `minutes` 5|15|30|60|"other", `note` its note line shown; back to no day, 15 and no note after each
-add), `listNote` (the
-add row's note line shown), `editing` (the errand pop-up), `listEditing` and `itemEditing` (theirs), `doneShown`,
-`listsDoneShown`, `knownToday`.
+"nextweek"|"pick", `minutes` 5|15|30|60|"other", `note` its note line shown; This week, 15 and no note at first, and
+back to them after each add), `listNote` (the add row's note line shown), `listLast` ({ vendor, topic } of the add row's
+last add; `topic` emptied once another store typed has cleared it from the row), `editing` (the errand pop-up),
+`listEditing` and `itemEditing` (theirs), `doneShown`, `listsDoneShown`, `knownToday`.
 
 ## Storage (`A.store`) and backups
 Keys: `items`, `lists` (plus core's `sync` and `meetings`). Backup JSON: `{ schemaVersion: 2, appVersion, items, lists }`
@@ -82,8 +83,14 @@ for a done one. Shopping lists are never shared.
   `postponed` goes up by one. Changing the day in its pop-up isn't counted. Past `POSTPONE_WARN` its line (open or done)
   starts with Lucide's triangle-alert and "postponed 4×", and Momo's details say so; up to it, only the pop-up says
   "Postponed 2 times".
-- A store's colour (`storeColor` in lists-view.js): one of eight from Momo's palette, picked by a hash of its name in
-  lower case, so the same store is the same colour on every device; with more than eight stores two may share one.
+- A store's colour (`storeColors` in lists-view.js, once per draw): one of twelve (`STORE_COLORS`, the most different
+  first, read on dark and light), given in the order stores were first used: stores (any capitals) by their oldest
+  list's `at`, done lists too, then by name; the i-th takes the i-th colour. So a store keeps its colour as new ones
+  come, every device with the same lists agrees, and no two share one until there are more than twelve (a store whose
+  lists are all deleted gives its place up).
+- The add row (lists-view.js): after an add, the store and topic stay; typing a store that isn't that add's (any
+  capitals) empties the topic box while it still holds that add's topic, once (`listLast.topic` emptied): a topic typed
+  since stays, and typing the same store back brings nothing back.
 - A list's state (`stateOf`): done once `done` is set; else open with no `lock`; else locked while today is before the
   lock's day + its days and it wasn't unlocked early; else ready. Open: items added, changed, taken off; Lock 30 days or
   Lock 7 days. Locked: items only come off, and one added for its store and topic is refused (the owner's choice); Unlock

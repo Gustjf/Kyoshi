@@ -51,11 +51,15 @@
 .app-momo .task-app-sum { font-weight: 400; color: var(--muted); white-space: nowrap; }
 .app-momo .task-app-cards { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 /* A task to draw from (what other apps need) is the outline of a card: dragging it adds a card of
-   its own. Something ongoing, like Wan Shi Tong's in progress, stays for next time. */
-.app-momo .card.task { gap: 5px; border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
+   its own. Something ongoing, like Wan Shi Tong's in progress, stays for next time. Never wider than
+   its row (a phone): a long title gives way, so when it's due and its time stay in view. */
+.app-momo .card.task { max-width: 100%; gap: 5px; border: 1px dashed color-mix(in srgb, var(--c) 55%, var(--border)); border-left: 3px solid var(--c); background: transparent; }
 .app-momo .card.task:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
-/* What's short of a block shows its time; red-edged once late. */
+/* What's short of a block shows its time; red-edged once late. A need of its own says when it's due before its time
+   ("due Fri"; "overdue" in red), only here. */
 .app-momo .card.task .task-hours { flex: 0 0 auto; font-size: .85em; color: var(--muted); }
+.app-momo .card.task .task-due { flex: 0 0 auto; margin-left: auto; font-size: .72em; color: var(--muted); white-space: nowrap; }
+.app-momo .card.task .task-due.late { color: var(--bad); }
 .app-momo .card.task.late { border-color: var(--bad); border-left-color: var(--bad); }
 /* The baseline's true cost: a block it's short of is a task (its gap to drag in); one it covers, a quiet ✓. */
 .app-momo .card.task.cost .task-hours { color: var(--bad); font-weight: 600; }

@@ -7,7 +7,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { newId, isDate, addDays, todayStr } = K.util;
-  const { MAX_TEXT, MAX_NOTE, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
+  const { MAX_TEXT, MAX_NOTE, MIN_MINUTES, MAX_MINUTES, DEFAULT_MINUTES, DEFAULT_DAY, DONE_PAGE, DOT_WHEN_OVERDUE, fmtMinutes, dayWords } = A;
 
   const kept = () => { A.save(); A.renderAll(); };
 
@@ -57,7 +57,7 @@
   }
 
   // Quick add: the errand, with the chips' day and estimate, and the note if one was typed. Then the field clears
-  // and keeps its focus for the next one, and the chips go back to no day, 15 minutes and no note.
+  // and keeps its focus for the next one, and the chips go back to This week, 15 minutes and no note.
   function add() {
     const text = A.cleanLine($("addText").value, MAX_TEXT), due = chipDay(), note = S.add.note ? A.cleanText($("addNote").value, MAX_NOTE) : "";
     const minutes = S.add.minutes === "other" ? A.readMinutes($("addOther")) : S.add.minutes;
@@ -73,7 +73,7 @@
     const now = Date.now();
     S.items.push({ id: newId(), text, note, due, minutes, done: "", postponed: 0, deleted: false, at: now, u: now });
     A.save();
-    S.add = { day: "none", minutes: DEFAULT_MINUTES, note: false };
+    S.add = { day: DEFAULT_DAY, minutes: DEFAULT_MINUTES, note: false };
     ["addText", "addDate", "addOther", "addNote"].forEach(id => { $(id).value = ""; });
     A.renderAll();
     setStatus(`Added “${text}”${due ? ` for ${dayWords(due)}` : ""}, ${fmtMinutes(minutes)}.`);
