@@ -5,7 +5,7 @@
  * people (a version 1 backup, one in today's shape with groups, and a damaged one), and Momo weeks with "Workout", meal,
  * "Cooking", "Groceries" and "Keep in touch" cards.
  * Then fuller worlds, for the flow simulator (tests/sim) and any test: core's meetings, many Hawky errands, Iroh's areas
- * and goals, Bosco's weekly dose and weigh-ins, Appa's things with meters, seasonal and meter jobs, Wan Shi Tong's
+ * and goals, Bosco's weekly dose and weigh-ins (and injection sites), Appa's things with meters, seasonal and meter jobs, Wan Shi Tong's
  * recommendations, Momo's baseline, and an Export all file of them.
  * Dates count back from the tests' TODAY (lib.js). */
 "use strict";
@@ -302,16 +302,18 @@ function iroh({ areas = [], goals = [], meet = null } = {}) {
   };
 }
 
-// Bosco: a weekly GLP-1 dose (its plan, the last dose taken) and weigh-ins [{ date, weight }] in lb.
-function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, doseTime = null, lastDose = addDays(TODAY, -5), doses = 4, weights = [], meet = null } = {}) {
+// Bosco: a weekly GLP-1 dose (its plan, the last dose taken) and weigh-ins [{ date, weight }] in lb. sites: the injection
+// sites on, lastSite: where the last dose went; without them, a backup from before injection sites.
+function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, doseTime = null, lastDose = addDays(TODAY, -5), doses = 4, weights = [], meet = null, sites, lastSite } = {}) {
   const entries = weights.map(w => ({ date: w.date, weight: w.weight, doseMg: null, medication: null }));
   for (let i = 0; i < doses; i++) {
     const date = addDays(lastDose, -i * intervalDays), e = entries.find(x => x.date === date);
     if (e) Object.assign(e, { doseMg: weeklyMg * intervalDays / 7, medication });
     else entries.push({ date, weight: null, doseMg: weeklyMg * intervalDays / 7, medication });
   }
+  if (lastSite && doses) entries.find(e => e.date === lastDose).site = lastSite;
   return {
-    schemaVersion: 4, appVersion: "5.900", unit: "lb", name: "", medication, ...(meet ? { meetings: meet } : {}),
+    schemaVersion: 4, appVersion: "5.900", unit: "lb", name: "", medication, ...(meet ? { meetings: meet } : {}), ...(sites ? { sites } : {}),
     dosePlan: { medication, intervalDays, weeklyMg, doseTime, nextDose: null, savedAt: "2026-01-05T00:00:00.000Z" },
     vial: null, paceGoal: null, goals: [180, 170], entries: entries.sort((a, b) => a.date.localeCompare(b.date))
   };

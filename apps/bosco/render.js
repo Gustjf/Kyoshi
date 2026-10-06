@@ -5,7 +5,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { isPos, mean, daysBetween, addDays, todayStr, fmtDate, fmtShort, fmtWeekday, fmtNum, fmtSigned, SEP } = K.util;
-  const { PAGE_SIZE, MEDICATIONS, TREND_MIN_WEIGHINS, hasWeight, hasDose, otherMedNote, fmtDateBrief, fmtConc, fmtUnits, weightRange, axisDates } = A;
+  const { PAGE_SIZE, MEDICATIONS, TREND_MIN_WEIGHINS, hasWeight, hasDose, otherMedNote, fmtDateBrief, fmtConc, fmtUnits, siteLabel, siteShort, weightRange, axisDates } = A;
 
   function renderAll() {
     const m = A.model();
@@ -50,7 +50,7 @@
         <td>${fmtDate(e.date)}</td>
         <td>${hasWeight(e) ? `${e.weight.toFixed(1)} ${unit}` : "&mdash;"}</td>
         <td class="${cls}">${change === null ? "&mdash;" : `${change > 0 ? "+" : ""}${change.toFixed(1)} ${unit}`}</td>
-        <td class="med">${hasDose(e) ? `${e.doseMg} mg${otherMedNote(e)}` : "&mdash;"}</td>
+        <td class="med">${hasDose(e) ? `${e.doseMg} mg${otherMedNote(e)}${e.site ? `${SEP}${siteShort(e.site)}` : ""}` : "&mdash;"}</td>
         <td><button class="danger" data-date="${e.date}">Delete</button></td>
       </tr>`;
     }).join("");
@@ -75,18 +75,19 @@
     // Scheduled doses are all of the current medication, so drawn from its active vial.
     const vial = A.activeVial();
     const units = mg => (vial ? `${SEP}<strong>${fmtUnits(mg, vial.mgPerMl)}</strong>` : "");
+    const site = s => (s ? `<div class="lbl site"><span>${siteLabel(s)}</span></div>` : ""); // where it goes, or went
     showVialBadge("upcomingVialBadge", schedule.length ? vial : null);
     // A plan with no dose taken or set has nothing to count from.
     const plan = A.medicationEnabled() && A.planFor(A.currentMedication());
     const waiting = !!(plan && plan.intervalDays && plan.weeklyMg) && !schedule.length;
     $("upcomingDosesSection").hidden = !schedule.length && !last && !waiting;
     $("upcomingDosesGrid").innerHTML =
-      (last ? `<div class="stat"><div class="val">${last.doseMg} mg</div><div class="lbl">Last dose taken${otherMedNote(last)}${SEP}<span>${fmtDateBrief(last.date)}</span></div></div>` : "") +
+      (last ? `<div class="stat"><div class="val">${last.doseMg} mg</div><div class="lbl">Last dose taken${otherMedNote(last)}${SEP}<span>${fmtDateBrief(last.date)}</span></div>${site(last.site)}</div>` : "") +
       // Upcoming doses lead with the weekday, the day you dose on, then the date,
-      // the dose itself and its weekly equivalent. Due ones wait to be confirmed.
+      // the dose itself and its weekly equivalent, then where it goes. Due ones wait to be confirmed.
       schedule.map(d => `<div class="stat${d.due ? " due" : ""}">
         <div class="val">${fmtWeekday(d.date)}</div><div class="lbl"><span>${fmtDateBrief(d.date)}</span></div>
-        <div class="dose">${d.doseMg} mg${units(d.doseMg)}</div><div class="lbl"><span>${d.weeklyMg} mg a week</span></div>
+        <div class="dose">${d.doseMg} mg${units(d.doseMg)}</div><div class="lbl"><span>${d.weeklyMg} mg a week</span></div>${site(d.site)}
         ${d.due ? `<button class="small" data-confirm-dose="${d.date}">Confirm dose</button>` : ""}
       </div>`).join("") +
       (waiting ? `<div class="empty-msg">No dose to count from yet. <button class="secondary small" data-set-anchor>Set anchor dose</button></div>` : "");

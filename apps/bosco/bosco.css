@@ -1,6 +1,6 @@
 /* Bosco · bosco.css — Bosco's own styles, every selector under .app-bosco.
  * Shared components (buttons, inputs, sections, stats, tables, pop-ups…) are in core/kyoshi.css.
- * Sections: Layout · Stats & badges · Goals & projection sliders · Start-up dosing, vial & pace goal · Chart */
+ * Sections: Layout · Stats & badges · Goals & projection sliders · Start-up dosing, injection sites, vial & pace goal · Chart */
 
 /* --- Layout --- */
 .app-bosco.no-med .med { display: none !important; } /* dose tracking off */
@@ -16,6 +16,7 @@
 .app-bosco #upcomingDosesGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
 .app-bosco #upcomingDosesGrid .stat.due button { margin-top: 8px; }
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
+.app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
 .app-bosco .badge.reached { background: #dcfce7; color: #16a34a; }
 .app-bosco .badge.projected { background: #fef3c7; color: #92400e; }
@@ -58,7 +59,7 @@
 .app-bosco .rate-labels .rl-mid { left: calc((100% - 1px) / 2); transform: translateX(-50%); }
 .app-bosco .rate-labels .rl-max { right: 0; }
 
-/* --- Start-up dosing plan, active vial & pace goal --- */
+/* --- Start-up dosing plan, injection sites, active vial & pace goal --- */
 .app-bosco .dosing, .app-bosco .pace-goal { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .app-bosco #oneTimeInfoFields:empty { display: none; }
 /* No questions above the dosing, or above the pace goal with no dosing either. */
@@ -68,7 +69,12 @@
    (the dose time on a row of its own), boxes lined up even when a label wraps. */
 .app-bosco .dose-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; }
 @media (max-width: 600px) { .app-bosco .dose-fields { grid-template-columns: 1fr 1fr; } }
-.app-bosco .vial-head { margin-top: 14px; }
+.app-bosco .vial-head, .app-bosco .sites-head { margin-top: 14px; }
+/* Injection sites: four to a row, two on phones, so each site's left and right sit side by side
+   and the rotation reads left to right, top to bottom. */
+.app-bosco .site-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+@media (max-width: 600px) { .app-bosco .site-pills { grid-template-columns: 1fr 1fr; } }
+.app-bosco .site-pills .mode-btn { padding: 8px 6px; }
 .app-bosco .summary-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; font-size: .9em; }
 .app-bosco .summary-line .muted { color: var(--muted); }
 .app-bosco .anchor-line, .app-bosco #anchorEditor { margin-top: 10px; }

@@ -27,6 +27,17 @@
     semaglutide: { label: "Semaglutide", example: "0.5" },
     retatrutide: { label: "Retatrutide", example: "4" }
   };
+  // Injection sites, in the order doses rotate through them: each spot's left then right before
+  // the next, the thighs from upper to lower. [id, label, short label]; ids are what backups
+  // store, so never change one (add new sites anywhere in the order).
+  const SITES = [
+    ["abd-l", "Abdomen · left", "Abdomen L"], ["abd-r", "Abdomen · right", "Abdomen R"],
+    ["thigh-l-upper", "Thigh · left, upper", "Thigh L upper"], ["thigh-r-upper", "Thigh · right, upper", "Thigh R upper"],
+    ["thigh-l-middle", "Thigh · left, middle", "Thigh L middle"], ["thigh-r-middle", "Thigh · right, middle", "Thigh R middle"],
+    ["thigh-l-lower", "Thigh · left, lower", "Thigh L lower"], ["thigh-r-lower", "Thigh · right, lower", "Thigh R lower"],
+    ["arm-l", "Upper arm · left", "Upper arm L"], ["arm-r", "Upper arm · right", "Upper arm R"],
+    ["glute-l", "Buttock · left", "Buttock L"], ["glute-r", "Buttock · right", "Buttock R"]
+  ];
   Object.assign(A, {
     DEFAULT_GOALS: [200, 175, 160, 150], // lb
     LB_PER_KG: 2.20462,
@@ -34,8 +45,11 @@
     MAX_UPCOMING_DOSES: 3,
     MAX_DOSE_INTERVAL_DAYS: 14, // days between doses: a whole number from 1
     DOSE_SNOOZE_MS: 3600000,    // "Not yet" asks about a due dose again an hour later
-    // Bumped when a dosing question is added, so start-up info asks once more. 2: usual dose time.
-    DOSING_QUESTIONS_VERSION: 2,
+    // Bumped when a dosing question is added, so start-up info asks once more. 2: usual dose time. 3: injection sites.
+    DOSING_QUESTIONS_VERSION: 3,
+    SITES,
+    // The sites on until you pick yours in start-up info: the abdomen and the thighs.
+    DEFAULT_SITES: SITES.map(s => s[0]).filter(id => /^(abd|thigh)-/.test(id)),
     BAC_ML_RANGE: [1, 3],       // BAC water a vial can be mixed with, as on its slider
     MAX_ETA_WEEKS: 5200,        // ~100 years; anything slower counts as a flat rate
     TREND_MIN_WEIGHINS: 3,      // in each of the two 7-day averages Current Trend's weekly rate compares
@@ -128,6 +142,12 @@
     }
     return doseMg * 7 / intervalDays;
   }
+  // The injection sites on: the default ones until changed in start-up info (an empty list: sites off).
+  // A site's labels: "Thigh · left, upper", or "Thigh L upper" (one from a newer version: its id).
+  const activeSites = () => S.profile.sites || A.DEFAULT_SITES;
+  const siteOf = id => SITES.find(s => s[0] === id);
+  const siteLabel = id => (siteOf(id) ? siteOf(id)[1] : id);
+  const siteShort = id => (siteOf(id) ? siteOf(id)[2] : id);
   const fmtConc = mgPerMl => `${fmtNum(mgPerMl, 3)} mg/mL`; // as precise as it can be entered
   // A dose drawn from a vial, in U-100 insulin syringe units (100 units = 1 mL):
   // to the nearest half unit, then the exact amount when that differs, "12.5 units (12.36)".
@@ -141,6 +161,6 @@
   Object.assign(A, {
     hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight,
     currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
-    isDoseInterval, eachDoseMg, weeklyFor, fmtConc, fmtUnits, readNumber
+    isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, fmtConc, fmtUnits, readNumber
   });
 })(Kyoshi);

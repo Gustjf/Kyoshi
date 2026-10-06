@@ -6,12 +6,14 @@
  * dose spread over the days between doses. None is logged until it's confirmed in
  * the pop-up once due: on its day, or today for a late one taken late (the
  * schedule then counts on from today). A due dose waits to be confirmed until it's
- * three intervals old; after that it counts as missed. Momo's board shows the doses (agenda). */
+ * three intervals old; after that it counts as missed. Each goes to the next injection site that's
+ * on, after the one the last dose was logged at (also worked out, never stored); the pop-up can
+ * log it at another. Momo's board shows the doses (agenda). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { addDays, daysBetween, todayStr, now, fmtWeekday, fmtTime } = K.util;
-  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, hasDose, byDate, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief } = A;
+  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, SITES, hasDose, byDate, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief, activeSites, siteLabel } = A;
 
   // When a dose comes due: its day at the usual dose time (the start of the day
   // without one), on this device's clock.
@@ -25,7 +27,16 @@
   // The day a plan's next dose was set to, "" once a dose has been logged since.
   const setNextDose = (plan, lastTaken) => (plan && plan.nextDose && lastTaken <= plan.nextDose.after ? plan.nextDose.date : "");
 
-  // The next three doses as { date, doseMg, weeklyMg, due, after }, `after` being
+  // Where the last dose logged with a site went, null if none has one.
+  const lastSite = () => S.entries.filter(e => hasDose(e) && e.site && e.date <= todayStr()).map(e => e.site).pop() || null;
+  // The next site that's on after `after` in the rotation (SITES' order, starting over after the
+  // last): the first one on without `after` (or for one this version doesn't know); null while all are off.
+  function nextSite(after) {
+    const on = activeSites(), from = SITES.findIndex(s => s[0] === after) + 1;
+    return SITES.map((_, i) => SITES[(from + i) % SITES.length][0]).find(id => on.includes(id)) || null;
+  }
+
+  // The next three doses as { date, doseMg, weeklyMg, due, after, site }, `after` being
   // the last dose taken ("" if none). None without days between doses and a
   // weekly dose, or with nothing to count from: no dose taken or set.
   function doseSchedule() {
@@ -36,9 +47,11 @@
     if (!after && !set) return [];
     const next = set || addDays(after, every);
     const missed = Math.max(0, Math.floor(daysBetween(next, today) / every) - MAX_UPCOMING_DOSES + 1);
+    let site = lastSite(); // each dose at the site after the one before it
     return Array.from({ length: MAX_UPCOMING_DOSES }, (_, i) => {
       const date = addDays(next, (missed + i) * every);
-      return { date, doseMg: eachDoseMg(plan.weeklyMg, every), weeklyMg: plan.weeklyMg, due: at >= dueAt(date, plan.doseTime), after };
+      site = nextSite(site);
+      return { date, doseMg: eachDoseMg(plan.weeklyMg, every), weeklyMg: plan.weeklyMg, due: at >= dueAt(date, plan.doseTime), after, site };
     });
   }
 
@@ -81,7 +94,9 @@
 
   function openDoseModal(dose) {
     const med = A.currentMedication(), time = planFor(med).doseTime, vial = A.activeVial();
-    S.doseAsking = dose;
+    // A site picked for this dose stays picked while the pop-up is kept up to date.
+    const picked = S.doseAsking && S.doseAsking.picked && sameDose(S.doseAsking, dose) ? S.doseAsking.site : null;
+    S.doseAsking = picked ? { ...dose, site: picked, picked: true } : dose;
     $("doseModalText").textContent = `Your ${medLabel(med)} dose was due ${fmtWeekday(dose.date)}, ${fmtDateBrief(dose.date)}${time ? ` at ${fmtTime(time)}` : ""}. It goes in your log once you confirm it.`;
     $("doseModalMg").textContent = `${dose.doseMg} mg`;
     $("doseModalUnits").innerHTML = vial ? `<strong>${fmtUnits(dose.doseMg, vial.mgPerMl)}</strong> on a U&#8209;100 syringe` : "";
@@ -93,8 +108,26 @@
     const daysLate = daysBetween(dose.date, todayStr());
     $("doseLogBtn").textContent = daysLate > 0 ? `Took it ${daysLate < 7 ? fmtWeekday(dose.date) : fmtDateBrief(dose.date)}` : "Log dose";
     $("doseTodayBtn").hidden = !(daysLate > 0);
+    renderDoseSite();
     K.modal.open($("doseOverlay"));
     K.refreshSwitcher(); // a dot on Bosco's icon while you're in another app
+  }
+
+  // The pop-up's injection site: a menu of the sites that are on, then the others; hidden while all are
+  // off. The menu is only refilled when that changes, so the minute's update can't close it while open.
+  let siteMenu = "";
+  function renderDoseSite() {
+    const site = S.doseAsking.site, on = activeSites(), ids = SITES.map(s => s[0]), others = ids.filter(id => !on.includes(id));
+    const option = id => `<option value="${id}">${siteLabel(id)}</option>`;
+    const menu = ids.filter(id => on.includes(id)).map(option).join("") + (others.length ? `<optgroup label="Other">${others.map(option).join("")}</optgroup>` : "");
+    if (menu !== siteMenu) $("doseSiteSelect").innerHTML = siteMenu = menu;
+    $("doseSiteSelect").value = site || "";
+    $("doseSiteField").hidden = !site;
+  }
+
+  // Another site picked in the pop-up: the dose is logged there, and the rotation goes on from it.
+  function pickDoseSite(id) {
+    if (S.doseAsking) Object.assign(S.doseAsking, { site: id, picked: true });
   }
 
   function closeDoseModal() {
@@ -116,11 +149,12 @@
   // which moves the schedule on from the day it's logged.
   function confirmDose(takenToday) {
     if (!S.doseAsking || !stillAsked()) return;
-    const date = takenToday ? todayStr() : S.doseAsking.date, doseMg = S.doseAsking.doseMg, existing = S.entries.find(e => e.date === date);
+    const date = takenToday ? todayStr() : S.doseAsking.date, doseMg = S.doseAsking.doseMg, site = S.doseAsking.site || null;
+    const existing = S.entries.find(e => e.date === date);
     if (existing) {
-      Object.assign(existing, { doseMg, medication: A.currentMedication() });
+      Object.assign(existing, { doseMg, medication: A.currentMedication(), site });
     } else {
-      S.entries.push({ date, weight: null, doseMg, medication: A.currentMedication() });
+      S.entries.push({ date, weight: null, doseMg, medication: A.currentMedication(), site });
       S.entries.sort(byDate);
     }
     closeDoseModal();
@@ -146,5 +180,7 @@
     closeDoseModal();
   }
 
-  Object.assign(A, { lastDoseDate, setNextDose, doseSchedule, agenda, promptDueDose, openDoseModal, closeDoseModal, confirmDose, postponeDose, snoozeDose });
+  Object.assign(A, {
+    lastDoseDate, setNextDose, lastSite, nextSite, doseSchedule, agenda, promptDueDose, openDoseModal, pickDoseSite, closeDoseModal, confirmDose, postponeDose, snoozeDose
+  });
 })(Kyoshi, Kyoshi.apps.bosco);

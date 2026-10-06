@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S;
   const { isNum, isPos, isDate, isTime, todayStr } = K.util;
-  const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
+  const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
     byDate, convertWeight, isDoseInterval, weeklyFor, hasDose } = A;
 
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
@@ -46,7 +46,9 @@
       // Unknown but plain ids (from a newer version) are kept as they are.
       const med = typeof e.medication === "string" ? e.medication.trim().toLowerCase() : "";
       const medication = doseMg === null ? null : /^[a-z0-9 -]{1,40}$/.test(med) ? med : LEGACY_MEDICATION;
-      if (weight !== null || doseMg !== null) days.set(e.date, { date: e.date, weight, doseMg, medication });
+      // Where a dose went: a site's id (one from a newer version kept as it is), or null.
+      const site = doseMg !== null && typeof e.site === "string" && /^[a-z0-9-]{1,40}$/.test(e.site) ? e.site : null;
+      if (weight !== null || doseMg !== null) days.set(e.date, { date: e.date, weight, doseMg, medication, site });
     });
     const goalList = Array.isArray(raw.goals)
       ? raw.goals.filter(isPos).map(g => convertWeight(g, from, targetUnit))
@@ -59,9 +61,14 @@
       medication: Object.hasOwn(MEDICATIONS, raw.medication) ? raw.medication : "",
       dosePlan: cleanDosePlan(raw.dosePlan),
       vial: cleanVial(raw.vial),
-      paceGoal: cleanPaceGoal(raw.paceGoal)
+      paceGoal: cleanPaceGoal(raw.paceGoal),
+      sites: cleanSites(raw.sites)
     };
   }
+
+  // The injection sites on, from storage or a backup: known ones only, in the order doses rotate
+  // through them; null if there's no list (never picked, or an older version's file).
+  const cleanSites = list => (Array.isArray(list) ? SITES.map(s => s[0]).filter(id => list.includes(id)) : null);
 
   // A dosing plan or vial from storage or a backup, or null if it's unusable.
   // Each keeps when it was saved: where two meet, the more recent one wins.
@@ -118,6 +125,7 @@
     S.profile.dosePlan = cleanDosePlan(S.profile.dosePlan);
     S.profile.vial = cleanVial(S.profile.vial);
     S.profile.paceGoal = cleanPaceGoal(S.profile.paceGoal);
+    S.profile.sites = cleanSites(S.profile.sites);
     // Older versions only asked "Do you take Tirzepatide?"; carry that answer over.
     if ("usesTirzepatide" in S.profile) {
       if (!S.profile.medication) S.profile.medication = S.profile.usesTirzepatide === false ? "none" : LEGACY_MEDICATION;
@@ -157,6 +165,7 @@
       dosePlan: S.profile.dosePlan,
       vial: S.profile.vial,
       paceGoal: S.profile.paceGoal,
+      sites: S.profile.sites,
       entries: S.entries,
       goals: S.goals,
       cumulativeDoseMgByMedication: A.cumulativeDoseMg() // derived totals for reference; not read on import
@@ -171,6 +180,7 @@
     S.goals = clean.goals;
     if (clean.name) S.profile.name = clean.name; // older backups have no name; keep ours
     if (clean.paceGoal) S.profile.paceGoal = clean.paceGoal; // nor a pace goal
+    if (clean.sites) S.profile.sites = clean.sites; // nor injection sites
     // The most recently saved dosing plan and vial are kept, so an older backup
     // never brings back an old vial's concentration.
     S.profile.dosePlan = latest(S.profile.dosePlan, clean.dosePlan);
@@ -217,8 +227,10 @@
     const days = new Map(older.entries.map(e => [e.date, e]));
     newer.entries.forEach(e => {
       const o = days.get(e.date) || {};
-      const d = isNum(e.doseMg) ? e : o; // a dose and its medication travel together
-      days.set(e.date, { date: e.date, weight: e.weight ?? o.weight ?? null, doseMg: d.doseMg ?? null, medication: d.medication ?? null });
+      const d = isNum(e.doseMg) ? e : o; // a dose, its medication and its site travel together
+      // (the same dose without a site keeps the other's: a copy older than sites drops them)
+      const site = d.site ?? (o.doseMg === d.doseMg && o.medication === d.medication ? o.site : null) ?? null;
+      days.set(e.date, { date: e.date, weight: e.weight ?? o.weight ?? null, doseMg: d.doseMg ?? null, medication: d.medication ?? null, site });
     });
     return {
       entries: [...days.values()].sort(byDate),
@@ -226,10 +238,11 @@
       name: newer.name || older.name,
       dosePlan: latest(older.dosePlan, newer.dosePlan),
       vial: latest(older.vial, newer.vial),
-      paceGoal: newer.paceGoal || older.paceGoal
+      paceGoal: newer.paceGoal || older.paceGoal,
+      sites: newer.sites || older.sites
     };
   }
-  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal]);
+  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -237,14 +250,15 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal };
+    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites };
     const next = replace
       ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial) } // as on import
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
     return {
       same: dataKey(next) === dataKey(their),
       apply() {
-        if (!backupUnit && dataKey({ ...next, name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal }) === dataKey(ours)) return false; // nothing new here
+        const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites };
+        if (!backupUnit && dataKey({ ...next, ...kept }) === dataKey(ours)) return false; // nothing new here
         applyBackup(next, backupUnit);
         return true;
       }

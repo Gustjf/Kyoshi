@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.390", date: "2026-10-06", changes: [
+      "Doses rotate through the injection sites you keep on in start-up info (left and right abdomen; the thighs' upper, middle and lower spots; upper arms; buttocks): upcoming doses, the dose pop-up (where you can pick another) and History say which. Start-up info asks once more to set them; reload on every device after updating."
+    ] },
     { version: "7.290", date: "2026-10-02", changes: [
       "Import JSON says when the backup was made and how much newer what's here is, before replacing anything."
     ] },

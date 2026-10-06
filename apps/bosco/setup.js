@@ -1,11 +1,12 @@
 /* Bosco · setup.js — the Get Started section (start-up info): the one-time questions,
- * the dosing plan with its anchor dose, the active vial calculator and the weekly pace
- * goal; saveOneTimeInfo checks and keeps them. Developer Mode reopens it to edit everything. */
+ * the dosing plan with its anchor dose and injection sites, the active vial calculator and
+ * the weekly pace goal; saveOneTimeInfo checks and keeps them. Developer Mode reopens it to
+ * edit everything. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { isPos, daysBetween, fmtDate, fmtWeekday, localDate, fmtNum, SEP } = K.util;
-  const { ONE_TIME_FIELDS, MEDICATIONS, DOSING_QUESTIONS_VERSION, MAX_DOSE_INTERVAL_DAYS, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
+  const { ONE_TIME_FIELDS, MEDICATIONS, SITES, DOSING_QUESTIONS_VERSION, MAX_DOSE_INTERVAL_DAYS, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
     medLabel, planFor, vialFor, isDoseInterval, eachDoseMg, fmtConc, fmtUnits, fmtDateBrief, readNumber } = A;
 
   // Shows the unanswered start-up questions — or all of them, prefilled, when
@@ -33,6 +34,7 @@
     }).join("");
     fields.filter(f => f.type === "text").forEach(f => { $("oneTimeInput_" + f.key).value = profile[f.key] || ""; });
     renderDosing();
+    renderSites(); // not with the rest of the dosing: picking another medication keeps what's toggled here
     renderPaceGoal();
   }
 
@@ -56,6 +58,13 @@
     S.anchorEditing = false;
     renderAnchor();
     renderVial();
+  }
+
+  // The injection sites in the dosing: a button each, in the order doses rotate through them, those on lit.
+  function renderSites() {
+    const on = A.activeSites();
+    $("sitePills").innerHTML = SITES.map(([id, , short]) =>
+      `<button type="button" class="mode-btn${on.includes(id) ? " active" : ""}" data-site="${id}" aria-pressed="${on.includes(id)}">${short}</button>`).join("");
   }
 
   // What the schedule counts from, with a button that shows the anchor dose date
@@ -244,6 +253,7 @@
     if (anchor === false) return;
     const pace = S.paceAsking ? enteredPaceGoal() : null;
     if (pace === false) return;
+    const sites = dosing ? [...$("sitePills").querySelectorAll("button.active")].map(b => b.dataset.site) : null;
     const prevUnit = S.unit, profile = S.profile;
     ONE_TIME_FIELDS.forEach(f => {
       const el = $("oneTimeInput_" + f.key);
@@ -252,6 +262,9 @@
       if (f.optional) profile[f.key + "Asked"] = true;
     });
     if (S.dosingAsking) profile.dosingAsked = DOSING_QUESTIONS_VERSION;
+    // Sites are only kept when changed, so saving start-up info on a device where they weren't
+    // touched can't undo (through sync) a change made on another.
+    if (sites && sites.join() !== A.activeSites().join()) profile.sites = sites;
     if (pace) profile.paceGoal = pace;
     const oldPlan = planFor(med) || {};
     if (plan && (anchor || Object.keys(plan).some(k => plan[k] !== (oldPlan[k] ?? null)))) {
@@ -272,7 +285,7 @@
   }
 
   Object.assign(A, {
-    renderOneTimeInfo, formMedication, renderDosing, renderAnchor, openAnchorEditor, renderVial, setVialMode,
+    renderOneTimeInfo, formMedication, renderDosing, renderSites, renderAnchor, openAnchorEditor, renderVial, setVialMode,
     updateDosingNotes, openVialEditor, saveVial, renderPaceGoal, updatePaceNote, saveOneTimeInfo
   });
 })(Kyoshi, Kyoshi.apps.bosco);

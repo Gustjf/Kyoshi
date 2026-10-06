@@ -38,6 +38,10 @@ Kyoshi.apps.bosco.markup = `
         </div>
         <div class="note">Only for starting or restarting doses: your schedule starts over with a dose on this day.</div>
       </div>
+      <!-- Where doses go: a button per injection site (as many on as you like), in the order doses rotate through them. -->
+      <div class="subhead sites-head" id="sitesLabel">Injection sites</div>
+      <div class="site-pills" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
+      <div class="note">Doses rotate through the sites that are on, in this order.</div>
       <div class="subhead vial-head">Active vial</div>
       <div id="vialSummary">
         <div class="summary-line">
@@ -226,7 +230,7 @@ Kyoshi.apps.bosco.markup = `
 
   <!-- Asks about a scheduled dose once it's due; nothing is logged until it's confirmed,
        and then as scheduled (its amount, on its day or, for a late one taken late, today),
-       with nothing to edit. -->
+       with only its injection site to change. -->
   <div class="overlay" id="doseOverlay">
     <div class="modal" role="dialog" aria-labelledby="doseModalTitle">
       <h3 id="doseModalTitle">Did you take your dose?</h3>
@@ -238,6 +242,11 @@ Kyoshi.apps.bosco.markup = `
         </div>
         <div class="dose" id="doseModalUnits" hidden></div>
         <div class="lbl" id="doseModalWeekly"></div>
+      </div>
+      <!-- Where it went: the planned site, or another picked here. -->
+      <div class="field dose-site" id="doseSiteField" hidden>
+        <label for="doseSiteSelect">Injection site</label>
+        <select id="doseSiteSelect"></select>
       </div>
       <div class="modal-actions">
         <button id="doseLogBtn">Log dose</button>

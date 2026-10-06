@@ -23,7 +23,7 @@
     if (existing) {
       existing.weight = weight; // a dose logged that day stays
     } else {
-      S.entries.push({ date, weight, doseMg: null, medication: null });
+      S.entries.push({ date, weight, doseMg: null, medication: null, site: null });
       S.entries.sort(byDate);
     }
     A.save();
@@ -95,6 +95,12 @@
     onToggle($("paceDirToggle"), "data-pace-dir", A.updatePaceNote);
     $("paceBox").addEventListener("input", A.updatePaceNote);
     onButton($("vialModeToggle"), "button[data-vial-mode]", btn => A.setVialMode(btn.dataset.vialMode));
+    // Injection sites: each button turns its site on or off (as many on as you like), kept on Save.
+    onButton($("sitePills"), "button[data-site]", btn => {
+      const on = !btn.classList.contains("active");
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", on);
+    });
     $("changeVialBtn").addEventListener("click", A.openVialEditor);
     $("setAnchorBtn").addEventListener("click", A.openAnchorEditor);
     $("cancelVialBtn").addEventListener("click", () => { S.vialEditing = false; A.renderVial(); });
@@ -123,6 +129,7 @@
     $("doseTodayBtn").addEventListener("click", () => A.confirmDose(true));
     $("doseSnoozeBtn").addEventListener("click", A.snoozeDose);
     $("dosePostponeBtn").addEventListener("click", A.postponeDose);
+    $("doseSiteSelect").addEventListener("change", e => A.pickDoseSite(e.target.value));
     onButton($("goalsBody"), "button[data-goal]", btn => {
       S.goals = S.goals.filter(g => g !== parseFloat(btn.dataset.goal));
       A.save();
@@ -179,6 +186,7 @@
       `- GLP-1 medication: ${med}`,
       `- Dosing plan / active vial saved: ${A.planFor(med) ? "yes" : "no"} / ${A.activeVial() ? "yes" : "no"}`,
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
+      `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
       `- Entry count: ${S.entries.length}`,
       `- Goal count: ${S.goals.length}`,
       `- Rate mode: ${S.rateMode}`,
