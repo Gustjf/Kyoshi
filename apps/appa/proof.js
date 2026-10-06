@@ -117,7 +117,7 @@
     files.filter(f => f.kind === "photo").forEach(async f => {
       const url = await urlOf(f), img = $("rcProof").querySelector(`img[data-thumb="${CSS.escape(keyOf(f))}"]`);
       if (img && url) img.src = url;
-      else if (img) img.replaceWith(Object.assign(document.createElement("span"), { className: "proof-missing", textContent: "Not on this device yet" }));
+      else if (img) img.replaceWith(Object.assign(document.createElement("span"), { className: "proof-missing", textContent: "Not on this device" }));
     });
   }
 
@@ -134,7 +134,7 @@
   async function openProof(key) {
     const f = S.rec && S.rec.files.find(x => keyOf(x) === key);
     const url = f ? await urlOf(f) : "";
-    if (!url) return alert("That file isn't on this device yet. Folder sync brings it over from your other devices.");
+    if (!url) return alert("That file isn't on this device. Folder sync brings it over from your other devices; the cloud never carries photos or PDFs.");
     window.open(url, "_blank");
   }
   function removeProof(key) {

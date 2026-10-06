@@ -1,5 +1,6 @@
-/* Kyoshi · core/sync.js — the sync engine, as K.sync: what every way of syncing shares. No UI (that's core/backup.js),
- * and no folder of its own: each way of syncing is a transport (the sync folder: core/sync-folder.js).
+/* Kyoshi · core/sync.js — the sync engine, as K.sync: what every way of syncing shares. No UI (that's core/backup.js
+ * and core/cloud-ui.js), and no place of its own: each way of syncing is a transport (the sync folder:
+ * core/sync-folder.js; the cloud, a private GitHub repository: core/cloud.js).
  * Saves carry version counters (how many changes each device has made) that tell
  * whether another device's save is newer (load it), older (ignore it), or was made while
  * this device also had unsynced changes (combine the two, via the app's A.data.combine).
@@ -8,8 +9,9 @@
  * dirty(A) }, registered with K.sync.use(t): it brings other devices' saves in through incorporate, then settle, and
  * writes saveOf(A). The engine tells every transport about each change, asks them all to check when the page comes back
  * into view, and to save what's pending when it's hidden or closed.
- * Per app (A._sync): meta { device, file, clock, changedAt, dirty } kept in A.store "sync" (dirty: not in the sync folder
- * yet), plus one object per transport, made by it on first use (A._sync.folder). */
+ * Per app (A._sync): meta { device, file, clock, changedAt, dirty, pushed } kept in A.store "sync" (dirty: not in the
+ * sync folder yet; pushed: this device's own counter at its last save to the cloud), plus one object per transport, made
+ * by it on first use (A._sync.folder, A._sync.cloud). */
 (function (K) {
   "use strict";
   const { isObj, isPos } = K.util;
@@ -51,11 +53,11 @@
     const ch = A._sync || (A._sync = { meta: {} });
     const s = A.store.json("sync"), clock = s && cleanClock(s.clock);
     if (clock && typeof s.device === "string" && typeof s.file === "string") {
-      ch.meta = { device: s.device, file: s.file, clock, changedAt: String(s.changedAt || ""), dirty: !!s.dirty };
+      ch.meta = { device: s.device, file: s.file, clock, changedAt: String(s.changedAt || ""), dirty: !!s.dirty, pushed: isPos(s.pushed) ? s.pushed : 0 };
     } else {
       const device = deviceId(), has = A.data.hasData();
       const kind = /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ? "phone" : "desktop";
-      ch.meta = { device, file: `${A.id}-autosave-${kind}-${device}.json`, clock: has ? { [device]: 1 } : {}, changedAt: "", dirty: has };
+      ch.meta = { device, file: `${A.id}-autosave-${kind}-${device}.json`, clock: has ? { [device]: 1 } : {}, changedAt: "", dirty: has, pushed: 0 };
     }
   }
   const storeMeta = A => A.store.set("sync", JSON.stringify(A._sync.meta));
@@ -128,6 +130,9 @@
   }
   // How many changes this device has made to an app (its own counter).
   const version = A => A._sync.meta.clock[A._sync.meta.device] || 0;
+  // Where an app's version here stands against a save's counters: "same", "ahead" (it has changes the save lacks),
+  // "behind" or "diverged".
+  const relation = (A, clock) => compareClocks(A._sync.meta.clock, cleanClock(clock) || {});
 
   // --- The transports ---
   const use = t => { transports.push(t); };
@@ -152,5 +157,5 @@
     transports.forEach(t => t.init());
   }
 
-  K.sync = { use, init, apps, loadMeta, storeMeta, changed, incorporate, settle, saveOf, version, request, flush, stopTimers, on, state, dirty };
+  K.sync = { use, init, apps, loadMeta, storeMeta, changed, incorporate, settle, saveOf, version, relation, request, flush, stopTimers, on, state, dirty };
 })(Kyoshi);

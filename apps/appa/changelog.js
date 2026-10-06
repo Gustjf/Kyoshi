@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.352", date: "2026-10-06", changes: [
+      "Says plainly that photos and PDFs never travel through cloud sync: only the sync folder copies them."
+    ] },
     { version: "1.342", date: "2026-10-06", changes: [
       "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
     ] },

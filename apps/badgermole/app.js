@@ -13,7 +13,7 @@
     title: "Badgermole — Workouts",
     subtitle: "Workouts in a rotation, each set logged with one thumb, for Momo to fit into your week.",
     width: 780,
-    backupNote: "Your workouts live only in this browser. Export a backup now and then, or sync to a folder to keep them on other devices too. A session in progress stays on the device it started on until you finish it.",
+    backupNote: "Your workouts live in this browser: export a backup now and then, and use cloud sync (above) or a sync folder to keep them on your other devices too. A session in progress stays on the device it started on until you finish it.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 15 }],
     // The "dumbbell" icon from Lucide (ISC license) — Toph's badgermoles, the first earthbenders — in Earth Kingdom green.

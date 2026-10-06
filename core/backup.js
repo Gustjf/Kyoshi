@@ -13,7 +13,7 @@
   const { isObj, todayStr, downloadJSON, readFile, fmtBytes } = K.util;
   const $ = id => document.getElementById(id);
   const running = () => K.order.map(id => K.apps[id]).filter(A => A.started);
-  const DEFAULT_NOTE = "Your data lives only in this browser. Export a backup now and then, or sync to a folder to keep it on other devices too.";
+  const DEFAULT_NOTE = "Your data lives in this browser: export a backup now and then, and use cloud sync (above) or a sync folder to keep it on your other devices too.";
   // "Bosco", "Bosco and Momo", "Bosco, Momo and Appa".
   const nameList = names => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
 

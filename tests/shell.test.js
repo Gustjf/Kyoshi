@@ -93,7 +93,7 @@ module.exports = [
       eq([await lit("kDevExportApp"), await lit("kDevExportAll")], [true, true], "a change lights up Export JSON and Export all");
       await devPanel(tab, true);
       eq(await text(tab, "#kDevBackup .dev-block-head"), "Backup & sync: Hawky", "the panel's block is the app on screen's");
-      has(await text(tab, "#kDevBackupNote"), "Your data lives only in this browser.", "with where its data lives");
+      has(await text(tab, "#kDevBackupNote"), "Your data lives in this browser:", "with where its data lives");
       const back = await exportBackup(tab);
       eq([back.items.filter(i => !i.deleted).length, await lit("kDevExportApp")], [5, false], "Export JSON holds every errand, and is lit no more");
       const fresh = await open(t, { app: "hawky" });

@@ -5,6 +5,13 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "4.860", date: "2026-10-06", changes: [
+      "Cloud sync: every app's data stays current on your phone and computers through a private GitHub repository, each app's file encrypted (AES-256-GCM) with a key only your devices hold.",
+      "One key per cloud: Developer Mode's Cloud block sets a new cloud up (making the key, and a KYOSHI.md saying what the repository is), takes the key on another device (remembered unless you untick it), shows it again, and takes a new token when GitHub's expires.",
+      "While all is well nothing shows; when GitHub can't be reached, or the key is refused, a banner above the app says so in plain words (when it was last reached, how many changes are waiting) with Try now, and a cloud glyph shows in the header, both until it's fixed.",
+      "Download decrypted copy (every app, in one file that Import all takes back) and Decrypt a file… (one file from the repository) give plain copies of the cloud's data.",
+      "The cloud carries text only: photos and documents stay on the device they were added on (and in the sync folder, if you use one)."
+    ] },
     { version: "3.860", date: "2026-10-06", changes: [
       "Backup & sync left the apps' pages: Developer Mode (Ctrl+9, or the DEV badge) holds Export JSON and Import JSON for the app on screen, Export all and Import all, and the sync folder.",
       "Inside: the sync engine (counters, combining) is one file and the folder transport another, so a second way to sync can share it."

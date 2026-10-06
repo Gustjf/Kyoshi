@@ -5,7 +5,7 @@ switched from the icon button beside Theme. More apps will be added, each relyin
 
 ## Tech Stack & Hosting (built to run 10+ years untouched)
 - **Pure HTML5, CSS3, Vanilla JS (ES2020+).** NO frameworks, NO build tools, **ABSOLUTELY NO CDN LINKS**.
-- **Plain `<script src>` tags, no ES modules, no `fetch()` of the site's own files** — it must run from GitHub Pages (free plan, `main` from root, `.nojekyll`) *and* from a double-clicked `index.html`.
+- **Plain `<script src>` tags, no ES modules, no `fetch()` of the site's own files** (the one `fetch` is cloud sync's, to `https://api.github.com` only) — it must run from GitHub Pages (free plan, `main` from root, `.nojekyll`) *and* from a double-clicked `index.html`.
 - **Many small files**, each with one job and a header comment saying what it owns; keep each under ~400 lines.
 - **Relative paths** (`core/util.js`, never `/core/util.js`); lowercase names, no spaces.
 - **The repo is public:** never commit personal data (backups, exports, screenshots with real numbers).
@@ -31,6 +31,7 @@ switched from the icon button beside Theme. More apps will be added, each relyin
 ## Checking a change
 Open `index.html` from disk, switch to the app, check the console for errors. Developer Mode's time travel rehearses day/week changes without saving.
 Then `node tests/run.js`: end-to-end tests (Playwright taps through the real page with made-up data); add tests for the flows you change.
+Cloud sync runs against a fake GitHub in the tests (`tests/cloud.js`), never the real one; by hand, with a test repository and its own token.
 
 ---
 
@@ -47,11 +48,16 @@ core/                 the shared DNA — K = window.Kyoshi
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
-  sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf) and its transports (K.sync.use). No UI.
+  sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf, relation) and its transports (K.sync.use). No UI.
   sync-folder.js      K.folder: folder autosave & sync, a transport of K.sync (one subfolder per app, apps' files). No UI.
+  github.js           K.github: a small GitHub REST client (one repository, a token; list, read, write a file; no delete). No UI.
+  cloud-crypto.js     K.cloudCrypto: the cloud's key string (kyoshi1.<owner>/<repo>.<token>.<secret>) and its locked files (AES-256-GCM, gzip)
+  cloud.js            K.cloud: cloud sync through a private GitHub repository, a transport of K.sync (data/<app>.json each, text only; lost or not). No UI.
+  cloud-key.js        K.cloud's key: Enter key, Set up a new cloud (KYOSHI.md), Update token, Disconnect; Download decrypted copy, Decrypt a file
+  cloud-ui.js         K.cloudUI: Developer Mode's Cloud block, its pop-up, and the banner and header glyph while the cloud needs you
   backup.js           K.backup: Developer Mode's "Backup & sync" block (the app on screen's Export/Import JSON, Export/Import all, Sync Folder…), sync & storage banners (imports dated; K.backup.ask: the import question)
   bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared) and log
-  dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge): Backup & sync, time travel & test mode
+  dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge): Cloud sync, Backup & sync, time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key
@@ -71,7 +77,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips (a weekly schedule too) with a grocery list each, a cook view; Times & trips sets when (its meals and scheduled trips are slots in Momo's baseline, filled once a week is confirmed; cooking and extra trips pinned cards of their own)
   pabu/               keep in touch: people (a group and notes each) with calls, texts or visits, each on its own cadence (each a card of its own in Momo; This week at the top); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
-tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), *.test.js
+tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), cloud.js (a fake GitHub), *.test.js
   sim/                the flow simulator (testplan.md): made-up lives through the real page; `node tests/sim/run.js` writes report.md and bundles/
 ```
 
@@ -107,7 +113,7 @@ Its other files are wrapped as `(function (K, A) { … })(Kyoshi, Kyoshi.apps.<i
 - Page-wide listeners go through `A.listen`; listeners on the app's own elements are fine.
 - Pop-ups: `.overlay > .modal` markup + `K.modal` (`define` once, then `open`/`close`/`dismiss`).
 - Styles: shared in `core/kyoshi.css`; app-specific in `apps/<id>/<id>.css` under `.app-<id>`; page-wide custom properties `--<id>-…`.
-- Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, backups hold data only.
+- Storage: only `A.store` (IndexedDB `kyoshi-data`, key `kyoshi.<id>.<key>`, held in memory; other tabs get changes); the keys `sync` and `meetings` are core's. A backup's and sync file's top-level `savedAt`, `sync` and `meetings` are core's too. `K.store` is core's own; `K.storage.get/set` is localStorage (theme, last app, read-only carry-over of the standalone apps' old keys; the cloud's key `kyoshi.cloud`, a preference, never data). Core handles migration, fallbacks, quota warnings and test mode. Photos & documents: `A.files` (IndexedDB `kyoshi-files`); folder sync copies them as plain files, the cloud never does (it carries each app's save only, as `data/<app>.json`), backups hold data only.
 - Within an app: destructure helpers only from `app.js`; call other files' functions as `A.name()`; expose with `Object.assign(A, { … })`.
 - Apps may read one another and ask one another to change things, but only through functions the other app offers (its own save, undo and sync run); never its `A.S` or storage. So far: Momo reads every app's `A.agenda`, `A.inbox` and `A.routine` (its "Open in <App>" calls `A.open(id)`); Iroh reads Momo's `hoursSpent` (hours by title per closed week, for its goals' progress); Turtleduck reads Momo's `weekStatus` (whether a week has its slots).
 - Checkups and meetings are core's: an app only names its defaults (`meetings` in `K.register`). Core shows them, stores them (`meetings` key), syncs and backs them up; one on a schedule also goes to Momo's "Meeting" cards and dots the app's icon when overdue, but only once the app is in use (`A.data.hasData()`).

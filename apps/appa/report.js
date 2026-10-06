@@ -1,7 +1,7 @@
 /* Appa · report.js — the report pop-up (#reportOverlay): which things, from when, your name (kept in
  * settings, so every device has it), and whether to include costs and photos. Make PDF gathers the
  * records (newest first) and their proof, then report-pdf.js lays out and saves the file. Proof that
- * isn't on this device yet (still coming through folder sync) is left out, after saying so. */
+ * isn't on this device (only folder sync brings it; the cloud never does) is left out, after saying so. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -45,7 +45,7 @@
     // Proof that hasn't reached this device yet can't go in.
     const want = groups.flatMap(g => g.records.flatMap(r => r.files)).map(A.fileById).filter(f => f && (f.kind === "pdf" || opts.photos));
     const here = new Set(await A.files.ids()), missing = want.filter(f => !here.has(f.id)).length;
-    if (missing && !confirm(`${missing} photo${missing === 1 ? " or PDF isn't" : "s or PDFs aren't"} on this device yet (folder sync brings them from your other devices), so the report will leave ${missing === 1 ? "it" : "them"} out. Make it anyway?`)) return;
+    if (missing && !confirm(`${missing} photo${missing === 1 ? " or PDF isn't" : "s or PDFs aren't"} on this device (folder sync brings them from your other devices; the cloud never carries photos or PDFs), so the report will leave ${missing === 1 ? "it" : "them"} out. Make it anyway?`)) return;
     e.busy = true;
     $("rpMakeBtn").disabled = true;
     const status = text => { if (S.report === e) $("rpStatus").textContent = text; };

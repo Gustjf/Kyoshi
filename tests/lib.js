@@ -1,6 +1,7 @@
 /* Kyoshi · tests/lib.js — what the end-to-end tests share: opening Kyoshi from disk the way the user does (index.html,
  * no server) in a fresh browser profile (its own storage) with a fixed clock (so "today" is always TODAY, whatever the
- * real date), watching the console, answering dialogs (alert / confirm; a test can queue answers and read what was
+ * real date), watching the console (the browser's own lines about cloud requests the fake GitHub turned down aside),
+ * answering dialogs (alert / confirm; a test can queue answers and read what was
  * asked), switching apps through the switcher, opening Developer Mode, importing a backup through its file picker,
  * exporting one, time travel, and small checks. Used by run.js and every *.test.js. */
 "use strict";
@@ -47,7 +48,13 @@ async function open(t, { app = "badgermole", size = PHONE, time = at(TODAY), ctx
   }
   const page = await ctx.newPage();
   const tab = { ctx, page, problems: [], dialogs: [], answers: [] };
-  page.on("console", m => { if (m.type() === "error" || m.type() === "warning") tab.problems.push(`${m.type()}: ${m.text()}`); });
+  page.on("console", m => {
+    if (m.type() !== "error" && m.type() !== "warning") return;
+    // The browser's own line about a cloud request GitHub (the tests' fake, tests/cloud.js) turned down or that didn't
+    // get through (an empty folder's 404, a clash's 409, offline): expected, and never Kyoshi's own console line.
+    if (/^Failed to load resource/.test(m.text()) && /^https:\/\/api\.github\.com\//.test(m.location().url || "")) return;
+    tab.problems.push(`${m.type()}: ${m.text()}`);
+  });
   page.on("pageerror", e => tab.problems.push(`page error: ${e.message}`));
   page.on("dialog", d => {
     tab.dialogs.push([d.type(), d.message()]);

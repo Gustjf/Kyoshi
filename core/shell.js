@@ -47,6 +47,7 @@
     await K.storage.open(); // everything saved, into memory
     clearTimeout(slow);
     K.backup.init();
+    K.cloudUI.init();
     K.bugs.init();
     K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));

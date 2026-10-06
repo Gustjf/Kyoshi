@@ -95,7 +95,7 @@
       const note = box.querySelector("#appaFilesNote"), btn = box.querySelector("#appaUnusedBtn");
       if (!note) return;
       const here = new Set(ids), missing = live.filter(f => !here.has(f.id)).length;
-      note.textContent = `${missing ? `${missing} not on this device yet (folder sync brings them). ` : "All on this device. "}${unused.length ? `${unused.length} no longer used.` : ""}`;
+      note.textContent = `${missing ? `${missing} not on this device (folder sync brings them; the cloud never carries photos or PDFs). ` : "All on this device. "}${unused.length ? `${unused.length} no longer used.` : ""}`;
       btn.hidden = !unused.length;
       btn.addEventListener("click", async () => {
         if (!confirm(`Remove ${unused.length} file${unused.length === 1 ? "" : "s"} that no record uses any more?`)) return;

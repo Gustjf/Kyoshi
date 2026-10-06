@@ -37,7 +37,8 @@ job pop-up), `rec` (record pop-up: mode, jobIds, files in memory until Done, lin
 ## Storage (`A.store`), files and backups
 Keys: `things`, `jobs`, `records`, `readings`, `files`, `settings`, `timer` (this device's; never synced or backed up), `sync` and `meetings` (core's).
 Photos and PDFs themselves live in `A.files` (core/files.js: IndexedDB "kyoshi-files"), and folder sync copies them as plain
-files, `<folder>/appa/files/<id>.jpg|pdf`. **Backups are data only**: `{ schemaVersion: 1, appVersion, things, jobs, records,
+files, `<folder>/appa/files/<id>.jpg|pdf`; cloud sync never carries them, only the records (a photo that isn't here shows "Not on
+this device", and a report leaves it out after saying so). **Backups are data only**: `{ schemaVersion: 1, appVersion, things, jobs, records,
 readings, files, settings }`, where `files` holds the file records, not their bytes. The backup note says so.
 
 ## Shared with other apps

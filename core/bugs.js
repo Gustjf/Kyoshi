@@ -101,7 +101,8 @@
       (description || "(none)").replace(/\n\s*\n/g, "\n"),
       `env: ${browser(ua)} ${system(ua)} · ${window.innerWidth}x${window.innerHeight} · ${document.documentElement.dataset.theme} · ${navigator.language}` +
         `${navigator.onLine ? "" : " · offline"} · ${location.protocol === "file:" ? "file://" : location.host} · store ${K.storage.backend()}` +
-        ` · sync ${K.sync.state()} · dev ${K.dev.isOn() ? "on" : "off"} · unsaved ${K.backup.isUnsaved(A) ? "yes" : "no"}`,
+        ` · sync ${K.sync.state()} · cloud waiting ${K.cloud.status().waiting}${K.cloud.status().lost ? " (lost)" : ""}` +
+        ` · dev ${K.dev.isOn() ? "on" : "off"} · unsaved ${K.backup.isUnsaved(A) ? "yes" : "no"}`,
       ...(failed.length ? [`failed to start: ${failed.join(", ")}`] : []),
       `state: ${state}`,
       `console (${K.debugLog.length})${lines.length ? ":" : ""}`, ...lines,

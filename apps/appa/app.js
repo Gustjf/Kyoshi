@@ -12,7 +12,7 @@
     title: "Appa — Maintenance & Records",
     subtitle: "Maintenance that remembers itself, and the records to prove it.",
     width: 780,
-    backupNote: "Your records live only in this browser. Export JSON saves them, but not the photos and PDFs: turn on Sync Folder to keep copies of those, and of your records, on your other devices.",
+    backupNote: "Your records live in this browser. Export JSON and cloud sync keep them, but never the photos and PDFs: only the sync folder keeps copies of those (and of your records) on your other devices.",
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30 }],
     // The "bull-head" icon from Lucide Lab (ISC license) — Appa is Aang's flying sky bison — in bison brown so it shows on light and dark tabs.

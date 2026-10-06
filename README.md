@@ -13,10 +13,13 @@ birthdays coming up). You only see the app you're using; switch apps from the ic
 
 - **Open it:** the GitHub Pages link, or `index.html` straight from a download of this repo.
 - **Your data:** stays in this browser, in its large storage (IndexedDB). Developer Mode (Ctrl+9, or the
-  DEV badge) holds *Backup & sync*: Export/Import JSON for the app on screen, Export/Import all (every app
-  in one file), and the sync folder (e.g. shared by Syncthing), which keeps every app up to date across
-  devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as plain files,
-  in `<folder>/<app>/files/`. Developer Mode also shows how much storage Kyoshi uses.
+  DEV badge) holds *Cloud sync*: every app kept current on your phone and computers through a private
+  GitHub repository, each app's file encrypted (AES-256-GCM) with a key only your devices hold (one key
+  string, pasted once per device; photos and PDFs never go up: they stay on their device, and in the sync
+  folder). It also holds *Backup & sync*: Export/Import JSON for the app on screen, Export/Import all
+  (every app in one file), and the sync folder (e.g. shared by Syncthing), which keeps every app up to
+  date across devices. Backups are text only (JSON): photos and PDFs travel through the sync folder as
+  plain files, in `<folder>/<app>/files/`. Developer Mode also shows how much storage Kyoshi uses.
 - **Keep backups:** a browser can erase a site's data (clearing browsing data, a full device, or on
   iPhone a week or so without a visit). Kyoshi asks the browser to protect it, but export now and then.
 - **Coming from the standalone Bosco or Momo** on the same site? Your data comes over on first open;

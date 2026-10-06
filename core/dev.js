@@ -1,8 +1,9 @@
 /* Kyoshi · core/dev.js — the one Developer Mode for every app, as K.dev.
  * Ctrl+9 or the DEV badge (bottom-right, for phones) opens #kDevPanel: versions, the app on
- * screen's own tools (A.renderDev(box)), Backup & sync (core/backup.js: Export/Import JSON for the app on screen,
- * Export/Import all apps, the sync folder), time travel (test mode), storage used, bugs & requests (core/bugs.js),
- * and a changelog for the app or Kyoshi. The test banner lives here too. */
+ * screen's own tools (A.renderDev(box)), Cloud sync (core/cloud-ui.js: the key, Sync now, decrypted copies), Backup &
+ * sync (core/backup.js: Export/Import JSON for the app on screen, Export/Import all apps, the sync folder), time travel
+ * (test mode), storage used, bugs & requests (core/bugs.js), and a changelog for the app or Kyoshi. The test banner
+ * lives here too. */
 (function (K) {
   "use strict";
   const { fmtDate, todayStr, addMonths, daysBetween, fmtBytes } = K.util;
@@ -17,9 +18,11 @@
     refresh();
   }
 
-  // Redraws the panel for the app on screen, while it's open (its Backup & sync block always, core/backup.js).
+  // Redraws the panel for the app on screen, while it's open (its Cloud and Backup & sync blocks always: core/cloud-ui.js,
+  // core/backup.js).
   function refresh() {
     $("kDevBugCount").textContent = K.bugs.count();
+    K.cloudUI.render();
     K.backup.render();
     const A = K.active();
     if (!on || !A) return;

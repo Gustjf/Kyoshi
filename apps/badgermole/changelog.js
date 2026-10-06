@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.221", date: "2026-10-06", changes: [
+      "Developer Mode's note on where your workouts live mentions cloud sync too."
+    ] },
     { version: "2.211", date: "2026-10-06", changes: [
       "Backup & sync left the page: Export JSON, Import JSON and the sync folder are in Developer Mode now (Ctrl+9, or the DEV badge)."
     ] },
