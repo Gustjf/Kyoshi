@@ -122,7 +122,25 @@ while `events.js` was new, before the build stamp changed. Nothing to do; if it 
   the phone while the computer files another (both keep only the new one) and files one in test mode (it goes up at the
   next start); the Badgermole and Turtleduck report tests read the log from the hidden app. The simulator starts; its 5
   "sim errors" a week (`standing.js` `inMomo`) were there before this phase.
-- [ ] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported as they are (Kyoshi 5.170)
+- [x] Phase 6 — core: a daily backup folder in the cloud beside the constant sync, Restore a day…, encrypted files imported
+  as they are (Kyoshi 5.170) — done 2026-10-06, as planned (D5, assumption 14); cloud.js's `pass`, `pull` and `push`
+  untouched. Along the way: the backup waits for a trim under way (it goes on top of what the trim leaves, so neither
+  refuses the other), reads the branch's head last (after all.json's blob and the old folders' listings) and makes its
+  four writes one after another, without the tidy's pauses (four a day is far under GitHub's limits, the check's own
+  saves don't pause either, and a shorter gap between reading the head and moving the branch means fewer refusals).
+  Every failed try counts toward `BACKUP_TRIES`, not only a refusal, so nothing repeats every minute; past three the
+  Daily backups line says so, and Back up now (which runs a check first, and whose words are that check's own backup's
+  when it made one) ignores the limit. A folder found for today counts as today's (`backupAt` "": the line gives no
+  time). A browser that denies the locks API (some, from disk) backs up without one. `writeGuide` ran only on Enter key
+  and Set up, so the owner's cloud would never have got the new `backups/` section: the day's run also makes sure of
+  KYOSHI.md once per Kyoshi version on each device (`guideVersion` in the key's record; Enter key and Set up record it).
+  Import JSON and Import all resolve to whether it went in (a plain file still imports at once: only an envelope is
+  awaited). Restore a day…: its pop-up's button reads Close; closing it while a file is read restores nothing; a
+  question answered no says "Nothing was restored."; a listing that fails says why ("No backups found"). Tests: the
+  fake's "notidy" refuses only a forced move (as a rule protecting the branch would: a refused trim still lets the
+  day's backup on), `fake.forced` counts those, any folder lists (files, then "dir" entries), and `hold(who, "tree")`
+  holds a new tree; the upkeep test names each commit by its message (save, backup, trim) and moves GitHub's clock with
+  the phone's; the retention is checked relative to the backup's own day (8 and 9 days before it gone, 7 kept).
 - [ ] Phase 7 — Momo: PTO and sick time, lightly (Momo 10.484)
 
 ## Decisions (the owner's answers, 2026-10-06; the executing model adds its own small ones under Status)
