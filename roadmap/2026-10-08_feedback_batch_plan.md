@@ -121,7 +121,7 @@ came out far too short. A number the owner types is the right source.
 ## Status (tick each phase off here, with what was decided)
 - [ ] Phase 1 — core: a report can be deleted; the theme follows you through the hidden Kyoshi app (Kyoshi +0.100 → 5.270)
 - [ ] Phase 2 — Badgermole: how long each routine takes, typed (Badgermole +0.100 → 2.321)
-- [ ] Phase 3 — Bosco: straight lines between the weigh-ins; start-up answers travel with the data (Bosco +0.100 → 7.600)
+- [ ] Phase 3 — Bosco: the progress image in straight lines between the weigh-ins; start-up answers travel with the data (Bosco +0.100 → 7.600)
 - [ ] Phase 4 — Wan Shi Tong: no "Year or director" box for movies, no examples, TV's box reads "Year" (Wan Shi Tong +0.100 → 2.572)
 - [ ] Phase 5 — Hawky: Bought without the wait; a ready list's errand, each completing the other (Hawky +0.100 → 2.330)
 - [ ] Phase 6 — Pabu: the one you're with, and your anniversary (Pabu +0.100 → 2.221)
@@ -137,9 +137,9 @@ came out far too short. A number the owner types is the right source.
   as an app's data), under a key of its own, `prefs`. A device's own things stay on the device: the last app open,
   Developer Mode, a session in progress, Momo's Later, Wan Shi Tong's folds, the Bug / Feature request pick. **The theme
   is the one core preference that syncs** in Phase 1 (assumption 1); the rule goes into the root `CLAUDE.md`.
-- **D3 — F3: both charts.** The page's SVG chart already draws straight lines between the weigh-ins, but its points are
-  too small to read as points; the progress image (`image.js`) draws a smoothed curve. Both become straight segments
-  between visible points; the image keeps its soft fill (assumption 5).
+- **D3 — F3: the progress image only.** The page's chart already draws straight lines between the weigh-ins, and the
+  owner likes it as it is (2026-10-08): it doesn't change. The progress image (`image.js`) draws a smoothed curve through
+  them: it becomes straight segments between visible points, keeping its soft fill (assumption 5).
 - **D4 — F4: movies lose the info box; TV's reads "Year".** A movie's Director and Year are its own fields, so its "Year or
   director" box goes. TV/Anime's "Year or where to watch" box stays as **"Year"** (the owner struck "where to watch", not
   the year; assumption 4). What an older movie or TV item already holds in `info` is never dropped: it shows under the
@@ -307,27 +307,26 @@ lines 1–45 (`addRoutine`), `tests/badgermole-momo.test.js` lines 1–45 (`both
 
 ---
 
-## Phase 3 — Bosco: straight lines between the weigh-ins; start-up answers travel with the data (Bosco +0.100 → 7.600)
-Closes F3 and Bosco's part of F2 (D2, D3, assumptions 5 and 7). Bosco only.
+## Phase 3 — Bosco: the progress image in straight lines; start-up answers travel with the data (Bosco +0.100 → 7.600)
+Closes F3 and Bosco's part of F2 (D2, D3, assumptions 5 and 7). Bosco only; the page's chart isn't touched.
 
-**Read first:** `apps/bosco/CLAUDE.md`, `image.js` lines 21–31 (`tracePath`) and 96–121 (the curve, the fill, the end dot),
-`render.js` lines 162–198 (`renderChart`: line 185–187 the path and the dots), `bosco.css` lines 87–94 (`#chartSvg`), `data.js`
-lines 36–68 (`normalizeBackup`), 126–169 (`load`), 174–212 (`buildBackup`, `applyBackup`), 243–287 (`mergeVersions`,
-`dataKey`, `combine`), `setup.js` lines 12–39 (`renderOneTimeInfo`: line 20 reads `dosingAsked`) and 250–289
-(`saveOneTimeInfo`: lines 262–268 set the asked flags), `app.js` lines 68–70 (`DOSING_QUESTIONS_VERSION`), `events.js` lines
-209–225 (`bugState`), `tests/bosco-doses.test.js` (the start-up info and import checks), `tests/bosco-goals.test.js` lines
-1–20 (`chart` counts the circles), `tests/generate.js` `bosco()` (line 307). Scout: `data.js` for the line ranges above.
+**Read first:** `apps/bosco/CLAUDE.md`, `image.js` lines 1–31 (the header, `tracePath`) and 96–121 (the curve, the fill, the
+end dot), `data.js` lines 36–68 (`normalizeBackup`), 126–169 (`load`), 174–212 (`buildBackup`, `applyBackup`), 243–287
+(`mergeVersions`, `dataKey`, `combine`), `setup.js` lines 12–39 (`renderOneTimeInfo`: line 20 reads `dosingAsked`) and
+250–289 (`saveOneTimeInfo`: lines 262–268 set the asked flags), `app.js` lines 68–70 (`DOSING_QUESTIONS_VERSION`),
+`events.js` lines 209–225 (`bugState`), `tests/bosco-doses.test.js` (the start-up info and import checks),
+`tests/bosco-goals.test.js` lines 1–20 (a model for the image check), `tests/generate.js` `bosco()` (line 307). Scout:
+`data.js` for the line ranges above.
 
-### 3.1 Straight lines, points you can see (F3, D3)
+### 3.1 The progress image: straight lines, points you can see (F3, D3)
 - `image.js tracePath`: `moveTo` the first point, then `lineTo` each next one (the midpoint-quadratic curve goes; the
   function's comment too). The fill stays (assumption 5). After the stroke, a dot at **every** weigh-in: radius 5, filled
   `ACCENT`, a 3 px white stroke (as the end dot has), the last one radius 7 as now; with hundreds of weigh-ins the dots
-  overlap on the image's 1080 px width, which is fine (they read as a beaded line).
-- `render.js renderChart`: the dots become `r="3.5"`; `bosco.css`: `.app-bosco #chartSvg circle { fill: #2563eb; stroke:
-  var(--panel); stroke-width: 1.5; }` so each point stands off the line on both themes; the line's width stays 2. The
-  circle count the goals test reads doesn't change.
-- Changelog: "The chart and the progress image draw straight lines between the weigh-ins, each a point you can see,
-  instead of a smoothed curve."
+  overlap on the image's 1080 px width, which is fine (they read as a beaded line). The file's header ("a minimal
+  weigh-in curve") follows.
+- The page's chart (`render.js renderChart`, `bosco.css`) is **not** touched: the owner likes it as it is.
+- Changelog: "The progress image draws straight lines between the weigh-ins, each a point you can see, instead of a
+  smoothed curve."
 
 ### 3.2 Start-up answers travel with the data (F2's Bosco part, D2)
 - Why the sites were asked again: `profile.dosingAsked` (the dosing questions' version answered) and
@@ -350,14 +349,16 @@ lines 36–68 (`normalizeBackup`), 126–169 (`load`), 174–212 (`buildBackup`,
   medication), your other devices don't ask again."
 
 ### Docs & tests
-- `CLAUDE.md`: Storage and backups (`asked`, its join), Invariants (charts: straight lines, dots; the answers travel).
+- `CLAUDE.md`: Storage and backups (`asked`, its join), Invariants (the progress image: straight lines between the
+  weigh-ins, a dot each; the answers travel).
 - `tests/bosco-doses.test.js`: (a) the computer answers start-up info (sites changed, dosing answered), Export → a fresh
   profile importing that file shows no dosing box (`#dosingBox` hidden, `#oneTimeInfoSection` as the import leaves it) and
   Export from it carries `asked` with `dosing: 4`; (b) a backup from before (`gen.bosco()`, no `asked`) imported over an
   answered profile leaves the answers; (c) combine (as the sync test does, `page.evaluate` on `A.data.combine`): one save
   with `dosing: 4` and one with none → 4.
-- `tests/bosco-goals.test.js`: the chart check stays green (count unchanged); add `r` ≥ 3 on a dot and the image's
-  `drawReport` runs without error (`page.evaluate(() => Kyoshi.apps.bosco.drawReport(Kyoshi.apps.bosco.model()).width)` → 1080).
+- `tests/bosco-goals.test.js` (or the doses test): the image draws without error with the goals fixture and with a single
+  weigh-in (`page.evaluate(() => Kyoshi.apps.bosco.drawReport(Kyoshi.apps.bosco.model()).width)` → 1080); the page's
+  chart checks stay exactly as they are.
 
 **Haiku asks:** is every read of `profile.dosingAsked` / `medicationAsked` still consistent with the join (a device with
 `dosing: 4` taking a `replace` save with `dosing: 0`: does it keep 4)? Does `applyBackup` with `backupUnit` still answer
