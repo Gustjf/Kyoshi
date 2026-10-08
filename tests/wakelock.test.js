@@ -102,7 +102,7 @@ module.exports = [
       await p.evaluate(() => { window.__wake.delay = 400; });
       await bm.start(tab, "Push");
       await p.click("#cancelSessionBtn"); // before the browser answers
-      await p.waitForTimeout(800);
+      await p.waitForFunction(() => window.__wake.locks.length === 1 && window.__wake.locks[0].released, null, { timeout: 3000 }).catch(() => {});
       eq(await wake(tab), { held: 0, requests: 1 }, "the late lock was let go");
     }
   },
@@ -124,7 +124,7 @@ module.exports = [
       await p.evaluate(() => { window.__wake.delay = 400; });
       await p.click('#jvActions [data-act="start"]');
       await p.click('#jvActions [data-act="cancel-timer"]');
-      await p.waitForTimeout(800);
+      await p.waitForFunction(() => window.__wake.requests === 3 && window.__wake.locks.length === 3 && window.__wake.locks.every(s => s.released), null, { timeout: 3000 }).catch(() => {});
       eq(await wake(tab), { held: 0, requests: 3 }, "a late lock after a quick stop is let go");
       // A running timer whose job is deleted no longer keeps the screen on.
       await p.evaluate(() => { window.__wake.delay = 0; });
