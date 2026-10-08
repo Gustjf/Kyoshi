@@ -87,7 +87,8 @@ module.exports = [
       await fresh.page.click("#kDevBadge");
       const [chooser] = await Promise.all([fresh.page.waitForEvent("filechooser"), fresh.page.click("#kDevImportAll")]);
       await chooser.setFiles({ name: "kyoshi-backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(all)) });
-      await fresh.page.waitForTimeout(300);
+      // Import all's confirm (answered yes, so the import runs right after it); the page is held until then.
+      for (const end = Date.now() + 5000; fresh.dialogs.length < 1 && Date.now() < end;) await new Promise(r => setTimeout(r, 10));
       has(fresh.dialogs.map(d => d[1]).join(" | "), "Badgermole", "Import all names Badgermole");
       eq(await fresh.page.evaluate(() => Kyoshi.apps.badgermole.sessions().length), 15, "Import all brought the sessions in");
       // Badgermole's part of an Export all file also works in its own Import JSON.
