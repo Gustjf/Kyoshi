@@ -49,16 +49,28 @@ no Edit or Write) and `model: "haiku"`; several at once in one message when they
 sees nothing of your conversation: its brief must be self-contained (the goal, the exact files or the `git diff`, the
 checklist, the output shape). Give it the artifact and a question, never your conclusion to confirm. **Every claim it
 returns is a lead, not a finding:** open the file at the line it names and judge for yourself before changing anything;
-a lead you reject gets one line saying why in your own notes, not a fix. Budget: 4–8 runs per phase. The five jobs:
+a lead you reject gets one line saying why in your own notes, not a fix. Budget: 4–8 runs per phase.
+
+**Keep every helper's context under 100k tokens** (the owner's note, 2026-10-08: Haiku is penalised past that; aim for
+60k). Everything counts: your brief, the diff you paste, and every file or grep result the helper reads on its own.
+Kyoshi's lines are long: reckon **30 tokens a line**, so a helper may read about **2,000 lines in all**, brief included. Hence:
+give line ranges, never whole long files; name at most three files a helper may open and say "open nothing else"; split a
+diff by file (`git diff -- apps/hawky/lists.js apps/hawky/events.js`) so no run gets more than ~600 lines of diff, and run
+the halves side by side; never let a helper grep the whole repo (name the paths); the runner's output goes in by failed
+test, never a whole run. Size a brief first (`git diff --stat`, `wc -l`): a helper that would need more is two helpers.
+The five jobs:
 
 1. **Scout** (before building, one run): "Read these files: … For each function named here (…) give its line range and
    signature; the exact current text of these strings (…); every element id in this markup block; the signatures of
-   these test helpers (…). At most 60 lines. Quote, don't paraphrase." Use it on the phase's longest Read-first files so
-   you open them at the right lines instead of reading them whole. A scout's quotes are to be re-read in the file before
-   you edit next to them.
-2. **Checklist** (after building, before the full test run; 2 runs in parallel, each half the list): "Here is
-   `git diff` (and the list of touched files). For each rule, PASS or FAIL with file:line evidence; no opinions." The
-   rules: (1) every touched app has a new top changelog entry with today's date and exactly one tier bump from the
+   these test helpers (…). At most 60 lines. Quote, don't paraphrase. Open nothing but these files." Use it on the
+   phase's longest Read-first files so you open them at the right lines instead of reading them whole: at most three
+   files, or ~1,200 lines, per scout (the line ranges the phase gives, where it gives them); a longer list is two
+   scouts. A scout's quotes are to be re-read in the file before you edit next to them.
+2. **Checklist** (after building, before the full test run; runs in parallel, each with the whole list of rules, which is
+   short, and a slice of the diff of at most ~600 lines, split by file; plus one run with only `index.html`'s stamps,
+   the changelogs and the `CLAUDE.md` files for rules 1–3 and 11): "Here is the diff of these files (and the list of every
+   touched file). For each rule, PASS, FAIL with file:line evidence, or NOT IN THIS SLICE; no opinions. Open nothing
+   else." The rules: (1) every touched app has a new top changelog entry with today's date and exactly one tier bump from the
    previous top version; (2) `core/changelog.js` bumped iff a file under `core/` changed; (3) every `?v=` stamp in
    `index.html` is the same new value; (4) no file over 400 lines; (5) every changed file's header comment still
    describes what it holds; (6) no `document.getElementById` / `document.querySelector` in `apps/` (only `A.$` /
@@ -70,17 +82,22 @@ a lead you reject gets one line saying why in your own notes, not a fix. Budget:
    new `confirm`/`alert` string is a full sentence that says what will happen; (13) every id the diff stores is one the
    plan names (and `SITES`-like id tables are untouched); (14) new CSS is under `.app-<id>` (apps) or in
    `core/kyoshi.css` (core), with no new colours that aren't theme tokens unless the plan names a hex.
-3. **Fresh eyes** (after building, in parallel with the checklist): "Here is `git diff`. Read it adversarially against
-   these questions (the phase's **Haiku asks** list, plus always: what happens with an older backup that lacks the new
-   field? with two devices changing the same thing before they sync? in test mode / time travel? on a 390 px phone?).
-   Return at most 8 leads, each: file:line, the claim, one concrete input → wrong outcome. No style remarks."
-4. **Closer** (last, one run): "Here is the owner's original request, quoted: «…». Here is the diff and the changelog
-   lines. Answer only: (a) anything asked for that the diff doesn't do; (b) anything the diff does that wasn't asked for;
-   (c) any changelog line that promises something the diff doesn't deliver, or uses a word the owner didn't." Paste
-   the report's text from the table below verbatim.
-5. **Test triage** (only when `node tests/run.js` prints more than a screen of failures): "Here is the runner's output.
-   For each failed test: its name, the failing check's words, the likely file:line in the app or the test, and whether
-   that test was changed in this diff (list of touched test files: …)." Then you fix; a Haiku never edits a test.
+3. **Fresh eyes** (after building, in parallel with the checklist): "Here is the diff of these files (≤ ~600 lines; the
+   app's files, not the tests). You may open these two files to trace callers: …; nothing else. Read it adversarially
+   against these questions (the phase's **Haiku asks** list, plus always: what happens with an older backup that lacks
+   the new field? with two devices changing the same thing before they sync? in test mode / time travel? on a 390 px
+   phone?). Return at most 8 leads, each: file:line, the claim, one concrete input → wrong outcome. No style remarks."
+   A bigger diff is two runs, each with the questions that touch its files.
+4. **Closer** (last, one run): "Here is the owner's original request, quoted: «…». Here is the diff of the app's files
+   (not the tests, not the docs; ≤ ~600 lines, else the changed functions' new bodies only) and the changelog lines.
+   Answer only: (a) anything asked for that the diff doesn't do; (b) anything the diff does that wasn't asked for;
+   (c) any changelog line that promises something the diff doesn't deliver, or uses a word the owner didn't. Open
+   nothing." Paste the report's text from the table below verbatim.
+5. **Test triage** (only when `node tests/run.js` prints more than a screen of failures): "Here are the failed tests'
+   blocks from the runner (each failure prints as one block; `node tests/run.js <word>` narrows a run), nothing else.
+   For each: its name, the failing check's words, the likely file:line in the app or the test, and whether that test
+   was changed in this diff (list of touched test files: …). Open at most these test files: …." Then you fix; a Haiku
+   never edits a test.
 
 A Haiku can be wrong in both directions (it will miss things and invent things). Its value is that it is cheap enough to
 ask narrow questions you wouldn't spend your own context on, and that it reads without your assumptions.
