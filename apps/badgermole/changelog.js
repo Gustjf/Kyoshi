@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.331", date: "2026-10-08", changes: [
+      "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
+    ] },
     { version: "2.321", date: "2026-10-08", changes: [
       "Each routine has how long it takes, typed in its pop-up (60 minutes until you do) and shown beside it on Home: Momo's workout cards are that long, planned and logged alike, instead of an average of how long your last workouts took from Start to Finish. Reload on every device after updating: an older copy would drop the minutes when it syncs."
     ] },

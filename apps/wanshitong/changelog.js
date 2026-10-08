@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.482", date: "2026-10-08", changes: [
+      "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
+    ] },
     { version: "2.472", date: "2026-10-06", changes: [
       "A movie has a Director and a Year of its own, optional, shown under its name as “Director, Year” before the rest. Reload on every device after updating: an older copy drops them."
     ] },

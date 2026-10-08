@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.240", date: "2026-10-08", changes: [
+      "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
+    ] },
     { version: "2.230", date: "2026-10-06", changes: [
       "Each store's colour is one of twelve, given in the order stores were first used (so a store keeps its colour as new ones come), the most different shades first; no two stores share one until you have more than twelve.",
       "In the shopping add row, typing a different store after an add clears the topic kept from that add, so a new store starts with a fresh topic.",

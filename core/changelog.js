@@ -5,6 +5,11 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.280", date: "2026-10-08", changes: [
+      "A save another device left in the sync folder is now stored the moment it's read, together with its version counters, so turning the folder off or closing the tab in the middle of a check can no longer leave Kyoshi believing it has changes it doesn't (a file it would then never read again).",
+      "A tab in time travel (test mode) still follows the other tabs' bug reports, so a report filed there no longer wipes out one filed in another tab meanwhile.",
+      "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. The sync engine's decisions (which saves come in, what they do to the counters) now have tests of their own."
+    ] },
     { version: "5.270", date: "2026-10-08", changes: [
       "Bugs & requests: a report opened from the list can be deleted (Delete beside Save, after a question); it goes from every device once they sync.",
       "The theme you pick follows you to your other devices (through cloud sync, the sync folder and Export all, kept in Kyoshi's own record); until you first tap Theme after updating, each device keeps the one it has. Reload Kyoshi on every device after updating: an older copy drops the pick."

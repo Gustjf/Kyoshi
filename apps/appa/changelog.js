@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.362", date: "2026-10-08", changes: [
+      "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
+    ] },
     { version: "1.352", date: "2026-10-06", changes: [
       "Says plainly that photos and PDFs never travel through cloud sync: only the sync folder copies them."
     ] },
