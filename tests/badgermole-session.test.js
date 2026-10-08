@@ -218,12 +218,13 @@ module.exports = [
       const b = await open(t, { ctx: a.ctx });
       const before = await b.page.evaluate(() => Kyoshi.apps.badgermole.S.version);
       await p.click('[data-step="weight"][data-dir="1"]'); // stores the session: the other tab reloads just that
-      await b.page.waitForTimeout(400);
+      // The other tab has read the stored session (its reload is a 50 ms timer after that): run the timer, then check.
+      await b.page.waitForFunction(w => Kyoshi.apps.badgermole.store.json("live")?.show?.weight === w, Number(await p.locator("#weightInput").inputValue()));
+      await b.ctx.clock.runFor(100);
       eq(await b.page.evaluate(() => Kyoshi.apps.badgermole.S.version), before, "the other tab didn't redo its stats");
       await p.fill("#repsInput", "9"); // typed, the field not left: not stored yet
       await b.page.evaluate(() => { const A = Kyoshi.apps.badgermole; A.S.settings = { ...A.S.settings, weeklyTarget: 4, u: Date.now() }; A.save(); });
       await p.waitForFunction(() => Kyoshi.apps.badgermole.S.settings.weeklyTarget === 4);
-      await p.waitForTimeout(100);
       eq(await p.locator("#repsInput").inputValue(), "9", "the typed reps survived the other tab's save");
     }
   }
