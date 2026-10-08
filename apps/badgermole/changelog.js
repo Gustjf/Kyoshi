@@ -6,7 +6,7 @@
   "use strict";
   A.CHANGELOG = [
     { version: "2.321", date: "2026-10-08", changes: [
-      "Each routine has how long it takes, typed in its pop-up (60 minutes until you do) and shown beside it on Home: Momo's workout cards are that long, planned and logged alike, instead of an average of the last sessions' clock times. Reload on every device after updating: an older copy drops it."
+      "Each routine has how long it takes, typed in its pop-up (60 minutes until you do) and shown beside it on Home: Momo's workout cards are that long, planned and logged alike, instead of an average of how long your last workouts took from Start to Finish. Reload on every device after updating: an older copy would drop the minutes when it syncs."
     ] },
     { version: "2.221", date: "2026-10-06", changes: [
       "Developer Mode's note on where your workouts live mentions cloud sync too."
