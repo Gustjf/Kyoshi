@@ -3,8 +3,9 @@
  * site never loads this folder.
  *   node tests/run.js                  every test (each *.test.js in this folder), several side by side
  *   node tests/run.js session          only those whose name has "session" in it
- *   node tests/run.js --parallel 2 …   2 at a time (default: the core count, at least 2 — measured best on 4 cores:
- *                                      a test keeps about one core busy between Node and its page's renderer)
+ *   node tests/run.js --parallel 2 …   2 at a time (default: twice the core count, as measured on 4 cores: 1 at a
+ *                                      time 173 s, 2 98 s, 3 79 s, 4 69 s, 6 62 s, 8 58 s; a test waits on its page
+ *                                      as much as it works)
  *   node tests/run.js --serial …       one at a time (= --parallel 1)
  * Needs Node 18+ and Playwright with its Chromium (installed globally in Claude's cloud sessions; elsewhere
  * `npm i -g playwright && npx playwright install chromium`). One browser; each test gets fresh browser profiles of its
@@ -31,7 +32,7 @@ const TIMEOUT_MS = 90000;
 
 // --parallel N / --serial; the other words are the filter.
 function args(argv) {
-  let parallel = Math.max(2, os.cpus().length);
+  let parallel = 2 * os.cpus().length;
   const words = [];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--serial") parallel = 1;
