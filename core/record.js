@@ -48,7 +48,8 @@
     }).filter(r => r.id && (!r.deleted || r.u > since) && !ids.has(r.id) && ids.add(r.id)));
   }
   // Core's preferences as kept, from storage, a backup or another device: the theme picked ("" when none, or not one
-  // Kyoshi knows) and when (0 when never: a save from before Kyoshi 5.270 has none).
+  // Kyoshi knows) and when (0 when never: a save from before Kyoshi 5.270 has none). Another preference joins here
+  // (setPref keeps only what this keeps).
   const cleanPrefs = raw => (isObj(raw) ? { theme: THEMES.includes(raw.theme) ? raw.theme : "", u: isPos(raw.u) ? raw.u : 0 } : { theme: "", u: 0 });
 
   // --- Kept here ---
@@ -136,7 +137,7 @@
   const pref = name => prefs[name];
   // A pick made here: kept and counted for sync. It's later than every pick this device has seen, so it wins over them
   // everywhere, whatever the other devices' clocks say. Before the record is read (a tap while the browser's storage
-  // opens), this device's only.
+  // opens) it isn't kept: the theme tapped shows until the record is read, then the one last picked anywhere, if any.
   function setPref(name, value) {
     if (!R || !R.started) return;
     prefs = cleanPrefs({ ...prefs, [name]: value, u: Math.max(Date.now(), prefs.u + 1) });

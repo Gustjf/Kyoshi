@@ -7,7 +7,7 @@
   K.CHANGELOG = [
     { version: "5.270", date: "2026-10-08", changes: [
       "Bugs & requests: a report opened from the list can be deleted (Delete beside Save, after a question); it goes from every device once they sync.",
-      "The theme you pick follows you to your other devices (through cloud sync, the sync folder and Export all, kept in Kyoshi's own record); a device that never picked one keeps its own until you do. Reload Kyoshi on every device after updating: an older copy drops the pick."
+      "The theme you pick follows you to your other devices (through cloud sync, the sync folder and Export all, kept in Kyoshi's own record); until you first tap Theme after updating, each device keeps the one it has. Reload Kyoshi on every device after updating: an older copy drops the pick."
     ] },
     { version: "5.170", date: "2026-10-06", changes: [
       "Cloud sync keeps a daily backup beside the constant sync (which carries on exactly as before): once a day a dated folder in the repository's backups/ holds every app's file as it was that day, and all of them in one (all.json); the last 8 days are kept, in one commit a day, and Back up now (Developer Mode → Cloud sync) makes today's straight away.",
