@@ -36,7 +36,7 @@
         const job = A.jobById(x.jobId);
         return { ...base, id: `${DONE}${r.id}:${x.jobId}`, title: titled(thing, (job || x).name || "A deleted job"), minutes: x.minutes || (job && A.minutesOf(job)) || DEFAULT_MINUTES, of: x.jobId };
       });
-      return jobs.length ? jobs : [{ ...base, id: `${DONE}${r.id}`, title: titled(thing, r.title), minutes: DEFAULT_MINUTES }];
+      return jobs.length ? jobs : [{ ...base, id: `${DONE}${r.id}`, title: titled(thing, r.title), minutes: r.minutes || DEFAULT_MINUTES }];
     });
   }
 

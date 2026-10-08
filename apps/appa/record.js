@@ -51,7 +51,7 @@
     $("rcWhatField").hidden = !full;
     $("rcWhat").value = r ? r.title : "";
     $("rcDate").value = r ? r.date : todayStr();
-    const took = r ? r.jobs.reduce((n, x) => n + (x.minutes || 0), 0) : o.minutes || (job ? A.minutesOf(job) : 0);
+    const took = r ? r.jobs.reduce((n, x) => n + (x.minutes || 0), 0) || r.minutes || 0 : o.minutes || (job ? A.minutesOf(job) : 0);
     $("rcTook").value = took ? fmtMinutes(took) : "";
     $("rcReading").value = r && r.reading !== null ? fmtNum(r.reading, 1) : "";
     $("rcBy").value = r ? r.by : "";
@@ -108,9 +108,9 @@
     renderThingParts();
   }
 
-  // A visit's minutes shared between its jobs by their usual lengths (whole minutes adding up to it).
+  // A visit's minutes shared between its jobs by their usual lengths (whole minutes adding up to it); none for no jobs.
   function share(total, jobs) {
-    if (!total) return jobs.map(() => null);
+    if (!total || !jobs.length) return jobs.map(() => null);
     const weights = jobs.map(j => A.minutesOf(j) || DEFAULT_MINUTES), sum = weights.reduce((a, b) => a + b, 0);
     const parts = weights.map(w => Math.floor(total * w / sum));
     parts[0] += total - parts.reduce((a, b) => a + b, 0);
@@ -161,9 +161,10 @@
       if (meta) Object.assign(meta, { name: "", deleted: true, u: now });
       A.files.remove(f.id).catch(() => {});
     });
+    const done = jobs.map((j, i) => ({ jobId: j.id, name: j.name, minutes: minutes[i], timed: e.timed && jobs.length === 1 })).concat(e.gone);
     const fields = {
       thingId: t.id, date, reading, title,
-      jobs: jobs.map((j, i) => ({ jobId: j.id, name: j.name, minutes: minutes[i], timed: e.timed && jobs.length === 1 })).concat(e.gone),
+      jobs: done, minutes: done.length ? null : took || null, // other work alone keeps its time itself
       by: cleanLine($("rcBy").value, MAX_BY).replace(/^(you|me)$/i, ""),
       cost, notes: cleanText($("rcNotes").value, MAX_RECORD_NOTES),
       files: e.files.filter(f => !f.removed && f.id).map(f => f.id), links: e.links

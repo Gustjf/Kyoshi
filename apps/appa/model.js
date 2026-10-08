@@ -8,8 +8,9 @@
  * jobs:     { id, thingId, name, every: { n, unit: "d" | "w" | "m" | "y" } | null, seasons: [0-3],
  *             meterEvery (in the thing's unit) | null, from: { date, reading } (counted from before any
  *             record), est (minutes, your guess) | null, source: { docId, where }, notes (text with bullets) }
- * records:  { id, thingId, date, reading | null, title, jobs: [{ jobId, name, minutes | null, timed }], by (a shop;
- *             "" = you), cost (cents) | null, notes, files: [fileId], links: [{ url, label }] }
+ * records:  { id, thingId, date, reading | null, title, jobs: [{ jobId, name, minutes | null, timed }], minutes (a
+ *             record with no jobs, other work alone: how long it took; else null, its jobs hold it) | null, by (a
+ *             shop; "" = you), cost (cents) | null, notes, files: [fileId], links: [{ url, label }] }
  * readings: { id, thingId, date, value }
  * files:    { id, kind: "photo" | "pdf", name, type, size, pages, w, h } — the bytes are in A.files
  * settings: { name (on reports), u } */
@@ -84,6 +85,7 @@
     if (!jobs.length && !title) return null;
     return {
       ...b, thingId, date: r.date, reading: num(r.reading), title, jobs,
+      minutes: !jobs.length && Number.isInteger(r.minutes) && r.minutes > 0 ? Math.min(r.minutes, A.MAX_MINUTES) : null, // before 1.363: none
       by: cleanLine(r.by, A.MAX_BY),
       cost: Number.isInteger(r.cost) && r.cost >= 0 ? r.cost : null,
       notes: cleanText(r.notes, A.MAX_RECORD_NOTES),

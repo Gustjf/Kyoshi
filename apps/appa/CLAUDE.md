@@ -40,6 +40,8 @@ Photos and PDFs themselves live in `A.files` (core/files.js: IndexedDB "kyoshi-f
 files, `<folder>/appa/files/<id>.jpg|pdf`; cloud sync never carries them, only the records (a photo that isn't here shows "Not on
 this device", and a report leaves it out after saying so). **Backups are data only**: `{ schemaVersion: 1, appVersion, things, jobs, records,
 readings, files, settings }`, where `files` holds the file records, not their bytes. The backup note says so.
+A record's own `minutes` (1.363: other work alone keeps the time typed; a record with jobs keeps it on them) is new: an
+older file has none (Momo gets the usual 30), and an older copy of Appa drops it when it saves: reload Appa on every device.
 
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies), all `fill: "card"` (each a card of its own in Momo, titled with its thing:
@@ -47,7 +49,7 @@ readings, files, settings }`, where `files` holds the file records, not their by
 use `{ id (job), title ("Car: Oil change"), details: [due text], minutes, due, overdue }`, plus `{ id: "reading:<thingId>", title:
 "Car: Check the odometer", … }` when a reading is asked for, each waiting in Momo's Tasks until you place it; then each job recorded
 between `from` and `to` (up to today), done on its record's day: `{ id: "done:<recordId>:<jobId>" (a record of other work alone:
-"done:<recordId>", titled with its title), title (the thing and the job as it's called now, or was then), details: ["Recorded Oct 1
+"done:<recordId>", titled with its title, as long as its own `minutes`, else 30), title (the thing and the job as it's called now, or was then), details: ["Recorded Oct 1
 · by"], minutes (the record's, else its estimate), date, done: true, of: "<jobId>" }`, so ✓ shows on the job's card, or Momo places
 one on the record's day. `A.open(id)` (Momo's "Open in Appa") shows that job (or the thing's reading pop-up, or a recorded job's record).
 
