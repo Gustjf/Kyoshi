@@ -1,7 +1,7 @@
 /* Bosco · image.js — the progress image (PNG) from Goal Weights' download button.
- * A portrait share card: title, a minimal weigh-in curve, and the goal table, in
- * the app's light-theme colors. 1080px wide; 1350-1920px tall, growing past that
- * only when there are too many goals to fit. */
+ * A portrait share card: title, the weigh-ins (a dot each, joined by straight
+ * lines), and the goal table, in the app's light-theme colors. 1080px wide;
+ * 1350-1920px tall, growing past that only when there are too many goals to fit. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -18,16 +18,10 @@
     ctx.closePath();
   }
 
-  // Smooth curve through pts (midpoint quadratic technique) on the current path.
+  // Straight lines from each weigh-in to the next, on the current path.
   function tracePath(ctx, pts) {
     ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length - 2; i++) {
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i + 1].x) / 2, (pts[i].y + pts[i + 1].y) / 2);
-    }
-    if (pts.length > 1) {
-      const last = pts[pts.length - 1], prev = pts[pts.length - 2];
-      ctx.quadraticCurveTo(prev.x, prev.y, last.x, last.y);
-    }
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
   }
 
   function drawReport({ w, wa, rate, goals: list }) {
@@ -111,14 +105,16 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
-    const end = pts[pts.length - 1];
-    ctx.beginPath();
-    ctx.arc(end.x, end.y, 7, 0, Math.PI * 2);
-    ctx.fillStyle = ACCENT;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#ffffff";
-    ctx.stroke();
+    // A dot at every weigh-in, the latest bigger; hundreds of them overlap into a beaded line.
+    pts.forEach((pt, i) => {
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, i === pts.length - 1 ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = ACCENT;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+    });
 
     text("GOAL", tableLeft, tableTop, "600 20px", MUTED);
     text("STATUS", tableLeft + 260, tableTop, "600 20px", MUTED);

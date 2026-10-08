@@ -16,8 +16,9 @@
     const fields = ONE_TIME_FIELDS.filter(f => editAll || (f.optional ? !profile[f.key + "Asked"] : !String(profile[f.key] || "").trim()));
     // The dosing plan and vial come after those: asked about once (when a
     // medication is taken or being picked), again when a dosing question is
-    // added, and whenever start-up info is edited.
-    S.dosingAsking = !!editAll || (profile.dosingAsked !== DOSING_QUESTIONS_VERSION && (A.medicationEnabled() || fields.some(f => f.key === "medication")));
+    // added, and whenever start-up info is edited. Answered on any device is
+    // answered here (data.js), a later version's too.
+    S.dosingAsking = !!editAll || (!(profile.dosingAsked >= DOSING_QUESTIONS_VERSION) && (A.medicationEnabled() || fields.some(f => f.key === "medication")));
     S.paceAsking = !!editAll || !profile.paceGoal; // asked once, and whenever start-up info is edited
     $("oneTimeInfoSection").hidden = !fields.length && !S.dosingAsking && !S.paceAsking;
     $("oneTimeInfoCancelBtn").hidden = !editAll;
@@ -265,7 +266,7 @@
       profile[f.key] = f.type === "text" ? el.value.trim() : f.type === "boolean" ? el.dataset.value === "true" : el.dataset.value;
       if (f.optional) profile[f.key + "Asked"] = true;
     });
-    if (S.dosingAsking) profile.dosingAsked = DOSING_QUESTIONS_VERSION;
+    if (S.dosingAsking && !(profile.dosingAsked >= DOSING_QUESTIONS_VERSION)) profile.dosingAsked = DOSING_QUESTIONS_VERSION; // never down
     // Sites are only kept when changed, so saving start-up info on a device where they weren't
     // touched can't undo (through sync) a change made on another.
     if (sites && sites.join() !== A.activeSites().join()) profile.sites = sites;

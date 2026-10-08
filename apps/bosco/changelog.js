@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.600", date: "2026-10-08", changes: [
+      "The progress image draws straight lines between the weigh-ins, each a point you can see, instead of a smoothed curve.",
+      "Start-up info's answers travel with your data: once you've answered it on one device (your sites, your medication), your other devices don't ask again.",
+      "Reload Bosco on every device after updating."
+    ] },
     { version: "7.500", date: "2026-10-06", changes: [
       "Injection sites: the body parts you keep on take turns (abdomen, thigh, buttock, upper arm), and within each the doses go in an X; the thighs are twelve sites (left/right, front/side, upper/middle/lower) and the abdomen and buttocks four each (left/right, upper/lower). Start-up info asks once more for your sites; a dose logged at an old site still reads as it did.",
       "Bosco's Developer Mode tools can skip the next site (for a week when it isn't a good candidate): the dose goes to that body part's next site, and the skip is forgotten once a dose is logged.",

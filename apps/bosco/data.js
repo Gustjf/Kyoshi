@@ -63,7 +63,8 @@
       vial: cleanVial(raw.vial),
       paceGoal: cleanPaceGoal(raw.paceGoal),
       sites: cleanSites(raw.sites),
-      skipSites: cleanSkips(raw.skipSites)
+      skipSites: cleanSkips(raw.skipSites),
+      asked: cleanAsked(raw.asked, raw.medication)
     };
   }
 
@@ -84,6 +85,19 @@
     const ids = Array.isArray(list) ? SITES.map(s => s[0]).filter(id => list.includes(id)) : [];
     return ids.length ? ids : null;
   }
+  // Start-up info's answers in a save, { medication: true|false, dosing } in the file (7.600 on; undefined from an older
+  // copy, which leaves ours as they are): the medication question's answer if it was asked there ("none" or a
+  // medication, the save's own medication; "" if not asked, or one this version doesn't know), and the version of the
+  // dosing questions answered (0: never). Once asked on one device, asked on all; the version only grows.
+  function cleanAsked(a, medication) {
+    if (!a || typeof a !== "object") return undefined;
+    const answer = medication === "none" || Object.hasOwn(MEDICATIONS, medication) ? medication : "";
+    return { medication: a.medication === true ? answer : "", dosing: askedVersion(a.dosing) };
+  }
+  const askedVersion = v => (Number.isInteger(v) && v >= 0 && v < 100 ? v : 0);
+  // Two saves' answers: asked on either, asked (with the first one's answer where both were: a device keeps its own);
+  // the dosing questions by the later version. One undefined (an older copy's): the other's.
+  const joinAsked = (a, b) => (a && b ? { medication: a.medication || b.medication, dosing: Math.max(a.dosing, b.dosing) } : a || b);
 
   // A dosing plan or vial from storage or a backup, or null if it's unusable.
   // Each keeps when it was saved: where two meet, the more recent one wins.
@@ -183,6 +197,7 @@
       paceGoal: S.profile.paceGoal,
       sites: S.profile.sites,
       skipSites: S.profile.skipSites,
+      asked: { medication: !!S.profile.medicationAsked, dosing: askedVersion(S.profile.dosingAsked) }, // start-up info's answers
       entries: S.entries,
       goals: S.goals,
       cumulativeDoseMgByMedication: A.cumulativeDoseMg() // derived totals for reference; not read on import
@@ -203,6 +218,12 @@
     // never brings back an old vial's concentration.
     S.profile.dosePlan = latest(S.profile.dosePlan, clean.dosePlan);
     S.profile.vial = latest(S.profile.vial, clean.vial);
+    // Start-up info answered on another device: asked there, asked here, with its answer if this device had none (before
+    // the doses' rule below, so a medication answered there isn't taken from a dose); the dosing questions by the later
+    // version answered.
+    const asked = clean.asked;
+    if (asked && asked.medication && !S.profile.medicationAsked) Object.assign(S.profile, { medication: asked.medication, medicationAsked: true });
+    if (asked && asked.dosing > askedVersion(S.profile.dosingAsked)) S.profile.dosingAsked = asked.dosing;
     // Dose entries prove a medication is in use, so that start-up question is
     // answered (with the backup's own answer, else its latest dose's medication).
     const lastDose = S.entries.filter(hasDose).pop();
@@ -259,10 +280,14 @@
       paceGoal: newer.paceGoal || older.paceGoal,
       sites: newer.sites || older.sites,
       // The newer save's skips whenever it knows them: a device that logged the dose (and so forgot them) wins.
-      skipSites: newer.skipSites === undefined ? older.skipSites : newer.skipSites
+      skipSites: newer.skipSites === undefined ? older.skipSites : newer.skipSites,
+      asked: joinAsked(newer.asked, older.asked)
     };
   }
-  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites]);
+  // The answers count only as asked or not (and the dosing version): each device keeps its own medication answer, so two
+  // different ones never keep the devices saving back and forth; an older copy's (none) is nothing asked.
+  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites,
+    d.asked ? [!!d.asked.medication, d.asked.dosing] : [false, 0]]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -270,9 +295,10 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites };
-    const next = replace
-      ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial) } // as on import
+    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites,
+      asked: { medication: S.profile.medicationAsked ? A.currentMedication() : "", dosing: askedVersion(S.profile.dosingAsked) } };
+    const next = replace // as on import: the later dosing plan and vial, and the answers of both
+      ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked) }
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
     return {
       same: dataKey(next) === dataKey(their),
@@ -301,5 +327,5 @@
     hasData: () => S.entries.length > 0,
     importBackup, combine, afterSync
   };
-  Object.assign(A, { persist, save, normalizeBackup, cleanPaceGoal });
+  Object.assign(A, { persist, save, normalizeBackup, cleanPaceGoal, askedVersion });
 })(Kyoshi, Kyoshi.apps.bosco);

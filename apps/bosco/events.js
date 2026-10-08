@@ -211,6 +211,7 @@
     return [
       `- Unit: ${S.unit}`,
       `- GLP-1 medication: ${med}`,
+      `- Start-up asked: medication ${S.profile.medicationAsked ? "yes" : "no"}, dosing v${A.askedVersion(S.profile.dosingAsked)}`,
       `- Dosing plan / active vial saved: ${A.planFor(med) ? "yes" : "no"} / ${A.activeVial() ? "yes" : "no"}`,
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
       `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
