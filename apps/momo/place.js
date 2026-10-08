@@ -84,8 +84,8 @@
   }
 
   // Places, follows and takes back Momo's cards for the needs as they are now (see the header), after the baseline's
-  // slot cards; an app's are left as they are while it can't be read. True if anything changed. save: false leaves saving to the caller (loading the baseline, copying a
-  // week, clearing one: one change, for undo).
+  // slot cards; an app's are left as they are while it can't be read. True if anything changed. save: false leaves
+  // saving to the caller (loading the baseline, copying a week, clearing one: one change, for undo).
   function placeCards({ save = true } = {}) {
     if (!K.ready || !A.isActive() || !S.data) return false;
     let changed = A.syncSlots();

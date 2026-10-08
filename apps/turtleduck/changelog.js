@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.521", date: "2026-10-08", changes: [
+      "Paste recipes reads times written with fractions: “1½ hours”, “1 1/2 hours” and “1/2 hour” are 90, 90 and 30 minutes (not 1 and 120)."
+    ] },
     { version: "2.520", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
     ] },

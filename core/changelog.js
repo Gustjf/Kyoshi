@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.281", date: "2026-10-08", changes: [
+      "Momo is told which apps couldn't be read just now (one that failed to start, or couldn't say what it needs or when its slots are), so it leaves their cards alone until they can be, instead of taking them away and syncing that to your other devices.",
+      "The sync folder no longer brings in a save made by a newer version of Kyoshi: it stops and asks you to reload the page (as cloud sync already did), so an out-of-date page can't drop what it doesn't know and save that for every device."
+    ] },
     { version: "5.280", date: "2026-10-08", changes: [
       "A save another device left in the sync folder is now stored the moment it's read, together with its version counters, so turning the folder off or closing the tab in the middle of a check can no longer leave Kyoshi believing it has changes it doesn't (a file it would then never read again).",
       "A tab in time travel (test mode) still follows the other tabs' bug reports, so a report filed there no longer wipes out one filed in another tab meanwhile.",

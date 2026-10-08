@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "7.601", date: "2026-10-08", changes: [
+      "Sync keeps the latest change to each day: a weigh-in you corrected or a dose you logged on one device is no longer undone by another device that saved later without touching that day.",
+      "A weigh-in or dose you delete stays deleted on every device, instead of coming back from another device's copy.",
+      "Reload Bosco on every device after updating."
+    ] },
     { version: "7.600", date: "2026-10-08", changes: [
       "The progress image draws straight lines between the weigh-ins, with a dot at each, instead of a smoothed curve.",
       "Start-up info's answers follow you to your other devices (through cloud sync, the sync folder and backups): once you've answered it on one device (your injection sites, your medication), the others don't ask again.",

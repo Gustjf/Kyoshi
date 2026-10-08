@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.363", date: "2026-10-08", changes: [
+      "A record of other work with no job keeps the time you typed for it: it shows again when you open the record, goes into Export, and Momo's card for it is that long (it used to fall back to 30 minutes). Reload Appa on every device after updating."
+    ] },
     { version: "1.362", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
     ] },
