@@ -6,8 +6,9 @@
  * (the URL's #id, else the last used), then runs the shared keyboard, minute tick and other-tab reloads.
  * Only the app on screen is in the page: the others' roots are kept aside (detached) but
  * keep running — so ids only need to be unique within an app, and A.$ looks only inside it.
- * One app is hidden (meta.hidden): core's own record, the hidden Kyoshi app (core/record.js: the bug log, synced and
- * backed up as an app's data is). It has no page, is never shown nor in the switcher, and its writes are kept in test mode. */
+ * One app is hidden (meta.hidden): core's own record, the hidden Kyoshi app (core/record.js: the bug log and the theme
+ * picked, synced and backed up as an app's data is). It has no page, is never shown nor in the switcher, and its writes
+ * are kept in test mode. The theme is drawn from this device's copy (K.setTheme) before anything else is read. */
 (function (K) {
   "use strict";
   const { esc } = K.util;
@@ -200,16 +201,23 @@
     document.addEventListener("pointerdown", e => { if (menuOpen && !$("kSwitcher").contains(e.target)) closeMenu(); });
   }
 
-  // --- Theme (one for every app) ---
+  // --- Theme (one for every app, and the one picked on any device: core/record.js keeps the pick, prefs) ---
   const applyTheme = theme => { document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light"; };
+  // Shows a theme and keeps it on this device (localStorage: the page draws from it at start, before any data is read).
   function setTheme(theme) {
     applyTheme(theme);
     K.storage.set("kyoshi.theme", theme);
   }
+  K.setTheme = setTheme; // a pick that came in from another device (core/record.js)
+  // A new device's first guess, by the hour, isn't a pick: it stays this device's own until one is made, here or elsewhere.
   function initTheme() {
     const saved = K.storage.get("kyoshi.theme"), hour = new Date().getHours();
     setTheme(saved === "dark" || saved === "light" ? saved : hour >= 19 || hour < 7 ? "dark" : "light");
-    $("kThemeToggle").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+    $("kThemeToggle").addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      setTheme(next);
+      K.record.setPref("theme", next); // the same on every device once they sync
+    });
   }
 
   // --- Keys: Ctrl+9 toggles Developer Mode; the app on screen gets the rest first

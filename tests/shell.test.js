@@ -1,10 +1,11 @@
 /* Kyoshi · tests/shell.test.js — the whole of Kyoshi, every app: each opens through the switcher with a clean console
  * at phone and desktop width (and after a week of time travel), the switcher lists every app in order (never the hidden
  * Kyoshi app: #kyoshi shows the first), a new device opens on the first, Export all / Import all (Developer Mode) carry
- * every app's data, Backup & sync is Developer Mode's (no app's page has it) and follows the app on screen, the tab always
- * reads "Kyoshi", a checkup done today shows a green ✓, Bugs & requests (the pop-up's list, a report edited in place,
- * Developer Mode's exports and Clear; the log kept by the hidden Kyoshi app, the old one carried over), and Developer
- * Mode's changelog (the latest three entries, then how many older ones the file holds). */
+ * every app's data and the theme picked (the later pick winning), Backup & sync is Developer Mode's (no app's page has it)
+ * and follows the app on screen, the tab always reads "Kyoshi", a checkup done today shows a green ✓, Bugs & requests (the
+ * pop-up's list, a report edited in place or deleted, Developer Mode's exports and Clear; the log kept by the hidden Kyoshi
+ * app, the old one carried over), and Developer Mode's changelog (the latest three entries, then how many older ones the
+ * file holds). */
 "use strict";
 const fs = require("fs");
 const { TODAY, PHONE, DESKTOP, eq, ok, has, open, lastDialog, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
@@ -95,6 +96,44 @@ module.exports = [
       const third = await open(t);
       await importBackup(third, all);
       eq(await third.page.evaluate(() => Kyoshi.apps.badgermole.sessions().length), 15, "Import JSON takes its part of an Export all file");
+    }
+  },
+  {
+    name: "shell: the theme picked goes in Export all; Import all takes it where none was picked, but a backup's older pick (or none) doesn't undo a later one, nor in test mode",
+    async run(t) {
+      const tab = await open(t, { app: "momo" }), p = tab.page;
+      const theme = x => x.page.evaluate(() => [document.documentElement.dataset.theme, localStorage.getItem("kyoshi.theme")]);
+      // Import all with a file made from data: its question answered yes, the import right after it.
+      const importAll = async (x, all) => {
+        const was = await devPanel(x, true), asked = x.dialogs.length;
+        const [chooser] = await Promise.all([x.page.waitForEvent("filechooser"), x.page.click("#kDevImportAll")]);
+        await chooser.setFiles({ name: "kyoshi-backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(all)) });
+        for (const end = Date.now() + 5000; x.dialogs.length === asked && Date.now() < end;) await new Promise(r => setTimeout(r, 10));
+        await devPanel(x, was);
+      };
+      eq(await theme(tab), ["light", "light"], "light by the hour (07:00)");
+      await p.click("#kThemeToggle");
+      eq(await theme(tab), ["dark", "dark"], "a tap: dark, kept on this device");
+      await devPanel(tab, true);
+      const [download] = await Promise.all([p.waitForEvent("download"), p.click("#kDevExportAll")]);
+      const all = JSON.parse(fs.readFileSync(await download.path(), "utf8")), kept = all.apps.kyoshi.prefs;
+      eq([kept.theme, kept.u > 0], ["dark", true], "Export all holds the pick, under apps.kyoshi.prefs");
+
+      // Another device that never picked one takes it from the file.
+      const other = await open(t, { app: "momo" });
+      eq(await theme(other), ["light", "light"], "the other device is light by the hour");
+      await importAll(other, all);
+      eq(await theme(other), ["dark", "dark"], "Import all takes the pick");
+      // A pick there, later: the same file again, or one from before the theme was kept (no prefs), leaves it.
+      await other.page.click("#kThemeToggle");
+      await importAll(other, all);
+      eq(await theme(other), ["light", "light"], "the backup's older pick doesn't undo the later one");
+      await importAll(other, { ...all, apps: { ...all.apps, kyoshi: { ...all.apps.kyoshi, prefs: undefined } } });
+      eq(await theme(other), ["light", "light"], "nor does a backup with none");
+      // In test mode Import all leaves the record as it is, a later pick in the file too.
+      await travel(other, 1);
+      await importAll(other, { ...all, apps: { ...all.apps, kyoshi: { ...all.apps.kyoshi, prefs: { theme: "dark", u: kept.u + 864e5 } } } });
+      eq(await theme(other), ["light", "light"], "test mode: the theme stays");
     }
   },
   {
@@ -234,6 +273,39 @@ module.exports = [
       eq([await p.evaluate(() => Kyoshi.bugs.isOpen()), tab.dialogs.length], [false, 0], "nothing changed: Esc closes without asking");
       await p.click("#kReportBug");
       eq([await text(tab, "#kBugTitle"), await text(tab, "#kBugSubmit"), await p.inputValue("#kBugText")], ["Bugs & requests", "Submit", ""], "opened again: a new one");
+    }
+  },
+  {
+    name: "shell: a report opened from the list can be deleted, after a question (No keeps it); it's kept as a marker with no words",
+    async run(t) {
+      const tab = await open(t, { app: "hawky" }), p = tab.page, ROW = "#kBugList .bug-row";
+      const QUESTION = `Delete this Hawky request from ${TODAY}? It goes from every device once they sync, and can't be undone.`;
+      await p.click("#kReportBug");
+      eq(await p.isVisible("#kBugDelete"), false, "no Delete for a new one");
+      await p.click('#kBugKind [data-kind="request"]');
+      await p.fill("#kBugText", "Quick add could keep the last store");
+      await p.click("#kBugSubmit");
+      await p.locator("#kBugStatus", { hasText: "Saved request" }).waitFor({ timeout: 5000 });
+      eq(await p.isVisible("#kBugDelete"), false, "nor after Submit");
+
+      // Opened from its row: Delete beside Save and Cancel. No keeps it, still open.
+      await p.click(ROW);
+      eq([await text(tab, "#kBugSubmit"), await p.isVisible("#kBugCancel"), await p.isVisible("#kBugDelete")], ["Save", true, true], "Delete, while it's open");
+      eq(await p.locator("#kBugList #kBugDelete").count(), 0, "in the pop-up's buttons, not the list");
+      tab.answers.push(false);
+      await p.click("#kBugDelete");
+      eq(lastDialog(tab), QUESTION, "asked first");
+      eq([await p.locator(ROW).count(), await text(tab, "#kBugSubmit"), (await stored(p)).map(r => r.deleted)], [1, "Save", [false]], "No keeps it");
+
+      // Yes: gone from the list and the footer's count; the pop-up back to a new one.
+      await p.click("#kBugDelete");
+      eq(lastDialog(tab), QUESTION, "asked again");
+      eq([await p.locator(ROW).count(), await p.locator("#kBugListHead").isHidden(), await text(tab, "#kReportBug"), await text(tab, "#kBugStatus")],
+        [0, true, "Bugs & requests", "Deleted."], "gone");
+      eq([await text(tab, "#kBugTitle"), await text(tab, "#kBugSubmit"), await p.isVisible("#kBugCancel"), await p.isVisible("#kBugDelete"), await p.inputValue("#kBugText")],
+        ["Bugs & requests", "Submit", false, false, ""], "back to a new one, Delete hidden");
+      eq((await stored(p)).map(r => [r.deleted, r.description, r.markdown, r.edited]), [[true, "", "", ""]],
+        "kept as a marker with no words, so a device that still has it can't bring it back");
     }
   },
   {

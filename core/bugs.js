@@ -2,9 +2,10 @@
  * "Bugs & requests" (footer, with how many are logged) opens #kBugOverlay for the app on screen: Bug or Feature request
  * (the pick remembered on this device, localStorage "kyoshi.bugKind"), Submit, and everything logged listed under it,
  * newest first. Submit saves a report to the log and copies it. A tap on one opens it in the same pop-up, its whole
- * description, to change its words and kind (Save, or Cancel); what it captured stays as it was. Nothing is ticked off
- * one by one: they wait until the owner sits down to plan, exports them all from Developer Mode (Copy all or Download
- * .md: feature requests first, then bugs), then empties the log there (Clear, on every device).
+ * description, to change its words and kind (Save, or Cancel); what it captured stays as it was. A report opened for
+ * editing can be deleted (Delete, beside Save and Cancel: a question, then it's gone from every device once they sync);
+ * the rest wait until the owner sits down to plan, exports them all from Developer Mode (Copy all or Download .md:
+ * feature requests first, then bugs), then empties the log there (Clear, on every device).
  * The log is core's own record (core/record.js: the hidden Kyoshi app), so it syncs and is backed up as an app's data.
  * A report is dense plain text for an AI to read, one fact per line: versions and build, bug or feature request, the
  * description, the browser and device, the app's own state lines (A.bugState()), recent console
@@ -153,12 +154,12 @@
       : `${saved} (${logged}), but couldn't copy it automatically: Developer Mode's Copy all has it.`, copied ? "good" : "bad");
   }
 
-  // --- Editing one: a row tapped opens its report in the box, whole; Save keeps the new words and kind ---
+  // --- Editing one: a row tapped opens its report in the box, whole; Save keeps the new words and kind, Delete removes it ---
   // The pop-up as it is for submitting a new one (editing null) or editing one.
   function setMode() {
     $("kBugTitle").textContent = editing ? "Bugs & requests · editing" : "Bugs & requests";
     $("kBugSubmit").textContent = editing ? "Save" : "Submit";
-    $("kBugCancel").hidden = !editing;
+    $("kBugCancel").hidden = $("kBugDelete").hidden = !editing;
   }
   // What closing the pop-up, or opening another report, would lose: the question to ask first ("" when nothing).
   function unsaved() {
@@ -201,6 +202,17 @@
     if (change) K.record.edit(r.id, { description, kind, markdown: rewrite(r.markdown, kind, description) });
     leave();
     setStatus(change ? "Saved the change." : "Nothing changed.", change ? "good" : "");
+  }
+  // Delete: the report open goes from the log, and from every device once they sync (core/record.js: a marker). Its
+  // question is the only one: the words in the box are the report's, with nothing of the owner's to keep. One cleared
+  // meanwhile is gone already.
+  function deleteReport() {
+    const r = reports().find(x => x.id === editing.id);
+    if (r && !confirm(`Delete this ${appName(r.app)} ${isRequest(r) ? "request" : "bug"} from ${dayOf(r.timestamp)}? It goes from every device once they sync, and can't be undone.`)) return;
+    const gone = !!r && K.record.remove(r.id);
+    leave();
+    setStatus(gone ? "Deleted." : "That report was cleared meanwhile.", gone ? "good" : "bad");
+    $("kBugText").focus();
   }
 
   // --- The footer link's count and the list (newest first), redrawn whenever the log changes ---
@@ -254,6 +266,7 @@
     $("kReportBug").addEventListener("click", e => { e.preventDefault(); open(); });
     $("kBugSubmit").addEventListener("click", () => (editing ? saveEdit() : submit()));
     $("kBugCancel").addEventListener("click", () => { leave(); setStatus("", ""); $("kBugText").focus(); });
+    $("kBugDelete").addEventListener("click", () => { if (editing) deleteReport(); });
     $("kBugList").addEventListener("click", e => {
       const row = e.target.closest(".bug-row");
       if (row) edit(row.dataset.id);

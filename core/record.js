@@ -1,22 +1,29 @@
 /* Kyoshi · core/record.js — core's own record, as K.record: the one hidden app, "Kyoshi" (id kyoshi; core/shell.js: no
  * page, never shown nor in the switcher, its writes kept in test mode), whose save holds the Bugs & requests log
- * (core/bugs.js: the pop-up, the list, Developer Mode's exports). Being an app's data, the log goes wherever that goes
- * (core/sync.js): its store ("kyoshi.kyoshi.bugReports"), the cloud (data/kyoshi.json), the sync folder (kyoshi/) and
- * Export all (apps.kyoshi), combined report by report, the later change winning. Another core record could join it
- * later, under another key of the same save.
+ * (core/bugs.js: the pop-up, the list, Developer Mode's exports) and core's preferences that are the same on every device
+ * (prefs: the theme, core/shell.js). Being an app's data, both go wherever that goes (core/sync.js): its store
+ * ("kyoshi.kyoshi.bugReports", "kyoshi.kyoshi.prefs"), the cloud (data/kyoshi.json), the sync folder (kyoshi/) and
+ * Export all (apps.kyoshi); the log combined report by report, the later change winning, the preferences whole, the later
+ * pick winning. Another core record could join them later, under another key of the same save.
  * A report: { id, timestamp, app, description, markdown (its text, core/bugs.js: Markdown before Kyoshi 3.440, plain
  * since), kind ("bug" | "request"), u (when it last changed), edited ("" or when), deleted (a marker) } — Kyoshi 3.750
- * also kept done (a Done ✓ per report), no longer read. Clear turns each report into a marker (no words), so a device that
- * still had it can't bring it back; markers go after MARKER_DAYS. Before Kyoshi 5.070 the log was this device's only
- * (K.store "bugReports"): carried over once. The save: { schemaVersion: 1, appVersion (Kyoshi's), bugReports }. */
+ * also kept done (a Done ✓ per report), no longer read. Clear turns each report into a marker (no words), and so does
+ * Delete, one at a time, so a device that still had it can't bring it back; markers go after MARKER_DAYS. Before Kyoshi
+ * 5.070 the log was this device's only (K.store "bugReports"): carried over once.
+ * prefs (since Kyoshi 5.270; a save from before has none): { theme ("" until one is picked, "light" | "dark"), u (when one
+ * was last picked, anywhere; 0 never) }. A device where none was ever picked keeps its own theme (core/shell.js: the
+ * hour's guess) until a pick comes in.
+ * The save: { schemaVersion: 1, appVersion (Kyoshi's), bugReports, prefs }. */
 (function (K) {
   "use strict";
   const { isObj, isPos } = K.util;
   const SCHEMA = 1;
   const REPORTS_MAX = 200; // reports kept (markers aside): beyond, the oldest become markers
   const MARKER_DAYS = 60;  // how long a cleared report's marker is kept
+  const THEMES = ["light", "dark"];
   let R = null;            // the hidden Kyoshi app (registered at start: core/shell.js loads after this file)
   let reports = [];        // the log, in the order the reports were logged, markers too
+  let prefs = { theme: "", u: 0 }; // core's preferences, the same on every device (cleanPrefs)
 
   const live = () => reports.filter(r => !r.deleted);
   const marker = (r, u) => ({ ...r, description: "", markdown: "", edited: "", deleted: true, u });
@@ -40,13 +47,17 @@
       };
     }).filter(r => r.id && (!r.deleted || r.u > since) && !ids.has(r.id) && ids.add(r.id)));
   }
+  // Core's preferences as kept, from storage, a backup or another device: the theme picked ("" when none, or not one
+  // Kyoshi knows) and when (0 when never: a save from before Kyoshi 5.270 has none).
+  const cleanPrefs = raw => (isObj(raw) ? { theme: THEMES.includes(raw.theme) ? raw.theme : "", u: isPos(raw.u) ? raw.u : 0 } : { theme: "", u: 0 });
 
   // --- Kept here ---
-  // Reads the log (at start, and when another tab saved it). The log kept before Kyoshi 5.070 (K.store "bugReports", this
-  // device's only) joins it, each report last changed when it was logged, then goes: a change counted once the app's sync
-  // identity is read (catchUp), when it brought any.
+  // Reads the log and the preferences (at start, and when another tab saved them). The log kept before Kyoshi 5.070
+  // (K.store "bugReports", this device's only) joins it, each report last changed when it was logged, then goes: a change
+  // counted once the app's sync identity is read (catchUp), when it brought any.
   function load() {
     reports = clean(R.store.json("bugReports"));
+    prefs = cleanPrefs(R.store.json("prefs"));
     const old = K.store.json("bugReports");
     if (Array.isArray(old)) {
       const have = new Set(reports.map(r => r.id));
@@ -58,16 +69,26 @@
       }
       K.store.remove("bugReports");
     }
+    applyPrefs();
     shown();
   }
   const store = () => R.store.set("bugReports", JSON.stringify(reports));
-  // A change to the log made here: kept, counted for sync (the cloud, the sync folder and Export all's highlight follow:
-  // core/sync.js) and shown. In test mode it's kept all the same (its writes are real) but nothing syncs, so it's counted
-  // at the next start.
+  const storePrefs = () => R.store.set("prefs", JSON.stringify(prefs));
+  // A change made here, counted for sync (the cloud, the sync folder and Export all's highlight follow: core/sync.js). In
+  // test mode it's kept all the same (its writes are real) but nothing syncs, so it's counted at the next start. quiet: a
+  // preference picked, which doesn't make the data here newer (an import's question says when that last changed).
+  const counted = (quiet = false) => (K.testMode ? R.store.set("pending", "1") : R.changed(true, quiet));
+  // A change to the log made here: kept, counted and shown.
   function save() {
     store();
-    if (K.testMode) R.store.set("pending", "1"); else R.changed();
+    counted();
     shown();
+  }
+  // The preferences take effect, whenever they're read (load: at start, and when another tab saved them) or come in
+  // (another device's, a backup's): the theme picked last, anywhere (core/shell.js's K.setTheme shows it and keeps it on
+  // this device, where the page draws from at its next start). None picked: this device keeps its own.
+  function applyPrefs() {
+    if (prefs.theme && prefs.theme !== document.documentElement.dataset.theme) K.setTheme(prefs.theme);
   }
   // A change kept while it couldn't be counted (in test mode, or the log carried over), counted once the sync identity is
   // read: at start (A.init), or in another tab outside test mode once it reloads the log.
@@ -95,6 +116,15 @@
     save();
     return true;
   }
+  // Delete: one report a marker, as Clear makes, so it goes from every device; false once it's gone already (cleared or
+  // deleted on another device, say).
+  function remove(id) {
+    const r = live().find(x => x.id === id);
+    if (!r) return false;
+    reports = reports.map(x => (x === r ? marker(r, Date.now()) : x));
+    save();
+    return true;
+  }
   // Clear: every report a marker, on every device.
   function clear() {
     const now = Date.now();
@@ -102,64 +132,89 @@
     save();
   }
 
+  // --- Core's preferences: the same on every device (the theme, core/shell.js) ---
+  const pref = name => prefs[name];
+  // A pick made here: kept and counted for sync. It's later than every pick this device has seen, so it wins over them
+  // everywhere, whatever the other devices' clocks say. Before the record is read (a tap while the browser's storage
+  // opens), this device's only.
+  function setPref(name, value) {
+    if (!R || !R.started) return;
+    prefs = cleanPrefs({ ...prefs, [name]: value, u: Math.max(Date.now(), prefs.u + 1) });
+    storePrefs();
+    counted(true);
+  }
+
   // --- Sync and backups: the hidden app's A.data (core/sync.js, core/backup.js) ---
   const looksLike = raw => Array.isArray(raw.bugReports);
   const count = n => (n === 1 ? "1 bug or request" : `${n} bugs and requests`);
-  // Import all (Kyoshi is never the app on screen, so never Import JSON): the backup's log replaces this one. Not in test
-  // mode, where its writes would be kept: the log stays as it is.
+  // Import all (Kyoshi is never the app on screen, so never Import JSON): the backup's log replaces this one; its
+  // preferences only when picked later than these (an older backup's theme doesn't undo a later pick; one from before
+  // Kyoshi 5.270 has none). Not in test mode, where its writes would be kept: the record stays as it is.
   function importBackup(raw, ask = true) {
     if (!isObj(raw) || !looksLike(raw)) return alert("That file doesn't hold Kyoshi's bugs and requests.");
     if (K.testMode) return undefined;
-    const next = clean(raw.bugReports), mine = live().length;
+    const next = clean(raw.bugReports), mine = live().length, theirPrefs = cleanPrefs(raw.prefs);
     if (ask && mine && !K.backup.ask(R, raw, `Replace your ${count(mine)} with the ${count(next.filter(r => !r.deleted).length)} in this backup?`)) return undefined;
     reports = next;
+    if (newer(theirPrefs, prefs)) prefs = theirPrefs;
     store();
+    storePrefs();
     R.changed(false); // it's from a backup, so there's nothing new to export
+    applyPrefs();
     shown();
     return true;
   }
   // Another device's save: taken whole, or combined with this log report by report, the later change winning (so a
-  // marker over the report it cleared). The same on every device, so two combining at once agree.
+  // marker over the report it cleared); the preferences whole, the later pick winning either way (an older copy's save
+  // has none: these stay). The same on every device, so two combining at once agree.
   const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const sameAs = (a, b) => JSON.stringify(inOrder(a)) === JSON.stringify(inOrder(b));
+  const samePrefs = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   function combine(raw, { replace, plain }) {
-    const theirs = clean(raw.bugReports);
-    if (plain && !theirs.length) return null;
+    const theirs = clean(raw.bugReports), theirPrefs = cleanPrefs(raw.prefs);
+    if (plain && !theirs.length && !theirPrefs.u) return null;
     let next = theirs;
     if (!replace) {
       const byId = new Map(clean(reports).map(r => [r.id, r]));
       theirs.forEach(r => { const o = byId.get(r.id); if (!o || newer(r, o)) byId.set(r.id, r); });
       next = inOrder([...byId.values()]);
     }
+    const nextPrefs = newer(prefs, theirPrefs) ? prefs : theirPrefs;
     return {
-      same: sameAs(next, theirs),
+      same: sameAs(next, theirs) && samePrefs(nextPrefs, theirPrefs),
       apply() {
-        if (sameAs(next, reports)) return false; // nothing new here
+        if (sameAs(next, reports) && samePrefs(nextPrefs, prefs)) return false; // nothing new here
         reports = next;
+        prefs = nextPrefs;
         return true;
       }
     };
   }
-  // What came in from another device: kept and shown.
+  // What came in from another device: kept, the preferences taking effect, and shown.
   function afterSync() {
     store();
+    storePrefs();
+    applyPrefs();
     shown();
   }
 
   // Registers the hidden Kyoshi app (core/shell.js's K.start, before the apps start, so it starts last). Its hooks: load,
-  // init (once its sync identity is read: a change kept while it couldn't be counted) and reload; no page.
+  // init (once its sync identity is read: a change kept while it couldn't be counted) and reload (load has read the
+  // preferences and they took effect); no page.
   function init() {
     R = K.register({ id: "kyoshi", name: "Kyoshi", hidden: true });
     Object.assign(R, {
       VERSION: K.VERSION, CHANGELOG: K.CHANGELOG, load, init: catchUp, onReload: () => { catchUp(); shown(); },
       data: {
-        schemaVersion: SCHEMA, build: () => ({ schemaVersion: SCHEMA, appVersion: K.VERSION, bugReports: reports }), looksLike,
-        hasData: () => reports.length > 0, // markers too: a log cleared here is news for a device that still has it
+        schemaVersion: SCHEMA, build: () => ({ schemaVersion: SCHEMA, appVersion: K.VERSION, bugReports: reports, prefs }), looksLike,
+        // Markers too (a log cleared here is news for a device that still has it), and a preference picked.
+        hasData: () => reports.length > 0 || prefs.u > 0,
         importBackup, combine, afterSync
       }
     });
   }
 
-  // live(): the reports (not the markers), in the order they were logged, as kept (read-only).
-  K.record = { init, load, live, add, edit, clear };
+  // live(): the reports (not the markers), in the order they were logged, as kept (read-only). pref(name): one of core's
+  // preferences ("" when none was picked).
+  K.record = { init, load, live, add, edit, remove, clear, pref, setPref };
 })(Kyoshi);

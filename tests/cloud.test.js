@@ -7,7 +7,8 @@
  * (at once when Kyoshi opens offline, after CLOUD_LOST_MS in use, saves failing alone too; Try now), Disconnect while a
  * check reads, two tabs (a save coming back after the other's change), a file from a newer Kyoshi (it stops: Reload),
  * test mode and another copy's key doing nothing, a key not remembered, text only (Appa's photo stays on its
- * device), and Bugs & requests going up as the hidden Kyoshi app's file (on the phone after its check, cleared on both).
+ * device), Bugs & requests going up as the hidden Kyoshi app's file (on the phone after its check, cleared on both), and
+ * the theme picked on one device reaching the other in that file (one never picked keeps its own).
  * Nothing shows on the page while all is well (D1). */
 "use strict";
 const fs = require("fs");
@@ -519,6 +520,54 @@ module.exports = [
       await ready(computer);
       await cl.settled(computer);
       eq(cl.decryptInNode(fake.text("data/kyoshi.json"), cl.secretOf(key)).bugReports.filter(r => !r.deleted).map(r => r.description), ["Filed while time travelling"], "it went up at the next start");
+      onlyText(fake);
+    }
+  },
+  {
+    name: "cloud: the theme picked on one device is the other's at its next check, both ways (the hidden Kyoshi app's prefs); one never picked keeps its own until then",
+    async run(t) {
+      const { fake, computer, key } = await computerWithCloud(t), p = computer.page;
+      const theme = tab => tab.page.evaluate(() => [document.documentElement.dataset.theme, localStorage.getItem("kyoshi.theme")]);
+      const saved = () => cl.decryptInNode(fake.text("data/kyoshi.json"), cl.secretOf(key));
+      eq(await theme(computer), ["light", "light"], "the computer: light by the hour (07:00), not a pick");
+      // A report, so the record goes up with no theme picked in it.
+      await p.click("#kReportBug");
+      await p.fill("#kBugText", "Errands could show their store");
+      await p.click("#kBugSubmit");
+      await p.locator("#kBugStatus", { hasText: "Saved bug" }).waitFor({ timeout: 5000 });
+      await p.click("#kBugOverlay .modal-close");
+      await cl.syncNow(computer);
+      eq(saved().prefs, { theme: "", u: 0 }, "the record went up, no theme picked");
+
+      // A phone dark on its own (set there alone, as before Kyoshi 5.270): the record comes, the theme stays.
+      const phone = await open(t, { app: "hawky", size: PHONE }), q = phone.page;
+      await q.evaluate(() => Kyoshi.setTheme("dark"));
+      await fake.route(phone.ctx, "phone");
+      eq(await cl.enterKey(phone, key), "", "the phone took the key");
+      eq(await text(phone, "#kReportBug"), "Bugs & requests · 1", "the phone has the record");
+      eq(await theme(phone), ["dark", "dark"], "and keeps its own theme: nothing was picked");
+
+      // The computer taps Theme (dark), and again (light): its pick reaches the phone at its next check.
+      await p.click("#kThemeToggle");
+      eq(await theme(computer), ["dark", "dark"], "a tap flips it");
+      await p.click("#kThemeToggle");
+      eq(await theme(computer), ["light", "light"], "and back");
+      await cl.syncNow(computer);
+      eq(saved().prefs.theme, "light", "the cloud's file holds the pick");
+      await cl.syncNow(phone);
+      eq(await theme(phone), ["light", "light"], "the phone takes the computer's pick, kept on it too");
+
+      // The phone taps: the computer follows at its next check.
+      await q.click("#kThemeToggle");
+      eq(await theme(phone), ["dark", "dark"], "the phone's tap");
+      await cl.syncNow(phone);
+      await cl.syncNow(computer);
+      eq(await theme(computer), ["dark", "dark"], "the computer takes the phone's pick");
+      eq([saved().prefs.theme, saved().bugReports.length], ["dark", 1], "the cloud's file: the pick beside the log");
+      await devPanel(computer, true);
+      const [file] = await Promise.all([p.waitForEvent("download"), p.click("#kDevExportAll")]);
+      eq(JSON.parse(fs.readFileSync(await file.path(), "utf8")).apps.kyoshi.prefs.theme, "dark", "Export all holds it, under apps.kyoshi.prefs");
+      await devPanel(computer, false);
       onlyText(fake);
     }
   }
