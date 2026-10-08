@@ -11,8 +11,9 @@
  * sites and skips and never loses a dose's site to an older copy; Momo's board leaves the site out of a dose's note
  * (the owner's choice). Start-up info's answers travel with the data (Phase 3 of 2026-10-08_feedback_batch_plan.md):
  * answered on one device, not asked on another (Export and Import, sync's combine), the medication's answer with them
- * (None too); an older or unanswered save never takes them back, nor saves back and forth over two answers; a later
- * version's counts; a damaged one is cleaned, and a medication this version doesn't know answers nothing. */
+ * (None too, never undone by the doses from before it); an older or unanswered save never takes them back, nor saves
+ * back and forth over two answers; a later version's counts; a damaged one is cleaned, and a medication this version
+ * doesn't know answers nothing (a dose may answer the medication, then the dosing questions are asked). */
 "use strict";
 const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, devPanel, importBackup, exportBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -381,6 +382,14 @@ module.exports = [
       await importBackup(fourth, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }));
       eq(await combine(fourth, { medication: true, dosing: 4 }, "none", true), [true, true], "taken whole");
       eq([await startupShown(fourth), await bugLine(fourth, "- GLP-1")], [[true, false], "- GLP-1 medication: none"], "None taken, the dosing questions answered");
+      // Imported on new devices: a backup that answered None, its doses from before, gives None (no dose's medication over
+      // it); one that answered a medication this version doesn't know, with doses, has the last dose's medication answer
+      // it here, and the dosing questions are asked (not this device's answer to stand on).
+      const fifth = await open(t, { app: "bosco", size: DESKTOP }), sixth = await open(t, { app: "bosco", size: DESKTOP });
+      await importBackup(fifth, { ...gen.bosco(), medication: "none", asked: { medication: true, dosing: 4 } });
+      eq([await startupShown(fifth), await bugLine(fifth, "- GLP-1")], [[true, false], "- GLP-1 medication: none"], "None, over the doses");
+      await importBackup(sixth, { ...gen.bosco(), medication: "orforglipron", asked: { medication: true, dosing: 4 } });
+      eq([await startupShown(sixth), await bugLine(sixth, "- GLP-1")], [[true, true], "- GLP-1 medication: tirzepatide"], "the last dose's medication, the dosing questions asked");
     }
   }
 ];

@@ -218,19 +218,18 @@
     // never brings back an old vial's concentration.
     S.profile.dosePlan = latest(S.profile.dosePlan, clean.dosePlan);
     S.profile.vial = latest(S.profile.vial, clean.vial);
-    // Start-up info answered on another device: asked there, asked here, taking its answer if this device had none (before
-    // the doses' rule below, so a medication answered there isn't taken from a dose)…
-    const asked = clean.asked;
-    if (asked && asked.answer && !S.profile.medicationAsked) Object.assign(S.profile, { medication: asked.answer, medicationAsked: true });
+    // Start-up info answered on another device: asked there, asked here, taking its answer if this device had none…
+    const asked = clean.asked, took = !!(asked && asked.answer && !S.profile.medicationAsked), answered = took || !!S.profile.medicationAsked;
+    if (took) Object.assign(S.profile, { medication: asked.answer, medicationAsked: true });
     // Dose entries prove a medication is in use, so that start-up question is
-    // answered (with the backup's own answer, else its latest dose's medication).
+    // answered (with the backup's own answer, else its latest dose's medication) — not over an answer just taken ("none").
     const lastDose = S.entries.filter(hasDose).pop();
-    if (lastDose && (!S.profile.medicationAsked || !A.medicationEnabled())) {
+    if (lastDose && !took && (!S.profile.medicationAsked || !A.medicationEnabled())) {
       Object.assign(S.profile, { medication: clean.medication || lastDose.medication, medicationAsked: true });
     }
-    // …and the dosing questions by the later version answered, once this device's medication question is (an answer it
-    // couldn't take leaves the two to be asked together).
-    if (asked && S.profile.medicationAsked && asked.dosing > askedVersion(S.profile.dosingAsked)) S.profile.dosingAsked = asked.dosing;
+    // …and the dosing questions by the later version answered, if this device's medication question was answered, by itself
+    // or by the save (one a dose answered just now, or none, leaves the dosing questions to be asked).
+    if (asked && answered && asked.dosing > askedVersion(S.profile.dosingAsked)) S.profile.dosingAsked = asked.dosing;
   }
 
   // Replaces all entries and goals with the backup's (raw: its parsed JSON), after

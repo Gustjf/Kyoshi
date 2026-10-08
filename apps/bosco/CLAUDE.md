@@ -38,8 +38,9 @@ the newer save has the field, so a device that logged the dose and forgot them w
 `asked` (7.600 on): start-up info's answers, `{ medication: true|false, dosing: the version answered }` from `profile.medicationAsked` / `dosingAsked`.
 Joined, never undone, so no `u`: asked on either save is asked (Import, a save taken whole and a combine alike), the dosing version only grows; a file
 without it (an older copy) leaves yours. A device whose medication question wasn't answered takes the save's own `medication` with it, if this
-version knows it ("none" or a medication; before the doses' rule, which still answers it from a dose otherwise); one that answered keeps its own. The
-dosing version is taken once this device's medication question is answered (an answer it couldn't take leaves the two to be asked together).
+version knows it ("none" or a medication; the doses' rule then leaves it alone, and still answers the question from a dose otherwise); one that
+answered keeps its own. The dosing version is taken if this device's medication question was answered, by itself or by the save (one a dose answered
+just now, or none, leaves the dosing questions to be asked).
 Combining counts the answers only as asked or not, and the dosing version (`dataKey`; cleaned, `medication` is that yes or no and `answer` the
 answer), so two devices with different medication answers never keep saving back and forth; an older copy's save, without them, isn't set apart by
 them (no saving back for it, which would stamp ours newer than its next change).
