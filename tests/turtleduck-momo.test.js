@@ -59,7 +59,8 @@ module.exports = [
       const other = await open(t, { ctx: tab.ctx, app: "turtleduck", size: DESKTOP });
       await td.openTimes(other);
       ok(await td.setTimes(other, { lunch: "12:30" }), "lunch at 12:30 from now on");
-      await p.waitForTimeout(300);
+      // Waits for the other tab's save to reach this tab's Turtleduck state (its lunch time), then the minute.
+      await p.waitForFunction(() => Kyoshi.apps.turtleduck.S.settings.times.lunch === "12:30");
       await tab.ctx.clock.fastForward(61000);
       eq((await mo.baselineCards(tab)).filter(c => c.slot && c.slot.startsWith("turtleduck:lunch:")).map(c => c.pin), [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5], "every lunch slot moved");
       await other.page.close();
@@ -181,7 +182,8 @@ module.exports = [
       // Two tabs: a dinner placed in Turtleduck reaches the other tab's Momo within a minute.
       const m = await open(t, { ctx: tab.ctx, app: "momo", size: DESKTOP });
       await td.dragRecipe(tab, "rc-curry", TODAY, "dinner");
-      await m.page.waitForTimeout(300);
+      // Waits for the other tab's dinner to reach this tab's Turtleduck state, then the minute.
+      await m.page.waitForFunction(d => Kyoshi.apps.turtleduck.S.plan.some(e => !e.deleted && e.date === d && e.meal === "dinner" && e.recipeId === "rc-curry"), TODAY);
       await m.ctx.clock.fastForward(61000);
       eq(titles((await mo.days(m))[2]).slice(-1), ["Dinner: Curry"], "Wednesday's dinner slot, filled");
 
