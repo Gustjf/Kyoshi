@@ -48,12 +48,14 @@
     return /[^s]s$/.test(w) ? w.slice(0, -1) : w;
   }
 
-  // --- Amounts at the start of a line: "1½", "1 1/2", "1/2", "½", "1,500" (thousands), "2", "1.5", "1,5", ".5" ---
+  // --- Amounts at the start of a line: "1½", "1 1/2", "1-1/2" (the US way), "1/2", "½", "1,500" (thousands), "2", "1.5",
+  // "1,5", ".5" ---
   const FRACTIONS = { "½": 1 / 2, "⅓": 1 / 3, "⅔": 2 / 3, "¼": 1 / 4, "¾": 3 / 4, "⅕": 1 / 5, "⅖": 2 / 5, "⅗": 3 / 5, "⅘": 4 / 5, "⅙": 1 / 6, "⅚": 5 / 6, "⅛": 1 / 8, "⅜": 3 / 8, "⅝": 5 / 8, "⅞": 7 / 8 };
   const F = Object.keys(FRACTIONS).join("");
   const AMOUNTS = [
     [new RegExp(`^(\\d+)\\s*([${F}])`), m => +m[1] + FRACTIONS[m[2]]],
     [/^(\d+)\s+(\d+)\s*\/\s*(\d+)/, m => (+m[3] ? +m[1] + m[2] / m[3] : null)],
+    [/^(\d+)-(\d+)\s*\/\s*(\d+)/, m => (+m[2] < +m[3] ? +m[1] + m[2] / m[3] : null)], // "1-1/2": a range to less makes no sense
     [/^(\d+)\s*\/\s*(\d+)/, m => (+m[2] ? m[1] / m[2] : null)],
     [new RegExp(`^([${F}])`), m => FRACTIONS[m[1]]],
     [/^(\d{1,3}),(\d{3})(?![\d.,])/, m => +(m[1] + m[2])],

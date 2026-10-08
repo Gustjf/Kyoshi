@@ -8,7 +8,7 @@
  * long while nothing fills it (60 if left out). A need naming the slot (core/inbox.js slot) fills its card on its date.
  * K.routine() gathers every started app's, checked and tagged with the app's id (app), in app order, then day and
  * time; an id listed twice counts once, and a slot without a time is left out (its card is pinned at it). An app
- * whose list fails is left out.
+ * whose list fails (or isn't a list) is left out.
  * K.routine.unreadable(): the apps whose slots the last K.routine() couldn't read (a Set of ids): one that didn't start,
  * or whose list failed. Their slots aren't gone, just out of reach: Momo keeps their cards as they are meanwhile. */
 (function (K) {
@@ -33,7 +33,8 @@
     const all = K.order.map(id => K.apps[id]).filter(A => A.started && typeof A.routine === "function").flatMap(A => {
       try {
         const list = A.routine(), ids = new Set();
-        return (Array.isArray(list) ? list : []).map(r => clean(A, r)).filter(r => r && !ids.has(r.id) && ids.add(r.id))
+        if (!Array.isArray(list)) throw new TypeError("its routine isn't a list");
+        return list.map(r => clean(A, r)).filter(r => r && !ids.has(r.id) && ids.add(r.id))
           .sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
       } catch (err) {
         if (!warned.has(A.id)) console.warn(`Couldn't read ${A.meta.name}'s routine.`, err);

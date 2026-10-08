@@ -70,7 +70,7 @@
       if (root !== dir || K.testMode) return;
       const save = isObj(raw) && A.data.looksLike(raw);
       if (save && (later(raw.appVersion, A.VERSION) || later(raw.schemaVersion, A.data.schemaVersion))) { // not marked seen: read again once reloaded
-        return setState("error", `“${name}” in the sync folder was saved by a newer Kyoshi (${A.meta.name}): reload this page to get it. Until then nothing is saved to the folder from here.`);
+        return setState("error", `“${name}” in the sync folder was saved by a newer Kyoshi (${A.meta.name} ${raw.appVersion}; this page has ${A.VERSION}): reload this page to get it. Until then nothing is saved to the folder from here.`);
       }
       ch.seen.set(name, sig);
       const result = save ? K.sync.incorporate(A, raw) : null;

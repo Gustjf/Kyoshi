@@ -6,22 +6,29 @@
 - **B7** a tab in test mode still follows other tabs' bug reports (Kyoshi 5.280; tests/shell.test.js).
 - **Option B, the shared merge:** K.util `newer` / `mergeById` / `mergeKeys` in place of ten copies (Kyoshi 5.280 and seven apps);
   the sync engine's decisions tested in Node (tests/sync-engine.test.js). Momo keeps its own tie rule (apps/momo/CLAUDE.md says why).
-- **B5** Turtleduck reads "1½ hours", "1 1/2 hours", "1/2 hour" (2.521, through ingredients.js `readAmount`).
+- **B5** Turtleduck reads "1½ hours", "1 1/2 hours", "1-1/2 hours", "1/2 hour" (2.521, through ingredients.js `readAmount`, which
+  now reads "1-1/2 cups" as 1½ too).
 - **B3** Momo never nests a card inside a fixed card, and un-nests one found there (10.485).
-- **B4** an app that didn't start, or whose routine or needs fail, keeps its cards in Momo as they are (`K.routine.unreadable`,
-  `K.inbox.unreadable`; Kyoshi 5.281, Momo 10.485).
+- **B4** an app that didn't start, or whose routine or needs fail (or aren't a list), keeps its cards in Momo as they are
+  (`K.routine.unreadable`, `K.inbox.unreadable`; Save as baseline keeps its slots), and no past week closes unreviewed meanwhile
+  (the reported Iroh close-out item; Kyoshi 5.281, Momo 10.485).
 - **B6** an Appa record with no jobs keeps its own `minutes` (1.363; tests/appa.test.js, Appa's first).
-- **B2** Bosco's days carry `u` once changed and deleted days leave markers (`gone`); sync takes each day's later change, a weigh-in
-  or dose only one side has comes along, a marked day stays deleted (7.601; tests/bosco-sync.test.js). Bosco's markers merge with
-  `K.util.mergeKeys`; its days keep their own rule (dates, not ids; parts filled; the newer save for unstamped days).
+- **B2** Bosco's weigh-ins and doses carry their own change stamps (`wu`, `du`), and a deleted day leaves a marker of what it deleted
+  (`gone`: the stamps it took); sync takes each part's later change, a part only one side has comes along, and a marker deletes only
+  the versions it saw (a dose logged meanwhile elsewhere stays); an import counts as a change made now, so a restore sticks (7.601;
+  tests/bosco-sync.test.js). Bosco keeps its own merge (by date and part; the newer save for unstamped days), not K.util's. A first
+  cut with one stamp per day lost such a dose on delete and undid restores: the review caught both before `main`.
 - **Option B, the folder's guard:** a save made by a newer Kyoshi stops folder sync until the page is reloaded, as the cloud does
   (Kyoshi 5.281).
 
 **Still open (not done, for a later session):**
 - Momo merges whole weeks by `u`, and its own automatic placements stamp the week too: an automatic change on one device can win
   over a hand edit made earlier on another. A per-card merge would fix it: **the owner's call** (apps/momo/CLAUDE.md, Invariants).
-- The "Reported by exploration" items below were never re-verified line by line (but the first, the folder's guard, is done; the
-  sixth is Momo's whole-week merge, above).
+- The "Reported by exploration" items below were never re-verified line by line (but the first, the folder's guard, and the
+  eighth, Iroh's close-outs, are done; the sixth is Momo's whole-week merge, above).
+- Load baseline and Copy previous week drop Momo's cards for an app that can't be read at that moment; they come back by themselves
+  once it can (place.js), so it was left.
+- Every stamp is `Date.now()` on its device: a clock far off can still put one change before another (as in every app).
 - Options C (close the test gaps) and D (reduce duplication) weren't picked.
 
 The audit as it was approved follows (line numbers as of that morning's `main`).

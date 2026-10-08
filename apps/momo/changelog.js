@@ -7,7 +7,8 @@
   A.CHANGELOG = [
     { version: "10.485", date: "2026-10-08", changes: [
       "A card you put Inside “Dinner” goes inside your own Dinner card, never Turtleduck's Dinner slot (on a day with only the slot, it stays on its own); a card that ended up inside a slot before goes back on its own.",
-      "If Turtleduck (or another app) fails to start one day, Momo keeps its slot cards and its cards on your week as they are, instead of taking them away and syncing that everywhere; Save as baseline keeps those slots too."
+      "If Turtleduck (or another app) fails to start one day, Momo keeps its slot cards and its cards on your week as they are, instead of taking them away and syncing that everywhere; Save as baseline keeps those slots too.",
+      "Likewise, while Iroh's goals can't be read, Momo doesn't close past weeks without their review: they wait until it can."
     ] },
     { version: "10.484", date: "2026-10-06", changes: [
       "Upcoming weekends shows your PTO and sick time left, in days by halves (8h a day, a remainder in hours; below 0 in red), once you set the hours in Momo's Developer Mode tools (Time off); days off entered on a weekend come off PTO as you enter them and come back when you change or clear them (the pop-up says what's left), sick time changes only there.",

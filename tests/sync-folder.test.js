@@ -184,7 +184,8 @@ module.exports = [
       await plant(tab, PHONE_FILE, { ...otherSave(mine, "phone1", "Call the plumber"), appVersion: later });
       await p.clock.runFor(5000);
       await until(async () => (await folderState(tab)) === "error", "sync stops");
-      eq(await text(tab, "#kSyncBannerText"), `“${PHONE_FILE}” in the sync folder was saved by a newer Kyoshi (Hawky): reload this page to get it. Until then nothing is saved to the folder from here.`, "the banner says why");
+      const now = await p.evaluate(() => Kyoshi.apps.hawky.VERSION);
+      eq(await text(tab, "#kSyncBannerText"), `“${PHONE_FILE}” in the sync folder was saved by a newer Kyoshi (Hawky ${later}; this page has ${now}): reload this page to get it. Until then nothing is saved to the folder from here.`, "the banner says why, with both versions");
       eq(await shown(tab), TEXTS, "nothing of it came in");
       ok(!(await stored(tab)).clock.phone1, "nor its counter");
       // A change here meanwhile stays out of the folder.

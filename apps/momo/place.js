@@ -12,8 +12,10 @@
  * While a card is auto it follows what it holds (title and length; a slot's card or a fixed one, its time
  * too), a slot's card with nothing in it follows its slot again, and a card holding nothing any more is taken
  * back, on today or later (past days keep theirs: the record of the week) — but not a slot's card while its
- * slot is still in its app's routine (it's the day's slot). Moving, resizing, pinning or editing one that
- * isn't fixed makes it yours (drop.js, clipboard.js, card-editor.js): it stays put.
+ * slot is still in its app's routine (it's the day's slot), nor any card of an app that can't be read now (it
+ * didn't start, or its list failed: K.inbox.unreadable, K.routine.unreadable), which stays as it is. Moving,
+ * resizing, pinning or editing one that isn't fixed makes it yours (drop.js, clipboard.js, card-editor.js): it
+ * stays put.
  * Runs only with every app started (K.ready) and Momo on screen: when it's shown, every minute, after another
  * tab's save (events.js), and when a week is loaded, copied or cleared (baseline.js), after keeping the
  * baseline's slot cards up to date (routine.js syncSlots); what it changes is Momo's own bookkeeping, saved

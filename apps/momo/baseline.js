@@ -4,7 +4,8 @@
  * their week: copying a week or saving one as the baseline leaves them out, and the ones Momo
  * placed go back in at their times once a week has your cards (place.js). The apps' slot cards
  * (model.js slot, routine.js) are Momo's to keep: loading and copying bring them along, and
- * saving a week as the baseline or clearing the baseline gets them back as the routines say. */
+ * saving a week as the baseline or clearing the baseline gets them back as the routines say
+ * (an app's whose routine can't be read now are kept as they were). */
 (function (K, A) {
   "use strict";
   const S = A.S;

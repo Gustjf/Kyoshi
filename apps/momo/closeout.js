@@ -76,9 +76,10 @@
   // put off today, Momo is on a phone and this isn't the next of a close-out just confirmed (going on), or something
   // else is on screen). Just after data came in (an import, a sync, another tab's save: settled false) it only drops a
   // close-out closed elsewhere: apps' data comes in one app at a time, Momo's before Iroh's, so nothing is closed or
-  // opened on goals that may not be in yet. The next show or day does it.
+  // opened on goals that may not be in yet. The next show or day does it. Nor is a week closed quietly while an app's
+  // needs can't be read (it didn't start, or its list failed: K.inbox.unreadable): its goals could be the ones missing.
   function checkCloseOuts(settled = true, goingOn = false) {
-    const quiet = settled ? pendingCloseOuts().filter(k => !reviewRows(k).length) : [];
+    const quiet = settled ? pendingCloseOuts().filter(k => !reviewRows(k).length && !K.inbox.unreadable().size) : [];
     if (quiet.length) {
       quiet.forEach(k => { S.data.weeks[k].closed = true; });
       A.save({ undo: false });

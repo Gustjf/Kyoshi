@@ -21,11 +21,13 @@
   const BULLET = /^\s*[-*•·]\s*(.*)$/;
   const NUMBER = /(\d+(?:[.,]\d+)?)/;
   const num = v => { const m = NUMBER.exec(v); return m ? +m[1].replace(",", ".") : null; };
-  // "1 h 15 min", "1h15", "90 min", "1.5 hours", "1½ hours", "1 1/2 hours", "½ hour", "45" → minutes (a range, "15-20
-  // min", its lower end, as amounts are); null when there's no number. Its numbers are read as the ingredients' amounts.
+  // "1 h 15 min", "1h15", "90 min", "1.5 hours", "1½ hours", "1 1/2 hours", "1-1/2 hours", "½ hour", "45" → minutes (a
+  // range, "15-20 min", its lower end, as amounts are); null when there's no number. Its numbers are read as the
+  // ingredients' amounts ("1-1/2", the US way of writing 1½, read as "1 1/2" first: not a range).
   function minutesOf(text) {
     const N = A.AMOUNT, amount = s => A.readAmount(s.trim())[0];
-    const v = text.replace(new RegExp(`(${N})\\s*(?:-|–|—|to\\s)\\s*${N}`, "gi"), "$1");
+    const v = text.replace(/(\d+)-(\d+)\s*\/\s*(\d+)/g, (s, a, b, c) => (+b < +c ? `${a} ${b}/${c}` : s))
+      .replace(new RegExp(`(${N})\\s*(?:-|–|—|to\\s)\\s*${N}`, "gi"), "$1");
     const h = new RegExp(`(${N})\\s*(?:h|hr|hrs|hour|hours)(?![a-z])`, "i").exec(v);
     const m = new RegExp(`(${N})\\s*(?:m|min|mins|minute|minutes)(?![a-z])`, "i").exec(v) || (h && /^\s*(\d+)/.exec(v.slice(h.index + h[0].length)));
     if (h || m) return Math.round((h ? amount(h[1]) * 60 : 0) + (m ? amount(m[1]) : 0));

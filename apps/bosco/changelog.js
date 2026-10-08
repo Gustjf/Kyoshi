@@ -6,8 +6,9 @@
   "use strict";
   A.CHANGELOG = [
     { version: "7.601", date: "2026-10-08", changes: [
-      "Sync keeps the latest change to each day: a weigh-in you corrected or a dose you logged on one device is no longer undone by another device that saved later without touching that day.",
-      "A weigh-in or dose you delete stays deleted on every device, instead of coming back from another device's copy.",
+      "Sync keeps the latest change to each weigh-in and each dose: one you corrected or logged on one device is no longer undone by another device that saved later without touching it.",
+      "A weigh-in or dose you delete stays deleted on every device, instead of coming back from another device's copy; a dose logged meanwhile on a device this one hadn't heard from yet is kept.",
+      "A backup you import (or a day you restore from the cloud) now reaches your other devices as it is, even one with changes of its own not synced yet.",
       "Reload Bosco on every device after updating."
     ] },
     { version: "7.600", date: "2026-10-08", changes: [

@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { isDate, isPos, todayStr, fmtDate } = K.util;
-  const { hasWeight, hasDose, byDate, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
+  const { hasWeight, hasDose, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
 
   // Adds a weigh-in. Doses aren't added here: they're logged by confirming them.
   function addEntry() {
@@ -20,12 +20,7 @@
     // Re-adding a date is how a weigh-in gets corrected, but never silently.
     if (existing && hasWeight(existing) && existing.weight !== weight &&
         !confirm(`${fmtDate(date)} already has a weigh-in of ${existing.weight.toFixed(1)} ${unit}. Replace it with ${weight.toFixed(1)} ${unit}?`)) return;
-    if (existing) {
-      A.touch(Object.assign(existing, { weight })); // a dose logged that day stays
-    } else {
-      S.entries.push(A.touch({ date, weight, doseMg: null, medication: null, site: null }));
-      S.entries.sort(byDate);
-    }
+    A.setDay(date, { weight }); // a dose logged that day stays
     A.save();
     $("weightInput").value = "";
     S.currentPage = 1;

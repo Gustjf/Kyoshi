@@ -1,7 +1,8 @@
 /* Kyoshi · tests/momo-closeout.test.js — the weekly close-out after roadmap Phase 8: on a computer it pops up, Later
  * puts it off until tomorrow (a reload doesn't bring it back today), a goal's row says what of its hours had no card,
  * Close all as planned closes every week waiting, and a week never planned counts 0 hours for the goals (hoursSpent),
- * so Iroh shows them behind and dots its icon; on a phone it waits in its banner until tapped, then goes on to the next. */
+ * so Iroh shows them behind and dots its icon; on a phone it waits in its banner until tapped, then goes on to the next;
+ * while Iroh's goals can't be read, no week closes unreviewed. */
 "use strict";
 const { DESKTOP, PHONE, eq, ok, has, open, switchTo, importBackup, at } = require("./lib");
 const gen = require("./generate");
@@ -82,6 +83,23 @@ module.exports = [
       await mo.confirmCloseOut(tab);
       eq([(await mo.closeOut(tab)).open, await mo.banner(tab)], [false, ""], "all closed");
       eq(await p.evaluate(() => Kyoshi.apps.momo.hoursSpent("Read")), { "2026-09-28": 1.5, "2026-10-05": 0, "2026-10-12": 4 }, "as reviewed");
+    }
+  },
+  {
+    name: "momo close-out: while Iroh's goals can't be read, no past week closes unreviewed; once they can, its close-out comes up",
+    async run(t) {
+      const tab = await both(t, DESKTOP), p = tab.page;
+      const closed = () => p.evaluate(() => Object.keys(Kyoshi.apps.momo.S.data.weeks).filter(k => Kyoshi.apps.momo.S.data.weeks[k].closed));
+      const shown = async () => { await switchTo(tab, "iroh"); await switchTo(tab, "momo"); }; // Momo shown: weeks are closed or reviewed then
+      await p.evaluate(() => { const I = Kyoshi.apps.iroh; window.__inbox = I.inbox; I.inbox = () => { throw new Error("made-up failure"); }; });
+      await shown();
+      eq(await closed(), [], "no week closed without its review");
+      eq((await mo.closeOut(tab)).open, false, "and nothing to review meanwhile");
+      const said = tab.problems.splice(0);
+      ok(said.length === 1 && /Couldn't read what Iroh needs/.test(said[0]), `said once (${said})`);
+      await p.evaluate(() => { Kyoshi.apps.iroh.inbox = window.__inbox; });
+      await shown();
+      eq((await mo.closeOut(tab)).title, "Close out Sep 28 – Oct 4", "read again: the oldest week's close-out comes up");
     }
   }
 ];

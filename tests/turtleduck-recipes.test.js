@@ -107,11 +107,13 @@ module.exports = [
       eq((await td.recipeRows(tab)).map(r => r.split(" · ")[0]), ["Overnight oats", "Pancakes", "Rice bowl", "Salad", "Chili", "Curry", "Fried rice", "Mystery stew", "Chili (2)", "Pancakes (2)", "Toast"], "added, by meal type (no Meal: line is Any)");
       // Times in fractions of an hour, as recipes write them.
       await p.click("#kMount #pasteBtn");
-      await p.fill("#kMount #pasteText", ["# Roast", "Prep: 1½ hours", "Cook: 1 1/2 hours", "Roast it.", "", "# Stew", "Prep: 1/2 hour", "Cook: ¾–1 h", "Stew it."].join("\n"));
+      await p.fill("#kMount #pasteText", ["# Roast", "Prep: 1½ hours", "Cook: 1 1/2 hours", "Roast it.", "", "# Stew", "Prep: 1/2 hour", "Cook: ¾–1 h", "Stew it.",
+        "", "# Pie", "Prep: 1-1/2 hours", "- 1-1/2 cups milk", "Bake it."].join("\n"));
       await p.click("#kMount #pastePreviewBtn");
       await p.click("#kMount #pasteAddBtn");
-      eq(await p.evaluate(() => Kyoshi.apps.turtleduck.liveRecipes().filter(r => r.name === "Roast" || r.name === "Stew").map(r => [r.name, r.prepMin, r.cookMin]).sort()),
-        [["Roast", 90, 90], ["Stew", 30, 45]], "1½ hours, 1 1/2 hours, 1/2 hour, ¾–1 h");
+      eq(await p.evaluate(() => Kyoshi.apps.turtleduck.liveRecipes().filter(r => ["Roast", "Stew", "Pie"].includes(r.name)).map(r => [r.name, r.prepMin, r.cookMin]).sort()),
+        [["Pie", 90, null], ["Roast", 90, 90], ["Stew", 30, 45]], "1½ hours, 1 1/2 hours, 1-1/2 hours (the US way), 1/2 hour, ¾–1 h");
+      eq(await p.evaluate(() => { const l = Kyoshi.apps.turtleduck.parseLine("1-1/2 cups milk"); return [l.qty, l.unit, l.name]; }), [1.5, "cup", "milk"], "and an amount written so: 1½ cups");
 
       // The cook view: the steps as typed (bullets as bullets), from a recipe's Cook.
       await p.click('#kMount #recipeGroups [data-act="cook"][data-id="rc-chili"]');

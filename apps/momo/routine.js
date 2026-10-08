@@ -4,9 +4,10 @@
  * pinned at its time, as long as the slot says, titled by it, with its app's icon and colour, auto and fixed (set in
  * its app: no drag, resize, pin, cut or delete here). syncSlots keeps them following the routine: a slot gone is
  * taken back, a new one added, a changed one updated, matched by slot and never by id (two devices make their own),
- * in a set order, so two devices that know the same routine come to the same baseline. Loading the baseline copies
- * them into a week like any card: there the need naming a slot fills its card on its date (inbox.js assign), which
- * then takes that need's title, length and time, and with nothing in it follows its slot again (place.js).
+ * in a set order, so two devices that know the same routine come to the same baseline; an app whose routine can't
+ * be read now (it didn't start, or its list failed: K.routine.unreadable) keeps its cards as they are. Loading the
+ * baseline copies them into a week like any card: there the need naming a slot fills its card on its date (inbox.js
+ * assign), which then takes that need's title, length and time, and with nothing in it follows its slot again (place.js).
  * weekStatus(monday, app) tells another app (Turtleduck) about a week here: whether Momo has it, planned or closed,
  * and which of the app's slots it holds. */
 (function (K, A) {

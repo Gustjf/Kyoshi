@@ -14,7 +14,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { addDays, daysBetween, todayStr, now, fmtWeekday, fmtTime } = K.util;
-  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, SITES, PARTS, hasDose, byDate, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief,
+  const { MAX_UPCOMING_DOSES, DOSE_SNOOZE_MS, SITES, PARTS, hasDose, medLabel, planFor, eachDoseMg, fmtUnits, fmtDateBrief,
     activeSites, siteLabel, standsFor, partOf, sitesIn } = A;
 
   // When a dose comes due: its day at the usual dose time (the start of the day
@@ -177,13 +177,7 @@
   function confirmDose(takenToday) {
     if (!S.doseAsking || !stillAsked()) return;
     const date = takenToday ? todayStr() : S.doseAsking.date, doseMg = S.doseAsking.doseMg, site = S.doseAsking.site || null;
-    const existing = S.entries.find(e => e.date === date);
-    if (existing) {
-      A.touch(Object.assign(existing, { doseMg, medication: A.currentMedication(), site }));
-    } else {
-      S.entries.push(A.touch({ date, weight: null, doseMg, medication: A.currentMedication(), site }));
-      S.entries.sort(byDate);
-    }
+    A.setDay(date, { doseMg, medication: A.currentMedication(), site }); // that day's weigh-in stays
     S.profile.skipSites = null;
     closeDoseModal();
     A.save();

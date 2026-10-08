@@ -28,8 +28,9 @@
  * K.inbox(from, to) gathers every started app's, checked and tagged with the app's id (app), each app's in
  * its own order, then the apps' meetings (core/meetings.js: ids "meeting:…", never an app's own, filling
  * "Meeting" blocks); an id listed twice counts once, and one dated outside from–to is left out. An app whose
- * list fails is left out. K.inbox.unreadable(): the apps whose needs the last K.inbox() couldn't read (a Set of ids):
- * one that didn't start, or whose list failed; what they need isn't gone, so Momo leaves their cards as they are.
+ * list fails (or isn't a list) is left out. K.inbox.unreadable(): the apps whose needs the last K.inbox() couldn't
+ * read (a Set of ids): one that didn't start, or whose list failed; what they need isn't gone, so Momo leaves their
+ * cards as they are.
  * K.inbox.open(app, id) shows that app and its need (its A.open(id), if it has one; a meeting, its line); id may
  * also be one of its routine slots' ids (an empty slot's card: where it's set).
  * No app changes another's data: an app asks another for a change only through a function that one offers. */
@@ -70,7 +71,8 @@
   function own(A, from, to, bad) {
     try {
       const list = A.inbox(from, to);
-      return (Array.isArray(list) ? list : []).map(n => clean(A, n, from, to)).filter(n => n && !n.id.startsWith("meeting:")); // core's ids
+      if (!Array.isArray(list)) throw new TypeError("its needs aren't a list");
+      return list.map(n => clean(A, n, from, to)).filter(n => n && !n.id.startsWith("meeting:")); // core's ids
     } catch (err) {
       if (!warned.has(A.id)) console.warn(`Couldn't read what ${A.meta.name} needs.`, err);
       warned.add(A.id);
