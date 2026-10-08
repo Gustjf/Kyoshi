@@ -175,7 +175,9 @@ module.exports = [
       await devPanel(fresh, true);
       const [chooser] = await Promise.all([fresh.page.waitForEvent("filechooser"), fresh.page.click("#kDevImportAll")]);
       await chooser.setFiles({ name: "kyoshi-cloud.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(all)) });
-      await fresh.page.waitForTimeout(300);
+      // Import all always asks (a confirm, or an alert when it refuses); the file is in once that's answered.
+      await until(() => fresh.dialogs.length >= 1, "Import all's confirm");
+      await fresh.page.waitForFunction(n => Kyoshi.apps.hawky.S.items.filter(i => !i.deleted).length === n, TEXTS.length);
       eq(await errands(fresh), TEXTS.slice().sort(), "Import all takes it back");
 
       // Decrypt a file…: Hawky's file as it is in the repository → its plain save.
