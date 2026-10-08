@@ -66,6 +66,8 @@
     }
     return [null, s];
   }
+  // Those amounts anywhere in a text, for a RegExp (paste.js's minutes: "1½ hours"); readAmount reads what it finds.
+  const AMOUNT = `(?:\\d+\\s*[${F}]|\\d+\\s+\\d+\\s*\\/\\s*\\d+|\\d+\\s*\\/\\s*\\d+|[${F}]|\\d*[.,]\\d+|\\d+)`;
 
   // An ingredient's name in any case, spaces collapsed; as the list keys it (keyName), its last word singular too.
   const normName = name => name.toLowerCase().replace(/\s+/g, " ").replace(/\.$/, "").trim();
@@ -180,5 +182,5 @@
     return "Other";
   }
 
-  Object.assign(A, { parseLine, toBase, fmtAmount, fmtLine, scaledLine, normName, guessSection });
+  Object.assign(A, { parseLine, readAmount, AMOUNT, toBase, fmtAmount, fmtLine, scaledLine, normName, guessSection });
 })(Kyoshi, Kyoshi.apps.turtleduck);

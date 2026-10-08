@@ -1,10 +1,10 @@
 /* Kyoshi · tests/turtleduck-recipes.test.js — Turtleduck's recipes, as the user keeps them: the pop-up (Save & add
  * another, its checks, Esc asking first), the list by meal type with "last cooked" and "5×", Archive (out of the sidebar
  * and the picker), Delete (planned meals keep the name; the lists and the cook view know it's gone); Paste recipes (a
- * block without a name, one you already have, one repeated in the paste); the cook view (the steps as typed, a batch's
- * scaled amounts); store-bought items (Cooked · Store-bought, On hand kept, counted again or emptied, "last had", the
- * paste key, the cook view); and the data: Export then Import, other apps' backups and an empty one refused, a damaged
- * one cleaned, bug reports with counts only. */
+ * block without a name, one you already have, one repeated in the paste; times like "1½ hours"); the cook view (the
+ * steps as typed, a batch's scaled amounts); store-bought items (Cooked · Store-bought, On hand kept, counted again or
+ * emptied, "last had", the paste key, the cook view); and the data: Export then Import, other apps' backups and an empty
+ * one refused, a damaged one cleaned, bug reports with counts only. */
 "use strict";
 const { TODAY, DESKTOP, eq, ok, has, lacks, open, importBackup, exportBackup, lastDialog, switchTo, addDays, mondayOf, travel } = require("./lib");
 const gen = require("./generate");
@@ -105,6 +105,13 @@ module.exports = [
       eq(await p.evaluate(() => Kyoshi.apps.turtleduck.liveRecipes().filter(r => r.name === "Pancakes").map(r => [r.meal, r.servings, r.prepMin, r.kcal, r.protein, r.ingredients, r.steps])),
         [["breakfast", 2, 15, 350, 12, ["200 g flour", "2 eggs"], "Mix and fry."]], "read as written (a range of minutes: its lower end)");
       eq((await td.recipeRows(tab)).map(r => r.split(" · ")[0]), ["Overnight oats", "Pancakes", "Rice bowl", "Salad", "Chili", "Curry", "Fried rice", "Mystery stew", "Chili (2)", "Pancakes (2)", "Toast"], "added, by meal type (no Meal: line is Any)");
+      // Times in fractions of an hour, as recipes write them.
+      await p.click("#kMount #pasteBtn");
+      await p.fill("#kMount #pasteText", ["# Roast", "Prep: 1½ hours", "Cook: 1 1/2 hours", "Roast it.", "", "# Stew", "Prep: 1/2 hour", "Cook: ¾–1 h", "Stew it."].join("\n"));
+      await p.click("#kMount #pastePreviewBtn");
+      await p.click("#kMount #pasteAddBtn");
+      eq(await p.evaluate(() => Kyoshi.apps.turtleduck.liveRecipes().filter(r => r.name === "Roast" || r.name === "Stew").map(r => [r.name, r.prepMin, r.cookMin]).sort()),
+        [["Roast", 90, 90], ["Stew", 30, 45]], "1½ hours, 1 1/2 hours, 1/2 hour, ¾–1 h");
 
       // The cook view: the steps as typed (bullets as bullets), from a recipe's Cook.
       await p.click('#kMount #recipeGroups [data-act="cook"][data-id="rc-chili"]');
