@@ -364,16 +364,17 @@ module.exports = [
       await importBackup(third, { ...gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }), medication: "semaglutide", asked: { medication: "yes", dosing: 4.5 } });
       eq(await startupShown(third), [true, true], "still asked");
       eq([(await exportBackup(third)).asked, await bugLine(third, "- GLP-1")], [{ medication: false, dosing: 0 }, "- GLP-1 medication: tirzepatide"], "cleaned");
-      // Sync's combine: a save that answered a medication this version doesn't know answers nothing here (the dosing
-      // questions still come with its question); one that answered Semaglutide answers both, with Semaglutide; a later
-      // version's answers count.
-      eq(await combine(third, { medication: true, dosing: 4 }, "orforglipron"), [true, false], "an unknown medication: nothing taken");
-      eq(await startupShown(third), [true, true], "still asked, the dosing questions with it");
+      // Sync's combine: a save that answered a medication this version doesn't know takes nothing here (the dosing
+      // questions still come with its question) and needs nothing back; one that answered Semaglutide answers both, with
+      // Semaglutide; then a later version's dosing answer counts, whatever medication it came with.
+      eq((await combine(third, { medication: true, dosing: 4 }, "orforglipron"))[0], true, "an unknown medication: nothing to save back");
+      eq([await startupShown(third), await bugLine(third, "- Start-up asked")], [[true, true], "- Start-up asked: medication no, dosing v0"], "still asked, the dosing questions with it");
       eq(await combine(third, { medication: true, dosing: 4 }, "semaglutide"), [true, true], "combined");
       eq(await startupShown(third), [true, false], "the dosing questions answered (your name still asked)");
       eq([await bugLine(third, "- GLP-1"), await bugLine(third, "- Start-up asked")], ["- GLP-1 medication: semaglutide", "- Start-up asked: medication yes, dosing v4"], "both answered");
-      eq(await combine(third, { medication: true, dosing: 5 }), [true, true], "a later version's");
-      eq([await startupShown(third), (await exportBackup(third)).asked], [[true, false], { medication: true, dosing: 5 }], "answered, the version kept");
+      eq(await combine(third, { medication: true, dosing: 5 }, "orforglipron"), [true, true], "a later version's, with a medication unknown here");
+      eq([await startupShown(third), (await exportBackup(third)).asked, await bugLine(third, "- GLP-1")], [[true, false], { medication: true, dosing: 5 }, "- GLP-1 medication: semaglutide"],
+        "answered, the version kept, Semaglutide too");
 
       // A new device given a save whole that answered None takes None.
       const fourth = await open(t, { app: "bosco", size: DESKTOP });

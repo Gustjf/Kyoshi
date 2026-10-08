@@ -77,11 +77,15 @@ module.exports = [
       eq((await goals(tab))[0][2], "Sep 27, 2026", "on the day the average crossed it");
       eq(await chart(tab), [14, 1], "its line gone, the dots all there");
 
-      // Two hundred days of weigh-ins, closer together than a ring is wide: the rings go under the line, so the dots and
-      // the line between them stay blue. A single weigh-in: its dot alone.
+      // Two hundred days of weigh-ins, closer together than a ring is wide, and a year of weekly ones changing little (too
+      // short a line between two rings): the rings go under the line, so the dots and the line between them stay blue. A
+      // single weigh-in: its dot alone.
       const daily = Array.from({ length: 200 }, (_, i) => ({ date: D(i - 199), weight: +(215 - 0.05 * i + (i % 2) * 0.4).toFixed(1) }));
       await importBackup(tab, gen.bosco({ doses: 0, weights: daily }));
       eq(await image(tab), { width: 1080, dots: [[5, 199], [3.5, 199], [7, 1]], curves: 0, joined: 199, blue: 199, ringed: 0 }, "the progress image of a long history");
+      const weekly = Array.from({ length: 53 }, (_, i) => ({ date: D(7 * i - 364), weight: +(215 - 0.2 * i).toFixed(1) }));
+      await importBackup(tab, gen.bosco({ doses: 0, weights: weekly }));
+      eq(await image(tab), { width: 1080, dots: [[5, 52], [3.5, 52], [7, 1]], curves: 0, joined: 52, blue: 52, ringed: 0 }, "the progress image of a steady weekly history");
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: TODAY, weight: 181.4 }] }));
       eq(await image(tab), { width: 1080, dots: [[7, 1]], curves: 0, joined: 0, blue: 0, ringed: 0 }, "the progress image with one weigh-in");
     }

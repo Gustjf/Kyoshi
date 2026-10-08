@@ -99,16 +99,18 @@
     ctx.fillStyle = fill;
     ctx.fill();
     // A dot at every weigh-in, in a white ring as the latest has (below): every ring, then every dot, so no ring whitens
-    // the dots before it. A ring cuts the line, setting each weigh-in apart; where most weigh-ins come less than a ring's
-    // width after the one before (a long history), the rings go under the line instead, or they'd whiten it.
+    // the dots before it. A ring cuts the line, setting its weigh-in apart; one close to the weigh-in before or after it
+    // (less than a ring's width along the dates, or too short a line between: a long or steady history) has its ring
+    // under the line instead, or the rings would whiten the line.
     const earlier = pts.slice(0, -1);
-    const crowded = earlier.filter((pt, i) => pts[i + 1].x - pt.x < 13).length * 2 > earlier.length;
-    const rings = () => {
+    const close = (p, q) => q.x - p.x < 13 || Math.hypot(q.x - p.x, q.y - p.y) < 20;
+    const crowded = (pt, i) => (i > 0 && close(pts[i - 1], pt)) || close(pt, pts[i + 1]);
+    const rings = list => {
       ctx.lineWidth = 3;
       ctx.strokeStyle = "#ffffff";
-      earlier.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2); ctx.stroke(); });
+      list.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2); ctx.stroke(); });
     };
-    if (crowded) rings();
+    rings(earlier.filter(crowded));
     ctx.beginPath();
     tracePath(ctx, pts);
     ctx.strokeStyle = ACCENT;
@@ -116,7 +118,7 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
-    if (!crowded) rings();
+    rings(earlier.filter((pt, i) => !crowded(pt, i)));
     ctx.fillStyle = ACCENT;
     earlier.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2); ctx.fill(); }); // the blue its ring leaves a 5 px dot
     const end = pts[pts.length - 1];

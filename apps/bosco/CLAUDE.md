@@ -37,11 +37,12 @@ Backup JSON (Export, autosave files) = the standalone's format, so old backups i
 the newer save has the field, so a device that logged the dose and forgot them wins).
 `asked` (7.600 on): start-up info's answers, `{ medication: true|false, dosing: the version answered }` from `profile.medicationAsked` / `dosingAsked`.
 Joined, never undone, so no `u`: asked on either save is asked (Import, a save taken whole and a combine alike), the dosing version only grows; a file
-without it (an older copy) leaves yours. The medication's counts only with an answer this version knows (the save's own `medication`: "none" or a
-medication), and the dosing version only with it (else they're asked together). A device whose medication question wasn't answered takes that answer
-(before the doses' rule, which still answers it from a dose otherwise); one that answered keeps its own. Combining counts the answers only as asked
-or not, and the dosing version (`dataKey`), so two devices with different medication answers never keep saving back and forth; an older copy's save,
-without them, isn't set apart by them (no saving back for it, which would stamp ours newer than its next change).
+without it (an older copy) leaves yours. A device whose medication question wasn't answered takes the save's own `medication` with it, if this
+version knows it ("none" or a medication; before the doses' rule, which still answers it from a dose otherwise); one that answered keeps its own. The
+dosing version is taken once this device's medication question is answered (an answer it couldn't take leaves the two to be asked together).
+Combining counts the answers only as asked or not, and the dosing version (`dataKey`; cleaned, `medication` is that yes or no and `answer` the
+answer), so two devices with different medication answers never keep saving back and forth; an older copy's save, without them, isn't set apart by
+them (no saving back for it, which would stamp ours newer than its next change).
 Bump `DATA_SCHEMA_VERSION` only when import has to migrate data (see its comment in `app.js`).
 
 ## Shared with other apps
@@ -71,6 +72,7 @@ the schedule's, each `{ id: "dose:<date>", title: "<Medication> dose", date, tim
 - The dosing plan and vial belong to one medication; where two versions meet, the later `savedAt` wins.
 - Start-up info's answers travel with the data (`asked`): answered on one device, not asked on another.
 - The progress image draws the weigh-ins as straight lines from one to the next, a dot at each in a white ring (the latest bigger), over a soft
-  fill: every ring before any dot, the rings over the line (setting each weigh-in apart) unless most weigh-ins come less than a ring's width after the
-  one before (a long history), then under it, or they'd whiten it. The page's chart is its own (`render.js`).
+  fill: every ring before any dot; a ring over the line (setting its weigh-in apart), or under it for a weigh-in close to the one before or after
+  (less than a ring's width along the dates, or a line under 20 px between), or the rings would whiten the line. The page's chart is its own
+  (`render.js`).
 - Bug reports never include weights, doses, dates or names.
