@@ -151,7 +151,7 @@ module.exports = [
       await fresh.page.click("#kDevBadge");
       const [chooser] = await Promise.all([fresh.page.waitForEvent("filechooser"), fresh.page.click("#kDevImportAll")]);
       await chooser.setFiles({ name: "kyoshi-backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(all)) });
-      await fresh.page.waitForTimeout(200);
+      for (const end = Date.now() + 5000; !fresh.dialogs.some(d => d[1].includes("with this backup?")) && Date.now() < end;) await new Promise(r => setTimeout(r, 10));
       has(fresh.dialogs.map(d => d[1]).join(" | "), "with this backup? This backup is from Oct 2, 2026", "Import all names the backup's date");
       lacks(fresh.dialogs.map(d => d[1]).join(" | "), "undefined", "and nothing odd");
     }
