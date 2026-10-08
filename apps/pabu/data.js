@@ -4,7 +4,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId, daysInMonth } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, daysInMonth, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_GROUP, MAX_NOTE, MAX_CADENCES, MAX_TALKS, DEFAULT_EVERY, DEFAULT_HOW, cleanLine, cleanText, cleanMinutes, plural } = A;
 
   const MAX_MS = 8.64e15; // the last moment a date can hold
@@ -121,10 +121,7 @@
   function combine(raw, { replace, plain }) {
     const their = cleanPeople(raw.people);
     if (plain && !their.length) return null;
-    const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
-    const byId = new Map(S.people.map(p => [p.id, p]));
-    if (!replace) their.forEach(p => { const o = byId.get(p.id); if (!o || newer(p, o)) byId.set(p.id, p); });
-    const next = replace ? their : inOrder([...byId.values()]);
+    const next = replace ? their : inOrder(mergeById(S.people, their)); // each person's later change (K.util)
     const key = list => JSON.stringify(inOrder(list));
     return {
       same: key(next) === key(their),

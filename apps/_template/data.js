@@ -4,7 +4,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isPos, newId } = K.util;
+  const { isObj, isPos, newId, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_TEXT } = A;
 
   const persist = () => A.store.set("items", JSON.stringify(S.items));
@@ -62,10 +62,7 @@
   function combine(raw, { replace, plain }) {
     const their = cleanItems(raw.items);
     if (plain && !their.length) return null;
-    const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
-    const byId = new Map(S.items.map(i => [i.id, i]));
-    if (!replace) their.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
-    const next = replace ? their : inOrder([...byId.values()]);
+    const next = replace ? their : inOrder(mergeById(S.items, their)); // each item's later change (K.util)
     const key = list => JSON.stringify(inOrder(list));
     return {
       same: key(next) === key(their),

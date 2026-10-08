@@ -16,7 +16,7 @@
  * The save: { schemaVersion: 1, appVersion (Kyoshi's), bugReports, prefs }. */
 (function (K) {
   "use strict";
-  const { isObj, isPos } = K.util;
+  const { isObj, isPos, newer, mergeById } = K.util;
   const SCHEMA = 1;
   const REPORTS_MAX = 200; // reports kept (markers aside): beyond, the oldest become markers
   const MARKER_DAYS = 60;  // how long a cleared report's marker is kept
@@ -168,18 +168,13 @@
   // Another device's save: taken whole, or combined with this log report by report, the later change winning (so a
   // marker over the report it cleared); the preferences whole, the later pick winning either way (an older copy's save
   // has none: these stay). The same on every device, so two combining at once agree.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const sameAs = (a, b) => JSON.stringify(inOrder(a)) === JSON.stringify(inOrder(b));
   const samePrefs = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   function combine(raw, { replace, plain }) {
     const theirs = clean(raw.bugReports), theirPrefs = cleanPrefs(raw.prefs);
     if (plain && !theirs.length && !theirPrefs.u) return null;
     let next = theirs;
-    if (!replace) {
-      const byId = new Map(clean(reports).map(r => [r.id, r]));
-      theirs.forEach(r => { const o = byId.get(r.id); if (!o || newer(r, o)) byId.set(r.id, r); });
-      next = inOrder([...byId.values()]);
-    }
+    if (!replace) next = inOrder(mergeById(clean(reports), theirs)); // each report's later change (K.util)
     const nextPrefs = newer(prefs, theirPrefs) ? prefs : theirPrefs;
     return {
       same: sameAs(next, theirs) && samePrefs(nextPrefs, theirPrefs),

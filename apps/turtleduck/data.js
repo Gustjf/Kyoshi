@@ -5,7 +5,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, newer, mergeById, mergeKeys } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MAX_STOCK, MIN_SCALE, MAX_SCALE,
     MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, SLOTS, DEFAULT_TIMES, DEFAULT_LENGTHS,
     MIN_LENGTH, MAX_LENGTH, cleanLine, cleanText, clampInt, numIn, plural, own, onGrid, dayIndex } = A;
@@ -259,21 +259,8 @@
   // A save from the sync folder: taken whole, or combined with ours — the lists item by item, the ticks, sections, days'
   // own times, skipped trips and weeks confirmed key by key, the settings whole — the later change winning. The same on
   // every device, so two combining at once agree.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
-  function merge(mine, theirs) {
-    const byId = new Map(mine.map(i => [i.id, i]));
-    theirs.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
-    return inOrder([...byId.values()]);
-  }
-  function mergeKeys(mine, theirs) {
-    const out = {};
-    [...new Set(Object.keys(mine).concat(Object.keys(theirs)))].sort().forEach(k => {
-      const a = own(mine, k) ? mine[k] : null, b = own(theirs, k) ? theirs[k] : null;
-      out[k] = !a ? b : !b ? a : newer(b, a) ? b : a;
-    });
-    return out;
-  }
+  const merge = (mine, theirs) => inOrder(mergeById(mine, theirs)); // each id's later change (K.util), in order
   const sorted = o => Object.keys(o).sort().map(k => [k, o[k]]);
   const dataKey = d => JSON.stringify(LISTS.map(k => inOrder(d[k])).concat(MAPS.map(k => sorted(d[k])), [d.settings]));
   function combine(raw, { replace, plain }) {

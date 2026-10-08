@@ -23,7 +23,7 @@
  * meeting line flashing (reveal). */
 (function (K) {
   "use strict";
-  const { isObj, isPos, isDate, esc, todayStr, addDays, addMonths, daysBetween, fmtShort, fmtWeekday, readNumber } = K.util;
+  const { isObj, isPos, isDate, esc, todayStr, addDays, addMonths, daysBetween, fmtShort, fmtWeekday, readNumber, mergeKeys } = K.util;
   const $ = id => document.getElementById(id);
   const KEY = "meetings";
   const BLOCK = "Meeting";   // the title of Momo's cards they fill
@@ -194,10 +194,8 @@
 
   // Another copy's meetings (a sync folder save, or a backup) with ours: for each, the later change wins, the same on
   // every device. { same: the result is theirs, apply(): keeps the result, false if nothing changed here }.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   function merge(A, raw) {
-    const theirs = cleanAll(raw), ours = A._meet || {}, next = { ...ours };
-    Object.keys(theirs).forEach(id => { if (!next[id] || newer(theirs[id], next[id])) next[id] = theirs[id]; });
+    const theirs = cleanAll(raw), ours = A._meet || {}, next = mergeKeys(ours, theirs); // each meeting's later change (K.util)
     const result = JSON.stringify(cleanAll(next));
     return {
       same: result === JSON.stringify(theirs),

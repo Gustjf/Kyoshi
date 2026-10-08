@@ -1,5 +1,6 @@
 /* Kyoshi · core/util.js — small helpers every app shares, as K.util.
- * Numbers & text, dates (with time travel), formatting, files & clipboard.
+ * Numbers & text, dates (with time travel), formatting, files & clipboard, and how two devices' copies of a thing
+ * are combined (newer, mergeById, mergeKeys: the app side of core/sync.js).
  * In an app file: const { isNum, fmtDate, todayStr } = Kyoshi.util;
  * (An app's own $ is A.$ — it only looks inside that app, see core/shell.js.) */
 (function (K) {
@@ -64,6 +65,28 @@
   const fmtTime = t => new Date(2000, 0, 1, +t.slice(0, 2), +t.slice(3)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const clockTime = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); // now, e.g. "3:04 PM"
 
+  // --- Sync merges (the app side of core/sync.js: every app's combine, core/record.js, core/meetings.js) ---
+  // Two copies of one record stamped with u (Date.now() at its last change): whether a is the later change. A tie goes by
+  // the text, so every device picks the same one and two combining at once agree.
+  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
+  // Two lists of records with an id and a u, record by record: each id's later change, theirs added where new here. In no
+  // order of its own: sort the result as the app keeps its list.
+  function mergeById(mine, theirs) {
+    const byId = new Map(mine.map(i => [i.id, i]));
+    theirs.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
+    return [...byId.values()];
+  }
+  // Two objects of records with a u, key by key: each key's later change (a key one side lacks comes from the other), the
+  // keys sorted, so two devices' results read the same.
+  function mergeKeys(mine, theirs) {
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k), out = {};
+    [...new Set(Object.keys(mine).concat(Object.keys(theirs)))].sort().forEach(k => {
+      const a = has(mine, k) ? mine[k] : null, b = has(theirs, k) ? theirs[k] : null;
+      out[k] = !a ? b : !b ? a : newer(b, a) ? b : a;
+    });
+    return out;
+  }
+
   // --- Files & clipboard ---
   function downloadBlob(blob, filename) {
     const a = document.createElement("a");
@@ -112,6 +135,7 @@
     isNum, isPos, isObj, sum, mean, extent, newId, esc, pad2, fmtNum, fmtSigned, SEP, fmtBytes, readNumber,
     DAY_MS, dateMs, msDate, isDate, daysBetween, addDays, addMonths, daysInMonth, localDate, todayStr, now,
     fmtDate, fmtShort, fmtWeekday, isTime, fmtTime, clockTime,
+    newer, mergeById, mergeKeys,
     downloadBlob, downloadJSON, readFile, copyText
   };
 })(Kyoshi);

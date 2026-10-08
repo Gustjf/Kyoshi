@@ -5,7 +5,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, newer, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_EXERCISE, MAX_ROUTINE, MAX_LINES, MAX_SETS, MAX_REPS, MAX_WEIGHT, MAX_TARGET,
     DEFAULT_TARGET, MAX_PROGRAM, MAX_PROGRAM_NAME, MAIN_PROGRAM, MAX_SESSION_SETS, STEPS, DEFAULT_STEP, MAX_PAIR,
     MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, MAX_SESSION_MINUTES, cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
@@ -234,14 +234,9 @@
   // A save from the sync folder: taken whole, or combined with ours item by item (list by list), the later change
   // winning (programs too), and the program followed and settings whole by their u. The same on every device, so two
   // combining at once agree.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const orderKey = x => (x.started !== undefined ? x.started : x.at);
   const inOrder = list => list.slice().sort((a, b) => orderKey(a) - orderKey(b) || (a.id < b.id ? -1 : 1));
-  function merge(mine, theirs) {
-    const byId = new Map(mine.map(i => [i.id, i]));
-    theirs.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
-    return inOrder([...byId.values()]);
-  }
+  const merge = (mine, theirs) => inOrder(mergeById(mine, theirs)); // each id's later change (K.util), in order
   const dataKey = d => JSON.stringify(LISTS.map(k => inOrder(d[k])).concat(d.program, d.settings));
   function combine(raw, { replace, plain }) {
     const their = cleanAll(raw);

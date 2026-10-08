@@ -43,7 +43,7 @@ testplan.md           the flow test campaign: simulated lives through Momo and t
 core/                 the shared DNA — K = window.Kyoshi
   base.js             K namespace; console capture for bug reports (loads first)
   changelog.js        Kyoshi's version + changelog
-  util.js             K.util: numbers, text, dates (time-travel aware), formatting, files, clipboard
+  util.js             K.util: numbers, text, dates (time-travel aware), formatting, files, clipboard, sync merges (newer, mergeById, mergeKeys: each app's combine, record.js, meetings.js)
   seasons.js          K.seasons: when spring/summer/fall/winter start (North America), the next after a day
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder

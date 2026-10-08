@@ -5,7 +5,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_TEXT, MAX_NOTE, MAX_VENDOR, MAX_TOPIC, MAX_ITEM, MAX_ITEM_NOTE, MAX_LOCK_DAYS,
     cleanLine, cleanText, cleanMinutes } = A;
 
@@ -124,12 +124,7 @@
   // same on every device, so two combining at once agree. A save from before shopping lists (no `lists`) knows nothing
   // of them, so ours stay, even when it's taken whole (and the folder gets them back).
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
-  function merged(ours, theirs) {
-    const byId = new Map(ours.map(x => [x.id, x]));
-    theirs.forEach(x => { const o = byId.get(x.id); if (!o || newer(x, o)) byId.set(x.id, x); });
-    return inOrder([...byId.values()]);
-  }
+  const merged = (ours, theirs) => inOrder(mergeById(ours, theirs)); // each id's later change (K.util), in order
   function combine(raw, { replace, plain }) {
     const their = cleanItems(raw.items), theirLists = Array.isArray(raw.lists) ? cleanLists(raw.lists) : null;
     if (plain && !their.length && !(theirLists && theirLists.length)) return null;

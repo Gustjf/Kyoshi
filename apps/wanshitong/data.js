@@ -7,7 +7,7 @@
   // Categories that were merged or removed: novels and textbooks are books now; courses (removed) show as Other.
   const OLD_CATS = { novel: "book", textbook: "book", elearning: "other", inperson: "other" };
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, newer, mergeById } = K.util;
   const { HAVE, SLOTS, MAX_NAME, MAX_INFO, MAX_WHY, MAX_DIRECTOR, MAX_YEAR, DATA_SCHEMA_VERSION } = A;
 
   const persist = () => {
@@ -103,7 +103,6 @@
   // ==========================================================================
   // A save from the sync folder: taken whole, or combined with ours item by item and spot by
   // spot, the later change winning. The same on every device, so two combining at once agree.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
   const dataKey = d => JSON.stringify([inOrder(d.items), SLOTS.map(k => d.slots[k])]);
   function combine(raw, { replace, plain }) {
@@ -111,10 +110,8 @@
     if (plain && !their.items.length) return null;
     let next = their;
     if (!replace) {
-      const byId = new Map(S.items.map(i => [i.id, i]));
-      their.items.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
       const slot = k => (newer(their.slots[k], S.slots[k]) ? their.slots[k] : S.slots[k]);
-      next = { items: inOrder([...byId.values()]), slots: Object.fromEntries(SLOTS.map(k => [k, slot(k)])) };
+      next = { items: inOrder(mergeById(S.items, their.items)), slots: Object.fromEntries(SLOTS.map(k => [k, slot(k)])) }; // each one's later change (K.util)
     }
     return {
       same: dataKey(next) === dataKey(their),

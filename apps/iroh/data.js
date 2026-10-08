@@ -4,7 +4,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_VISION, MAX_TITLE, MAX_WHY, MAX_NEXT, MAX_HOURS_WEEK, MAX_HOURS_TOTAL,
     cleanLine, cleanText, cleanHours, isSeason, isYear, live } = A;
   const LISTS = ["areas", "goals"];
@@ -105,13 +105,8 @@
   // A save from the sync folder (see core/sync.js): taken whole, or combined with ours item by item (list by
   // list), the later change winning, in the order they were added. The same on every device, so two combining
   // at once agree.
-  const newer = (a, b) => a.u > b.u || (a.u === b.u && JSON.stringify(a) > JSON.stringify(b));
   const inOrder = list => list.slice().sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
-  function merge(mine, theirs) {
-    const byId = new Map(mine.map(i => [i.id, i]));
-    theirs.forEach(i => { const o = byId.get(i.id); if (!o || newer(i, o)) byId.set(i.id, i); });
-    return inOrder([...byId.values()]);
-  }
+  const merge = (mine, theirs) => inOrder(mergeById(mine, theirs)); // each id's later change (K.util), in order
   const dataKey = d => JSON.stringify(LISTS.map(k => inOrder(d[k])));
   function combine(raw, { replace, plain }) {
     const their = { areas: cleanAreas(raw.areas), goals: cleanGoals(raw.goals) };
