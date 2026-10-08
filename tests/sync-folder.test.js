@@ -3,7 +3,8 @@
  * Folder… button, this device's save goes in; another device's is loaded, and lands in the browser's storage together
  * with its version counters (a reload keeps it); and when the folder is stopped while a pass is reading its next file,
  * the save already brought in is stored with its counters all the same — never the counters alone, which would claim
- * changes this device doesn't have (the file is never read again, and the next save would spread the loss). */
+ * changes this device doesn't have (the file is never read again, and the next save would spread the loss); a save made
+ * by a newer Kyoshi isn't brought in: sync stops, its banner saying to reload, and nothing is saved meanwhile. */
 "use strict";
 const { DESKTOP, eq, ok, has, open, devPanel, importBackup, lastDialog, text } = require("./lib");
 const gen = require("./generate");
@@ -169,6 +170,28 @@ module.exports = [
       await ready(tab);
       eq(await shown(tab), withPhone, "a reload shows the phone's errand");
       eq(await p.evaluate(() => Kyoshi.sync.saveOf(Kyoshi.apps.hawky).items.map(i => i.text).sort()), withPhone, "and this device's next save carries it");
+    }
+  },
+  {
+    name: "sync folder: a save made by a newer Kyoshi isn't brought in; sync stops, saying to reload, and saves nothing meanwhile",
+    async run(t) {
+      const tab = await open(t, { app: "hawky", size: DESKTOP, init: fakeFolder }), p = tab.page;
+      await importBackup(tab, gen.hawkyItems(ERRANDS));
+      const own = await connect(tab);
+      const mine = JSON.parse(await p.evaluate(n => window.__folder.read("hawky", n), own));
+      // The phone runs a later Hawky: its save says so.
+      const later = (parseFloat(await p.evaluate(() => Kyoshi.apps.hawky.VERSION)) + 0.001).toFixed(3);
+      await plant(tab, PHONE_FILE, { ...otherSave(mine, "phone1", "Call the plumber"), appVersion: later });
+      await p.clock.runFor(5000);
+      await until(async () => (await folderState(tab)) === "error", "sync stops");
+      eq(await text(tab, "#kSyncBannerText"), `“${PHONE_FILE}” in the sync folder was saved by a newer Kyoshi (Hawky): reload this page to get it. Until then nothing is saved to the folder from here.`, "the banner says why");
+      eq(await shown(tab), TEXTS, "nothing of it came in");
+      ok(!(await stored(tab)).clock.phone1, "nor its counter");
+      // A change here meanwhile stays out of the folder.
+      await p.fill("#kMount #addText", "Get a key cut");
+      await p.press("#kMount #addText", "Enter");
+      await p.clock.runFor(5000);
+      eq(JSON.parse(await p.evaluate(n => window.__folder.read("hawky", n), own)).items.map(i => i.text).sort(), TEXTS, "this device's file is left as it was");
     }
   }
 ];

@@ -6,13 +6,16 @@
  * in the same write as the app's version counters, so the two never part). Each device
  * writes only its own file per app (meta.file), so a sync tool never sees two devices edit the same
  * file. An app with photos or documents (A.data.files) also has them copied both ways as plain files in
- * <folder>/<app id>/files/ (core/files.js mirror).
+ * <folder>/<app id>/files/ (core/files.js mirror). A save made by a newer Kyoshi (a later version of the app, or of its
+ * file format) is never brought in: folder sync stops ("error") until the page is reloaded, as the cloud does, so this
+ * copy can't strip what it doesn't know and save that for every device.
  * Per app (A._sync.folder): seen (file name -> "lastModified:size" already read), note (last thing it did), queued,
  * timer; the engine's meta.dirty says the app has changes the folder lacks. */
 (function (K) {
   "use strict";
   const { isObj, clockTime } = K.util;
 
+  const later = (a, b) => parseFloat(a) > parseFloat(b); // "10.380" after "10.374" (false when either isn't a version)
   const SYNC_CHECK_MS = 5000;    // how often the folder is checked for other devices' saves
   const AUTOSAVE_DELAY_MS = 400; // quick edits in a row are saved to the folder once
   const RETRY_NOTE = "Couldn't reach the folder, retrying";
@@ -65,8 +68,12 @@
       let raw = null;
       try { raw = JSON.parse(await file.text()); } catch (err) { /* not a save, or changed while being read: retried once it changes */ }
       if (root !== dir || K.testMode) return;
+      const save = isObj(raw) && A.data.looksLike(raw);
+      if (save && (later(raw.appVersion, A.VERSION) || later(raw.schemaVersion, A.data.schemaVersion))) { // not marked seen: read again once reloaded
+        return setState("error", `“${name}” in the sync folder was saved by a newer Kyoshi (${A.meta.name}): reload this page to get it. Until then nothing is saved to the folder from here.`);
+      }
       ch.seen.set(name, sig);
-      const result = isObj(raw) && A.data.looksLike(raw) ? K.sync.incorporate(A, raw) : null;
+      const result = save ? K.sync.incorporate(A, raw) : null;
       if (!result) continue;
       // The app stores and redraws what came in straight away, in the same tick as its version counters (one write,
       // core/storage.js): the folder let go or the tab closed before the next file is read can't leave the counters
