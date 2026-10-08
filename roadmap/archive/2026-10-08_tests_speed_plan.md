@@ -1,5 +1,29 @@
 # Kyoshi — plan: the end-to-end tests, faster and side by side (one session)
 
+**Done 2026-10-08**, in one session as planned (pushed to its session's branch `claude/optimistic-babbage-w467t0`).
+| | Before | After |
+|---|---|---|
+| Full run, one at a time (`--serial`) | 191 s reported, **286 s wall** (the uncleared timer: ~90 s after the summary) | 170 s reported, **170 s wall** |
+| Full run at the default width (8 on 4 cores) | — | **58–63 s wall** (5 runs: 59.8, 61.6, 60.5, 61.0, 63.0) |
+| `node tests/run.js "bosco goals"` (2 tests) | ~91 s wall | **1.3 s wall** |
+
+Widths measured (full runs, one after another, all green): 1 → 173 s · 2 → 98 · 3 → 79 · 4 → 69 · 6 → 62 · **8 → 58**.
+A width above the core count won (a test waits on its page as much as it works), so the default is written as
+`2 * os.cpus().length`. Shake-out: 5 runs at 8, 2 at 16 (60.9, 62.6 s), 1 `--serial` (170.2 s): **8 of 8 green, no
+failure to triage**; `badgermole-history` 3× green at the default width. 121 tests throughout.
+**D4a**, no core change: `importBackup` counts each call of the app's `A.data.importBackup` in the page (wrapped once
+per page) and returns once it has run or a dialog came (every refusal before it alerts); 10 s, then a clear error.
+`serial: true` only on "ten years" (the audit found no other speed check). The summary line also names the width.
+Helpers (Haiku): 36 read-only audits (27 test files, 9 helpers; the 20-at-once limit made it two waves): no shared
+state anywhere (generate.js's `random(seed)` per call, nothing mutating its inputs; the fake GitHub per call, routed per
+context; no system clipboard), the 11 fixed waits, the one speed check; then 8 editors, one per file with a
+`waitForTimeout`, each green 3× at `--parallel 4` and once `--serial`: Import all's waits (shell, signals, cloud,
+cloud-backups) wait for its confirm; the other tab's changes (turtleduck-momo ×2, badgermole-momo) wait for that tab's
+state; badgermole-session's negative check waits for the other tab to read the save, then runs its 50 ms reload timer on
+the fake clock (its 100 ms wait was already covered by the one before it); wakelock's 800 ms wait for the late lock to
+come and go. Every diff read; the two 5 s caps they put on `waitForFunction` dropped to Playwright's default (a cap
+only matters when failing). No fixed wait left. Stretch not done.
+
 Planned 2026-10-08 from a measured baseline (a Claude cloud session: 4 cores, 16 GB, Node 22, Playwright's Chromium).
 Nothing is built yet. One coding session, in order; steps 1, 3 and 5 fan out to Haiku 5.5 helpers (see *Helpers*).
 

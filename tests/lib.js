@@ -1,8 +1,8 @@
 /* Kyoshi · tests/lib.js — what the end-to-end tests share: opening Kyoshi from disk the way the user does (index.html,
  * no server) in a fresh browser profile (its own storage) with a fixed clock (so "today" is always TODAY, whatever the
  * real date), watching the console (the browser's own lines about cloud requests the fake GitHub turned down aside),
- * answering dialogs (alert / confirm; a test can queue answers and read what was
- * asked), switching apps through the switcher, opening Developer Mode, importing a backup through its file picker,
+ * answering dialogs (alert / confirm; a test can queue answers and read what was asked), switching apps through the
+ * switcher, opening Developer Mode, importing a backup through its file picker (waiting for the import itself),
  * exporting one, time travel, and small checks. Used by run.js and every *.test.js. */
 "use strict";
 const path = require("path");

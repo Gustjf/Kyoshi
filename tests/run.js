@@ -88,8 +88,9 @@ async function main() {
   const browser = await playwright().chromium.launch();
   const results = [];
   const started = Date.now();
+  const width = Math.min(parallel, queue.length) || 1;
   const worker = async () => { while (queue.length) results.push(await runOne(browser, queue.shift())); };
-  await Promise.all(Array.from({ length: Math.min(parallel, queue.length) }, worker));
+  await Promise.all(Array.from({ length: queue.length ? width : 0 }, worker));
   for (const test of alone) results.push(await runOne(browser, test));
   await browser.close();
   const secs = ((Date.now() - started) / 1000).toFixed(1);
@@ -97,7 +98,7 @@ async function main() {
   fs.writeFileSync(TIMES, JSON.stringify({ ...times, ...Object.fromEntries(results.map(r => [r.name, r.ms])) }, null, 1));
   const failed = results.filter(r => !r.ok).map(r => r.name);
   const slowest = results.slice().sort((a, b) => b.ms - a.ms).slice(0, 3).map(r => `${r.name} (${(r.ms / 1000).toFixed(1)}s)`);
-  console.log(`\n${results.length - failed.length} passed, ${failed.length} failed (${secs}s, ${Math.min(parallel, tests.length) || 1} at a time)${failed.length ? `: ${failed.join("; ")}` : ""}`);
+  console.log(`\n${results.length - failed.length} passed, ${failed.length} failed (${secs}s, ${width} at a time)${failed.length ? `: ${failed.join("; ")}` : ""}`);
   if (slowest.length) console.log(`slowest: ${slowest.join("; ")}`);
   process.exitCode = failed.length ? 1 : 0;
 }
