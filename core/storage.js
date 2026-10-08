@@ -11,7 +11,7 @@
  * page draws (theme, last app; also Bugs & requests' last pick) and for reading what the standalone apps left behind.
  * The cloud's key (kyoshi.cloud, core/cloud.js) is kept there too, as a preference: never taken for data.
  * In test mode (time travel) apps' writes stay in memory; core's are still kept: K.store's, and the hidden Kyoshi app's
- * (its store isn't testable: the bug log, core/record.js). */
+ * (its store isn't testable: the bug log, core/record.js), so those still follow other tabs' saves there (the apps' don't). */
 (function (K) {
   "use strict";
   const DB_NAME = "kyoshi-data", STORE = "kv";
@@ -22,6 +22,7 @@
   let db = null;
   const cache = new Map();  // every key -> its text, as saved
   let shadow = null;        // apps' keys -> text (null once removed), while in test mode
+  const kept = new Set(), tested = new Set(); // the stores' prefixes: writes real in test mode (core's) / kept in memory (apps')
   let pending = new Map();  // writes not yet sent to IndexedDB: key -> text, or null to remove
   let failed = false;       // a save failed: said once
   const listeners = [];
@@ -149,9 +150,17 @@
     });
   }
 
-  // Another tab saved these keys: read them again, then tell Kyoshi (a change waiting to be saved here wins).
+  // Whether a key's store writes for real in test mode, so it follows other tabs there too: core's (K.store's "kyoshi."
+  // is over every key, so not one under an app's store).
+  const under = (k, set) => [...set].some(p => k.startsWith(p));
+  const realInTest = k => under(k, kept) && !under(k, tested);
+
+  // Another tab saved these keys: read them again, then tell Kyoshi (a change waiting to be saved here wins). In test
+  // mode, only core's own keys (the bug log): the apps' stay as they are here.
   async function refresh(keys) {
-    if (shadow || !db || !Array.isArray(keys) || !keys.length) return;
+    if (!db || !Array.isArray(keys)) return;
+    if (shadow) keys = keys.filter(realInTest);
+    if (!keys.length) return;
     let values;
     try {
       const store = db.transaction(STORE, "readonly").objectStore(STORE);
@@ -166,7 +175,7 @@
 
   // localStorage fallback: another tab saved (keys null: everything was cleared).
   function onLocalStorage(e) {
-    if (shadow || (e.key !== null && !isData(e.key))) return;
+    if (e.key === null ? shadow : !isData(e.key) || (shadow && !realInTest(e.key))) return;
     if (e.key === null) {
       cache.clear();
       localEntries().forEach(([k, v]) => { if (isData(k)) cache.set(k, v); });
@@ -179,8 +188,10 @@
   // The stores apps and core use
   // ==========================================================================
   // One space in the store: the same calls as localStorage, with keys under prefix
-  // ("kyoshi.<id>."), and keys() listing them. A testable one keeps its writes in memory in test mode.
+  // ("kyoshi.<id>."), and keys() listing them. A testable one keeps its writes in memory in test mode (and doesn't
+  // follow other tabs there); one that isn't writes for real and does.
   function scoped(prefix, testable = true) {
+    (testable ? tested : kept).add(prefix);
     const key = k => prefix + k;
     const sget = k => {
       const full = key(k);
@@ -188,7 +199,7 @@
       return cache.has(full) ? cache.get(full) : null;
     };
     return {
-      prefix, key,
+      prefix, key, testable,
       get: sget,
       set: (k, v) => (testable && shadow ? void shadow.set(key(k), String(v)) : write(key(k), String(v))),
       remove: k => (testable && shadow ? void shadow.set(key(k), null) : write(key(k), null)),

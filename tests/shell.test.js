@@ -4,8 +4,8 @@
  * every app's data and the theme picked (the later pick winning), Backup & sync is Developer Mode's (no app's page has it)
  * and follows the app on screen, the tab always reads "Kyoshi", a checkup done today shows a green ✓, Bugs & requests (the
  * pop-up's list, a report edited in place or deleted, Developer Mode's exports and Clear; the log kept by the hidden Kyoshi
- * app, the old one carried over), and Developer Mode's changelog (the latest three entries, then how many older ones the
- * file holds). */
+ * app, the old one carried over; a tab in test mode still following another tab's reports, never its errands), and
+ * Developer Mode's changelog (the latest three entries, then how many older ones the file holds). */
 "use strict";
 const fs = require("fs");
 const { TODAY, PHONE, DESKTOP, eq, ok, has, open, lastDialog, switchTo, devPanel, importBackup, exportBackup, travel, text } = require("./lib");
@@ -364,6 +364,43 @@ module.exports = [
       eq(await text(tab, "#kReportBug"), "Bugs & requests", "the footer count goes");
       await p.click("#kReportBug");
       eq([await p.locator("#kBugList .bug-row").count(), await p.locator("#kBugListHead").isHidden()], [0, true], "and the pop-up's list");
+    }
+  },
+  {
+    name: "shell: two tabs — one in test mode still follows the other's bug reports (the log's writes are real there), never its errands; a report filed in each leaves both listed in both, and after a reload",
+    async run(t) {
+      const a = await open(t, { app: "hawky" }), b = await open(t, { ctx: a.ctx, app: "hawky" }), BOTH = ["From the other tab", "From the tab in test mode"];
+      const file = async (tab, words) => {
+        await tab.page.click("#kReportBug");
+        await tab.page.fill("#kBugText", words);
+        await tab.page.click("#kBugSubmit");
+        await tab.page.locator("#kBugStatus", { hasText: "Saved bug" }).waitFor({ timeout: 5000 });
+        await tab.page.click("#kBugOverlay .modal-close");
+      };
+      // The log as kept in memory; the footer link and the pop-up's rows (newest first); Hawky's errands, in memory and as stored.
+      const logged = tab => tab.page.evaluate(() => Kyoshi.record.live().map(r => r.description));
+      const popup = async tab => { await tab.page.click("#kReportBug"); const rows = await tab.page.$$eval("#kBugList .bug-row", els => els.map(e => e.title)); await tab.page.click("#kBugOverlay .modal-close"); return [await text(tab, "#kReportBug"), rows]; };
+      const errands = tab => tab.page.evaluate(() => [Kyoshi.apps.hawky.S.items.length, (Kyoshi.apps.hawky.store.json("items") || []).length]);
+      const reloaded = async tab => { await tab.page.reload(); await tab.page.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started); };
+      await travel(a, 1);
+      // Tab B adds an errand and files a report: A follows the report (the log's writes are real in test mode), not the errand.
+      await b.page.fill("#kMount #addText", "Buy stamps");
+      await b.page.press("#kMount #addText", "Enter");
+      await b.page.waitForFunction(() => Kyoshi.apps.hawky.S.items.length === 1);
+      await file(b, BOTH[0]);
+      await a.page.waitForFunction(() => Kyoshi.record.live().length === 1, null, { timeout: 5000 });
+      eq([await logged(a), await popup(a)], [[BOTH[0]], ["Bugs & requests · 1", [BOTH[0]]]], "A lists B's report, in its footer link and pop-up");
+      eq([await errands(a), await a.page.evaluate(() => Kyoshi.testMode)], [[0, 0], true], "B's errand stays out of A, still in test mode");
+      // A files one too: its write (real) keeps B's report, and B follows.
+      await file(a, BOTH[1]);
+      eq(await logged(a), BOTH, "A lists both");
+      await b.page.waitForFunction(() => Kyoshi.record.live().length === 2, null, { timeout: 5000 });
+      eq([await logged(b), await popup(b)], [BOTH, ["Bugs & requests · 2", BOTH.slice().reverse()]], "and so does B, in its footer link and pop-up (newest first)");
+      eq([(await stored(a.page)).length, (await stored(b.page)).length], [2, 2], "both kept, as each tab's store holds them");
+      // After a reload (A out of test mode): both, in both; B's errand reaches A then.
+      await reloaded(a);
+      await reloaded(b);
+      eq([await logged(a), await logged(b), await a.page.evaluate(() => Kyoshi.testMode), await errands(a)], [BOTH, BOTH, false, [1, 1]], "after a reload");
     }
   }
 ];

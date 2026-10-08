@@ -254,15 +254,14 @@
   K.tick = tick;
 
   // --- Another tab of Kyoshi saved (keys, or null for everything): the app whose keys changed
-  // reloads them (once that tab's done), so this one never saves over it. Not in test mode,
-  // which isn't saving. ---
+  // reloads them (once that tab's done), so this one never saves over it. In test mode, which
+  // isn't saving the apps' changes, only the hidden Kyoshi app (its writes are real there). ---
   const reloadTimers = {};
   function onStoreChange(keys) {
-    if (K.testMode) return;
     const touched = prefix => keys === null || keys.some(k => k.startsWith(prefix));
     K.order.forEach(id => { // the hidden Kyoshi app too: the bug log
       const A = K.apps[id];
-      if (!A.started || !touched(A.store.prefix)) return;
+      if (!A.started || !touched(A.store.prefix) || (K.testMode && A.store.testable)) return;
       clearTimeout(reloadTimers[id]);
       reloadTimers[id] = setTimeout(() => {
         try {
