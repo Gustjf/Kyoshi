@@ -47,9 +47,11 @@ them (no saving back for it, which would stamp ours newer than its next change).
 Sync combines day by day and part by part (`mergeVersions`, 7.601): the weigh-in, and the dose with its medication and its site, each take
 the later change to them (`wu`, `du`; with neither stamped, or a tie, the more recent save's, as before 7.601), and a part only one save has
 comes along. A marker deletes, on either side, the versions of the parts it names up to its stamps, so a part changed after them stays: a
-dose logged on a device that hadn't seen the deletion, a day weighed in again (it doesn't get its old dose back). An import counts as a
-change made here now (every part stamped now), so a restored backup sticks on every device and its days win over older changes there; a save
-taken whole keeps its own stamps. `load` puts a part this device set again after deleting its day back above its marker, should an older
+dose logged on a device that hadn't seen the deletion, a day weighed in again (it doesn't get its old dose back). A stamp set here is
+always later than the version it replaces and than its marker, whatever the clocks say (`above`: another device's may run ahead). An import
+counts as a change made here now (every part stamped above every version of it known here), so a restored backup sticks on every device and
+its days win over older changes there; this device's markers stay (a day deleted here that the backup lacks stays deleted). A save taken
+whole keeps its own stamps. `load` puts a part this device set again after deleting its day back above its marker, should an older
 tab have stripped its stamp (in memory, kept with the next change). `hasData` counts the markers too. Goals as before (every one from
 either). An older file has neither stamps nor `gone` (its days count as unchanged, nothing deleted), and an older copy of Bosco drops both
 when it saves: reload Bosco on every device after updating. Combining an older copy's save leaves the stamps and markers out of `same`, as for

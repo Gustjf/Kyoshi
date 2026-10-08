@@ -14,23 +14,21 @@
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
   const STANDALONE_KEYS = { entries: "weightTrackerEntries_v1", goals: "weightTrackerGoals_v1", profile: "weightTrackerProfile_v1" };
 
-  function persist() {
-    A.store.set("entries", JSON.stringify(S.entries));
-    A.store.set("gone", JSON.stringify(S.gone));
-    A.store.set("goals", JSON.stringify(S.goals));
-    A.store.set("profile", JSON.stringify(S.profile));
-  }
+  const persist = () => ["entries", "gone", "goals", "profile"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
 
   // A day as kept, its fields in this order; its weigh-in's stamp (wu: when it last changed, 7.601 on) and its dose's
   // (du) only once they have one, so older data reads as it was.
   const day = (date, weight, doseMg, medication, site, wu, du) => ({ date, weight, doseMg, medication, site, ...(wu ? { wu } : {}), ...(du ? { du } : {}) });
   // A day's weigh-in ({ weight }) or dose ({ doseMg, medication, site }) set here: its entry made or changed, and that
-  // part stamped now, so where two devices changed it, the later change wins (mergeVersions).
+  // part stamped now, so where two devices changed it, the later change wins (mergeVersions); always later than the
+  // version it replaces and than its deletion here, whatever the clocks say (another device's may run ahead).
   function setDay(date, part) {
-    const e = { ...(S.entries.find(x => x.date === date) || { date, weight: null, doseMg: null, medication: null, site: null }), ...part };
-    const now = Date.now(), dose = "doseMg" in part;
-    S.entries = S.entries.filter(x => x.date !== date).concat(day(date, e.weight, e.doseMg, e.medication, e.site, dose ? e.wu : now, dose ? now : e.du)).sort(byDate);
+    const old = S.entries.find(x => x.date === date), k = "doseMg" in part ? "du" : "wu", t = above(old, S.gone.find(g => g.date === date), k);
+    const e = { ...(old || { date, weight: null, doseMg: null, medication: null, site: null }), ...part };
+    S.entries = S.entries.filter(x => x.date !== date).concat(day(date, e.weight, e.doseMg, e.medication, e.site, k === "wu" ? t : e.wu, k === "du" ? t : e.du)).sort(byDate);
   }
+  // A stamp for a part (k: "wu", "du") changed now: later than now and than its stamp in each copy or marker given.
+  const above = (...args) => { const k = args.pop(); return Math.max(Date.now(), ...args.map(x => ((x && x[k]) ?? -1) + 1)); };
   // A day deleted here: out of the entries, and a marker kept apart from them (nothing else sees it) holding the stamps
   // of the weigh-in and the dose it deleted (0: unstamped), so another device's copy of those doesn't bring them back,
   // while a change made there that this device never saw (a later stamp) stays.
@@ -295,11 +293,14 @@
     }
     const count = n => `${n} ${n === 1 ? "entry" : "entries"}`;
     if (ask && S.entries.length && !K.backup.ask(A, raw, `Replace your ${count(S.entries.length)} and goals with the ${count(clean.entries.length)} in this backup?`)) return;
+    const was = { entries: new Map(S.entries.map(e => [e.date, e])), gone: S.gone };
     applyBackup(clean, backupUnit);
     // An import is a change made here now: its days win over older changes elsewhere, and a day deleted since that it
-    // brings back stays (each part stamped now, above any marker of it).
-    const now = Date.now();
-    S.entries = S.entries.map(e => day(e.date, e.weight, e.doseMg, e.medication, e.site, hasWeight(e) ? now : 0, hasDose(e) ? now : 0));
+    // brings back stays (each part stamped above every version of it known here: this device's, the backup's, and
+    // their markers, which stay); a day deleted here that the backup doesn't have stays deleted.
+    S.gone = joinGone([was.gone, S.gone]);
+    const marks = new Map(S.gone.map(g => [g.date, g])), at = (e, k) => above(e, was.entries.get(e.date), marks.get(e.date), k);
+    S.entries = S.entries.map(e => day(e.date, e.weight, e.doseMg, e.medication, e.site, hasWeight(e) ? at(e, "wu") : 0, hasDose(e) ? at(e, "du") : 0));
     save(false);
     S.currentPage = 1;
     A.renderOneTimeInfo();

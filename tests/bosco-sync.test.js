@@ -3,8 +3,9 @@
  * save from another that didn't change it, so a corrected weigh-in stays when the other device logs that day's dose; a
  * deleted day stays deleted, and one deleted then weighed in again doesn't get its old dose back; deleting a day deletes
  * only what this device had of it (a dose logged meanwhile on the other device stays, and isn't asked for again); a
- * restored backup sticks on every device; an older copy's save (no stamps, no markers) neither brings a deleted day back
- * nor needs saving back for; an older backup imports as it was. */
+ * restored backup sticks on every device; a change outranks the version it replaces even when the other device's clock
+ * runs ahead; an older copy's save (no stamps, no markers) neither brings a deleted day back nor needs saving back for;
+ * an older backup imports as it was. */
 "use strict";
 const { TODAY, DESKTOP, eq, ok, open, importBackup, exportBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -125,6 +126,33 @@ module.exports = [
       eq(await send(b, a), "Loaded", "A takes B's");
       eq(await days(a), want, "and stays on A");
       eq(await send(a, b), null, "nothing more to bring in");
+    }
+  },
+  {
+    name: "bosco sync: a change outranks the version it replaces even when the other device's clock runs ahead: a day weighed in again, a restore",
+    async run(t) {
+      const [a, b] = await pair(t, gen.bosco({ doses: 2, weights: [{ date: D(-3), weight: 190 }, { date: D(-2), weight: 189.5 }, { date: D(-1), weight: 189 }] }));
+      const backup = await exportBackup(a);
+      // B's clock runs 10 minutes ahead: its weigh-in and its deletion are stamped then.
+      await b.ctx.clock.fastForward(10 * 60000);
+      await weighIn(b, D(-2), 187);
+      await remove(b, D(-3));
+      eq(await send(b, a), "Loaded", "A takes B's");
+      // A, by its own clock minutes earlier: D-2 deleted and weighed in again.
+      await remove(a, D(-2));
+      await weighIn(a, D(-2), 186);
+      await weighIn(b, D(-1), 188.8); // B's own change meanwhile
+      eq(await send(a, b), "Combined changes with", "B combines A's");
+      eq((await days(b)).filter(d => d[0] === D(-2)), [[D(-2), 186, null]], "A's weigh-in, set after the deletion, stays");
+      eq(await send(b, a), "Loaded", "A takes B's");
+      // A restores the backup; B, meanwhile, adds a day. The restore outranks B's deletion of D-3, stamped ahead.
+      await importBackup(a, backup);
+      await weighIn(b, D(-4), 190.1);
+      eq(await send(a, b), "Combined changes with", "B combines the restore");
+      const want = [[D(-12), null, 5], [D(-5), null, 5], [D(-4), 190.1, null], [D(-3), 190, null], [D(-2), 189.5, null], [D(-1), 189, null]];
+      eq(await days(b), want, "the backup's days restored on B, its own new day kept");
+      eq(await send(b, a), "Loaded", "A takes B's");
+      eq(await days(a), want, "the same on A");
     }
   },
   {
