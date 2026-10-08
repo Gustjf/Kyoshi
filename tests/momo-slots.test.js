@@ -5,8 +5,9 @@
  * the app's), a copy of one is yours; Clear keeps them, Save as baseline keeps one per slot; a fixed need gets a pinned
  * card of its own in any open week (one not planned yet too) and never goes to Tasks, and once the baseline is loaded
  * it fills its slot's card, which takes its title, length and time (an exception) and goes back to its slot's when
- * the need goes; slot and fixed survive Export and Import, and a backup of nothing but Momo's own cards has nothing
- * to import. */
+ * the need goes; a card going Inside a title goes inside your card of it, never a slot's (one already there goes back
+ * on its own); slot and fixed survive Export and Import, and a backup of nothing but Momo's own cards has nothing to
+ * import. */
 "use strict";
 const { DESKTOP, eq, ok, has, open, importBackup, exportBackup, lastDialog, at, TODAY } = require("./lib");
 const gen = require("./generate");
@@ -101,6 +102,12 @@ module.exports = [
       eq((await mo.baselineCards(tab)).map(c => c.slot), ["turtleduck:dinner:0", "turtleduck:groceries:6"], "only the slots are left");
       ok(await mo.visible(tab, "sampleBaselineBtn"), "Start from a sample is back: nothing of yours");
       ok(!(await mo.visible(tab, "clearBtn")), "nothing to clear");
+
+      // Inside "Dinner": your own Dinner holds a card, the slot's never does (a day with only that one: on its own).
+      await mo.newCard(tab, { title: "Dinner", hours: 1, days: [1] });
+      await mo.newCard(tab, { title: "Call home", hours: 0.25, days: [0, 1], inside: "Dinner" });
+      eq(await p.evaluate(() => { const cards = Kyoshi.apps.momo.S.data.baseline.cards, byId = id => cards.find(c => c.id === id); return cards.filter(c => c.title === "Call home").map(c => [c.day, c.parentId && [byId(c.parentId).title, byId(c.parentId).fixed]]); }),
+        [[0, null], [1, ["Dinner", false]]], "Monday's on its own beside the slot, Tuesday's inside your Dinner");
     }
   },
   {
@@ -165,12 +172,14 @@ module.exports = [
       world.baseline.cards.push(
         { id: "s1", title: "Dinner", hours: 0.75, day: 0, pin: 18, app: "turtleduck", slot: "turtleduck:dinner:0", fixed: true, auto: true },
         { id: "s2", title: "Lunch", hours: 0.5, day: 0, pin: 12, app: "turtleduck", slot: "hawky:lunch:0", fixed: true, auto: true },
-        { id: "s3", title: "Tea", hours: 0.5, day: 0, pin: 15, slot: "turtleduck:tea:0", fixed: true, auto: true });
+        { id: "s3", title: "Tea", hours: 0.5, day: 0, pin: 15, slot: "turtleduck:tea:0", fixed: true, auto: true },
+        { id: "n1", title: "Call", hours: 0.25, day: 0, parentId: "s1", pos: "middle" }, { id: "n2", title: "Read", hours: 0.5, day: 0, parentId: "bl0", pos: "bottom" });
       world.weeks[tk] = { cards: [{ id: "w1", title: "Cook: Soup", hours: 1, day: 3, pin: 16, need: "turtleduck:cook:2026-10-01", app: "turtleduck", auto: true, fixed: true, slot: null }], closed: false, u: 1 };
       await importBackup(tab, world);
       const out = await exportBackup(tab);
-      eq(out.baseline.cards.map(c => [c.id, c.slot, c.fixed, c.auto, c.app]), [["bl0", null, false, false, null], ["s1", "turtleduck:dinner:0", true, true, "turtleduck"], ["s2", null, true, false, "turtleduck"], ["s3", null, false, false, null]],
+      eq(out.baseline.cards.map(c => [c.id, c.slot, c.fixed, c.auto, c.app]), [["bl0", null, false, false, null], ["s1", "turtleduck:dinner:0", true, true, "turtleduck"], ["s2", null, true, false, "turtleduck"], ["s3", null, false, false, null], ["n1", null, false, false, null], ["n2", null, false, false, null]],
         "a slot kept with its app's prefix; another app's prefix or no app is dropped, and auto with it");
+      eq(out.baseline.cards.filter(c => c.parentId).map(c => [c.id, c.parentId]), [["n2", "bl0"]], "a card inside a slot's goes back on its own; inside yours it stays");
       eq(out.weeks[tk].cards.map(c => [c.need, c.fixed, c.auto, c.pin]), [["turtleduck:cook:2026-10-01", true, true, 16]], "a fixed need's card kept");
 
       // Nothing of yours: slot cards and cards Momo placed.

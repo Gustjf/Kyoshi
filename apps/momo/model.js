@@ -144,13 +144,14 @@
 
   // Keeps nesting sound after anything that could break it (a card taken
   // away, a damaged file): a card inside another must be on the same day as
-  // that card, which is on its own; otherwise it goes back on its own. Only a
+  // that card, which is on its own and not set in its app (the editor's Inside
+  // could put one there before 10.485); otherwise it goes back on its own. Only a
   // card on its own on a day can be pinned.
   function tidyNesting(list) {
     const byId = new Map(list.cards.map(c => [c.id, c]));
     list.cards.forEach(c => {
       const p = byId.get(c.parentId);
-      if (!p || p === c || p.day !== c.day) c.parentId = null;
+      if (!p || p === c || p.day !== c.day || isFixed(p)) c.parentId = null;
     });
     const nested = new Set(list.cards.filter(c => c.parentId).map(c => c.id));
     list.cards.forEach(c => {

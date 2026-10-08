@@ -290,11 +290,13 @@
     }
     // On each day it goes inside that day's card picked under Inside (the one
     // it's already inside, where it is), at the position picked under Where,
-    // if there's one; else it's on its own.
+    // if there's one; else it's on its own. Never inside a card set in its app
+    // (a slot's Dinner: model.js canHold), so a day with only that one leaves it on its own.
     const cur = card && card.parentId && list.cards.find(c => c.id === card.parentId);
+    const can = c => c !== card && !c.parentId && !A.isFixed(c) && c.title.toLowerCase() === inTitle;
     const holderOn = d => {
-      const p = !inTitle ? null : cur && cur.day === d && cur.title.toLowerCase() === inTitle ? cur
-        : d === null ? null : list.cards.find(c => c.day === d && c !== card && !c.parentId && c.title.toLowerCase() === inTitle);
+      const p = !inTitle ? null : cur && cur.day === d && can(cur) ? cur
+        : d === null ? null : list.cards.find(c => c.day === d && can(c));
       return p && !A.sameKind(p, { title }) ? p : null;
     };
     const parentOn = d => (holderOn(d) || { id: null }).id;

@@ -140,7 +140,7 @@ async function placeTask(tab, key, dayList) {
 // --- Cards ---
 // + New card: a title, hours and days (none: it waits in Tasks); on the baseline a time it's pinned at ("0900"), and its
 // before & after (as setSides).
-async function newCard(tab, { title, hours = 1, days: on = [], pin = "", sides: around = null }) {
+async function newCard(tab, { title, hours = 1, days: on = [], pin = "", sides: around = null, inside = "" }) {
   const p = tab.page;
   await p.click(`${M} #addTaskBtn`);
   await p.waitForSelector(`${M} #cardOverlay.open`);
@@ -150,6 +150,7 @@ async function newCard(tab, { title, hours = 1, days: on = [], pin = "", sides: 
     for (const d of on) await p.click(`${M} #cardDays .day-pill[data-day="${d}"]`);
     if (await p.locator(`${M} #cardDays .day-pill.active[data-day=""]`).count()) await p.click(`${M} #cardDays .day-pill[data-day=""]`);
   }
+  if (inside) await p.selectOption(`${M} #cardIn`, inside.toLowerCase()); // Inside: a title
   if (pin) await p.fill(`${M} #cardPin`, pin);
   if (around) await setSides(tab, around);
   await p.click(`${M} #cardSaveBtn`);
