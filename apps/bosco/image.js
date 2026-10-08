@@ -98,6 +98,17 @@
     fill.addColorStop(1, "rgba(37,99,235,0)");
     ctx.fillStyle = fill;
     ctx.fill();
+    // A dot at every weigh-in, in a white ring as the latest has (below): every ring, then every dot, so no ring whitens
+    // the dots before it. A ring cuts the line, setting each weigh-in apart; where most weigh-ins come less than a ring's
+    // width after the one before (a long history), the rings go under the line instead, or they'd whiten it.
+    const earlier = pts.slice(0, -1);
+    const crowded = earlier.filter((pt, i) => pts[i + 1].x - pt.x < 13).length * 2 > earlier.length;
+    const rings = () => {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ffffff";
+      earlier.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2); ctx.stroke(); });
+    };
+    if (crowded) rings();
     ctx.beginPath();
     tracePath(ctx, pts);
     ctx.strokeStyle = ACCENT;
@@ -105,16 +116,17 @@
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.stroke();
-    // A dot at every weigh-in, the latest bigger; hundreds of them overlap into a beaded line.
-    pts.forEach((pt, i) => {
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, i === pts.length - 1 ? 7 : 5, 0, Math.PI * 2);
-      ctx.fillStyle = ACCENT;
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "#ffffff";
-      ctx.stroke();
-    });
+    if (!crowded) rings();
+    ctx.fillStyle = ACCENT;
+    earlier.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2); ctx.fill(); }); // the blue its ring leaves a 5 px dot
+    const end = pts[pts.length - 1];
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = ACCENT;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
 
     text("GOAL", tableLeft, tableTop, "600 20px", MUTED);
     text("STATUS", tableLeft + 260, tableTop, "600 20px", MUTED);

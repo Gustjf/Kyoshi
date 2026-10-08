@@ -10,8 +10,9 @@
  * damaged one is cleaned; with every site off, no site shows anywhere; folder sync's combine takes the newer save's
  * sites and skips and never loses a dose's site to an older copy; Momo's board leaves the site out of a dose's note
  * (the owner's choice). Start-up info's answers travel with the data (Phase 3 of 2026-10-08_feedback_batch_plan.md):
- * answered on one device, not asked on another (Export and Import, sync's combine), the medication's answer with them;
- * an older or unanswered save never takes them back, a later version's counts, a damaged one is cleaned. */
+ * answered on one device, not asked on another (Export and Import, sync's combine), the medication's answer with them
+ * (None too); an older or unanswered save never takes them back, nor saves back and forth over two answers; a later
+ * version's counts; a damaged one is cleaned, and a medication this version doesn't know answers nothing. */
 "use strict";
 const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, devPanel, importBackup, exportBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -313,15 +314,17 @@ module.exports = [
   {
     name: "bosco doses: start-up info answered on one device isn't asked on another (Export and Import, sync's combine); an older or unanswered save leaves the answers; a damaged one is cleaned",
     async run(t) {
-      // Sync's combine of this device's own save with its answers set (or none: a copy from before them); [same, changed].
-      const combine = (tab, asked, replace = false) => tab.page.evaluate(([how, whole]) => {
+      // Sync's combine of this device's own save with its answers set (null: none, a copy from before them) and, if given,
+      // another medication answered there; [same, changed].
+      const combine = (tab, asked, medication = null, replace = false) => tab.page.evaluate(([how, med, whole]) => {
         const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build()));
         if (how) raw.asked = how; else delete raw.asked;
+        if (med) raw.medication = med;
         const c = A.data.combine(raw, { replace: whole, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
         const changed = c.apply();
         if (changed) A.data.afterSync();
         return [c.same, changed];
-      }, [asked, replace]);
+      }, [asked, medication, replace]);
 
       // A computer with a weigh-in and no dose yet: start-up info asks it all. Answered: Semaglutide, the buttocks on too.
       const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
@@ -349,22 +352,34 @@ module.exports = [
       await importBackup(phone, { ...gen.bosco(), asked: { medication: false, dosing: 0 } });
       eq(await startupShown(phone), [false, false], "one that answered nothing: still answered");
       eq(await bugLine(phone, "- GLP-1"), "- GLP-1 medication: semaglutide", "the answer kept over the backup's doses");
-      // So does sync: a copy from before (and this device saves its answers back for it), or one taken whole that answered nothing.
-      eq(await combine(phone, null), [false, false], "a copy from before changes nothing");
-      eq(await combine(phone, { medication: false, dosing: 0 }, true), [false, false], "nor one taken whole");
-      eq((await exportBackup(phone)).asked, { medication: true, dosing: 4 }, "kept");
+      // So does sync: a copy from before (nothing to save back for it), one taken whole that answered nothing (this device's
+      // answers go back to it), and one that answered Tirzepatide (the same as here, so nothing goes back and forth).
+      eq(await combine(phone, null), [true, false], "a copy from before changes nothing");
+      eq(await combine(phone, { medication: false, dosing: 0 }, null, true), [false, false], "nor one taken whole that answered nothing");
+      eq(await combine(phone, { medication: true, dosing: 4 }, "tirzepatide"), [true, false], "nor one that answered another medication");
+      eq([(await exportBackup(phone)).asked, await bugLine(phone, "- GLP-1")], [{ medication: true, dosing: 4 }, "- GLP-1 medication: semaglutide"], "kept, Semaglutide too");
 
       // A damaged file's answers are cleaned: nothing counts as asked, and its medication isn't taken.
       const third = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(third, { ...gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }), medication: "semaglutide", asked: { medication: "yes", dosing: 4.5 } });
       eq(await startupShown(third), [true, true], "still asked");
       eq([(await exportBackup(third)).asked, await bugLine(third, "- GLP-1")], [{ medication: false, dosing: 0 }, "- GLP-1 medication: tirzepatide"], "cleaned");
-      // Sync's combine with a save that answered them answers them here; a later version's answers count too.
-      eq(await combine(third, { medication: true, dosing: 4 }), [true, true], "combined");
+      // Sync's combine: a save that answered a medication this version doesn't know answers nothing here (the dosing
+      // questions still come with its question); one that answered Semaglutide answers both, with Semaglutide; a later
+      // version's answers count.
+      eq(await combine(third, { medication: true, dosing: 4 }, "orforglipron"), [true, false], "an unknown medication: nothing taken");
+      eq(await startupShown(third), [true, true], "still asked, the dosing questions with it");
+      eq(await combine(third, { medication: true, dosing: 4 }, "semaglutide"), [true, true], "combined");
       eq(await startupShown(third), [true, false], "the dosing questions answered (your name still asked)");
-      eq(await bugLine(third, "- Start-up asked"), "- Start-up asked: medication yes, dosing v4", "both answered");
+      eq([await bugLine(third, "- GLP-1"), await bugLine(third, "- Start-up asked")], ["- GLP-1 medication: semaglutide", "- Start-up asked: medication yes, dosing v4"], "both answered");
       eq(await combine(third, { medication: true, dosing: 5 }), [true, true], "a later version's");
       eq([await startupShown(third), (await exportBackup(third)).asked], [[true, false], { medication: true, dosing: 5 }], "answered, the version kept");
+
+      // A new device given a save whole that answered None takes None.
+      const fourth = await open(t, { app: "bosco", size: DESKTOP });
+      await importBackup(fourth, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }));
+      eq(await combine(fourth, { medication: true, dosing: 4 }, "none", true), [true, true], "taken whole");
+      eq([await startupShown(fourth), await bugLine(fourth, "- GLP-1")], [[true, false], "- GLP-1 medication: none"], "None taken, the dosing questions answered");
     }
   }
 ];

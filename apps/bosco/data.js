@@ -88,15 +88,16 @@
   // Start-up info's answers in a save, { medication: true|false, dosing } in the file (7.600 on; undefined from an older
   // copy, which leaves ours as they are): the medication question's answer if it was asked there ("none" or a
   // medication, the save's own medication; "" if not asked, or one this version doesn't know), and the version of the
-  // dosing questions answered (0: never). Once asked on one device, asked on all; the version only grows.
+  // dosing questions answered with it (0: never, or no answer here: then they're asked together). Once asked on one
+  // device, asked on all; the version only grows.
   function cleanAsked(a, medication) {
     if (!a || typeof a !== "object") return undefined;
-    const answer = medication === "none" || Object.hasOwn(MEDICATIONS, medication) ? medication : "";
-    return { medication: a.medication === true ? answer : "", dosing: askedVersion(a.dosing) };
+    const answer = a.medication === true && (medication === "none" || Object.hasOwn(MEDICATIONS, medication)) ? medication : "";
+    return { medication: answer, dosing: answer ? askedVersion(a.dosing) : 0 };
   }
   const askedVersion = v => (Number.isInteger(v) && v >= 0 && v < 100 ? v : 0);
-  // Two saves' answers: asked on either, asked (with the first one's answer where both were: a device keeps its own);
-  // the dosing questions by the later version. One undefined (an older copy's): the other's.
+  // Two saves' answers: asked on either, asked (the first one's answer where both were; a device that answered keeps its
+  // own anyway, applyBackup); the dosing questions by the later version. One undefined (an older copy's): the other's.
   const joinAsked = (a, b) => (a && b ? { medication: a.medication || b.medication, dosing: Math.max(a.dosing, b.dosing) } : a || b);
 
   // A dosing plan or vial from storage or a backup, or null if it's unusable.
@@ -284,10 +285,10 @@
       asked: joinAsked(newer.asked, older.asked)
     };
   }
-  // The answers count only as asked or not (and the dosing version): each device keeps its own medication answer, so two
-  // different ones never keep the devices saving back and forth; an older copy's (none) is nothing asked.
+  // The answers count only as asked or not, and the dosing version: each device keeps its own medication answer, so two
+  // different ones never keep the devices saving back and forth.
   const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites,
-    d.asked ? [!!d.asked.medication, d.asked.dosing] : [false, 0]]);
+    d.asked && [!!d.asked.medication, d.asked.dosing]]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -301,7 +302,9 @@
       ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked) }
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
     return {
-      same: dataKey(next) === dataKey(their),
+      // An older copy's save says nothing of the answers, so they alone don't set ours apart from it (saving ours back
+      // for it would stamp them newer than that copy's next change, which a combine would then lose).
+      same: dataKey(next) === dataKey(their.asked ? their : { ...their, asked: next.asked }),
       apply() {
         const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites,
           skipSites: next.skipSites === undefined ? S.profile.skipSites : next.skipSites };

@@ -15,17 +15,39 @@ const goals = tab => tab.page.$$eval(`${M} #goalsBody tr`, rows => rows.map(r =>
 const chart = tab => tab.page.evaluate(m => [document.querySelectorAll(`${m} #chartSvg circle`).length, document.querySelectorAll(`${m} #chartSvg line.goal`).length], M);
 const text = (tab, selector) => tab.page.locator(`${M} ${selector}`).first().innerText();
 const historyDates = tab => tab.page.$$eval(`${M} #historyBody tr`, rows => rows.map(r => r.cells[0].textContent.trim()));
-// The progress image, drawn: its width, its dots' radii in the order drawn (null for one off the canvas's numbers), and
-// how many curves it drew.
+// The progress image, drawn: its width; its circles' radii in the order drawn, as runs [radius, how many] (null for one
+// off the canvas's numbers); how many curves it drew; how many weigh-ins after the first a straight line ends at; and of
+// the weigh-ins before the latest, how many are blue at their middle and halfway to the next, and how many have their
+// white ring across the line beside them, toward the next (the latest's own ring, drawn over all, aside).
 const image = tab => tab.page.evaluate(() => {
-  const P = CanvasRenderingContext2D.prototype, kept = { arc: P.arc, quadraticCurveTo: P.quadraticCurveTo, bezierCurveTo: P.bezierCurveTo }, dots = [];
+  const P = CanvasRenderingContext2D.prototype, kept = { arc: P.arc, lineTo: P.lineTo, quadraticCurveTo: P.quadraticCurveTo, bezierCurveTo: P.bezierCurveTo };
+  const dots = [], centers = new Map(), ends = new Set();
   let curves = 0;
-  P.arc = function (x, y, r, ...rest) { dots.push(Number.isFinite(x) && Number.isFinite(y) ? r : null); return kept.arc.call(this, x, y, r, ...rest); };
+  P.arc = function (x, y, r, ...rest) {
+    const radius = Number.isFinite(x) && Number.isFinite(y) ? r : null, run = dots[dots.length - 1];
+    if (run && run[0] === radius) run[1]++;
+    else dots.push([radius, 1]);
+    centers.set(`${x},${y}`, { x, y });
+    return kept.arc.call(this, x, y, r, ...rest);
+  };
+  P.lineTo = function (x, y) { ends.add(`${x},${y}`); return kept.lineTo.call(this, x, y); };
   P.quadraticCurveTo = function (...args) { curves++; return kept.quadraticCurveTo.apply(this, args); };
   P.bezierCurveTo = function (...args) { curves++; return kept.bezierCurveTo.apply(this, args); };
   try {
-    const A = Kyoshi.apps.bosco;
-    return { width: A.drawReport(A.model()).width, dots, curves };
+    const A = Kyoshi.apps.bosco, canvas = A.drawReport(A.model());
+    const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data; // read once
+    const pixel = (x, y) => { const at = (Math.floor(y) * canvas.width + Math.floor(x)) * 4; return [...data.slice(at, at + 4)]; }; // the one the point is in
+    const isBlue = (x, y) => { const [r, , b] = pixel(x, y); return b > 200 && r < 90; };
+    const isWhite = (x, y) => pixel(x, y).slice(0, 3).every(v => v > 200); // the ring's, not the line's blue
+    const pts = [...centers.values()], earlier = pts.slice(0, -1), end = pts[pts.length - 1];
+    const toward = (p, q, d) => { const len = Math.hypot(q.x - p.x, q.y - p.y); return [p.x + (q.x - p.x) * d / len, p.y + (q.y - p.y) * d / len]; };
+    const besideRing = (p, q) => { const [x, y] = toward(p, q, 5); return Math.hypot(x - end.x, y - end.y) > 10 && isWhite(x, y); };
+    return {
+      width: canvas.width, dots, curves,
+      joined: pts.slice(1).filter(p => ends.has(`${p.x},${p.y}`)).length,
+      blue: earlier.filter((p, i) => isBlue(p.x, p.y) && isBlue((p.x + pts[i + 1].x) / 2, (p.y + pts[i + 1].y) / 2)).length,
+      ringed: earlier.filter((p, i) => besideRing(p, pts[i + 1])).length
+    };
   } finally { Object.assign(P, kept); }
 });
 
@@ -44,7 +66,8 @@ module.exports = [
       has(rows[0][2], `${weeks.toFixed(1)} wks`, "180's ETA counted from the average");
       eq(await text(tab, "#futureWeightGrid .stat .val"), `${(183 * Math.pow(1 - rate, 4)).toFixed(1)} lb`, "a month out, from the average");
       eq(await chart(tab), [15, 2], "every weigh-in's dot, both goals' lines");
-      eq(await image(tab), { width: 1080, dots: Array(14).fill(5).concat(7), curves: 0 }, "the progress image: straight lines, a dot at each weigh-in, the latest bigger");
+      eq(await image(tab), { width: 1080, dots: [[5, 14], [3.5, 14], [7, 1]], curves: 0, joined: 14, blue: 14, ringed: 14 },
+        "the progress image: straight lines from weigh-in to weigh-in, a dot at each in a white ring across the line, the latest bigger");
       has(await text(tab, "#goalsSection"), "A goal counts as reached once the 7-day average passes it.", "the note under the goals");
 
       // A week at 185, then a week at 175: the average passes 180 on the fourth day at 175, not the first.
@@ -54,9 +77,13 @@ module.exports = [
       eq((await goals(tab))[0][2], "Sep 27, 2026", "on the day the average crossed it");
       eq(await chart(tab), [14, 1], "its line gone, the dots all there");
 
-      // A single weigh-in: the image has its one dot, and no line to draw.
+      // Two hundred days of weigh-ins, closer together than a ring is wide: the rings go under the line, so the dots and
+      // the line between them stay blue. A single weigh-in: its dot alone.
+      const daily = Array.from({ length: 200 }, (_, i) => ({ date: D(i - 199), weight: +(215 - 0.05 * i + (i % 2) * 0.4).toFixed(1) }));
+      await importBackup(tab, gen.bosco({ doses: 0, weights: daily }));
+      eq(await image(tab), { width: 1080, dots: [[5, 199], [3.5, 199], [7, 1]], curves: 0, joined: 199, blue: 199, ringed: 0 }, "the progress image of a long history");
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: TODAY, weight: 181.4 }] }));
-      eq(await image(tab), { width: 1080, dots: [7], curves: 0 }, "the progress image with one weigh-in");
+      eq(await image(tab), { width: 1080, dots: [[7, 1]], curves: 0, joined: 0, blue: 0, ringed: 0 }, "the progress image with one weigh-in");
     }
   },
   {

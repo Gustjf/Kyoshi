@@ -6,7 +6,7 @@
   "use strict";
   A.CHANGELOG = [
     { version: "7.600", date: "2026-10-08", changes: [
-      "The progress image draws straight lines between the weigh-ins, each a point you can see, instead of a smoothed curve.",
+      "The progress image draws straight lines between the weigh-ins, with a dot at each, instead of a smoothed curve.",
       "Start-up info's answers travel with your data: once you've answered it on one device (your sites, your medication), your other devices don't ask again.",
       "Reload Bosco on every device after updating."
     ] },
