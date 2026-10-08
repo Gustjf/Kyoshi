@@ -90,12 +90,29 @@ async function devPanel(tab, on) {
 }
 
 // Import JSON for the app on screen (Developer Mode's Backup & sync), picking a file made from data (an object, or text
-// for a broken file); the panel is left as it was.
+// for a broken file); the panel is left as it was. Returns once the import is over: the app's A.data.importBackup has
+// run (counted in the page: every import that gets that far calls it) or a dialog came (every refusal before it says
+// why), whichever is first. A dialog blocks the page until it's answered, and the rest of the import runs straight on
+// after, so the page's next step comes after it.
 async function importBackup(tab, data, name = "backup.json") {
-  const was = await devPanel(tab, true);
-  const [chooser] = await Promise.all([tab.page.waitForEvent("filechooser"), tab.page.click("#kDevImportApp")]);
+  const p = tab.page, was = await devPanel(tab, true);
+  const before = await p.evaluate(() => {
+    const d = Kyoshi.active().data;
+    if (!d.importBackup.counted) {
+      const fn = d.importBackup;
+      d.importBackup = function (...args) { try { return fn.apply(this, args); } finally { window.__kyoshiImports = (window.__kyoshiImports || 0) + 1; } };
+      d.importBackup.counted = true;
+    }
+    return window.__kyoshiImports || 0;
+  });
+  const dialogs = tab.dialogs.length;
+  const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#kDevImportApp")]);
   await chooser.setFiles({ name, mimeType: "application/json", buffer: Buffer.from(typeof data === "string" ? data : JSON.stringify(data)) });
-  await tab.page.waitForTimeout(150);
+  for (const end = Date.now() + 10000; tab.dialogs.length === dialogs;) {
+    if ((await p.evaluate(() => window.__kyoshiImports || 0)) > before) break;
+    if (Date.now() > end) throw new Error("importBackup: the import didn't happen within 10 s");
+    await new Promise(r => setTimeout(r, 10));
+  }
   await devPanel(tab, was);
 }
 

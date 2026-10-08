@@ -62,6 +62,7 @@ module.exports = [
   },
   {
     name: "history: ten years of workouts stay quick to draw and to read for Momo",
+    serial: true, // it times the import and a redraw: run alone, after the others
     async run(t) {
       const tab = await open(t), p = tab.page, data = gen.history({ weeks: 520, thisWeek: 1, seed: 3 });
       const t0 = Date.now();

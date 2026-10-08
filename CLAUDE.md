@@ -81,7 +81,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   pabu/               keep in touch: people (a group and notes each) with calls, texts or visits, each on its own cadence (each a card of its own in Momo; This week at the top); birthdays as events on the board
   _template/          starter for a new app (not loaded) — its CLAUDE.md says how to add one
 tools/decrypt.html    the cloud's files decrypted with the key, from disk, with no network (a backup's all.json as its Export all file; not loaded by index.html)
-tests/                end-to-end tests, not part of the site: run.js (how to run), lib.js, generate.js (made-up data), <app>.js (its screens), cloud.js (a fake GitHub), *.test.js
+tests/                end-to-end tests, not part of the site: run.js (how to run; tests side by side, --serial for one at a time), lib.js, generate.js (made-up data), <app>.js (its screens), cloud.js (a fake GitHub), *.test.js
   sim/                the flow simulator (testplan.md): made-up lives through the real page; `node tests/sim/run.js` writes report.md and bundles/
 ```
 

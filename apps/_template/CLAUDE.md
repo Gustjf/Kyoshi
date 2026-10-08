@@ -34,4 +34,5 @@ its settings, sync and backups (core/meetings.js). For a dot when the user is be
 3. Add its `<link>`/`<script>` tags to `index.html` (app.js first, events.js last; the switcher lists apps in that order), then give every link a new build stamp.
 4. Rewrite this `CLAUDE.md` for the app (purpose, file map, data model). Start its changelog at 1.000 and add a line to Kyoshi's changelog.
 5. Add its flows to the end-to-end tests: `tests/<id>.js` for its screens (selectors in one place), `tests/<id>-….test.js` for what the
-   user does, made-up data in `tests/generate.js`; `node tests/run.js` must pass (see `tests/run.js`).
+   user does, made-up data in `tests/generate.js`; `node tests/run.js` must pass (see `tests/run.js`); a test that measures speed
+   takes `serial: true`, so it runs alone.
