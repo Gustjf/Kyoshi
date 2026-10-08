@@ -37,9 +37,10 @@ const until = async (check, what) => {
 // Import all (Developer Mode), picking a file made from data (an object, or text as it is); its question answered yes.
 async function importAll(tab, data, name = "all.json") {
   const was = await devPanel(tab, true);
+  const dialogs = tab.dialogs.length;
   const [chooser] = await Promise.all([tab.page.waitForEvent("filechooser"), tab.page.click("#kDevImportAll")]);
   await chooser.setFiles({ name, mimeType: "application/json", buffer: Buffer.from(typeof data === "string" ? data : JSON.stringify(data)) });
-  await tab.page.waitForTimeout(300);
+  await until(() => tab.dialogs.length > dialogs, "Import all's question");
   await devPanel(tab, was);
 }
 // A bug report filed through Bugs & requests (the hidden Kyoshi app's log).

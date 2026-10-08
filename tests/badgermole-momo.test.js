@@ -124,7 +124,7 @@ module.exports = [
 
       await bm.start(a, "Pull");
       await a.page.click("#logBtn");
-      await b.page.waitForTimeout(300);
+      await b.page.waitForFunction(() => Kyoshi.apps.badgermole.S.live && Kyoshi.apps.badgermole.S.live.sets.length === 1);
       eq((await bm.stats(b)).week, "1 of 3", "a session in progress isn't counted");
       await switchTo(b, "momo");
       eq(await workouts(b), ["Pull", "Legs"], "nor done in Momo: Pull still waits");
