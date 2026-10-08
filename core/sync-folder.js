@@ -2,7 +2,8 @@
  * the version counters, combining saves). No UI (that's core/backup.js).
  * Changes are saved as JSON into a folder the user picks once (e.g. one Syncthing shares
  * between their phone and computer), each app in its own subfolder (<folder>/<app id>/),
- * and other devices' saves are loaded from it, checking every few seconds. Each device
+ * and other devices' saves are loaded from it, checking every few seconds (each one brought in is stored at once,
+ * in the same write as the app's version counters, so the two never part). Each device
  * writes only its own file per app (meta.file), so a sync tool never sees two devices edit the same
  * file. An app with photos or documents (A.data.files) also has them copied both ways as plain files in
  * <folder>/<app id>/files/ (core/files.js mirror).
@@ -59,7 +60,7 @@
       } catch (err) { /* mid-transfer; the next check gets it */ }
     }
     changedFiles.sort((a, b) => b.file.lastModified - a.file.lastModified);
-    let what = "", data = false;
+    let what = "";
     for (const { name, file, sig } of changedFiles) {
       let raw = null;
       try { raw = JSON.parse(await file.text()); } catch (err) { /* not a save, or changed while being read: retried once it changes */ }
@@ -67,11 +68,13 @@
       ch.seen.set(name, sig);
       const result = isObj(raw) && A.data.looksLike(raw) ? K.sync.incorporate(A, raw) : null;
       if (!result) continue;
+      // The app stores and redraws what came in straight away, in the same tick as its version counters (one write,
+      // core/storage.js): the folder let go or the tab closed before the next file is read can't leave the counters
+      // claiming changes the stored data doesn't have (the file would never be read again).
+      K.sync.settle(A, result.data);
       if (!what) what = `${result.what} “${name}”`;
-      data = data || result.data;
     }
     if (!what) return;
-    K.sync.settle(A, data); // the app stores and redraws what came in
     ch.note = `${what} at ${clockTime()}`;
     ui();
   }
