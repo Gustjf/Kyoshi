@@ -179,9 +179,9 @@
     const date = takenToday ? todayStr() : S.doseAsking.date, doseMg = S.doseAsking.doseMg, site = S.doseAsking.site || null;
     const existing = S.entries.find(e => e.date === date);
     if (existing) {
-      Object.assign(existing, { doseMg, medication: A.currentMedication(), site });
+      A.touch(Object.assign(existing, { doseMg, medication: A.currentMedication(), site }));
     } else {
-      S.entries.push({ date, weight: null, doseMg, medication: A.currentMedication(), site });
+      S.entries.push(A.touch({ date, weight: null, doseMg, medication: A.currentMedication(), site }));
       S.entries.sort(byDate);
     }
     S.profile.skipSites = null;

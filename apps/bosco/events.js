@@ -21,9 +21,9 @@
     if (existing && hasWeight(existing) && existing.weight !== weight &&
         !confirm(`${fmtDate(date)} already has a weigh-in of ${existing.weight.toFixed(1)} ${unit}. Replace it with ${weight.toFixed(1)} ${unit}?`)) return;
     if (existing) {
-      existing.weight = weight; // a dose logged that day stays
+      A.touch(Object.assign(existing, { weight })); // a dose logged that day stays
     } else {
-      S.entries.push({ date, weight, doseMg: null, medication: null, site: null });
+      S.entries.push(A.touch({ date, weight, doseMg: null, medication: null, site: null }));
       S.entries.sort(byDate);
     }
     A.save();
@@ -113,7 +113,7 @@
       const what = hasDose(day) ? `the ${day.doseMg} mg ${medLabel(day.medication)} dose logged ${fmtDate(day.date)}${hasWeight(day) ? ", and that day's weigh-in" : ""}`
         : `the weigh-in of ${day.weight.toFixed(1)} ${S.unit} on ${fmtDateBrief(day.date)}`;
       if (!confirm(`Delete ${what}? This can't be undone.`)) return;
-      S.entries = S.entries.filter(e => e.date !== btn.dataset.date);
+      A.forget(day.date); // kept as a marker, so sync doesn't bring it back
       A.save();
       A.renderAll();
     });

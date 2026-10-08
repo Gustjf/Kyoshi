@@ -101,7 +101,8 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    entries: [],          // { date: "YYYY-MM-DD", weight: number|null, doseMg: number|null, medication: id|null }, one per date, sorted
+    entries: [],          // { date: "YYYY-MM-DD", weight: number|null, doseMg: number|null, medication: id|null, site, u (once changed, 7.601 on) }, one per date, sorted
+    gone: [],             // deleted days' markers { date, u }: apart from the entries, so nothing else sees them
     goals: [],            // goal weights, sorted high to low
     profile: {},          // start-up answers
     unit: "lb",           // the whole app uses one unit at a time: profile.unit, or lb until chosen

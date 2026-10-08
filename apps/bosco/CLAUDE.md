@@ -11,7 +11,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `app.js` | `Kyoshi.register` (name, title, icon, 780px wide); constants (`MEDICATIONS`, `SITES` (22, part by part, each part's in its X), `PARTS` (the order they take turns), `LEGACY_SITES` (the old ids), `DEFAULT_SITES`, `GOAL_AVG_DAYS`, `ONE_TIME_FIELDS`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (weights & units, medication/plan/vial lookups, dose math, `activeSites`, `siteLabel`/`siteShort`, `standsFor`, `partOf`, `sitesIn`, `fmtUnits`, `readNumber`) |
 | `markup.js` | the page: Get Started, Add Entry, Upcoming Doses, Current Trend, History, Goal Weights, Chart, and the dose pop-up |
 | `changelog.js` | version history |
-| `data.js` | storage (`load` incl. first-run carry-over from the standalone, `persist`, `save`), cleaning (`normalizeBackup`, `cleanSites` (an old site turns on every site it's split into), `cleanSkips`, `cleanAsked` / `joinAsked` / `askedVersion` (start-up info's answers), `cleanDosePlan`, `cleanVial`, `cleanPaceGoal`), backups (`A.data`: build/import) and sync merge (`combine`) |
+| `data.js` | storage (`load` incl. first-run carry-over from the standalone, `persist`, `save`; a day changed: `touch`, its `u`; a day deleted: `forget`, its marker), cleaning (`normalizeBackup`, `cleanGone`, `cleanSites` (an old site turns on every site it's split into), `cleanSkips`, `cleanAsked` / `joinAsked` / `askedVersion` (start-up info's answers), `cleanDosePlan`, `cleanVial`, `cleanPaceGoal`), backups (`A.data`: build/import) and sync merge (`combine`, `mergeVersions`) |
 | `trend.js` | math: weekly trend, pace goal & status, `averaged` (the 7-day averages goals go by), `model()` (`w`, `wa`), goal status/ETA, dose totals |
 | `render.js` | `renderAll` and each section: history, upcoming doses, stats, goals & season projections, SVG chart |
 | `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, `saveOneTimeInfo` |
@@ -21,7 +21,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `bosco.css` | styles under `.app-bosco` |
 
 ## State (`A.S`)
-`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept) }] one per date, sorted · `goals` [numbers] high→low ·
+`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept), u: when the day last changed (`Date.now()`; only once it has, 7.601 on: a weigh-in added or replaced, a dose logged) }] one per date, sorted · `gone` [{ date, u }]: the deleted days' markers, one per date (its latest), kept apart from `entries` so nothing else sees them, and for good · `goals` [numbers] high→low ·
 `profile` { name, unit, medication, medicationAsked, dosingAsked, dosePlan, vial, paceGoal, sites, skipSites, schemaVersion } (`medicationAsked`: the medication
 question answered, here or on another device; `dosingAsked`: the version of the dosing questions answered (`DOSING_QUESTIONS_VERSION`; a later one counts as
 answered, and it never goes down); `sites`: the injection sites on, in `SITES` order;
@@ -30,9 +30,9 @@ Developer Mode, null once a dose is logged) · `unit` "lb"|"kg" ·
 UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `dosingAsking`, `paceAsking`, `vialEditing`, `anchorEditing`, `vialMode`, `doseAsking` (+ `site`, `picked`: the pop-up's site).
 
 ## Storage (`A.store`) and backups
-Keys: `entries`, `goals`, `profile`, `doseSnooze` (this device's "Not yet"), `sync` and `meetings` (core's). First open reads the standalone's
+Keys: `entries`, `gone`, `goals`, `profile`, `doseSnooze` (this device's "Not yet"), `sync` and `meetings` (core's). First open reads the standalone's
 `weightTrackerEntries_v1` / `weightTrackerGoals_v1` / `weightTrackerProfile_v1` (never changes them).
-Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, sites, skipSites, asked, entries, goals, cumulativeDoseMgByMedication }`
+Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, sites, skipSites, asked, entries, gone, goals, cumulativeDoseMgByMedication }`
 (`sites`, `skipSites`: as in `profile`; a file without them keeps yours, and where two saves combine the newer one's win — for `skipSites`, whenever
 the newer save has the field, so a device that logged the dose and forgot them wins).
 `asked` (7.600 on): start-up info's answers, `{ medication: true|false, dosing: the version answered }` from `profile.medicationAsked` / `dosingAsked`.
@@ -44,6 +44,12 @@ just now, or none, leaves the dosing questions to be asked).
 Combining counts the answers only as asked or not, and the dosing version (`dataKey`; cleaned, `medication` is that yes or no and `answer` the
 answer), so two devices with different medication answers never keep saving back and forth; an older copy's save, without them, isn't set apart by
 them (no saving back for it, which would stamp ours newer than its next change).
+Sync combines day by day (`mergeVersions`, 7.601): a day both saves have takes the later change to it (its `u`; with neither stamped, or a tie,
+the more recent save's, as before 7.601), and a weigh-in or a dose only the other has comes along with it (a dose, its medication and its site
+together); a day with a marker in either save stays deleted unless it changed after that (so a day deleted and weighed in again doesn't get its
+old dose back); the markers merge by date (`K.util.mergeKeys`), goals as before (every one from either). An older file has neither `u` nor `gone`
+(its days count as unchanged, nothing deleted), and an older copy of Bosco drops both when it saves: reload Bosco on every device after
+updating. Combining an older copy's save leaves the stamps and markers out of `same`, as for the answers.
 Bump `DATA_SCHEMA_VERSION` only when import has to migrate data (see its comment in `app.js`).
 
 ## Shared with other apps
@@ -69,7 +75,8 @@ the schedule's, each `{ id: "dose:<date>", title: "<Medication> dose", date, tim
 - A goal is reached by the 7-day average (`GOAL_AVG_DAYS`, fixed, whatever the Average window shows): Reached once the
   latest average has passed it, dated the first day the average got there; ETAs, the season projections and the chart's
   goal tags go from the latest average, the chart's dots and line stay the weigh-ins. The progress image agrees.
-- Deleting a weigh-in, a day with a dose or a goal always asks first; replacing a weigh-in asks too.
+- Deleting a weigh-in, a day with a dose or a goal always asks first; replacing a weigh-in asks too. A deleted day leaves its marker
+  (`gone`), so another device's copy of it doesn't come back.
 - The dosing plan and vial belong to one medication; where two versions meet, the later `savedAt` wins.
 - Start-up info's answers travel with the data (`asked`): answered on one device, not asked on another.
 - The progress image draws the weigh-ins as straight lines from one to the next, a dot at each in a white ring (the latest bigger), over a soft

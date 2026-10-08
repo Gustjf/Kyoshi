@@ -1,11 +1,12 @@
 /* Bosco · data.js — Bosco's saved data: loading (and, on the first open, bringing in what the
  * standalone Bosco left in this browser), cleaning, saving, backups, and combining with other
  * devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
- * (folder sync) use. Storage keys (A.store): entries, goals, profile, doseSnooze, sync and meetings (core's). */
+ * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, doseSnooze, sync
+ * and meetings (core's). A day changed here is stamped (touch: its u), a day deleted leaves a marker (forget). */
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isNum, isPos, isDate, isTime, todayStr } = K.util;
+  const { isNum, isPos, isDate, isTime, todayStr, mergeKeys } = K.util;
   const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, LEGACY_SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
     byDate, convertWeight, isDoseInterval, weeklyFor, hasDose } = A;
 
@@ -14,8 +15,19 @@
 
   function persist() {
     A.store.set("entries", JSON.stringify(S.entries));
+    A.store.set("gone", JSON.stringify(S.gone));
     A.store.set("goals", JSON.stringify(S.goals));
     A.store.set("profile", JSON.stringify(S.profile));
+  }
+
+  // A day changed here (a weigh-in added or replaced, a dose logged): stamped with when (u), so where two devices
+  // changed it, the later change wins (mergeVersions). Returns the entry.
+  const touch = e => Object.assign(e, { u: Date.now() });
+  // A day deleted here: out of the entries, and a marker kept apart from them (nothing else sees it), so another
+  // device's copy of the day doesn't bring it back.
+  function forget(date) {
+    S.entries = S.entries.filter(e => e.date !== date);
+    S.gone = S.gone.filter(g => g.date !== date).concat({ date, u: Date.now() }).sort(byDate);
   }
 
   // Keeps a change made on this device: stored locally, then counted for sync and
@@ -32,6 +44,7 @@
    * valid weight or dose, are dropped — as are fields from removed features,
    * and (before v4) doses still ahead of today, which were never taken.
    * On duplicate dates the last row wins. Missing goals fall back to defaults.
+   * A day's u (when it last changed, 7.601 on) is kept only once it has one, so older data reads as it was.
    */
   function normalizeBackup(raw, targetUnit) {
     const from = raw.unit === "kg" ? "kg" : "lb";
@@ -48,7 +61,7 @@
       const medication = doseMg === null ? null : /^[a-z0-9 -]{1,40}$/.test(med) ? med : LEGACY_MEDICATION;
       // Where a dose went: a site's id (one from a newer version kept as it is), or null.
       const site = doseMg !== null && typeof e.site === "string" && /^[a-z0-9-]{1,40}$/.test(e.site) ? e.site : null;
-      if (weight !== null || doseMg !== null) days.set(e.date, { date: e.date, weight, doseMg, medication, site });
+      if (weight !== null || doseMg !== null) days.set(e.date, { date: e.date, weight, doseMg, medication, site, ...(isPos(e.u) ? { u: e.u } : {}) });
     });
     const goalList = Array.isArray(raw.goals)
       ? raw.goals.filter(isPos).map(g => convertWeight(g, from, targetUnit))
@@ -56,6 +69,7 @@
     return {
       schemaVersion,
       entries: [...days.values()].sort(byDate),
+      gone: cleanGone(raw.gone),
       goals: [...new Set(goalList.filter(isPos))].sort((a, b) => b - a),
       name: typeof raw.name === "string" ? raw.name.trim() : "",
       medication: Object.hasOwn(MEDICATIONS, raw.medication) ? raw.medication : "",
@@ -66,6 +80,16 @@
       skipSites: cleanSkips(raw.skipSites),
       asked: cleanAsked(raw.asked, raw.medication)
     };
+  }
+
+  // Deleted days' markers, from storage or a save (7.601 on; none in an older version's): [{ date, u }], one per date
+  // (its latest), by date.
+  function cleanGone(list) {
+    const days = new Map();
+    (Array.isArray(list) ? list : []).forEach(g => {
+      if (g && isDate(g.date) && isPos(g.u) && !(days.has(g.date) && days.get(g.date).u >= g.u)) days.set(g.date, { date: g.date, u: g.u });
+    });
+    return [...days.values()].sort(byDate);
   }
 
   // The injection sites on, from storage or a backup: known ones only, in SITES' order; null if there's
@@ -168,14 +192,16 @@
     // Saved data goes through the same cleanup as imports (as the schema it was
     // saved in, noted since v4), so damaged storage can't break the app; write
     // it back if anything had to change.
-    const storedEntries = A.store.get("entries"), storedGoals = A.store.get("goals");
-    const clean = normalizeBackup({ unit: S.unit, schemaVersion: S.profile.schemaVersion || 3, entries: A.store.json("entries"), goals: A.store.json("goals") }, S.unit);
+    const storedEntries = A.store.get("entries"), storedGoals = A.store.get("goals"), storedGone = A.store.get("gone");
+    const clean = normalizeBackup({ unit: S.unit, schemaVersion: S.profile.schemaVersion || 3, entries: A.store.json("entries"), goals: A.store.json("goals"), gone: A.store.json("gone") }, S.unit);
     S.entries = clean.entries;
     S.goals = clean.goals;
+    S.gone = clean.gone;
     if (storedEntries !== null && (storedEntries !== JSON.stringify(S.entries) || storedGoals !== JSON.stringify(S.goals))) {
       A.store.set("entries", JSON.stringify(S.entries));
       A.store.set("goals", JSON.stringify(S.goals));
     }
+    if (storedGone !== null && storedGone !== JSON.stringify(S.gone)) A.store.set("gone", JSON.stringify(S.gone));
     if (S.profile.schemaVersion !== DATA_SCHEMA_VERSION) {
       S.profile.schemaVersion = DATA_SCHEMA_VERSION;
       if (storedEntries !== null) A.store.set("profile", JSON.stringify(S.profile)); // else saved with the first entry
@@ -199,6 +225,7 @@
       skipSites: S.profile.skipSites,
       asked: { medication: !!S.profile.medicationAsked, dosing: askedVersion(S.profile.dosingAsked) }, // start-up info's answers
       entries: S.entries,
+      gone: S.gone, // deleted days' markers (7.601 on)
       goals: S.goals,
       cumulativeDoseMgByMedication: A.cumulativeDoseMg() // derived totals for reference; not read on import
     };
@@ -209,6 +236,7 @@
   function applyBackup(clean, backupUnit) {
     if (backupUnit) S.unit = S.profile.unit = backupUnit;
     S.entries = clean.entries;
+    S.gone = clean.gone; // an older backup has none
     S.goals = clean.goals;
     if (clean.name) S.profile.name = clean.name; // older backups have no name; keep ours
     if (clean.paceGoal) S.profile.paceGoal = clean.paceGoal; // nor a pace goal
@@ -257,22 +285,26 @@
   // ==========================================================================
   // FOLDER SYNC (the app side of core/sync.js)
   // ==========================================================================
-  // Combines two versions changed separately: every day and goal from either is
-  // kept (so something deleted meanwhile can come back), and a day both changed
-  // takes each value from the more recent save. Gives the same result on every
-  // device, so two devices combining at once still agree.
+  // Combines two versions changed separately, day by day: a day both have takes the later change to it (each day's u;
+  // with neither stamped, from before 7.601, or a tie, the more recent save's), and a weigh-in or a dose only the other
+  // has comes along with it; a day deleted on either (its marker in gone) stays deleted unless it changed after that.
+  // Every goal from either is kept. Gives the same result on every device, so two devices combining at once still agree.
   function mergeVersions(a, b) {
     const [older, newer] = a.savedAt + a.device > b.savedAt + b.device ? [b, a] : [a, b];
-    const days = new Map(older.entries.map(e => [e.date, e]));
-    newer.entries.forEach(e => {
-      const o = days.get(e.date) || {};
-      const d = isNum(e.doseMg) ? e : o; // a dose, its medication and its site travel together
+    const byDay = list => Object.fromEntries(list.map(g => [g.date, g]));
+    const gone = mergeKeys(byDay(older.gone), byDay(newer.gone)); // each date's latest deletion (K.util)
+    const stamp = e => e.u || 0, alive = e => !gone[e.date] || stamp(e) > gone[e.date].u;
+    const days = new Map(older.entries.filter(alive).map(e => [e.date, e]));
+    newer.entries.filter(alive).forEach(e => {
+      const o = days.get(e.date), [w, l] = o && stamp(o) > stamp(e) ? [o, e] : [e, o || {}]; // w: the later change
+      const d = isNum(w.doseMg) ? w : l, x = d === w ? l : w; // a dose, its medication and its site travel together
       // (the same dose without a site keeps the other's: a copy older than sites drops them)
-      const site = d.site ?? (o.doseMg === d.doseMg && o.medication === d.medication ? o.site : null) ?? null;
-      days.set(e.date, { date: e.date, weight: e.weight ?? o.weight ?? null, doseMg: d.doseMg ?? null, medication: d.medication ?? null, site });
+      const site = d.site ?? (x.doseMg === d.doseMg && x.medication === d.medication ? x.site : null) ?? null;
+      days.set(e.date, { date: e.date, weight: w.weight ?? l.weight ?? null, doseMg: d.doseMg ?? null, medication: d.medication ?? null, site, ...(w.u ? { u: w.u } : {}) });
     });
     return {
       entries: [...days.values()].sort(byDate),
+      gone: Object.values(gone),
       goals: [...new Set(older.goals.concat(newer.goals))].sort((x, y) => y - x),
       name: newer.name || older.name,
       dosePlan: latest(older.dosePlan, newer.dosePlan),
@@ -285,9 +317,10 @@
     };
   }
   // The answers count only as asked or not, and the dosing version: each device keeps its own medication answer, so two
-  // different ones never keep the devices saving back and forth.
-  const dataKey = d => JSON.stringify([d.entries, d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites,
-    d.asked && [d.asked.medication, d.asked.dosing]]);
+  // different ones never keep the devices saving back and forth. stamps: false leaves out the days' stamps and markers
+  // (an older copy's save has none: it isn't set apart by them alone, as for the answers).
+  const dataKey = (d, stamps = true) => JSON.stringify([stamps ? d.entries : d.entries.map(({ u, ...e }) => e), stamps ? d.gone : [],
+    d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites, d.asked && [d.asked.medication, d.asked.dosing]]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -295,15 +328,17 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites,
+    const ours = { entries: S.entries, gone: S.gone, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites,
       asked: { medication: !!S.profile.medicationAsked, answer: S.profile.medicationAsked ? A.currentMedication() : "", dosing: askedVersion(S.profile.dosingAsked) } };
     const next = replace // as on import: the later dosing plan and vial, and the answers of both
       ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked) }
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
+    const stamped = Array.isArray(raw.gone); // a save from 7.601 on: its days' stamps and markers count
     return {
-      // An older copy's save says nothing of the answers, so they alone don't set ours apart from it (saving ours back
-      // for it would stamp them newer than that copy's next change, which a combine would then lose).
-      same: dataKey(next) === dataKey(their.asked ? their : { ...their, asked: next.asked }),
+      // An older copy's save says nothing of the answers, nor of the days' stamps and markers, so they alone don't set
+      // ours apart from it (saving ours back for it would stamp them newer than that copy's next change, which a combine
+      // would then lose).
+      same: dataKey(next, stamped) === dataKey(their.asked ? their : { ...their, asked: next.asked }, stamped),
       apply() {
         const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites,
           skipSites: next.skipSites === undefined ? S.profile.skipSites : next.skipSites };
@@ -329,5 +364,5 @@
     hasData: () => S.entries.length > 0,
     importBackup, combine, afterSync
   };
-  Object.assign(A, { persist, save, normalizeBackup, cleanPaceGoal, askedVersion });
+  Object.assign(A, { persist, save, touch, forget, normalizeBackup, cleanPaceGoal, askedVersion });
 })(Kyoshi, Kyoshi.apps.bosco);
