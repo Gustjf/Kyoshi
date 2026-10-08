@@ -8,7 +8,7 @@
   const { isObj, isNum, isPos, isDate, newId, newer, mergeById, mergeKeys } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_LINES, MAX_LINE, MAX_STEPS, MAX_QUICK, MAX_MINUTES, MAX_SERVINGS, MAX_STOCK, MIN_SCALE, MAX_SCALE,
     MAX_KCAL, MAX_GRAMS, MAX_LINK, MAX_TEMPLATE_NAME, MAX_MANUAL, MAX_CHIPS, MEALS, TYPES, SECTIONS, UNIT_MODES, SLOTS, DEFAULT_TIMES, DEFAULT_LENGTHS,
-    MIN_LENGTH, MAX_LENGTH, cleanLine, cleanText, clampInt, numIn, plural, own, onGrid, dayIndex } = A;
+    MIN_LENGTH, MAX_LENGTH, cleanLine, cleanText, clampInt, numIn, plural, onGrid, dayIndex } = A;
   const LISTS = ["recipes", "plan", "trips", "manual", "templates"];
   const MAPS = ["checked", "sections", "slotTimes", "tripSkips", "confirmed"];
   const KEYS = LISTS.concat(MAPS, "settings");

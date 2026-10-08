@@ -5,7 +5,8 @@
  * diverged one combined, a plain backup only into an empty app) and what they do to the counters (the same result takes
  * the save's time, a different one counts as a change here, so the folder and the cloud save it); a transport's saved()
  * marking only a version that didn't move on (here, or in another tab's stored counters); a change here counting up
- * this device and telling every transport, and nothing of that in test mode. The audit's Option B (2026-10-08). */
+ * this device and telling every transport, and nothing of that in test mode; the apps' shared merge rule (K.util newer,
+ * mergeById, mergeKeys). The audit's Option B (2026-10-08). */
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -102,8 +103,10 @@ module.exports = [
       // Ahead, and the same: nothing happens.
       eq(e.K.sync.incorporate(e.A, save({ dev001: 1 })), null, "a save we're ahead of is ignored");
       eq(e.K.sync.incorporate(e.A, save({ dev001: 2, ph0001: 1 })), null, "and one the same as ours");
-      eq(e.K.sync.incorporate(e.A, save({ dev001: 0, ph0001: -1 })), null, "invalid counters: a save with none");
+      eq(e.K.sync.incorporate(e.A, save({ dev001: 0, ph0001: -1 })), null, "all-invalid counters: an empty clock, which we're ahead of");
       eq(e.calls.length, 1, "combine not asked for any of those");
+      const empty = engine({ hasData: false });
+      eq(empty.K.sync.incorporate(empty.A, save({ dev001: 0, ph0001: -1 })), null, "an empty clock is still a clock: an empty app ignores it too (unlike a plain backup, below)");
       // Diverged: combined (not replaced).
       r = e.K.sync.incorporate(e.A, save({ dev001: 1, ph0001: 2 }));
       eq(r, { what: "Combined changes with", data: true }, "combined");
@@ -169,18 +172,33 @@ module.exports = [
       eq(K.sync.apps().map(a => a.id), ["t"], "the apps that sync");
       eq(K.sync.state(), "folder on, cloud on", "both on");
       ok(K.sync.on(), "some way of syncing is on");
-      A._sync.meta.changedAt = "2026-09-28T00:00:00.000Z";
+      A._sync.meta.changedAt = "2000-01-01T00:00:00.000Z";
       K.sync.changed(A, true, true); // quiet: the app's own bookkeeping
-      eq([K.sync.version(A), A._sync.meta.changedAt], [2, "2026-09-28T00:00:00.000Z"], "counted, the data's time kept");
+      eq([K.sync.version(A), A._sync.meta.changedAt], [2, "2000-01-01T00:00:00.000Z"], "counted, the data's time kept");
       K.sync.changed(A);
       eq(K.sync.version(A), 3, "counted again");
-      ok(A._sync.meta.changedAt > "2026-09-28T00:00:00.000Z", "the data's time is now");
+      ok(A._sync.meta.changedAt > "2000-01-01T00:00:00.000Z", "the data's time is now");
       eq(told, ["folder:t", "cloud:t", "folder:t", "cloud:t"], "every transport told, each time");
       eq(stored(mem).clock, { dev001: 3 }, "stored each time");
       eq(K.sync.saveOf(A).sync, { device: "dev001", clock: { dev001: 3 } }, "what a transport writes carries the counters");
       K.testMode = true;
       K.sync.changed(A);
       eq([K.sync.version(A), told.length], [3, 4], "test mode: nothing counted, no one told");
+    }
+  },
+  {
+    name: "sync engine: the apps' shared merge rule (K.util): the later u wins, a tie by the text; by id, ours in order then theirs' new ones; by key, sorted, a missing side the other's",
+    async run() {
+      const { newer, mergeById, mergeKeys } = engine().K.util;
+      ok(newer({ u: 2 }, { u: 1 }) && !newer({ u: 1 }, { u: 2 }), "the later u wins");
+      ok(newer({ u: 1, x: "b" }, { u: 1, x: "a" }) && !newer({ u: 1, x: "a" }, { u: 1, x: "b" }), "a tie goes by the text, so every device picks the same");
+      ok(!newer({ u: 1, x: "a" }, { u: 1, x: "a" }), "never newer than itself");
+      eq(mergeById([{ id: "a", u: 1 }, { id: "b", u: 5 }], [{ id: "c", u: 1 }, { id: "b", u: 3 }, { id: "a", u: 2 }]),
+        [{ id: "a", u: 2 }, { id: "b", u: 5 }, { id: "c", u: 1 }], "each id's later change: ours in our order, then theirs' new ones");
+      eq(mergeById([{ id: "a", u: 1 }], [{ id: "a", u: 3 }, { id: "a", u: 2 }]), [{ id: "a", u: 3 }], "an id theirs repeats: its latest");
+      eq(mergeKeys({ b: { u: 1 }, a: { u: 5 } }, { c: { u: 2 }, a: { u: 3 }, b: null }), { a: { u: 5 }, b: { u: 1 }, c: { u: 2 } },
+        "each key's later change, a side missing or empty taken from the other, the keys sorted");
+      eq(mergeKeys({}, { constructor: { u: 1 } }), { constructor: { u: 1 } }, "own keys only: one named like an object's built-in still comes in");
     }
   }
 ];
