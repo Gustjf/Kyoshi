@@ -120,17 +120,25 @@ module.exports = [
       await switchTo(tab, "momo");
       eq((await momo.tasks(tab)).tasks.filter(x => x.key.startsWith("n:badgermole:")).map(x => [x.title, x.hours]), [["Push", 0.75], ["Pull", 1], ["Legs", 1]], "the tasks' hours");
 
-      // Push logged in 20 minutes by the clock: a card of its own on today, done, 45 minutes long, "took 20 min".
+      // Push logged after the fact, every set in a minute: a card of its own on today, done, 45 minutes long, "took 1 min".
       await switchTo(tab, "badgermole");
-      await bm.doSession(tab, "Push", { minutes: 20 });
+      await bm.doSession(tab, "Push", { minutes: 1 });
       await switchTo(tab, "momo");
       const card = (await momo.days(tab))[2].cards.find(c => c.title === "Push");
       ok(card, "Push has a card on today");
       has(card.label, "Push (from Badgermole — done ✓)", "done");
       eq(card.hours, 0.75, "as long as Push says, not as long as it took");
       const from = (await momo.openCard(tab, card.id)).from;
-      eq(from.map(n => [n.title, n.done, n.details]), [["Push", true, ["3 exercises", "took 20 min"]]], "its details say how long it took");
+      eq(from.map(n => [n.title, n.done, n.details]), [["Push", true, ["3 exercises", "took 1 min"]]], "its details say how long it took");
       await momo.closeCard(tab);
+
+      // Push deleted: its session is as long as it took, but never a minute or two (60 then).
+      await switchTo(tab, "badgermole");
+      await bm.openFold(tab, "routines");
+      await p.click('#routinesList .row-btn:has-text("Push")');
+      await p.click("#routineDeleteBtn");
+      await switchTo(tab, "momo");
+      eq((await momo.model(tab)).needs.filter(n => n.app === "badgermole" && n.done).map(n => [n.title, n.minutes]), [["Push", 60]], "a deleted routine's session logged in a minute takes 60");
     }
   },
   {

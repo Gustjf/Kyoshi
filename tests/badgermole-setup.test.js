@@ -104,7 +104,7 @@ module.exports = [
         has(lastDialog(tab), "How long does it take? From 5 to 300 minutes.", `${m} minutes refused`);
         eq(await p.evaluate(() => document.activeElement.id), "routineMinutes", `the minutes field is focused after ${m}`);
       }
-      await p.fill("#routineMinutes", "50");
+      await p.fill("#routineMinutes", "42"); // any whole number: the field's step of 5 is only for its arrows
       const line = i => p.locator("#routineLines .line").nth(i);
       await line(1).locator("select").selectOption({ label: "Bench press" });
       await p.click('#routineForm button[type="submit"]');
@@ -120,7 +120,7 @@ module.exports = [
       await line(0).locator('input[data-f="weight"]').fill("140");
       await p.click('#routineForm button[type="submit"]');
       const push = await p.evaluate(() => Kyoshi.apps.badgermole.routineById("rt-push"));
-      eq([push.items[0].sets, push.items[0].weight, push.items[0].unit, push.minutes], [4, 140, "lb", 50], "the saved line, and how long it takes");
+      eq([push.items[0].sets, push.items[0].weight, push.items[0].unit, push.minutes], [4, 140, "lb", 42], "the saved line, and how long it takes");
       // A change to how long it takes, alone, asks before it's thrown away.
       await p.click('#routinesList .row-btn:has-text("Legs")');
       await p.fill("#routineMinutes", "90");
@@ -135,7 +135,7 @@ module.exports = [
       await p.click('#exercisesList .row-btn:has-text("Overhead press")');
       await p.click("#exerciseDeleteBtn");
       has(lastDialog(tab), "It's in 1 routine: it'll come out of it.", "delete says where it's used");
-      eq(await bm.rows(tab, "routines"), ["Push · 2 exercises · 50 min", "Pull · 3 exercises · 1 h", "Legs · 2 exercises · 1 h"], "Push lost a line; Legs kept its 60 minutes");
+      eq(await bm.rows(tab, "routines"), ["Push · 2 exercises · 42 min", "Pull · 3 exercises · 1 h", "Legs · 2 exercises · 1 h"], "Push lost a line; Legs kept its 60 minutes");
       // Deleting a routine takes it out of the program.
       await p.click('#routinesList .row-btn:has-text("Pull")');
       await p.click("#routineDeleteBtn");

@@ -76,7 +76,8 @@ rotation with no program followed (a first one) makes "Program" too (id "main" w
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies), all `fill: "card"` (each a card of its own in Momo, titled by it):
 - every session done between `from` and `to`, in order: `{ id: "session:<id>", title: its name ("Workout" without one), date,
-  done: true, minutes: its routine's (as typed; its routine deleted: how long it took, else 60), of: "next:<Monday>:<k>"
+  done: true, minutes: its routine's (as typed; its routine deleted: how long it took when that's 5 minutes or more, else
+  60), of: "next:<Monday>:<k>"
   (k: its rank, 1-based by `started`, among its week's sessions — the k-th session takes slot k), time: when it started
   ("HH:MM", this device's clock), details: ["6 exercises", "took 42 min" (its clock time, when known)] }` → ✓ on the card
   of the slot it took, else Momo places one on its day at that time (done needs never go to Tasks);
@@ -109,8 +110,9 @@ shows Home with Next up flashing.
   (workouts left ≥ days left, today included) and none is logged today yet; it clears once one is.
 - A routine's length is typed (`minutes`), never worked out from its sessions (one logged after the fact lasts a minute or
   two by the clock): Momo's cards take it, planned and logged alike. A session's own clock time stays in the day pop-up, the
-  session screen and its card's details ("took 42 min"). An older copy drops `minutes` when it saves: back to 60 until the
-  routine is saved again here.
+  session screen and its card's details ("took 42 min"). An older copy drops `minutes` when it saves, and while one still
+  syncs it can put a routine back to 60 even untouched (a copy with the same `u` wins by its text, and "60" sorts after
+  "45"; saving it again here doesn't hold): hence the changelog's "reload on every device".
 - A session left running over `STALE_HOURS` ends at its last set; its minutes are capped at `MAX_SESSION_MINUTES`. A session
   past midnight stays on the day it started. One at a time per device: a reload resumes it.
 - The steppers' typing is stored when a field is left (− / + at once), so it survives a reload without a write per key.

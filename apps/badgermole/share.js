@@ -11,16 +11,18 @@
   "use strict";
   const S = A.S;
   const { addDays, todayStr, pad2 } = K.util;
-  const { DEFAULT_MINUTES, plural, fmtMinutes, fmtDay, mondayOf } = A;
+  const { MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, plural, fmtMinutes, fmtDay, mondayOf } = A;
   const DONE = "session:";
 
   // A done session: on its day, ✓, the k-th of its week (the slot it took), from the time it started ("HH:MM", this
   // device's clock), as long as its routine says (one logged after the fact took a minute or two by the clock); its
-  // routine gone, as long as it took (60 minutes when that isn't known). How long it took is in its details.
+  // routine gone, as long as it took, unless that's under 5 minutes or unknown (then 60). How long it took is in its
+  // details.
   const doneNeed = (s, k) => {
     const m = A.sessionMinutes(s), r = A.routineById(s.routineId), at = s.started ? new Date(s.started) : null;
     return {
-      id: `${DONE}${s.id}`, title: s.name || "Workout", fill: "card", date: s.date, done: true, minutes: r ? r.minutes : m || DEFAULT_MINUTES,
+      id: `${DONE}${s.id}`, title: s.name || "Workout", fill: "card", date: s.date, done: true,
+      minutes: r ? r.minutes : m >= MIN_ROUTINE_MINUTES ? m : DEFAULT_MINUTES,
       of: `next:${mondayOf(s.date)}:${k}`, time: at ? `${pad2(at.getHours())}:${pad2(at.getMinutes())}` : null,
       details: [plural(A.exerciseCount(s), "exercise"), m ? `took ${fmtMinutes(m)}` : ""].filter(Boolean)
     };
