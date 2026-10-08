@@ -62,9 +62,9 @@ core/                 the shared DNA — K = window.Kyoshi
   bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared, a tap opens one to edit or delete) and the report's text
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge): Cloud sync, Backup & sync, time travel & test mode
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
-  routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline
+  routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline; K.routine.unreadable (an app not started, or failing)
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key
-  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings): Momo's cards (one each, or filling blocks); K.inbox.open
+  inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings): Momo's cards (one each, or filling blocks); K.inbox.open; K.inbox.unreadable
   wakelock.js         K.wakeLock: keeps the screen on while the app on screen's A.awake() says so (a timer, a workout)
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
   shell.js            K.register, K.start (K.ready once every app has started), switcher menu, theme, keyboard, minute tick, other-tab reload

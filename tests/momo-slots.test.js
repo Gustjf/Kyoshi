@@ -6,8 +6,8 @@
  * card of its own in any open week (one not planned yet too) and never goes to Tasks, and once the baseline is loaded
  * it fills its slot's card, which takes its title, length and time (an exception) and goes back to its slot's when
  * the need goes; a card going Inside a title goes inside your card of it, never a slot's (one already there goes back
- * on its own); slot and fixed survive Export and Import, and a backup of nothing but Momo's own cards has nothing to
- * import. */
+ * on its own); an app that can't be read (its routine or needs failing, or it didn't start) has its cards left as they
+ * are; slot and fixed survive Export and Import, and a backup of nothing but Momo's own cards has nothing to import. */
 "use strict";
 const { DESKTOP, eq, ok, has, open, importBackup, exportBackup, lastDialog, at, TODAY } = require("./lib");
 const gen = require("./generate");
@@ -162,6 +162,57 @@ module.exports = [
       eq(await p.evaluate(() => { const $ = s => document.querySelector(`#kMount ${s}`); return [$("#detailEditBtn").hidden, $("#detailChange").hidden, $("#detailChange").textContent.trim()]; }), [true, false, "Change it in Turtleduck"], "no Edit; Change it in Turtleduck");
       await mo.closeTodayCard(tab);
       eq((await mo.weekCards(tab, tk)).map(c => [c.title, c.pin, c.fixed]), [["Cook: Soup", 20, true]], "this week holds just that one");
+    }
+  },
+  {
+    name: "momo slots: an app that can't be read (its routine or needs failing, or it didn't start) keeps its slot cards and Momo's cards for it as they are",
+    async run(t) {
+      const tab = await open(t, { app: "momo", size: DESKTOP, time: at(TODAY, "08:00") }), p = tab.page;
+      await importBackup(tab, gen.momoWorld({ baseline: [{ title: "Sleep", hours: 8, days: [0, 1, 2, 3, 4, 5, 6] }] }));
+      const meal = { id: "meal:2026-10-05:dinner", title: "Dinner: Chili", fill: "card", date: "2026-10-05", time: "18:00", minutes: 60, slot: "dinner:0", block: "Dinner", fixed: true };
+      const cook = { id: "cook:2026-10-08", title: "Cook: Curry", fill: "card", date: "2026-10-08", time: "16:00", minutes: 60, fixed: true };
+      const routine = [0, 1, 2, 3, 4, 5, 6].map(d => slot("dinner", d, "18:00", 45));
+      await standIn(tab, routine, [meal, cook]);
+      await tick(tab);
+      await mo.view(tab, "next");
+      await mo.loadBaseline(tab);
+      const nk = await p.evaluate(() => Kyoshi.apps.momo.nextWeekKey());
+      // The baseline and next week as stored, and their apps' cards: [slot or need, title].
+      const kept = () => p.evaluate(k => { const d = Kyoshi.apps.momo.S.data; return JSON.stringify([d.baseline, d.weeks[k]]); }, nk);
+      const apps = list => list.filter(c => c.app).map(c => [c.slot || c.need, c.title]);
+      const before = await kept();
+      eq([(await mo.baselineCards(tab)).filter(c => c.slot).length, apps(await mo.weekCards(tab, nk)).filter(([, title]) => title !== "Dinner")],
+        [7, [["turtleduck:dinner:0", "Dinner: Chili"], ["turtleduck:cook:2026-10-08", "Cook: Curry"]]], "a slot a day; the meal in Monday's, the cooking on Thursday");
+
+      // Its routine fails, then its needs too: nothing taken back or changed, in the baseline or next week.
+      await p.evaluate(() => { Kyoshi.apps.turtleduck.routine = () => { throw new Error("made-up failure"); }; });
+      await tick(tab);
+      eq(await kept(), before, "its routine unreadable: its slot cards stay as they are");
+      await p.evaluate(() => { Kyoshi.apps.turtleduck.inbox = () => { throw new Error("made-up failure"); }; });
+      await tick(tab);
+      eq(await kept(), before, "its needs unreadable too: the meal's card and the cooking stay as they are");
+      const said = tab.problems.splice(0);
+      ok(said.length === 2 && /Couldn't read Turtleduck's routine/.test(said[0]) && /Couldn't read what Turtleduck needs/.test(said[1]), `each said once (${said})`);
+      // Readable again, but it didn't start: the same; next week saved as the baseline meanwhile keeps its slot cards.
+      await standIn(tab, routine, [meal, cook]);
+      await p.evaluate(() => { Kyoshi.apps.turtleduck.started = false; });
+      await tick(tab);
+      eq(await kept(), before, "an app that didn't start: its cards stay as they are");
+      const slots = async () => (await mo.baselineCards(tab)).filter(c => c.slot).map(c => [c.slot, c.day, c.pin, c.hours]);
+      const had = await slots();
+      await mo.saveAsBaseline(tab);
+      has(lastDialog(tab), "Replace your baseline (7 cards) with this week's 7 cards?", "your cards replaced");
+      eq(await slots(), had, "Save as baseline keeps the slot cards the routine can't put back now");
+      const saved = await kept();
+      await p.evaluate(() => { Kyoshi.apps.turtleduck.started = true; });
+      await tick(tab);
+      eq(await kept(), saved, "started again, as it was: nothing to change");
+
+      // Read, and changed there: Sunday's slot gone, the cooking off the plan. Those are taken back as ever.
+      await p.evaluate(() => { window.__routine.pop(); window.__needs.pop(); });
+      await tick(tab);
+      eq((await mo.baselineCards(tab)).filter(c => c.slot).map(c => c.day), [0, 1, 2, 3, 4, 5], "Sunday's slot card goes from the baseline");
+      eq(apps(await mo.weekCards(tab, nk)).map(([key]) => key), [0, 1, 2, 3, 4, 5].map(d => `turtleduck:dinner:${d}`), "and from next week, with the cooking");
     }
   },
   {

@@ -32,14 +32,15 @@
   }
 
   // Brings the baseline's slot cards in line with the routines (see the header). Never from A.init: until every app
-  // has started (K.ready) the routines are empty, and every slot card would be taken back. True if anything changed;
-  // the caller saves.
+  // has started (K.ready) the routines are empty, and every slot card would be taken back. Nor are an app's taken back
+  // while its routine can't be read (it didn't start, or its list failed: K.routine.unreadable): they stay as they are.
+  // True if anything changed; the caller saves.
   function syncSlots() {
     if (!K.ready || !S.data) return false;
-    const list = S.data.baseline, slots = slotsNow(), seen = new Set();
+    const list = S.data.baseline, slots = slotsNow(), unread = K.routine.unreadable(), seen = new Set();
     let changed = false;
     list.cards.filter(c => c.slot).forEach(c => {
-      if (slots.has(c.slot) && !seen.has(c.slot)) return seen.add(c.slot);
+      if ((slots.has(c.slot) || unread.has(c.app)) && !seen.has(c.slot)) return seen.add(c.slot);
       A.takeBack(list, c); // its slot is gone, or it's a second card for one
       changed = true;
     });

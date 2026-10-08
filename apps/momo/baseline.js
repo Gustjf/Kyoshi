@@ -63,14 +63,18 @@
 
   // Makes the week on screen the new baseline: its cards on days (not parked)
   // replace the baseline's, but not other apps' (those come and go each week)
-  // nor their slots' (the routines put the baseline's back at once).
+  // nor their slots' (the routines put the baseline's back at once; an app's
+  // that can't be read now, routine.js, are kept as they were).
   function saveAsBaseline() {
     const key = A.viewKey(), week = key && A.weekOf(key);
     const cards = week ? week.cards.filter(c => c.day !== null && !c.need && !c.slot) : [];
     if (!cards.length) return;
     const had = S.data.baseline.cards.filter(c => !c.slot).length;
     if (had && !confirm(`Replace your baseline (${had} cards) with this week's ${cards.length} cards?`)) return;
+    A.slotsNow();
+    const unread = K.routine.unreadable(), kept = S.data.baseline.cards.filter(c => c.slot && unread.has(c.app));
     S.data.baseline.cards = copyCards(cards, { base: false });
+    kept.forEach(c => A.putAt(S.data.baseline, c));
     A.syncSlots();
     A.save();
     A.renderAll();

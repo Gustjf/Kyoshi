@@ -84,24 +84,27 @@
   }
 
   // Places, follows and takes back Momo's cards for the needs as they are now (see the header), after the baseline's
-  // slot cards. True if anything changed. save: false leaves saving to the caller (loading the baseline, copying a
+  // slot cards; an app's are left as they are while it can't be read. True if anything changed. save: false leaves saving to the caller (loading the baseline, copying a
   // week, clearing one: one change, for undo).
   function placeCards({ save = true } = {}) {
     if (!K.ready || !A.isActive() || !S.data) return false;
     let changed = A.syncSlots();
-    const keys = [thisWeekKey(), nextWeekKey()], today = todayStr(), slots = A.slotsNow();
-    const needs = A.readNeeds().filter(n => n.fill === "card"), mine = A.assign(needs, A.blocks());
+    const keys = [thisWeekKey(), nextWeekKey()], today = todayStr(), slots = A.slotsNow(), noRoutine = K.routine.unreadable();
+    const needs = A.readNeeds().filter(n => n.fill === "card"), noInbox = K.inbox.unreadable(), mine = A.assign(needs, A.blocks());
     const held = new Map([...mine].map(([n, b]) => [b.card, n])); // card -> the need it holds
+    // The cards of an app that can't be read now (it didn't start, or its list failed: core/inbox.js, core/routine.js)
+    // stay as they are: what it needs and its slots aren't gone, just out of reach.
+    const reads = c => !noInbox.has(c.app) && !(c.slot && noRoutine.has(c.app));
     const open = key => { const w = S.data.weeks[key]; return w && !w.closed ? w : null; };
     keys.forEach(key => {
       const w = open(key);
       if (!w) return;
-      w.cards.filter(c => c.auto && c.day !== null && addDays(key, c.day) >= today && !held.has(c) && !(c.slot && slots.has(c.slot))).forEach(c => {
+      w.cards.filter(c => c.auto && c.day !== null && addDays(key, c.day) >= today && !held.has(c) && !(c.slot && slots.has(c.slot)) && reads(c)).forEach(c => {
         takeBack(w, c);
         changed = true;
       });
       w.cards.forEach(c => {
-        const f = c.auto && c.day !== null ? follows(c, held.get(c), slots) : null;
+        const f = c.auto && c.day !== null && reads(c) ? follows(c, held.get(c), slots) : null;
         if (!f || (c.title === f.title && c.hours === f.hours && c.pin === f.pin && c.fixed === f.fixed && !(f.pin !== null && c.parentId))) return;
         const moved = c.pin !== f.pin || (f.pin !== null && !!c.parentId);
         Object.assign(c, f);

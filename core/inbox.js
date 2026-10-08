@@ -28,7 +28,8 @@
  * K.inbox(from, to) gathers every started app's, checked and tagged with the app's id (app), each app's in
  * its own order, then the apps' meetings (core/meetings.js: ids "meeting:…", never an app's own, filling
  * "Meeting" blocks); an id listed twice counts once, and one dated outside from–to is left out. An app whose
- * list fails is left out.
+ * list fails is left out. K.inbox.unreadable(): the apps whose needs the last K.inbox() couldn't read (a Set of ids):
+ * one that didn't start, or whose list failed; what they need isn't gone, so Momo leaves their cards as they are.
  * K.inbox.open(app, id) shows that app and its need (its A.open(id), if it has one; a meeting, its line); id may
  * also be one of its routine slots' ids (an empty slot's card: where it's set).
  * No app changes another's data: an app asks another for a change only through a function that one offers. */
@@ -38,6 +39,7 @@
   const FILLS = ["time", "block", "ongoing", "hours", "card"];
   const MAX_DETAILS = 8;
   const warned = new Set(); // apps whose list failed, said once
+  let failed = new Set();   // apps whose list failed on the last K.inbox()
 
   // Text from another app: runs of spaces become one, cut to max without splitting an emoji.
   const text = (s, max) => (typeof s === "string" ? [...s.replace(/\s+/g, " ").trim()].slice(0, max).join("").trim() : "");
@@ -65,22 +67,26 @@
     };
   }
 
-  function own(A, from, to) {
+  function own(A, from, to, bad) {
     try {
       const list = A.inbox(from, to);
       return (Array.isArray(list) ? list : []).map(n => clean(A, n, from, to)).filter(n => n && !n.id.startsWith("meeting:")); // core's ids
     } catch (err) {
       if (!warned.has(A.id)) console.warn(`Couldn't read what ${A.meta.name} needs.`, err);
       warned.add(A.id);
+      bad.add(A.id);
       return [];
     }
   }
 
   K.inbox = (from, to) => {
-    const ids = new Set(), once = n => n && !ids.has(`${n.app}:${n.id}`) && ids.add(`${n.app}:${n.id}`);
-    return K.order.map(id => K.apps[id]).filter(A => A.started && typeof A.inbox === "function").flatMap(A => own(A, from, to))
+    const ids = new Set(), once = n => n && !ids.has(`${n.app}:${n.id}`) && ids.add(`${n.app}:${n.id}`), bad = new Set();
+    const all = K.order.map(id => K.apps[id]).filter(A => A.started && typeof A.inbox === "function").flatMap(A => own(A, from, to, bad))
       .concat(K.meetings.needs(from, to).map(({ A, need }) => clean(A, need, from, to))).filter(once);
+    failed = bad;
+    return all;
   };
+  K.inbox.unreadable = () => new Set(K.order.filter(id => !K.apps[id].started || failed.has(id)));
 
   // "Open in <App>": the app comes on screen, then shows the need (or just its home, without A.open).
   K.inbox.open = (app, id) => {

@@ -8,12 +8,15 @@
  * long while nothing fills it (60 if left out). A need naming the slot (core/inbox.js slot) fills its card on its date.
  * K.routine() gathers every started app's, checked and tagged with the app's id (app), in app order, then day and
  * time; an id listed twice counts once, and a slot without a time is left out (its card is pinned at it). An app
- * whose list fails is left out. */
+ * whose list fails is left out.
+ * K.routine.unreadable(): the apps whose slots the last K.routine() couldn't read (a Set of ids): one that didn't start,
+ * or whose list failed. Their slots aren't gone, just out of reach: Momo keeps their cards as they are meanwhile. */
 (function (K) {
   "use strict";
   const { isObj, isTime } = K.util;
   const MINUTES = 60; // a slot that doesn't say how long it is
   const warned = new Set(); // apps whose list failed, said once
+  let failed = new Set();   // apps whose list failed on the last read
 
   // Text from another app: runs of spaces become one, cut to max without splitting an emoji.
   const text = (s, max) => (typeof s === "string" ? [...s.replace(/\s+/g, " ").trim()].slice(0, max).join("").trim() : "");
@@ -25,15 +28,22 @@
     return { app: A.id, id, title, day: r.day, time: r.time, minutes: Number.isInteger(r.minutes) && r.minutes > 0 ? Math.min(r.minutes, 24 * 60) : MINUTES };
   }
 
-  K.routine = () => K.order.map(id => K.apps[id]).filter(A => A.started && typeof A.routine === "function").flatMap(A => {
-    try {
-      const list = A.routine(), ids = new Set();
-      return (Array.isArray(list) ? list : []).map(r => clean(A, r)).filter(r => r && !ids.has(r.id) && ids.add(r.id))
-        .sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
-    } catch (err) {
-      if (!warned.has(A.id)) console.warn(`Couldn't read ${A.meta.name}'s routine.`, err);
-      warned.add(A.id);
-      return [];
-    }
-  });
+  K.routine = () => {
+    const bad = new Set();
+    const all = K.order.map(id => K.apps[id]).filter(A => A.started && typeof A.routine === "function").flatMap(A => {
+      try {
+        const list = A.routine(), ids = new Set();
+        return (Array.isArray(list) ? list : []).map(r => clean(A, r)).filter(r => r && !ids.has(r.id) && ids.add(r.id))
+          .sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
+      } catch (err) {
+        if (!warned.has(A.id)) console.warn(`Couldn't read ${A.meta.name}'s routine.`, err);
+        warned.add(A.id);
+        bad.add(A.id);
+        return [];
+      }
+    });
+    failed = bad;
+    return all;
+  };
+  K.routine.unreadable = () => new Set(K.order.filter(id => !K.apps[id].started || failed.has(id)));
 })(Kyoshi);
