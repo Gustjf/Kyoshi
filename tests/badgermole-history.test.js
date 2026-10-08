@@ -167,7 +167,7 @@ module.exports = [
       await importBackup(fresh, gen.damaged());
       await bm.openFold(fresh, "exercises");
       eq(await bm.rows(fresh, "exercises"), ["Squat deep · best 4409.2 lb × 5 (est. 1RM 5144) · Sep 28", "Pull-up · best 12 reps · Sep 28"], "only usable exercises, cleaned");
-      eq(await bm.rows(fresh, "routines"), [`${"A".repeat(30)} · 1 exercise · usually 5 min`], "the routine, its name cut, its dangling line skipped");
+      eq(await bm.rows(fresh, "routines"), [`${"A".repeat(30)} · 1 exercise · 5 h`], "the routine, its name cut, its minutes kept to 300, its dangling line skipped");
       eq(await bm.stats(fresh), { week: "1 of 14", streak: "No streak yet" }, "settings cleaned (target 14)");
       has(await bm.nextUp(fresh), "A".repeat(30), "the program skips ids it doesn't know");
     }

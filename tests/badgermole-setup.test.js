@@ -1,17 +1,20 @@
 /* Kyoshi · tests/badgermole-setup.test.js — Badgermole from an empty profile, with taps only: the starter exercises, a
- * routine and its pop-up, the program with repeats and its "next", Pick another routine, renaming and deleting (an
- * exercise leaves its routines, a routine leaves the program), and the phone layout (folds, thumb-sized controls). */
+ * routine and its pop-up (how long it takes: typed, 60 until it is, carried by Export, 60 for a routine from before it),
+ * the program with repeats and its "next", Pick another routine, renaming and deleting (an exercise leaves its routines,
+ * a routine leaves the program), and the phone layout (folds, thumb-sized controls). */
 "use strict";
-const { eq, ok, has, lacks, open, lastDialog, importBackup, DESKTOP } = require("./lib");
+const { eq, ok, has, lacks, open, lastDialog, importBackup, exportBackup, DESKTOP } = require("./lib");
 const gen = require("./generate");
 const bm = require("./badgermole");
 
-// A routine through its pop-up: the name, then each line's exercise, sets, reps and weight.
-async function addRoutine(tab, name, lines) {
+// A routine through its pop-up: the name, how long it takes (left out: as the pop-up opens, 60), then each line's
+// exercise, sets, reps and weight.
+async function addRoutine(tab, name, lines, minutes) {
   const p = tab.page;
   await bm.openFold(tab, "routines");
   await p.click("#addRoutineBtn");
   await p.fill("#routineName", name);
+  if (minutes !== undefined) await p.fill("#routineMinutes", String(minutes));
   for (let i = 0; i < lines.length; i++) {
     if (i > 0) await p.click("#routineAddLineBtn");
     const [exercise, sets, reps, weight] = lines[i], line = p.locator("#routineLines .line").nth(i);
@@ -37,9 +40,10 @@ module.exports = [
       eq(exercises.filter(r => r.includes("bodyweight")).length, 2, "starter bodyweight exercises (Pull-up, Push-up)");
       ok(await p.locator("#starterBtn").isHidden(), "the starter button goes once there are exercises");
 
-      await addRoutine(tab, "Upper", [["Bench press", 3, 5, 135], ["Barbell row", 3, 8, 95], ["Pull-up", 3, 8, 0]]);
+      await addRoutine(tab, "Upper", [["Bench press", 3, 5, 135], ["Barbell row", 3, 8, 95], ["Pull-up", 3, 8, 0]], 45);
       await addRoutine(tab, "Lower", [["Squat", 3, 5, 185], ["Deadlift", 1, 5, 225]]);
-      eq(await bm.rows(tab, "routines"), ["Upper · 3 exercises", "Lower · 2 exercises"], "routine rows");
+      eq(await bm.rows(tab, "routines"), ["Upper · 3 exercises · 45 min", "Lower · 2 exercises · 1 h"], "routine rows, with how long each takes (60 minutes as the pop-up opens)");
+      eq((await exportBackup(tab)).routines.map(r => [r.name, r.minutes]), [["Upper", 45], ["Lower", 60]], "Export carries how long each takes");
       has(await bm.nextUp(tab), "Add a routine to the program", "Next up with routines but no program");
 
       // Upper, Lower, Upper: repeats are fine; the first is next.
@@ -50,10 +54,11 @@ module.exports = [
       }
       eq(await bm.programRows(tab), ["Upper (next)", "Lower", "Upper"], "program with a repeat");
       has(await bm.nextUp(tab), "Upper", "Next up names the first routine");
-      has(await bm.nextUp(tab), "Not done yet · 3 exercises", "Next up's line before any session");
+      has(await bm.nextUp(tab), "Not done yet · 45 min · 3 exercises", "Next up's line before any session: how long Upper takes");
       // ↓ on the first: Lower comes first, and is next.
       await p.click('#programList [data-act="prog-down"][data-i="0"]');
       eq(await bm.programRows(tab), ["Lower (next)", "Upper", "Upper"], "program after ↓");
+      has(await bm.nextUp(tab), "Not done yet · 1 h · 2 exercises", "Next up: Lower takes 60 minutes");
 
       // Pick another routine starts any; cancelling keeps nothing.
       await bm.start(tab, "Upper");
@@ -88,9 +93,18 @@ module.exports = [
       ok(await p.locator("#exerciseOverlay").evaluate(el => el.classList.contains("open")), "still open after saying no");
       await p.click("#exerciseCancelBtn");
 
-      // The routine pop-up: an exercise twice, sets out of range and a weight that isn't one are refused.
+      // The routine pop-up: a routine from before its minutes (gen.setup) opens with 60; minutes out of range, an exercise
+      // twice, sets out of range and a weight that isn't one are refused.
       await bm.openFold(tab, "routines");
       await p.click('#routinesList .row-btn:has-text("Push")');
+      eq(await p.inputValue("#routineMinutes"), "60", "a routine from before minutes takes 60");
+      for (const m of ["4", "301"]) {
+        await p.fill("#routineMinutes", m);
+        await p.click('#routineForm button[type="submit"]');
+        has(lastDialog(tab), "How long does it take? From 5 to 300 minutes.", `${m} minutes refused`);
+        eq(await p.evaluate(() => document.activeElement.id), "routineMinutes", `the minutes field is focused after ${m}`);
+      }
+      await p.fill("#routineMinutes", "50");
       const line = i => p.locator("#routineLines .line").nth(i);
       await line(1).locator("select").selectOption({ label: "Bench press" });
       await p.click('#routineForm button[type="submit"]');
@@ -105,15 +119,23 @@ module.exports = [
       has(lastDialog(tab), "the weight goes from 0 to 2000", "a negative weight");
       await line(0).locator('input[data-f="weight"]').fill("140");
       await p.click('#routineForm button[type="submit"]');
-      const push = await p.evaluate(() => Kyoshi.apps.badgermole.routineById("rt-push").items[0]);
-      eq([push.sets, push.weight, push.unit], [4, 140, "lb"], "the saved line");
+      const push = await p.evaluate(() => Kyoshi.apps.badgermole.routineById("rt-push"));
+      eq([push.items[0].sets, push.items[0].weight, push.items[0].unit, push.minutes], [4, 140, "lb", 50], "the saved line, and how long it takes");
+      // A change to how long it takes, alone, asks before it's thrown away.
+      await p.click('#routinesList .row-btn:has-text("Legs")');
+      await p.fill("#routineMinutes", "90");
+      tab.answers.push(false);
+      await p.keyboard.press("Escape");
+      has(lastDialog(tab), "Discard your changes to this routine?", "Esc with new minutes asks");
+      await p.click("#routineCancelBtn");
+      ok(await p.locator("#routineOverlay").evaluate(el => !el.classList.contains("open")), "Cancel, then yes: closed");
 
       // Deleting an exercise in a routine: the routine loses its line; the sessions would keep its name.
       await bm.openFold(tab, "exercises");
       await p.click('#exercisesList .row-btn:has-text("Overhead press")');
       await p.click("#exerciseDeleteBtn");
       has(lastDialog(tab), "It's in 1 routine: it'll come out of it.", "delete says where it's used");
-      eq(await bm.rows(tab, "routines"), ["Push · 2 exercises", "Pull · 3 exercises", "Legs · 2 exercises"], "Push lost a line");
+      eq(await bm.rows(tab, "routines"), ["Push · 2 exercises · 50 min", "Pull · 3 exercises · 1 h", "Legs · 2 exercises · 1 h"], "Push lost a line; Legs kept its 60 minutes");
       // Deleting a routine takes it out of the program.
       await p.click('#routinesList .row-btn:has-text("Pull")');
       await p.click("#routineDeleteBtn");

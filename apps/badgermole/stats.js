@@ -1,13 +1,13 @@
-/* Badgermole · stats.js — the maths, worked out from the data and never stored: each session's length and a
- * routine's usual one, the week's count and the streak, the next routine in the rotation, bests and PRs (the
+/* Badgermole · stats.js — the maths, worked out from the data and never stored: each session's length (a routine's is
+ * typed, never worked out), the week's count and the streak, the next routine in the rotation, bests and PRs (the
  * estimated one-rep max, or most reps for a bodyweight exercise), what a set's steppers start at, and the calendar's
  * month. Results from the stored data are remembered until it (S.version) or the day changes; the session in
  * progress is read afresh. "Today" is K.util.todayStr(), so time travel works. */
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { addDays, mean, todayStr } = K.util;
-  const { DEFAULT_MINUTES, ESTIMATE_RUNS, MAX_SESSION_MINUTES, MAX_REPS, MAX_WEIGHT, niceMinutes, mondayOf, toKg, convert, inUnit, unit, round2, stepOf } = A;
+  const { addDays, todayStr } = K.util;
+  const { MAX_SESSION_MINUTES, MAX_REPS, MAX_WEIGHT, mondayOf, toKg, convert, inUnit, unit, round2, stepOf } = A;
 
   let memoKey = "", memo = new Map();
   function remember(key, fn) {
@@ -34,11 +34,6 @@
   // --- How long ---
   // A session's minutes, from start to finish (1 to MAX_SESSION_MINUTES; 0 when its times aren't known).
   const sessionMinutes = s => (s.started && s.finished ? Math.min(MAX_SESSION_MINUTES, Math.max(1, Math.round((s.finished - s.started) / 60000))) : 0);
-  // How long a routine usually takes: the average of its latest sessions, rounded to suit; 60 minutes before any.
-  const usualMinutes = routineId => remember(`usual:${routineId}`, () => {
-    const runs = sessions().filter(s => s.routineId === routineId).map(sessionMinutes).filter(m => m > 0).slice(-ESTIMATE_RUNS);
-    return runs.length ? niceMinutes(mean(runs)) : DEFAULT_MINUTES;
-  });
 
   // --- Weeks (Monday to Sunday) ---
   const weekCounts = () => remember("weeks", () => {
@@ -155,7 +150,7 @@
   }
 
   Object.assign(A, {
-    sessions, sessionsOn, lastOf, lastWith, exerciseCount, sessionMinutes, usualMinutes, weekCount, thisWeek, streak,
+    sessions, sessionsOn, lastOf, lastWith, exerciseCount, sessionMinutes, weekCount, thisWeek, streak,
     nextIndex, upNext, bestOf, bestText, isStoredPR, livePRs, prefill, monthCells
   });
 })(Kyoshi, Kyoshi.apps.badgermole);

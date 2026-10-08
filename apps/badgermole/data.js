@@ -8,7 +8,7 @@
   const { isObj, isNum, isPos, isDate, newId } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_EXERCISE, MAX_ROUTINE, MAX_LINES, MAX_SETS, MAX_REPS, MAX_WEIGHT, MAX_TARGET,
     DEFAULT_TARGET, MAX_PROGRAM, MAX_PROGRAM_NAME, MAIN_PROGRAM, MAX_SESSION_SETS, STEPS, DEFAULT_STEP, MAX_PAIR,
-    cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
+    MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, MAX_SESSION_MINUTES, cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
   const LISTS = ["exercises", "routines", "sessions", "programs"];
   const MAX_MS = 8.64e15; // the last moment a date can hold
 
@@ -57,6 +57,7 @@
     return unique(objects(list).map(r => (r.deleted === true ? { id: idOf(r.id) || newId(), deleted: true, at: msOf(r.at), u: uOf(r) } : {
       id: idOf(r.id) || newId(),
       name: cleanLine(r.name, MAX_ROUTINE),
+      minutes: clampInt(r.minutes, MIN_ROUTINE_MINUTES, MAX_SESSION_MINUTES, DEFAULT_MINUTES), // how long it takes, as typed (60 until it is)
       items: cleanItems(r.items),
       deleted: false, at: msOf(r.at), u: uOf(r)
     })), r => r.deleted || r.name);

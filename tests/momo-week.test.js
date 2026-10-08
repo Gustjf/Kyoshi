@@ -94,7 +94,7 @@ module.exports = [
       await importBackup(tab, gen.momo([], [0, 1, 2, 3, 4].map(n => ({ date: D(n), title: "Free time", hours: 24 }))));
       const now = await chunks(tab);
       eq(now.map(c => [c.app, c.tasks.map(x => x.replace(/ \(.*$/, ""))]), [["Hawky", ["Pick up dry cleaning", "Get a key cut", "Buy stamps"]], ["Badgermole", ["Push", "Pull", "Legs"]]], "a chunk per app, in the switcher's order, a task each");
-      eq([now[0].sum, now[1].sum], ["3 to place · 1.75h", "3 to place · 2.5h"], "each chunk's head: how many, how long");
+      eq([now[0].sum, now[1].sum], ["3 to place · 1.75h", "3 to place · 3h"], "each chunk's head: how many, how long");
       eq(now[0].tasks[0], "Pick up dry cleaning (from Hawky, due Oct 2)", "each says when it's due");
       const tabs = await mo.tabs(tab), bank = await mo.bank(tab);
       eq(tabs.this.status, "6 to place", "every hour has a job, but not all assigned");

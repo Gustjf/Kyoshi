@@ -43,7 +43,7 @@
         `<button type="button" class="secondary" data-act="pick">Pick a routine&hellip;</button>`;
     }
     const last = A.lastOf(r.id);
-    const meta = [last ? `Last: ${fmtDay(last.date)}` : "Not done yet", last ? `usually ${fmtMinutes(A.usualMinutes(r.id))}` : "", plural(A.routineItems(r).length, "exercise")];
+    const meta = [last ? `Last: ${fmtDay(last.date)}` : "Not done yet", fmtMinutes(r.minutes), plural(A.routineItems(r).length, "exercise")];
     return head("Next up") + `<div class="next-name">${esc(r.name)}</div><div class="next-meta">${esc(meta.filter(Boolean).join(" · "))}</div>` +
       `<button type="button" class="big" data-act="start" data-id="${esc(r.id)}">Start</button>` +
       `<div class="next-links"><button type="button" class="more-link" data-act="pick">Pick another routine&hellip;</button></div>`;
@@ -100,8 +100,7 @@
     $("routinesEmpty").textContent = none ? "Add exercises first, then a routine to do them in." : "No routines yet. A routine is a workout: its exercises, with sets, reps and weights.";
     $("addRoutineBtn").disabled = none;
     $("routinesList").innerHTML = list.map(r => {
-      const meta = [plural(A.routineItems(r).length, "exercise"), A.lastOf(r.id) ? `usually ${fmtMinutes(A.usualMinutes(r.id))}` : ""];
-      return rowHTML("edit-routine", r.id, r.name, meta.filter(Boolean).join(" · "));
+      return rowHTML("edit-routine", r.id, r.name, `${plural(A.routineItems(r).length, "exercise")} · ${fmtMinutes(r.minutes)}`);
     }).join("");
   }
 

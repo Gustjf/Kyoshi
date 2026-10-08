@@ -6,7 +6,7 @@
  * need to be unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_EXERCISE, MAX_ROUTINE, MAX_PROGRAM_NAME, MAX_REPS, MAX_WEIGHT, MAX_TARGET } = A;
+  const { MAX_EXERCISE, MAX_ROUTINE, MAX_PROGRAM_NAME, MAX_REPS, MAX_WEIGHT, MAX_TARGET, MIN_ROUTINE_MINUTES, MAX_SESSION_MINUTES } = A;
   // Icons from Lucide (ISC license): chevrons for the calendar's months.
   const icon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const fold = (id, title, body) => `
@@ -144,6 +144,11 @@
         <div class="field">
           <label for="routineName">Name</label>
           <input type="text" id="routineName" maxlength="${MAX_ROUTINE}" placeholder="e.g. Pull A">
+        </div>
+        <div class="field minutes-field">
+          <label for="routineMinutes">How long it takes (minutes)</label>
+          <input type="number" id="routineMinutes" min="${MIN_ROUTINE_MINUTES}" max="${MAX_SESSION_MINUTES}" step="5" inputmode="numeric">
+          <p class="modal-hint minutes-hint">Momo makes its cards this long.</p>
         </div>
         <div class="subhead">Exercises, in order</div>
         <div class="lines" id="routineLines"></div>

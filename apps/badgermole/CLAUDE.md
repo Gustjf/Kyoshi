@@ -7,22 +7,23 @@ weight and reps prefilled from last time (heavier by the exercise's own progress
 − / + beside number fields, ✓ to log a set with one thumb (in a superset it goes on to the partner), a PR badge the moment
 one beats the exercise's best. Then this week's count against the weekly target, the streak (weeks in a row that hit
 it), and a month calendar whose days open to fix what was logged. **Momo** decides when: each of the week's workouts is a card of its own
-there, in program order, waiting in its Tasks until you drag it onto a day; a logged one shows ✓ on the card of the one it
-stands for. Named after Toph's badgermoles (the icon is Lucide's dumbbell, in Earth Kingdom green).
+there, as long as its routine says (typed in its pop-up), in program order, waiting in its Tasks until you drag it onto a
+day; a logged one shows ✓ on the card of the one it stands for. Named after Toph's badgermoles (the icon is Lucide's
+dumbbell, in Earth Kingdom green).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `MAX_PROGRAMS` 20, `MAIN_PROGRAM` "main", `STEPS` 2.5/5/7.5/10 lb, `DEFAULT_STEP` 5, `STEP` 5 lb / 2.5 kg (an exercise gone), `MAX_PAIR` 9, `LB_PER_KG`, `DEFAULT_MINUTES` 60, `ESTIMATE_RUNS` 5, `MAX_SESSION_MINUTES` 300, `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; `stepOf` (an exercise's step in the unit shown); supersets: `fixPairs`, `pairClass`; lookups: `liveExercises`, `liveRoutines`, `livePrograms`, `…ById`, `activeProgram`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `MAX_PROGRAMS` 20, `MAIN_PROGRAM` "main", `STEPS` 2.5/5/7.5/10 lb, `DEFAULT_STEP` 5, `STEP` 5 lb / 2.5 kg (an exercise gone), `MAX_PAIR` 9, `LB_PER_KG`, `MIN_ROUTINE_MINUTES` 5, `DEFAULT_MINUTES` 60, `MAX_SESSION_MINUTES` 300 (a routine's minutes, and a session's at most), `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; `stepOf` (an exercise's step in the unit shown); supersets: `fixPairs`, `pairClass`; lookups: `liveExercises`, `liveRoutines`, `livePrograms`, `…ById`, `activeProgram`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
 | `markup.js` | the page: Home (Next up, stats and calendar, the setup folds), the session view, and the pop-ups (exercise, routine, program, day, Pick a routine) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too; the rotation from before programs becomes one), `load`, `persist`/`save`, `storeLive`, backups and sync merge (`A.data`) |
-| `stats.js` | the maths, remembered until the data or the day changes: session minutes and a routine's usual, week counts and the streak, `nextIndex`/`upNext`, bests and PRs, `prefill`, `monthCells` |
+| `stats.js` | the maths, remembered until the data or the day changes: session minutes (a routine's are typed, never worked out), week counts and the streak, `nextIndex`/`upNext`, bests and PRs, `prefill`, `monthCells` |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `render.js` | `showView` (home or session), `renderAll`, Home (Next up, stats, calendar ‹ ›, Exercises with bests, Routines, Program: the programs and the rotation followed, Settings), `reveal` |
 | `session.js` | the session: start, steppers (− / + by the exercise's step), ✓ (on to a superset's partner) / Log all sets, a logged set tapped to change (held), jump, Back / Next, Finish, Cancel (starting and ending a session tell `K.wakeLock`); the elapsed minutes; Pick a routine |
-| `editors.js` | the exercise pop-up (its step), the routine pop-up (to failure, supersets), the starter exercises, the programs (follow one, `#programOverlay`: new, rename, delete) and edits of the rotation followed, settings |
+| `editors.js` | the exercise pop-up (its step), the routine pop-up (how long it takes, to failure, supersets), the starter exercises, the programs (follow one, `#programOverlay`: new, rename, delete) and edits of the rotation followed, settings |
 | `day.js` | the day pop-up: a day's sessions, their sets to fix, add or remove, Delete session |
 | `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a session in progress keeps the screen on: core/wakelock.js), `onTick`, `onReload`, `attention` (a dot when today's workout is needed for the week's target), `bugState` |
 | `badgermole.css` | styles under `.app-badgermole` (the superset colours `.pair-1` to `.pair-5`) |
@@ -32,9 +33,11 @@ Saved and synced (each list item keeps `deleted`, `at` (a session: `started`) an
 - `exercises` [{ id, name ≤ 40, bodyweight, step: 2.5 | 5 | 7.5 | 10 (lb, default 5), deleted, at, u }]: a bodyweight exercise
   logs reps plus an added weight; `step` is its progression step (in kg mode shown converted, to the nearest 0.5: +1, +2.5,
   +3.5, +4.5), hidden in the pop-up for a bodyweight one (it steps up a rep; its added weight's − / + still use it).
-- `routines` [{ id, name ≤ 30, items: [{ exerciseId, sets 1–10, reps 1–100, weight 0–2000, unit, toFailure, pair 0–9 }] (≤ 20,
-  each exercise once), deleted, at, u }]: `toFailure`: the reps are a minimum ("8+"), go to failure and log the good reps;
-  `pair`: a superset, the number exactly two lines next to each other share (0: none; `fixPairs` clears any other).
+- `routines` [{ id, name ≤ 30, minutes 5–300 (how long it takes, typed in its pop-up; 60 until it is), items: [{ exerciseId,
+  sets 1–10, reps 1–100, weight 0–2000, unit, toFailure, pair 0–9 }] (≤ 20, each exercise once), deleted, at, u }]:
+  `toFailure`: the reps are a minimum ("8+"), go to failure and log the good reps;
+  `pair`: a superset, the number exactly two lines next to each other share (0: none; `fixPairs` clears any other);
+  `minutes`: its cards' length in Momo, planned and logged alike (Next up and its row on Home show it).
 - `programs` [{ id, name ≤ 30, order: [routineId…] (≤ 50, repeats allowed), deleted, at, u }] (≤ 20 made by hand).
 - `program` { order, active, since, u }: `active` the program followed ("" for none), `since` when it was picked (`K.util.now()`),
   `order` its rotation again (older copies read only that; every edit writes it). The next routine is worked out, never
@@ -73,13 +76,13 @@ rotation with no program followed (a first one) makes "Program" too (id "main" w
 ## Shared with other apps
 `A.inbox(from, to)` (core/inbox.js; read-only copies), all `fill: "card"` (each a card of its own in Momo, titled by it):
 - every session done between `from` and `to`, in order: `{ id: "session:<id>", title: its name ("Workout" without one), date,
-  done: true, minutes: how long it took (when known), of: "next:<Monday>:<k>" (k: its rank, 1-based by `started`, among its
-  week's sessions — the k-th session takes slot k), time: when it started ("HH:MM", this device's clock), details: ["6
-  exercises", "42 min"] }` → ✓ on the card of the slot it took, else Momo places one on its day at that time (done needs
-  never go to Tasks);
+  done: true, minutes: its routine's (as typed; its routine deleted: how long it took, else 60), of: "next:<Monday>:<k>"
+  (k: its rank, 1-based by `started`, among its week's sessions — the k-th session takes slot k), time: when it started
+  ("HH:MM", this device's clock), details: ["6 exercises", "took 42 min" (its clock time, when known)] }` → ✓ on the card
+  of the slot it took, else Momo places one on its day at that time (done needs never go to Tasks);
 - once a routine is in the program, for each week from `from`'s to `to`'s (skipping weeks already over): the weekly target less
   the sessions done that week, in program order from the next routine, the rotation running on into next week:
-  `{ id: "next:<Monday>:<slot>", title: the routine's name, minutes: its usual length (60 before any), from: Monday, due: Sunday,
+  `{ id: "next:<Monday>:<slot>", title: the routine's name, minutes: the routine's (as typed), from: Monday, due: Sunday,
   details: ["6 exercises", "Last: Sep 28" or "Not done yet"] }`. A week's slots keep their ids as sessions are logged (logging
   takes the lowest, numbered from the week's count + 1); each waits in Momo's Tasks ("Legs") until you place it.
 `A.open(id)` (Momo's "Open in Badgermole"): a `session:` id opens Home and that day's pop-up on the session; a `next:` one
@@ -104,6 +107,10 @@ shows Home with Next up flashing.
 - The streak judges every week (Monday to Sunday) by the current target; this week counts once hit and never breaks it while open.
 - The dot on the icon (`A.attention`): once a routine is in the program, when today's workout is needed to keep this week's target
   (workouts left ≥ days left, today included) and none is logged today yet; it clears once one is.
+- A routine's length is typed (`minutes`), never worked out from its sessions (one logged after the fact lasts a minute or
+  two by the clock): Momo's cards take it, planned and logged alike. A session's own clock time stays in the day pop-up, the
+  session screen and its card's details ("took 42 min"). An older copy drops `minutes` when it saves: back to 60 until the
+  routine is saved again here.
 - A session left running over `STALE_HOURS` ends at its last set; its minutes are capped at `MAX_SESSION_MINUTES`. A session
   past midnight stays on the day it started. One at a time per device: a reload resumes it.
 - The steppers' typing is stored when a field is left (− / + at once), so it survives a reload without a write per key.

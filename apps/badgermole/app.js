@@ -44,9 +44,9 @@
     STEP: { lb: 5, kg: 2.5 }, // − / + on a weight whose exercise is gone (each exercise has its own step)
     MAX_PAIR: 9,              // supersets in a routine: each pair of lines shares a number
     LB_PER_KG: 2.2046226218,
-    DEFAULT_MINUTES: 60,      // a routine's length before it's been done
-    ESTIMATE_RUNS: 5,         // its usual length is the average of this many latest sessions
-    MAX_SESSION_MINUTES: 300, // a forgotten session can't make its routine look longer than this
+    MIN_ROUTINE_MINUTES: 5,   // how long a routine takes, as typed in its pop-up (its cards in Momo are this long)
+    DEFAULT_MINUTES: 60,      // a routine's length until it's typed
+    MAX_SESSION_MINUTES: 300, // the most a routine can take, and a forgotten session's length at most
     STALE_HOURS: 6,           // a session finished this long after it started ends at its last set
     // Offered while there are no exercises (never added by themselves: two devices would add them twice).
     STARTER: [["Squat"], ["Bench press"], ["Deadlift"], ["Overhead press"], ["Barbell row"], ["Pull-up", true], ["Push-up", true]]
@@ -91,13 +91,6 @@
   function fmtMinutes(m) {
     const h = Math.floor(m / 60), r = Math.round(m % 60);
     return h ? `${h} h${r ? ` ${r} min` : ""}` : `${r} min`;
-  }
-  // Minutes, rounded to what suits their size: 5-minute steps under an hour, quarter hours to 2 hours,
-  // half hours to 4, then whole hours (as Appa's).
-  function niceMinutes(m) {
-    if (!(m > 0)) return 0;
-    const step = m < 60 ? 5 : m < 120 ? 15 : m < 240 ? 30 : 60;
-    return Math.max(5, Math.round(m / step) * step);
   }
 
   // --- Days: a week runs Monday to Sunday, as in Momo ---
@@ -162,7 +155,7 @@
   }
 
   Object.assign(A, {
-    cleanLine, clampInt, plural, round2, fieldText, wholeIn, weightIn, fmtMinutes, niceMinutes, mondayOf, sundayOf, fmtDay,
+    cleanLine, clampInt, plural, round2, fieldText, wholeIn, weightIn, fmtMinutes, mondayOf, sundayOf, fmtDay,
     unit, toKg, fromKg, convert, roundHalf, inUnit, shownWeight, fmtWeight, fmtSet,
     live, liveExercises, liveRoutines, livePrograms, exerciseById, routineById, programById, sessionById, activeProgram, liveOrder,
     stepOf, fixPairs, pairClass, routineItems, bySession, sortedSessions, numbered

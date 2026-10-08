@@ -101,7 +101,7 @@ const damaged = () => ({
   schemaVersion: 1,
   exercises: [null, 5, "x", { id: "e1", name: "  Squat  \n deep ", bodyweight: "yes" }, { id: "e1", name: "Copy" }, { name: "" }, { id: "e2", name: "Pull-up", bodyweight: true }, { id: "e3", deleted: true, name: "Gone" }],
   routines: [
-    { id: "r1", name: "A".repeat(80), items: [{ exerciseId: "e1", sets: 99, reps: -3, weight: "heavy", unit: "stone" }, { exerciseId: "e1", sets: 2 }, { exerciseId: "missing", sets: 3, reps: 5 }, "junk"] },
+    { id: "r1", name: "A".repeat(80), minutes: 1e9, items: [{ exerciseId: "e1", sets: 99, reps: -3, weight: "heavy", unit: "stone" }, { exerciseId: "e1", sets: 2 }, { exerciseId: "missing", sets: 3, reps: 5 }, "junk"] },
     { id: "r2" }
   ],
   program: { order: ["r1", "nope", 42, "r1"], u: "soon" },

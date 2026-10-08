@@ -1,15 +1,15 @@
 /* Badgermole · editors.js — the setup: the exercise pop-up (#exerciseOverlay: name, bodyweight, its progression step;
- * Save, Cancel, Delete), the starter exercises, the routine pop-up (#routineOverlay: its name and a line per exercise —
- * which one, sets, reps, weight, "to failure" — with ↑ ↓ ✕, and a superset's link between two lines), the programs
- * (follow one with a tap; #programOverlay: New program, Rename, Delete), the rotation followed (add any routine, as
- * often as you like; ↑ ↓ ✕) and the settings (unit, weekly target). Weights show and save in the unit picked; a line
- * left as it was keeps its own. */
+ * Save, Cancel, Delete), the starter exercises, the routine pop-up (#routineOverlay: its name, how long it takes (its
+ * cards in Momo are that long) and a line per exercise — which one, sets, reps, weight, "to failure" — with ↑ ↓ ✕, and
+ * a superset's link between two lines), the programs (follow one with a tap; #programOverlay: New program, Rename,
+ * Delete), the rotation followed (add any routine, as often as you like; ↑ ↓ ✕) and the settings (unit, weekly
+ * target). Weights show and save in the unit picked; a line left as it was keeps its own. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, newId, readNumber, now } = K.util;
   const { MAX_EXERCISE, MAX_ROUTINE, MAX_LINES, MAX_SETS, MAX_REPS, MAX_WEIGHT, MAX_TARGET, MAX_PROGRAM, MAX_PROGRAMS,
-    MAX_PROGRAM_NAME, MAIN_PROGRAM, STEPS, DEFAULT_STEP, MAX_PAIR, STARTER,
+    MAX_PROGRAM_NAME, MAIN_PROGRAM, STEPS, DEFAULT_STEP, MAX_PAIR, STARTER, MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, MAX_SESSION_MINUTES,
     cleanLine, plural, fieldText, wholeIn, weightIn, inUnit, unit, pairClass } = A;
   const kept = () => { A.save(); A.renderAll(); };
   const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
@@ -89,7 +89,7 @@
   // ROUTINES: lines are kept as typed while the pop-up is open (so ↑ ↓ ✕ and Add keep what's in the fields)
   // ==========================================================================
   const rtOverlay = () => $("routineOverlay");
-  const rtState = () => { readLines(); return JSON.stringify([$("routineName").value, S.editing.lines]); };
+  const rtState = () => { readLines(); return JSON.stringify([$("routineName").value, fieldText($("routineMinutes")), S.editing.lines]); };
   // A line as the pop-up holds it: the exercise, the fields' text (the weight in the unit shown), to failure, its pair.
   const lineOf = x => ({ exerciseId: x.exerciseId, sets: String(x.sets), reps: String(x.reps), weight: String(inUnit(x.weight, x.unit)), toFailure: x.toFailure, pair: x.pair });
 
@@ -140,6 +140,7 @@
     S.editing.original = r ? r.items.slice() : [];
     $("routineTitle").textContent = r ? "Routine" : "New routine";
     $("routineName").value = r ? r.name : "";
+    $("routineMinutes").value = r ? r.minutes : DEFAULT_MINUTES;
     $("routineDeleteBtn").hidden = !r;
     renderLines();
     S.editing.snapshot = rtState();
@@ -175,6 +176,8 @@
     const name = cleanLine($("routineName").value, MAX_ROUTINE);
     if (!name) { $("routineName").focus(); return alert("Give the routine a name, like “Pull A”."); }
     if (A.liveRoutines().some(x => x !== r && sameName(x.name, name))) { $("routineName").focus(); return alert(`There's already a routine called “${name}”.`); }
+    const minutes = wholeIn(fieldText($("routineMinutes")), MIN_ROUTINE_MINUTES, MAX_SESSION_MINUTES);
+    if (minutes === null) { $("routineMinutes").focus(); return alert(`How long does it take? From ${MIN_ROUTINE_MINUTES} to ${MAX_SESSION_MINUTES} minutes.`); }
     const lines = ed.lines.filter(l => A.exerciseById(l.exerciseId)), items = [], seen = new Set();
     if (!lines.length) return alert("Add at least one exercise to the routine.");
     for (const l of lines) {
@@ -190,8 +193,8 @@
       items.push({ exerciseId: e.id, sets, reps, weight: same ? was.weight : weight, unit: same ? was.unit : unit(), toFailure: l.toFailure === true, pair: l.pair || 0 });
     }
     const t = Date.now();
-    if (r) Object.assign(r, A.cleanRoutines([{ ...r, name, items, u: t }])[0]);
-    else S.routines.push(A.cleanRoutines([{ id: newId(), name, items, at: t, u: t }])[0]);
+    if (r) Object.assign(r, A.cleanRoutines([{ ...r, name, minutes, items, u: t }])[0]);
+    else S.routines.push(A.cleanRoutines([{ id: newId(), name, minutes, items, at: t, u: t }])[0]);
     K.modal.dismiss(rtOverlay());
     kept();
   }

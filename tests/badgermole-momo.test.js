@@ -2,9 +2,10 @@
  * the week's workouts waits in Momo's Tasks, a task of its own titled by its routine, in program order this week and
  * next (the rotation running on); dragged onto a day it's a card of its own, a logged session shows ✓ on the card of
  * the workout it stands for while the others wait, "Open in Badgermole" (a done card: its day; a planned one: Next up),
- * a deleted session plans its workout on that card again, an empty program asks for nothing; and two tabs of one
- * browser (a finished session reaches the other's Momo, on a card of its own on its day; one in progress isn't counted,
- * and resumes on reload). */
+ * a deleted session plans its workout on that card again, an empty program asks for nothing; each card as long as its
+ * routine says, planned and logged alike (how long it took in the details); and two tabs of one browser (a finished
+ * session reaches the other's Momo, on a card of its own on its day; one in progress isn't counted, and resumes on
+ * reload). */
 "use strict";
 const { TODAY, DESKTOP, eq, ok, has, lacks, open, switchTo, importBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -104,6 +105,32 @@ module.exports = [
       eq(await workouts(tab), [], "nothing asked for this week");
       await momo.view(tab, "next");
       eq(await workouts(tab), [], "nor next week");
+    }
+  },
+  {
+    name: "momo: each workout is as long as its routine says, planned and logged alike; the details say how long it took",
+    async run(t) {
+      const tab = await both(t), p = tab.page;
+      // Push set to 45 minutes in its pop-up; Pull and Legs, from before minutes, take 60.
+      await switchTo(tab, "badgermole");
+      await bm.openFold(tab, "routines");
+      await p.click('#routinesList .row-btn:has-text("Push")');
+      await p.fill("#routineMinutes", "45");
+      await p.click('#routineForm button[type="submit"]');
+      await switchTo(tab, "momo");
+      eq((await momo.tasks(tab)).tasks.filter(x => x.key.startsWith("n:badgermole:")).map(x => [x.title, x.hours]), [["Push", 0.75], ["Pull", 1], ["Legs", 1]], "the tasks' hours");
+
+      // Push logged in 20 minutes by the clock: a card of its own on today, done, 45 minutes long, "took 20 min".
+      await switchTo(tab, "badgermole");
+      await bm.doSession(tab, "Push", { minutes: 20 });
+      await switchTo(tab, "momo");
+      const card = (await momo.days(tab))[2].cards.find(c => c.title === "Push");
+      ok(card, "Push has a card on today");
+      has(card.label, "Push (from Badgermole — done ✓)", "done");
+      eq(card.hours, 0.75, "as long as Push says, not as long as it took");
+      const from = (await momo.openCard(tab, card.id)).from;
+      eq(from.map(n => [n.title, n.done, n.details]), [["Push", true, ["3 exercises", "took 20 min"]]], "its details say how long it took");
+      await momo.closeCard(tab);
     }
   },
   {

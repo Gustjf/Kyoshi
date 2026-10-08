@@ -102,7 +102,7 @@
 .app-badgermole .session-bar button { min-height: 52px; padding: 6px 8px; font-size: 1em; font-weight: 600; border-radius: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-badgermole .session-bar .secondary { background: var(--panel); }
 
-/* --- Pop-ups: the exercise's checkbox, the routine's lines, Pick a routine, the day's sets --- */
+/* --- Pop-ups: the exercise's checkbox, the routine's minutes and lines, Pick a routine, the day's sets --- */
 .app-badgermole label.check { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .92em; color: var(--text); cursor: pointer; }
 .app-badgermole .lines { margin-bottom: 8px; }
 .app-badgermole .line { padding: 8px 0; border-top: 1px solid var(--border); }
@@ -118,7 +118,8 @@
 .app-badgermole .link-btn:hover { background: none; text-decoration: underline; }
 .app-badgermole .link-btn svg { width: 14px; height: 14px; }
 .app-badgermole .line-hint { margin: 10px 0 0; }
-.app-badgermole .step-hint { margin: 6px 0 0; }
+.app-badgermole .step-hint, .app-badgermole .minutes-hint { margin: 6px 0 0; }
+.app-badgermole .minutes-field input { max-width: 120px; }
 .app-badgermole .pick-list { display: flex; flex-direction: column; gap: 8px; }
 .app-badgermole .pick-btn { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 52px; padding: 10px 14px; border-radius: 8px; font-size: 1.05em; font-weight: 600; text-align: left; }
 .app-badgermole .pick-meta { font-size: .8em; font-weight: 400; opacity: .85; }
