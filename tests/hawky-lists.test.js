@@ -43,7 +43,7 @@ module.exports = [
       let gifts = await hk.listCard(tab, "Gifts");
       eq([gifts.state, gifts.actions, gifts.note], ["open", ["Lock 30 days", "Lock 7 days", "Bought"], ""], "an open list: Bought after the two locks");
       const buttons = await p.$$eval(`#kMount .slist[data-id="${await hk.cardOf(tab, "Gifts")}"] .slist-actions button`, els => els.map(b => b.getBoundingClientRect()).map(r => [r.left, r.right, r.height]));
-      ok(buttons.every(([left, right, height]) => left >= 0 && right <= PHONE.width && height >= 42), "on a phone the three buttons are thumb-sized and on screen");
+      ok(buttons.length === 3 && buttons.every(([left, right, height]) => left >= 0 && right <= PHONE.width && height >= 42), "on a phone the three buttons are thumb-sized and on screen");
       ok(await fitsScreen(tab), "nothing wider than the phone");
 
       tab.answers.push(false);
@@ -93,12 +93,13 @@ module.exports = [
       eq(await p.locator("#kMount #errandListNote").innerText(), "For the Shoes list at REI: ✓ buys the list.", "its pop-up names the list");
       await p.click("#kMount #errandCancelBtn");
 
-      // In Momo, a task of its own; Open in Hawky shows the list.
+      // In Momo, a task of its own; placed on Sunday, its card's Open in Hawky shows the list.
       await switchTo(tab, "momo");
       await importBackup(tab, gen.momo([], [{ date: D(7), title: "Sleep", hours: 8 }]));
       eq((await mo.tasks(tab)).tasks.filter(x => x.key === `n:hawky:${id}`).map(x => [x.title, x.due, x.hours]), [["Buy Shoes at REI", "due Sun", 0.5]], "in Momo's Tasks: due Sunday, half an hour");
-      await p.evaluate(x => Kyoshi.inbox.open("hawky", x), id);
-      await p.waitForFunction(() => Kyoshi.active() === Kyoshi.apps.hawky);
+      ok(await mo.dragTask(tab, `n:hawky:${id}`, 6), "dragged onto Sunday");
+      await mo.openCard(tab, (await mo.days(tab))[6].cards.find(c => c.title === "Buy Shoes at REI").id);
+      await mo.openInApp(tab, "hawky", id);
       eq(await p.evaluate(() => [Kyoshi.apps.hawky.S.view, [...document.querySelectorAll("#kMount .slist.flash")].map(c => c.dataset.id)]), ["lists", [listId]], "Open in Hawky: Shopping, the list flashing");
 
       // One item bought today; a day on, the errand's ✓ buys the rest: the list done that day, the errand in Done.
@@ -160,16 +161,22 @@ module.exports = [
       const back = await exportBackup(tab);
       eq(back.items.map(i => Object.keys(i).sort().join(" ")), made.map(() => "at deleted done due id minutes note postponed text u"), "Export carries them as plain errands");
 
-      // Another device with the same lists makes the same errand: combined, there's one.
+      // Another device with the same lists makes the same errand, changed there a minute later (45 minutes): combined,
+      // there's one, theirs.
       const other = await open(t, { app: "hawky", size: PHONE });
       await importBackup(other, backup);
+      await other.ctx.clock.fastForward(60000);
+      await other.page.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
+      await other.page.fill("#kMount #errandMinutes", "45");
+      await other.page.click('#kMount #errandForm [type="submit"]');
       const theirs = await exportBackup(other);
+      eq(theirs.items.filter(i => i.id === "list:sl-shoes").map(i => [i.text, i.minutes]), [["Buy Shoes at REI", 45]], "the other device made its own, the same id");
       eq(await p.evaluate(raw => {
         const H = Kyoshi.apps.hawky, r = H.data.combine(raw, { replace: false, plain: false });
         r.apply();
         H.data.afterSync();
-        return H.S.items.filter(i => i.id === "list:sl-shoes").length;
-      }, theirs), 1, "two devices, one errand");
+        return H.S.items.filter(i => i.id === "list:sl-shoes").map(i => i.minutes);
+      }, theirs), [45], "two devices, one errand: the later change");
 
       // Deleted from its pop-up: the list stays ready, its line gone, and no errand comes back after a reload.
       await p.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
