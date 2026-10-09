@@ -36,7 +36,7 @@
     $("errandPostponedNote").textContent = n ? `Postponed ${n} time${n === 1 ? "" : "s"}.` : "";
     $("errandPostponedNote").hidden = !n;
     const l = A.listOfErrand(i), list = l ? `For the ${l.topic} list at ${l.vendor}` : "For a shopping list";
-    $("errandListNote").textContent = l && !i.done ? `${list}: ✓ buys the list.` : `${list}.`;
+    $("errandListNote").textContent = l && !i.done && A.stateOf(l) === "ready" ? `${list}: ✓ buys the list.` : `${list}.`;
     $("errandListNote").hidden = !i.id.startsWith(A.LIST_ERRAND);
     S.editing.snapshot = formState();
     K.modal.open(overlay());
