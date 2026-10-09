@@ -6,7 +6,8 @@
  * un-ticked in Done tick and untick it, deleting the list deletes it; from a backup, an errand for each ready list
  * (Unlock early too, even the day it was locked; a long name cut at a word's end; none for a Bought one, one done before
  * or one still locked), kept through a reload and an Export, one on two devices, where a copy made by a device that
- * hadn't synced yet never undoes what was done to it; deleted, it stays deleted and the list stays ready. */
+ * hadn't synced yet never undoes what was done to it; deleted, it stays deleted and the list stays ready, also over
+ * three devices where one, syncing late, had changed it as its list was done on another. */
 "use strict";
 const { TODAY, DESKTOP, PHONE, eq, ok, open, lastDialog, switchTo, importBackup, exportBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -22,6 +23,13 @@ async function reload(tab) {
   await tab.page.reload();
   await tab.page.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started && Kyoshi.active() === Kyoshi.apps.hawky);
 }
+// Another device's save combined into a tab, as sync does (then afterSync): its errands as [id, deleted, minutes], by id.
+const combineIn = (tab, raw) => tab.page.evaluate(x => {
+  const H = Kyoshi.apps.hawky, r = H.data.combine(x, { replace: false, plain: false });
+  r.apply();
+  H.data.afterSync();
+  return H.S.items.map(i => [i.id, i.deleted, i.minutes]).sort();
+}, raw);
 // A Hawky backup with shopping lists, each { id, vendor, topic, items: [words], lock, unlocked, done (every item bought
 // that day) }, and no errands.
 const listsBackup = lists => ({
@@ -188,12 +196,6 @@ module.exports = [
       await other.page.click('#kMount .errand[data-id="list:sl-desk"] .errand-text');
       await other.page.fill("#kMount #errandMinutes", "45");
       await other.page.click('#kMount #errandForm [type="submit"]');
-      const combineIn = (tb, raw) => tb.page.evaluate(x => {
-        const H = Kyoshi.apps.hawky, r = H.data.combine(x, { replace: false, plain: false });
-        r.apply();
-        H.data.afterSync();
-        return H.S.items.map(i => [i.id, i.deleted, i.minutes]).sort();
-      }, raw);
       const [mine, theirs] = [await exportBackup(tab), await exportBackup(other)];
       const both = [["list:sl-desk", false, 45], ["list:sl-lamp", false, 30], ["list:sl-shoes", true, 30], ["list:sl-stove", false, 30]];
       eq(await combineIn(tab, theirs), both, "here: one errand each, Shoes' still deleted, Desk's 45 minutes");
@@ -207,6 +209,40 @@ module.exports = [
       eq([shoes.state, shoes.note], ["ready", ""], "the list stays ready, with no line about an errand");
       eq([gift.state, gift.note], ["ready", ""], "the Bought list un-ticked: ready, no errand");
       eq((await hk.listCard(tab, "Lighting")).note, "Its errand waits in Errands and Momo.", "the one unlocked early the day it was locked: its errand waits");
+    }
+  },
+  {
+    name: "hawky lists: three devices — an errand deleted on one stays deleted everywhere, though another, syncing late, had changed it while its list was done on the third",
+    async run(t) {
+      const backup = listsBackup([{ id: "sl-shoes", vendor: "REI", topic: "Shoes", items: ["Trail runners", "Wool socks"], lock: { at: D(-10), days: 7 } }]);
+      const clock = hm => Date.parse(`${TODAY}T${hm}:00Z`);
+      const c = await open(t, { app: "hawky", size: DESKTOP, time: clock("07:00") });
+      const b = await open(t, { app: "hawky", size: DESKTOP, time: clock("07:10") });
+      const a = await open(t, { app: "hawky", size: DESKTOP, time: clock("07:20") });
+      for (const tab of [a, b, c]) await importBackup(tab, backup);
+
+      // None synced yet: C ticks the list off (its errand done with it), B changes the errand's note, A deletes it.
+      await hk.showLists(c);
+      await hk.pressList(c, "Shoes", "Tick all");
+      await b.page.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
+      await b.page.fill("#kMount #errandNote", "The blue ones");
+      await b.page.click('#kMount #errandForm [type="submit"]');
+      await a.page.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
+      await a.page.click("#kMount #errandDeleteBtn");
+
+      // Half an hour on, B takes C's save (the list done: B's errand follows it), then A's; then A and C take B's.
+      await b.ctx.clock.fastForward(30 * 60000);
+      const [fromA, fromC] = [await exportBackup(a), await exportBackup(c)];
+      await combineIn(b, fromC);
+      eq((await hk.item(b, "list:sl-shoes")).done, TODAY, "B: its errand done with the list");
+      await combineIn(b, fromA);
+      const fromB = await exportBackup(b);
+      await combineIn(a, fromB);
+      await combineIn(c, fromB);
+      for (const [tab, who] of [[a, "A"], [b, "B"], [c, "C"]]) {
+        eq((await hk.item(tab, "list:sl-shoes")).deleted, true, `${who}: the errand stays deleted (the last change made to it)`);
+        eq(await tab.page.evaluate(() => Kyoshi.apps.hawky.stateOf(Kyoshi.apps.hawky.S.lists[0])), "done", `${who}: the list done`);
+      }
     }
   }
 ];

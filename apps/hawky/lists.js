@@ -182,7 +182,8 @@
   // list (events.js). Deleted, its marker keeps the id, so no other is made. A Bought list never waited and makes none; a
   // done list makes one only once it's ready again. Made, it's stamped u 0, "never changed": a device that hadn't synced
   // yet makes it too, and that copy mustn't outrank what was done to it elsewhere (deleted, edited, ticked); two such
-  // copies settle the same way everywhere (K.util.newer). Run wherever a list can change state: each change (touch), the
+  // copies settle the same way everywhere (K.util.newer). Mirrored, it's stamped when the list changed (just after its own
+  // last change, if later), not now, for the same reason. Run wherever a list can change state: each change (touch), the
   // first draw, a new day, another tab's save, sync and import; true when it changed anything (the caller saves). ---
   const listOfErrand = i => (i.id.startsWith(LIST_ERRAND) && listById(i.id.slice(LIST_ERRAND.length))) || null;
   // "Buy Running shoes at REI", cut at a word's end, with "…", past MAX_TEXT.
@@ -204,12 +205,13 @@
     });
     S.items.forEach(i => {
       if (i.deleted || !i.id.startsWith(LIST_ERRAND)) return;
-      const l = listOfErrand(i), state = l ? stateOf(l, today) : "gone";
+      const l = S.lists.find(x => x.id === i.id.slice(LIST_ERRAND.length)) || null; // a deleted one too: when it went
+      const state = l && !l.deleted ? stateOf(l, today) : "gone";
       if (state === "gone") Object.assign(i, { text: "", note: "", due: "", done: "", postponed: 0, deleted: true });
       else if (state === "done" && i.done !== l.done) i.done = l.done;
-      else if (state === "ready" && i.done) Object.assign(i, { done: "", due: i.due && i.due < today ? sundayOf(today) : i.due }); // not overdue for coming back
+      else if (state === "ready" && i.done && !neverWaited(l)) Object.assign(i, { done: "", due: i.due && i.due < today ? sundayOf(today) : i.due }); // not overdue for coming back
       else return;
-      i.u = now;
+      i.u = Math.max(i.u + 1, l ? l.u : 0);
       changed = true;
     });
     return changed;

@@ -108,22 +108,23 @@ any other.
   id (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>"
   (cut at a word's end, with "…", past 60), due this Sunday, 30 minutes, stamped `u` 0 ("never changed": a device that
   hadn't synced yet makes it too, and that copy mustn't outrank what was done to it elsewhere, deleted, edited or
-  ticked; two such copies settle the same way everywhere); its words are set when it's made (a list renamed later
-  doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list, an item
-  un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick all and ✓
-  item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the
-  list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day (none bought
-  that day, as when the list was done by taking its last item off: those bought last) and the list is ready again (the
-  errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a sync oddity) is left as
-  it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its marker keeps the id, so no other is
-  made. No errand for a Bought list, which never waited (a 1-day lock unlocked the day it was locked: `neverWaited`),
-  not even once an item un-ticked makes it ready (Unlock early makes one, any day), nor for one done before this
-  (until it's ready again), nor for a list whose id is too long for an errand's 40 characters (from a file). Run by
-  every list change (`touch`), the first draw, a new day, another tab's save, sync (`afterSync`, which saves what it
-  made: the other device makes the same id) and an import; the caller saves. Its pop-up says which list it's for; a
-  ready list's card says "Its errand waits in Errands and Momo." while it's open. Known: a list deleted on one device
-  and changed on another before they sync comes back (the later change wins) without its errand (the deletion's
-  marker stays).
+  ticked; two such copies settle the same way everywhere); what the mirror below changes is stamped when the list
+  changed (just after the errand's own last change, if that's later), not now, for the same reason; its words are set
+  when it's made (a list renamed later doesn't rename it). It mirrors its list both ways: open while the list is ready
+  (reopened by the list, an item un-ticked or a sync, it's due this Sunday again if its day has passed), done on the
+  list's done day (Tick all and ✓ item by item included), a marker once the list goes (deleted, or its last item taken
+  off); ✓ on the errand buys the list (every item bought today, as Tick all, no question), ✓ again un-buys the items
+  bought that day (none bought that day, as when the list was done by taking its last item off: those bought last) and
+  the list is ready again (the errand keeps its due day, as any errand's undo); an errand whose list is open or locked
+  (a sync oddity) is left as it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its marker
+  keeps the id, so no other is made. No errand for a Bought list, which never waited (a 1-day lock unlocked the day it
+  was locked: `neverWaited`), not even once an item un-ticked makes it ready (one it holds from another device isn't
+  reopened; Unlock early makes one, any day), nor for one done before this (until it's ready again), nor for a list
+  whose id is too long for an errand's 40 characters (from a file). Run by every list change (`touch`), the first
+  draw, a new day, another tab's save, sync (`afterSync`, which saves what it made: the other device makes the same
+  id) and an import; the caller saves. Its pop-up says which list it's for; a ready list's card says "Its errand waits
+  in Errands and Momo." while it's open. Known: a list deleted on one device and changed on another before they sync
+  may come back (the later change wins) without its errand (the deletion's marker stays).
 - One list per store and topic (case-insensitive) among those not done: adding finds it, a done one's store and topic
   start a new list, Rename refuses another's (no merging), and a store typed in other capitals keeps the spelling already
   used. Two made on two devices before they synced both stay (adding goes to the one not locked).
