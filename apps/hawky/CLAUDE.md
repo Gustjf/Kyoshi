@@ -104,21 +104,21 @@ any other.
   bought → done that day, into the Done fold (newest first); un-ticking one there makes it ready again. Bought (open
   lists, a question first): every item bought today and the list done, kept as locked 7 days and unlocked early that
   same day, so the Done fold and un-ticking work as for any list.
-- A ready list's errand (lists.js `keepErrands`): a list in state ready gets one errand, id `LIST_ERRAND` + the list's id
-  (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>" (cut
-  at a word's end, with "…", past 60), due this Sunday, 30 minutes; its words are set when it's made (a list renamed
-  later doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list, an item
-  un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick all and ✓
-  item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the
-  list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the list is
-  ready again (the errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a sync
-  oddity) is left as it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its
-  marker keeps the id, so no other is made. No errand for a list that never waited (unlocked the day it was locked:
-  Bought, or Unlock early that day) nor for one done before this (until it's ready again), nor for a list whose id is
-  too long for an errand's 40 characters (from a file). Run by every list change (`touch`), the first draw, a new day,
-  another tab's save, sync (`afterSync`, which saves what it made: the other device makes the same id) and an import;
-  the caller saves. Its pop-up says which list it's for; a ready list's card says "Its errand waits in Errands and
-  Momo." while it's open.
+- A ready list's errand (lists.js `keepErrands`): a list in state ready gets one errand, id `LIST_ERRAND` + the list's
+  id (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>"
+  (cut at a word's end, with "…", past 60), due this Sunday, 30 minutes; its words are set when it's made (a list
+  renamed later doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list,
+  an item un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick
+  all and ✓ item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand
+  buys the list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the
+  list is ready again (the errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a
+  sync oddity) is left as it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its marker keeps
+  the id, so no other is made. No errand for a list that never waited (unlocked the day it was locked: Bought, or
+  Unlock early that day) nor for one done before this (until it's ready again), nor for a list whose id is too long
+  for an errand's 40 characters (from a file). Run by every list change (`touch`), the first draw, a new day, another
+  tab's save, sync (`afterSync`, which saves what it made: the other device makes the same id) and an import; the
+  caller saves. Its pop-up says which list it's for; a ready list's card says "Its errand waits in Errands and Momo."
+  while it's open.
 - One list per store and topic (case-insensitive) among those not done: adding finds it, a done one's store and topic
   start a new list, Rename refuses another's (no merging), and a store typed in other capitals keeps the spelling already
   used. Two made on two devices before they synced both stay (adding goes to the one not locked).
