@@ -78,7 +78,7 @@ Kyoshi.apps.hawky.markup = `
     <h2>Shopping lists <span class="count" id="listsCount"></span></h2>
     <div id="listsEmpty" class="empty-msg">No lists yet. Add an item above: its store and topic make the list.</div>
     <div id="vendors"></div>
-    <div class="footnote">Once everything's on a list, lock it for 30 or 7 days: while it cools off you can only take items off. Once it unlocks, tick each item as you buy it. Shopping lists stay here: nothing goes to Momo.</div>
+    <div class="footnote">Once everything's on a list, lock it for 30 or 7 days: while it cools off you can only take items off. Once it unlocks, an errand to buy it joins your errands (and Momo): tick each item as you buy it, or the errand for all of them. Or tap Bought for something you bought without the wait.</div>
   </section>
 
   <section id="listsDoneSection" hidden>
@@ -115,6 +115,7 @@ Kyoshi.apps.hawky.markup = `
         </div>
         <p class="modal-hint" id="errandDoneNote" hidden></p>
         <p class="modal-hint" id="errandPostponedNote" hidden></p>
+        <p class="modal-hint" id="errandListNote" hidden></p>
         <div class="modal-actions">
           <button type="submit">Save</button>
           <button type="button" class="secondary" id="errandCancelBtn">Cancel</button>

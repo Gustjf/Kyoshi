@@ -4,10 +4,10 @@
  * then the lists by store (stores A to Z, topics A to Z; each store in its own colour, given by the order stores were
  * first used: a dot by its name, the left edge of its lists, done ones' too), each a card: its topic,
  * how many items and its state, Rename, its items (✓ once it's ready, ✕ to take one off, how long each has waited, its
- * note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days · Unlock early, in
- * amber, after a warning · Tick all); then the Done fold, newest first. The pop-ups: a list's (Rename: store and topic;
- * Delete list) and an item's (its words and note, while the list is open or ready; Remove). renderLists is called by
- * renderAll (render.js); wireLists by A.init (events.js). */
+ * note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days / Bought, after a
+ * question · Unlock early, in amber, after a warning · Tick all, and a line while its errand waits); then the Done fold,
+ * newest first. The pop-ups: a list's (Rename: store and topic; Delete list) and an item's (its words and note, while
+ * the list is open or ready; Remove). renderLists is called by renderAll (render.js); wireLists by A.init (events.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -68,13 +68,17 @@
   }
 
   // One list as a card, edged in its store's colour (colors: storeColors()): "Gifts · 3 items · locked · 18 days" and
-  // Rename, its items, then its state's buttons. In the Done fold it names its store too.
+  // Rename, its items, then its state's buttons (a ready one's says so while its errand waits). In the Done fold it names
+  // its store too.
   function cardHTML(l, today, colors) {
     const state = A.stateOf(l, today), items = A.liveItemsOf(l), id = `data-list="${esc(l.id)}"`;
+    const errand = state === "ready" && A.itemById(A.LIST_ERRAND + l.id);
     let actions = "";
-    if (state === "open") actions = LOCK_DAYS.map((d, k) => `<button type="button"${k ? ' class="secondary"' : ""} data-act="list-lock" ${id} data-days="${d}">Lock ${d} days</button>`).join("");
+    if (state === "open") actions = LOCK_DAYS.map((d, k) => `<button type="button"${k ? ' class="secondary"' : ""} data-act="list-lock" ${id} data-days="${d}">Lock ${d} days</button>`).join("") +
+      `<button type="button" class="secondary" data-act="list-bought" ${id}>Bought</button>`;
     if (state === "locked") actions = `<span class="slist-lock">Unlocks ${esc(dayWords(A.unlockDay(l), today))}</span><button type="button" class="warn-btn" data-act="list-unlock" ${id}>Unlock early</button>`;
-    if (state === "ready") actions = `<button type="button" data-act="list-tickall" ${id}>Tick all</button>`;
+    if (state === "ready") actions = `<button type="button" data-act="list-tickall" ${id}>Tick all</button>` +
+      (errand && !errand.done ? `<span class="slist-lock">Its errand waits in Errands and Momo.</span>` : "");
     return `<div class="slist ${state}" data-id="${esc(l.id)}" style="--store:${colors.get(l.vendor.toLowerCase())}">` +
       `<div class="slist-head"><span class="slist-topic">${esc(l.topic)}${state === "done" ? `<span class="slist-vendor"> · ${esc(l.vendor)}</span>` : ""}</span>` +
       `<span class="slist-meta">${plural(items.length, "item")} · <span class="slist-state">${esc(stateWords(l, state, today))}</span></span>` +
@@ -250,6 +254,10 @@
     "list-tickall": l => {
       const n = A.liveItemsOf(l).filter(i => !i.bought).length;
       return confirm(`Tick ${n === 1 ? "the last item" : `all ${n} items`} as bought? The list moves to Done.`) && A.tickAll(l);
+    },
+    "list-bought": l => {
+      const n = A.liveItemsOf(l).length;
+      return confirm(`Mark ${n === 1 ? "the item" : `all ${n} items`} on this list bought, without the cooling-off wait? The list moves to Done.`) && A.buyNow(l);
     },
     "list-rename": l => openListEditor(l),
     "item-tick": (l, btn, i) => A.tickItem(l, i, !i.bought),

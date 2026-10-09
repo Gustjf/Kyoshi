@@ -1,6 +1,6 @@
 /* Hawky · editor.js — the errand pop-up (#errandOverlay), opened by tapping an errand's text: what it
- * is, its note, the day it's due (or none), how many minutes, and how often it was postponed; Save (or Enter outside
- * the note), Cancel and Delete. */
+ * is, its note, the day it's due (or none), how many minutes, how often it was postponed, and the shopping list a
+ * ready list's errand is for; Save (or Enter outside the note), Cancel and Delete (a list's errand: the list stays). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -35,6 +35,9 @@
     const n = i.postponed || 0;
     $("errandPostponedNote").textContent = n ? `Postponed ${n} time${n === 1 ? "" : "s"}.` : "";
     $("errandPostponedNote").hidden = !n;
+    const l = A.listOfErrand(i), list = l ? `For the ${l.topic} list at ${l.vendor}` : "For a shopping list";
+    $("errandListNote").textContent = l && !i.done ? `${list}: ✓ buys the list.` : `${list}.`;
+    $("errandListNote").hidden = !i.id.startsWith(A.LIST_ERRAND);
     S.editing.snapshot = formState();
     K.modal.open(overlay());
   }

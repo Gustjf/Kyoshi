@@ -3,14 +3,15 @@
  * due first, and the undated, oldest first, then those ticked between from and to (on their day), each a
  * card of its own in Momo (fill "card"), titled by its text and as long as it takes: an open one waits in
  * Momo's Tasks until you place it; a done one (the same id) shows ✓ on its card, or gets one on the day it
- * was ticked. Momo's "Open in Hawky" calls open(id), which brings the errand into view and flashes it. The
- * needs' ids are the errands' own: change open() along with them (apps/hawky/CLAUDE.md). Shopping lists
- * are never shared. */
+ * was ticked. Momo's "Open in Hawky" calls open(id), which brings the errand into view and flashes it (a
+ * ready list's errand, its list). The needs' ids are the errands' own: change open() along with them
+ * (apps/hawky/CLAUDE.md). Shopping lists are never shared, except through a ready list's errand (id
+ * LIST_ERRAND + the list's id, lists.js), an errand like any other. */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { localDate, todayStr } = K.util;
-  const { DONE_PAGE, POSTPONE_WARN, fmtDay, firstLine } = A;
+  const { DONE_PAGE, POSTPONE_WARN, LIST_ERRAND, fmtDay, firstLine } = A;
 
   // A need's details: "Due Oct 7", or "No date · added Sep 30"; then the note's first line, if it has one; then
   // "Postponed 4×" once it's been postponed more than POSTPONE_WARN times.
@@ -34,20 +35,31 @@
 
   // From Momo's "Open in Hawky" (core/inbox.js puts Hawky on screen first): Errands comes on screen, and the errand
   // comes into view and flashes, a done one in the Done fold (opened, showing enough to reach it); nothing once it's
-  // deleted.
+  // deleted. A ready list's errand brings its list instead, in Shopping, the same way, while the list is there.
   function open(id) {
+    const l = typeof id === "string" && id.startsWith(LIST_ERRAND) ? A.listById(id.slice(LIST_ERRAND.length)) : null;
+    if (l) return openList(l);
     const i = A.itemById(id);
     if (!i) return;
     S.view = "errands";
     if (i.done) S.doneShown = Math.max(S.doneShown, Math.ceil((A.doneItems().indexOf(i) + 1) / DONE_PAGE) * DONE_PAGE);
     A.renderAll();
     if (i.done) A.$("doneBox").open = true;
-    const row = A.root.querySelector(`.errand[data-id="${CSS.escape(i.id)}"]`);
-    if (!row) return;
-    row.scrollIntoView({ block: "center", behavior: "smooth" });
-    row.classList.remove("flash");
-    void row.offsetWidth; // so the flash starts again
-    row.classList.add("flash");
+    flash(A.root.querySelector(`.errand[data-id="${CSS.escape(i.id)}"]`));
+  }
+  function openList(l) {
+    S.view = "lists";
+    if (l.done) S.listsDoneShown = Math.max(S.listsDoneShown, Math.ceil((A.doneLists().indexOf(l) + 1) / DONE_PAGE) * DONE_PAGE);
+    A.renderAll();
+    if (l.done) A.$("listsDoneBox").open = true;
+    flash(A.root.querySelector(`.slist[data-id="${CSS.escape(l.id)}"]`));
+  }
+  function flash(el) {
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.remove("flash");
+    void el.offsetWidth; // so the flash starts again
+    el.classList.add("flash");
   }
 
   Object.assign(A, { inbox, open });

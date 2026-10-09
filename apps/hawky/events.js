@@ -1,8 +1,9 @@
 /* Hawky · events.js — loads last: wires the page (A.init): the nav, quick add (Enter or Add adds the errand,
- * clears the field and keeps its focus; tapping a chip or + Note leaves the phone's keyboard up), ✓ and its undo,
- * an overdue errand's Tomorrow → (postponed, and counted), and the Done fold's Show more (the Shopping view wires
- * itself: lists-view.js); and the hooks Kyoshi calls: onTick (a new day), onReload (another tab saved), attention
- * (overdue errands) and bugState. */
+ * clears the field and keeps its focus; tapping a chip or + Note leaves the phone's keyboard up), ✓ and its undo (a
+ * ready list's errand buys its list, and undone, makes it ready again), an overdue errand's Tomorrow → (postponed, and
+ * counted), and the Done fold's Show more (the Shopping view wires itself: lists-view.js); and the hooks Kyoshi calls:
+ * onTick (a new day), onReload (another tab saved), attention (overdue errands) and bugState. The ready lists' errands
+ * are kept in step (A.keepErrands) at the first draw, on a new day and after another tab's save. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -80,11 +81,17 @@
     $("addText").focus();
   }
 
-  // ✓: done today (into the Done fold, and ✓ on its card in Momo); ✓ again undoes it.
+  // ✓: done today (into the Done fold, and ✓ on its card in Momo); ✓ again undoes it. A ready list's errand buys its
+  // list too (every item bought today), and undone, un-buys the items bought that day: the list is ready again. One save.
   function tick(id, done) {
     const i = A.itemById(id);
     if (!i || !!i.done === done) return;
+    const day = i.done, l = A.listOfErrand(i);
     Object.assign(i, { done: done ? todayStr() : "", u: Date.now() });
+    if (l && (done ? A.tickAll(l) : A.unbuy(l, day))) { // they save
+      A.renderAll();
+      return setStatus(done ? `Bought the ${l.topic} list at ${l.vendor}.` : `The ${l.topic} list at ${l.vendor} is ready again.`);
+    }
     kept();
   }
 
@@ -124,15 +131,23 @@
       S.doneShown += DONE_PAGE;
       A.renderAll();
     });
+    if (A.keepErrands()) A.save();
     A.renderAll();
   };
 
   // Every minute, and whenever the page is back in view: at a new day, errands move between the groups, waits grow
-  // and locks run out.
-  A.onTick = () => { if (todayStr() !== S.knownToday) A.renderAll(); };
+  // and locks run out (a ready list gets its errand).
+  A.onTick = () => {
+    if (todayStr() === S.knownToday) return;
+    if (A.keepErrands()) A.save();
+    A.renderAll();
+  };
 
   // Another tab saved (A.load has read it): show it.
-  A.onReload = () => A.renderAll();
+  A.onReload = () => {
+    if (A.keepErrands()) A.save();
+    A.renderAll();
+  };
 
   // A dot on Hawky's icon while any errand is overdue (DOT_WHEN_OVERDUE in app.js turns it off).
   A.attention = () => {
@@ -147,7 +162,7 @@
     const items = lists.flatMap(A.liveItemsOf), popup = S.editing ? "errand" : S.listEditing ? "list" : S.itemEditing ? "item" : "none";
     const slipped = A.live().filter(i => i.postponed), warned = slipped.filter(i => i.postponed > A.POSTPONE_WARN).length;
     return [
-      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note, ${slipped.length} postponed (${warned} past ${A.POSTPONE_WARN}×); +${S.items.length - A.live().length} deleted`,
+      `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note, ${slipped.length} postponed (${warned} past ${A.POSTPONE_WARN}×), ${A.live().filter(i => i.id.startsWith(A.LIST_ERRAND)).length} for lists; +${S.items.length - A.live().length} deleted`,
       `- Lists: ${lists.length} (${states.join(", ")}), ${items.length} items (${items.filter(i => i.bought).length} bought, ${items.filter(i => i.note).length} with a note); +${S.lists.length - lists.length} deleted`,
       `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}, note ${S.add.note ? "shown" : "hidden"}`,
       `- View: ${S.view}; pop-up: ${popup}; done shown: ${S.doneShown} errands, ${S.listsDoneShown} lists`

@@ -1,8 +1,9 @@
 /* Kyoshi · tests/hawky.js — Hawky's screens as the tests read and use them: quick add with its chips and status line, the
- * open errands by group (each line's text, its meta line, whether it has Tomorrow →), Tomorrow → itself, an errand as
- * Hawky keeps it (for checks), and the Shopping tab's add row (its boxes, typed in and read) and its stores (each with its
- * colour and its lists' edges). Errands are found by their ids, lists by their topics. Selectors live here, so a markup
- * change is fixed in one place. */
+ * open errands by group (each line's text, its meta line, whether it has Tomorrow →), Tomorrow → and ✓ themselves, an
+ * errand as Hawky keeps it (for checks), and the Shopping tab's add row (its boxes, typed in and read), its stores (each
+ * with its colour and its lists' edges), a list's card (its state, buttons, line and items; its buttons and its items' ✓
+ * pressed) and the Done fold's lists. Errands are found by their ids, lists by their topics. Selectors live here, so a
+ * markup change is fixed in one place. */
 "use strict";
 
 const M = "#kMount";
@@ -44,6 +45,8 @@ const groups = tab => tab.page.$$eval(`${M} #groups .group`, els => Object.fromE
 ])));
 // Tomorrow → on an errand's line.
 const postpone = (tab, id) => tab.page.click(`${M} .errand[data-id="${id}"] [data-act="postpone"]`);
+// ✓ on an errand's line: done, or (a done one, in the Done fold) not done after all.
+const tickErrand = (tab, id) => tab.page.click(`${M} .errand[data-id="${id}"] .tick`);
 // An errand as Hawky keeps it (deleted ones too).
 const item = (tab, id) => tab.page.evaluate(x => Kyoshi.apps.hawky.S.items.find(i => i.id === x) || null, id);
 
@@ -77,4 +80,33 @@ const stores = tab => tab.page.$$eval(`${M} #vendors .vendor`, els => els.map(v 
 // A "#rrggbb" colour as the browser computes it.
 const rgb = hex => `rgb(${[1, 3, 5].map(k => parseInt(hex.slice(k, k + 2), 16)).join(", ")})`;
 
-module.exports = { addErrand, quickAdd, chips, status, groups, postpone, item, showLists, ROW, addItem, typeIn, addRow, topics, listStatus, stores, rgb };
+// A list's card by its topic (the first, should two share it; a done one too, in the Done fold): its list's id, or "".
+const cardOf = (tab, topic) => tab.page.$$eval(`${M} .slist`, (els, t) => {
+  const c = els.find(e => e.querySelector(".slist-topic").firstChild.textContent === t);
+  return c ? c.dataset.id : "";
+}, topic);
+// A list as shown: { state (open | locked | ready | done), meta (its line: "2 items · ready"), actions: [its buttons' words],
+// note (the line among them: "Unlocks Oct 7", "Its errand waits in Errands and Momo."; "" for none), items: [{ text,
+// bought }] }; null when there's no such list.
+const listCard = (tab, topic) => tab.page.$$eval(`${M} .slist`, (els, t) => {
+  const c = els.find(e => e.querySelector(".slist-topic").firstChild.textContent === t);
+  if (!c) return null;
+  const acts = c.querySelector(".slist-actions"), note = acts && acts.querySelector(".slist-lock");
+  return {
+    state: ["open", "locked", "ready", "done"].find(s => c.classList.contains(s)), meta: c.querySelector(".slist-meta").textContent,
+    actions: acts ? [...acts.querySelectorAll("button")].map(b => b.textContent) : [], note: note ? note.textContent : "",
+    items: [...c.querySelectorAll(".sitem")].map(i => ({ text: i.querySelector(".sitem-text").textContent, bought: i.classList.contains("bought") }))
+  };
+}, topic);
+// One of a list's buttons, by its words ("Lock 7 days", "Bought", "Unlock early", "Tick all", "Rename"); a done list's
+// only once the Done fold is open.
+const pressList = async (tab, topic, words) => tab.page.click(`${M} .slist[data-id="${await cardOf(tab, topic)}"] button:text-is("${words}")`);
+// An item's ✓ on a list: bought, or not bought after all.
+const tickItem = async (tab, topic, text) => tab.page.click(`${M} .slist[data-id="${await cardOf(tab, topic)}"] .sitem:has(.sitem-text:text-is("${text}")) .tick`);
+// The Done fold's lists, newest first: [{ topic, meta }].
+const doneLists = tab => tab.page.$$eval(`${M} #listsDone .slist`, els => els.map(c => ({ topic: c.querySelector(".slist-topic").firstChild.textContent, meta: c.querySelector(".slist-meta").textContent })));
+
+module.exports = {
+  addErrand, quickAdd, chips, status, groups, postpone, tickErrand, item, showLists, ROW, addItem, typeIn, addRow, topics, listStatus, stores, rgb,
+  cardOf, listCard, pressList, tickItem, doneLists
+};

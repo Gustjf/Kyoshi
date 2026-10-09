@@ -74,7 +74,7 @@ apps/<id>/            one folder per app — its CLAUDE.md has its file map and 
   momo/               weekly time budget (YNAB for hours)
   wanshitong/         media tracker for recommendations (Active media, the backlog)
   appa/               preventive maintenance & records (each job a card of its own in Momo, PDF reports with proof)
-  hawky/              errands (quick add on the phone, each a card of its own in Momo) & shopping lists (by store and topic, a 30- or 7-day cooling-off lock; not in Momo)
+  hawky/              errands (quick add on the phone, each a card of its own in Momo) & shopping lists (by store and topic, a 30- or 7-day cooling-off lock or Bought without it; a ready one gets an errand, so a card in Momo)
   iroh/               the goals ladder: each area's 10-year vision, the year's goals, the season's (their hours fill Momo's cards; progress from its close-out)
   badgermole/         workouts: routines in rotation, set logging on the phone, PRs & streak (each workout a card of its own in Momo)
   turtleduck/         meals: recipes (pasted in bulk), the two-week plan by drag and drop with batch portions, trips (a weekly schedule too) with a grocery list each, a cook view; Times & trips sets when (its meals and scheduled trips are slots in Momo's baseline, filled once a week is confirmed; cooking and extra trips pinned cards of their own)

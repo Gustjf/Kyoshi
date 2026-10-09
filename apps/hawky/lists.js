@@ -1,13 +1,14 @@
 /* Hawky · lists.js — the shopping lists' model: lookups, each list's state and the changes to them (the Shopping view,
- * lists-view.js, draws them). A store (vendor) and a topic make a list: one list per store and topic, whatever their
- * case, among those not done yet. Its state, worked out, never stored (stateOf):
- *   open    no lock yet: items are added, changed and taken off; then it's locked for 30 or 7 days (LOCK_DAYS);
+ * lists-view.js, draws them), and a ready list's errand (keepErrands). A store (vendor) and a topic make a list: one
+ * list per store and topic, whatever their case, among those not done yet. Its state, worked out, never stored (stateOf):
+ *   open    no lock yet: items are added, changed and taken off; then it's locked for 30 or 7 days (LOCK_DAYS), or
+ *           Bought without the wait (kept as locked and unlocked early the same day, so it's done like any other);
  *   locked  until the lock runs out (the day locked + its days) unless unlocked early: items can only be taken off,
  *           and one added for its store and topic is refused;
  *   ready   items are ticked as bought (Tick all ticks the rest), and can still be added, changed or taken off;
  *   done    every item bought: the day is kept and the list folds into Done; un-ticking one there makes it ready again.
  * A list with no items left goes. Deleted lists and items stay as markers. Every change stamps the list's `u`: sync takes
- * a list whole, the later change winning (data.js). Never sent to Momo.
+ * a list whole, the later change winning (data.js). A list goes to Momo only through its errand, an errand like any other.
  * A list: { id, vendor ≤ 40, topic ≤ 40, items, lock: null | { at: "YYYY-MM-DD" (the day locked), days }, unlocked: "" or
  * the day unlocked early, done: "" or the day done, deleted, at, u }; an item: { id, text ≤ 100, note ≤ 300 (a note or
  * a web link), at (when added: its order and how long it has waited), bought: "" or the day, deleted }. Cleaning:
@@ -16,7 +17,7 @@
   "use strict";
   const S = A.S;
   const { newId, addDays, daysBetween, todayStr } = K.util;
-  const { LOCK_DAYS } = A;
+  const { LOCK_DAYS, LIST_ERRAND, LIST_ERRAND_MINUTES, MAX_TEXT, sundayOf } = A;
 
   // --- Lookups ---
   const liveLists = () => S.lists.filter(l => !l.deleted);
@@ -58,8 +59,8 @@
   const vendorNames = () => namesOf(liveLists(), "vendor");
   const topicNames = vendor => namesOf(liveLists().filter(l => l.vendor.toLowerCase() === vendor.toLowerCase()), "topic");
 
-  // --- Changes: each stamps the list and saves; the view redraws ---
-  const touch = l => { l.u = Date.now(); A.save(); return true; };
+  // --- Changes: each stamps the list, keeps the errands in step and saves; the view redraws ---
+  const touch = l => { l.u = Date.now(); keepErrands(); A.save(); return true; };
   const gone = l => Object.assign(l, { vendor: "", topic: "", items: [], lock: null, unlocked: "", done: "", deleted: true });
   // After an item is taken off or ticked: a list with no items left goes; a ready one is done once every item is bought
   // (that day), and a done one is ready again when one isn't.
@@ -126,12 +127,34 @@
     return touch(l);
   }
 
-  // Tick all: every item not bought yet is bought today, and the list is done (ready lists).
+  // Every item not bought yet is bought on day, and the list is done that day.
+  function buy(l, day) {
+    liveItemsOf(l).forEach(i => { if (!i.bought) i.bought = day; });
+    l.done = day;
+    return touch(l);
+  }
+
+  // Tick all, or its errand's ✓: every item not bought yet is bought today, and the list is done (ready lists).
   function tickAll(l) {
     const today = todayStr();
-    if (stateOf(l, today) !== "ready") return false;
-    liveItemsOf(l).forEach(i => { if (!i.bought) i.bought = today; });
-    l.done = today;
+    return stateOf(l, today) === "ready" && buy(l, today);
+  }
+
+  // Bought, without the cooling-off wait (open lists): every item bought today, the list kept as locked and unlocked
+  // early the same day, so it's done like any other and un-ticking an item there makes it ready. It never waited, so it
+  // makes no errand (keepErrands).
+  function buyNow(l) {
+    const today = todayStr();
+    if (stateOf(l, today) !== "open") return false;
+    Object.assign(l, { lock: { at: today, days: LOCK_DAYS[LOCK_DAYS.length - 1] }, unlocked: today });
+    return buy(l, today);
+  }
+
+  // Its errand's ✓ taken back (done lists): the items bought that day aren't any more, and the list is ready again.
+  function unbuy(l, day) {
+    if (stateOf(l) !== "done") return false;
+    liveItemsOf(l).forEach(i => { if (i.bought === day) i.bought = ""; });
+    l.done = "";
     return touch(l);
   }
 
@@ -143,14 +166,53 @@
     return touch(l);
   }
 
-  // Deletes a list, items and all.
+  // Deletes a list, items and all (and its errand: keepErrands).
   function deleteList(l) {
     gone(l);
     return touch(l);
   }
 
+  // --- A ready list's errand: once a list's wait is over (its lock ran out, or Unlock early), an errand to buy it, its
+  // id LIST_ERRAND + the list's id: the link, the same on every device, so two devices make one errand, not two. It
+  // mirrors its list: open while the list is ready (due this Sunday again if its day has passed), done on the list's
+  // done day, a marker once the list goes (one whose list is open or locked, a sync oddity, is left be); its ✓ buys the
+  // list (events.js). Deleted, its marker keeps the id, so no other is made. A list unlocked the day it was locked never
+  // waited (Bought) and makes none; a done list makes one only once it's ready again. Run wherever a list can change
+  // state: each change (touch), the first draw, a new day, another tab's save, sync and import; true when it changed
+  // anything (the caller saves). ---
+  const listOfErrand = i => (i.id.startsWith(LIST_ERRAND) && listById(i.id.slice(LIST_ERRAND.length))) || null;
+  // "Buy Running shoes at REI", cut at a word's end, with "…", past MAX_TEXT.
+  function errandText(l) {
+    const words = `Buy ${l.topic} at ${l.vendor}`;
+    if ([...words].length <= MAX_TEXT) return words;
+    const cut = [...words].slice(0, MAX_TEXT - 1).join(""), end = cut.lastIndexOf(" ");
+    return `${(end > 3 ? cut.slice(0, end) : cut).replace(/ at$/, "").trim()}…`;
+  }
+  function keepErrands(today = todayStr()) {
+    const now = Date.now(), ids = new Set(S.items.map(i => i.id));
+    let changed = false;
+    activeLists().forEach(l => {
+      const id = LIST_ERRAND + l.id; // ids are kept to 40 characters (data.js): a longer one, from a file, couldn't link
+      if (stateOf(l, today) !== "ready" || l.unlocked === l.lock.at || ids.has(id) || id.length > 40) return;
+      S.items.push({ id, text: errandText(l), note: "", due: sundayOf(today), minutes: LIST_ERRAND_MINUTES, done: "", postponed: 0, deleted: false, at: now, u: now });
+      changed = true;
+    });
+    S.items.forEach(i => {
+      if (i.deleted || !i.id.startsWith(LIST_ERRAND)) return;
+      const l = listOfErrand(i), state = l ? stateOf(l, today) : "gone";
+      if (state === "gone") Object.assign(i, { text: "", note: "", due: "", done: "", postponed: 0, deleted: true });
+      else if (state === "done" && i.done !== l.done) i.done = l.done;
+      else if (state === "ready" && i.done) Object.assign(i, { done: "", due: i.due && i.due < today ? sundayOf(today) : i.due }); // not overdue for coming back
+      else return;
+      i.u = now;
+      changed = true;
+    });
+    return changed;
+  }
+
   Object.assign(A, {
     liveLists, listById, liveItemsOf, itemOf, unlockDay, stateOf, daysLeft, canEdit, activeLists, doneLists, clashOf,
-    vendorNames, topicNames, addItem, editItem, removeItem, lockList, unlockEarly, tickItem, tickAll, renameList, deleteList
+    vendorNames, topicNames, addItem, editItem, removeItem, lockList, unlockEarly, tickItem, tickAll, buyNow, unbuy,
+    renameList, deleteList, listOfErrand, keepErrands
   });
 })(Kyoshi, Kyoshi.apps.hawky);

@@ -12,24 +12,26 @@ its Tasks until you drag it onto a day; a ticked one shows ✓.
 **Shopping lists** hold the products you spot (not groceries: Turtleduck's) for a cooling-off period before buying: each
 item goes on its store and topic's list, one list per topic; once everything's on it, a list is locked for 30 or 7 days,
 and while it's locked items can only come off (an amber Unlock early warns first); then each item is ticked as it's
-bought, and the done list folds away. Each store has its own colour (a dot by its name, the left edge of its lists). The
-add row keeps the store and topic for the next item; typing another store clears that topic. Lists never go to Momo.
+bought, and the done list folds away; Bought marks an open list's items bought without the wait. Once a list's wait is
+over, Hawky adds an errand to buy it (a card in Momo like any errand), and the two complete each other. Each store has its
+own colour (a dot by its name, the left edge of its lists). The add row keeps the store and topic for the next item;
+typing another store clears that topic.
 Named after Sokka's messenger hawk (the icon is Lucide's bird, in teal).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js`.
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DEFAULT_DAY` "week", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DEFAULT_DAY` "week", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; a ready list's errand: `LIST_ERRAND` "list:" (its id's start), `LIST_ERRAND_MINUTES` 30; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
 | `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), the pop-ups (errand, list, item) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (errands, lists and their items), backups and sync merge (`A.data`) |
-| `share.js` | what Momo reads (`inbox`) and opens (`open`) |
-| `lists.js` | the shopping lists' model (its header documents it): lookups (`listFor`, `activeLists`, `doneLists`, `clashOf`, the names the add row suggests), `stateOf` (open, locked, ready, done), `unlockDay`, `daysLeft`, and the changes (`addItem`, `editItem`, `removeItem`, `lockList`, `unlockEarly`, `tickItem`, `tickAll`, `renameList`, `deleteList`) |
-| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions (another store typed after an add clears its topic: `storeTyped`), the lists by store as cards, each store in its colour (`storeColors`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
+| `share.js` | what Momo reads (`inbox`) and opens (`open`: an errand, or a ready list's errand's list) |
+| `lists.js` | the shopping lists' model (its header documents it): lookups (`listFor`, `activeLists`, `doneLists`, `clashOf`, the names the add row suggests), `stateOf` (open, locked, ready, done), `unlockDay`, `daysLeft`, the changes (`addItem`, `editItem`, `removeItem`, `lockList`, `unlockEarly`, `tickItem`, `tickAll`, `buyNow` (Bought), `unbuy` (an errand's ✓ taken back), `renameList`, `deleteList`), and a ready list's errand (`keepErrands`, `listOfErrand`) |
+| `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions (another store typed after an add clears its topic: `storeTyped`), the lists by store as cards (an open one's Lock 30 days, Lock 7 days and Bought; a ready one's line while its errand waits), each store in its colour (`storeColors`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
 | `render.js` | `renderAll` (the nav and both views), `showView`, `renderAdd`: the chips and the note line, the groups (each with its total time; Tomorrow → on overdue errands, the warning mark past `POSTPONE_WARN`), the Done fold (a page at a time) |
-| `editor.js` | the errand pop-up: text, note, due, minutes, how often it was postponed; Save (Enter), Cancel, Delete |
-| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo, Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState` |
+| `editor.js` | the errand pop-up: text, note, due, minutes, how often it was postponed, the list a ready list's errand is for; Save (Enter), Cancel, Delete |
+| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo (a list's errand buys its list, and back), Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState`; each keeps the lists' errands in step (`keepErrands`) |
 | `hawky.css` | styles under `.app-hawky` |
 
 ## State (`A.S`)
@@ -39,13 +41,14 @@ Saved:
   `minutes` 5–480, `done` the day it was ticked or "" while open, `postponed` how many times Tomorrow → moved it (a whole
   number, up to 999 from a file; 0 before any, in errands from before it, and in a deleted one), `at` when it was added
   (the undated's order and how long they've waited), `u` when it last changed (the later wins in sync). Deleted ones stay
-  as markers. Done ones are kept for good.
+  as markers. Done ones are kept for good. One whose id is `list:<a list's id>` is that list's errand (Invariants).
 - `lists` [{ id, vendor, topic, items, lock, unlocked, done, deleted, at, u }]: shopping lists. `vendor` (the store) and
   `topic` ≤ 40 each; `items` [{ id, text ≤ 100, note ≤ 300 (a note or a web link, lines kept), at (when added: their order
   and how long they've waited), bought ("" or the day ticked), deleted }]; `lock` null while open, else { at: the day it
   was locked, days: 30 or 7 (any whole number up to 365 is kept from a file) }; `unlocked` the day it was unlocked early,
   or ""; `done` the day it was done, or ""; `u` when it or any of its items last changed. Deleted lists and items stay as
-  markers. Done lists are kept for good.
+  markers. Done lists are kept for good. Bought is kept as a 7-day lock and an early unlock on the same day (nothing new
+  stored).
 This device only: `view` ("errands" | "lists"; it opens on errands), `add` (quick add: `day` "none"|"today"|"week"|
 "nextweek"|"pick", `minutes` 5|15|30|60|"other", `note` its note line shown; This week, 15 and no note at first, and
 back to them after each add), `listNote` (the add row's note line shown), `listLast` ({ vendor, topic } of the add row's
@@ -72,7 +75,9 @@ card of its own in Momo, titled by its text and as long as it takes: an open one
 due day, any day once overdue) until you place it; a done one keeps the errand's id, so ✓ shows on its card, or Momo
 places one on the day it was ticked; it never goes to Tasks.
 `A.open(id)` (Momo's "Open in Hawky") puts Errands on screen, scrolls to the errand and flashes it, opening the Done fold
-for a done one. Shopping lists are never shared.
+for a done one; for a ready list's errand (`list:<id>`), Shopping and the list instead, the lists' Done fold opened for a
+done one, while the list is there. Shopping lists are never shared, except through a ready list's errand, an errand like
+any other.
 
 ## Invariants
 - Groups, overdue, a list's state, how long something has waited, the words for days and a store's colour are worked
@@ -95,7 +100,22 @@ for a done one. Shopping lists are never shared.
   lock's day + its days and it wasn't unlocked early; else ready. Open: items added, changed, taken off; Lock 30 days or
   Lock 7 days. Locked: items only come off, and one added for its store and topic is refused (the owner's choice); Unlock
   early asks first. Ready: ✓ each, or Tick all (asks first); items can still be added, changed or taken off. Every item
-  bought → done that day, into the Done fold (newest first); un-ticking one there makes it ready again.
+  bought → done that day, into the Done fold (newest first); un-ticking one there makes it ready again. Bought (open
+  lists, a question first): every item bought today and the list done, kept as locked 7 days and unlocked early that
+  same day, so the Done fold and un-ticking work as for any list.
+- A ready list's errand (lists.js `keepErrands`): a list in state ready gets one errand, id `LIST_ERRAND` + the list's id
+  (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>" (cut
+  at a word's end, with "…", past 60), due this Sunday, 30 minutes. It mirrors its list both ways: open while the list is
+  ready (due this Sunday again if its day has passed meanwhile), done on the list's done day (Tick all and ✓ item by item
+  included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the list (every
+  item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the list is ready again;
+  an errand whose list is open or locked (a sync oddity) is left as it is. Deleting the errand leaves the list, and its
+  marker keeps the id, so no other is made. No errand for a list that never waited (unlocked the day it was locked:
+  Bought, or Unlock early that day) nor for one done before this (until it's ready again), nor for a list whose id is
+  too long for an errand's 40 characters (from a file). Run by every list change (`touch`), the first draw, a new day,
+  another tab's save, sync (`afterSync`, which saves what it made: the other device makes the same id) and an import;
+  the caller saves. Its pop-up says which list it's for; a ready list's card says "Its errand waits in Errands and
+  Momo." while it's open.
 - One list per store and topic (case-insensitive) among those not done: adding finds it, a done one's store and topic
   start a new list, Rename refuses another's (no merging), and a store typed in other capitals keeps the spelling already
   used. Two made on two devices before they synced both stay (adding goes to the one not locked).
@@ -103,6 +123,5 @@ for a done one. Shopping lists are never shared.
 - A note's web addresses (http and https only) show as the site's name and open in a new tab; the rest is plain text.
 - The dot on the icon (`A.attention`, "2 errands overdue") goes away with `DOT_WHEN_OVERDUE: false` in `app.js`; lists
   never dot it.
-- Not now: recurring errands (Appa's job), tags, projects, sharing; prices or tax on lists; anything sent to Momo from
-  the lists, or events placed by Hawky.
+- Not now: recurring errands (Appa's job), tags, projects, sharing; prices or tax on lists; events placed by Hawky.
 - Bug reports and console messages hold counts only: never the errands' or lists' words.

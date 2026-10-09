@@ -113,6 +113,7 @@
     if (ask && (mine || mineLists) && !K.backup.ask(A, raw, `Replace your ${count(mine, mineLists)} with the ${count(theirs, theirLists)} in this backup?${kept}`)) return;
     S.items = items;
     S.lists = lists;
+    A.keepErrands(); // a ready list's errand, made from what the backup holds
     persist();
     A.changed(!!kept); // it's from a backup, so there's nothing new to export (but lists it didn't hold)
     A.renderAll();
@@ -142,9 +143,11 @@
     };
   }
 
-  // Other devices' data came in from the folder: keep it, and show it.
+  // Other devices' data came in from the folder: keep it, and show it. A ready list's errand made or changed here is
+  // saved for the others (the same id on every device, so the two agree in one round).
   function afterSync() {
     persist();
+    if (A.keepErrands()) save();
     A.renderAll();
   }
 

@@ -50,7 +50,7 @@
 /* Tomorrow →: an overdue errand's, at the row's end. */
 .app-hawky .postpone { flex: 0 0 auto; margin-left: 6px; white-space: nowrap; }
 .app-hawky .errand.done .errand-text { color: var(--muted); text-decoration: line-through; }
-.app-hawky .errand.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
+.app-hawky .errand.flash, .app-hawky .slist.flash { animation: meeting-flash 1.8s ease-out; } /* core's flash, as for a meeting */
 
 /* --- Done: folded away under the list --- */
 .app-hawky summary { display: flex; align-items: center; list-style: none; cursor: pointer; user-select: none; }
