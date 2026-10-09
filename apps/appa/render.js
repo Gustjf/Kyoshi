@@ -83,7 +83,7 @@
   function thingRowHTML(t) {
     const next = A.nextOf(t.id), last = A.lastReading(t.id);
     const bits = [t.about, meterOf(t) && last ? fmtReading(last.value, t) : ""].filter(Boolean).map(esc);
-    const nextText = t.archived ? "Archived" : next ? `Next: ${esc(next.job.name)}, ${esc(A.dueText(next.job).replace(/^Due /, "").toLowerCase())}` : A.jobsOf(t.id).length ? "" : "No jobs yet";
+    const nextText = t.archived ? "Archived" : next ? `Next: ${esc(next.job.name)}, ${esc(A.dueText(next.job).replace(/^Due /, "").replace(/^./, c => c.toLowerCase()))}` : A.jobsOf(t.id).length ? "" : "No jobs yet";
     return `<div class="row-item thing-row" data-act="open-thing" data-id="${esc(t.id)}" role="button" tabindex="0">${t.archived ? "" : dot(next ? next.status : "none")}` +
       `<div class="row-main"><div class="row-title">${esc(t.name)}</div><div class="row-sub">${bits.join(SEP)}${bits.length && nextText ? SEP : ""}${nextText}</div></div></div>`;
   }

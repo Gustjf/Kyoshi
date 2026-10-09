@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.364", date: "2026-10-09", changes: [
+      "A thing's \"Next:\" line keeps its date capitalized (Oct 20, not oct 20)."
+    ] },
     { version: "1.363", date: "2026-10-08", changes: [
       "A record of other work with no job keeps the time you typed for it: it shows again when you open the record, goes into Export, and Momo's card for it is that long (it used to fall back to 30 minutes). Reload Appa on every device after updating."
     ] },
