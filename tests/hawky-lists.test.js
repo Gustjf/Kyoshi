@@ -1,11 +1,12 @@
 /* Kyoshi · tests/hawky-lists.test.js — Hawky's shopping lists and their errands (the 2026-10-08 feedback batch's Phase 5):
- * Bought on an open list (a question first; every item bought today, the list into Done, kept as locked and unlocked
+ * Bought on an open list (a question first; every item bought today, the list into Done, kept as a 1-day lock unlocked
  * early that day; un-ticking one there makes it ready; never an errand); a list whose wait is over gets one errand ("Buy
  * <topic> at <store>", due this Sunday, 30 minutes, a task of its own in Momo, "Open in Hawky" showing the list) that
- * mirrors it: its ✓ buys the list and back (only that day's items), Tick all and an item un-ticked in Done tick and untick
- * it, deleting the list deletes it; from a backup, an errand for each ready list (Unlock early too; a long name cut at a
- * word's end; none for one unlocked the day it was locked, one done before or one still locked), kept through a reload
- * and an Export, one on two devices; deleted, it stays deleted and the list stays ready. */
+ * mirrors it: its ✓ buys the list and back (only that day's items, else those bought last), Tick all and an item
+ * un-ticked in Done tick and untick it, deleting the list deletes it; from a backup, an errand for each ready list
+ * (Unlock early too, even the day it was locked; a long name cut at a word's end; none for a Bought one, one done before
+ * or one still locked), kept through a reload and an Export, one on two devices, where a copy made by a device that
+ * hadn't synced yet never undoes what was done to it; deleted, it stays deleted and the list stays ready. */
 "use strict";
 const { TODAY, DESKTOP, PHONE, eq, ok, open, lastDialog, switchTo, importBackup, exportBackup, addDays } = require("./lib");
 const gen = require("./generate");
@@ -55,7 +56,7 @@ module.exports = [
       eq([gifts.state, gifts.meta, gifts.items], ["done", "2 items · done today", [{ text: "Atlas", bought: true }, { text: "Fountain pen", bought: true }]], "Yes: every item bought, the list done today");
       eq(await hk.doneLists(tab), [{ topic: "Gifts", meta: "2 items · done today" }], "in the Done fold");
       const kept = await p.evaluate(() => Kyoshi.apps.hawky.S.lists.find(l => l.topic === "Gifts"));
-      eq([kept.lock, kept.unlocked, kept.done, kept.items.map(i => i.bought)], [{ at: TODAY, days: 7 }, TODAY, TODAY, [TODAY, TODAY]], "kept as locked and unlocked early today: nothing new stored");
+      eq([kept.lock, kept.unlocked, kept.done, kept.items.map(i => i.bought)], [{ at: TODAY, days: 1 }, TODAY, TODAY, [TODAY, TODAY]], "kept as a 1-day lock unlocked early today: nothing new stored");
       eq(await errands(tab), [], "no errand");
       tab.answers.push(false);
       await hk.pressList(tab, "Garden", "Bought");
@@ -108,7 +109,7 @@ module.exports = [
       await showErrands(tab);
       await hk.tickErrand(tab, id);
       eq(await hk.status(tab), "Bought the Shoes list at REI.", "the line says so");
-      const bought = () => p.evaluate(x => Kyoshi.apps.hawky.S.lists.find(l => l.id === x).items.map(i => i.bought), listId);
+      const bought = () => p.evaluate(x => Kyoshi.apps.hawky.S.lists.find(l => l.id === x).items.filter(i => !i.deleted).map(i => i.bought), listId);
       eq([(await hk.listCard(tab, "Shoes")).state, await bought(), (await hk.item(tab, id)).done], ["done", [D(8), D(7)], D(8)], "its ✓ buys the list: done today, the rest bought today");
       ok(!(await hk.groups(tab)).week, "out of This week");
 
@@ -127,6 +128,17 @@ module.exports = [
       await hk.tickItem(tab, "Shoes", "Wool socks");
       eq([(await hk.listCard(tab, "Shoes")).state, (await hk.item(tab, id)).done], ["ready", ""], "an item un-ticked in Done: the list ready, its errand open");
 
+      // A day on, its last item not bought taken off: the list done that day with nothing bought that day; the errand's ✓
+      // taken back un-buys what was bought last.
+      await tab.ctx.clock.fastForward(86400000);
+      await p.click(`#kMount .slist[data-id="${listId}"] .sitem:has(.sitem-text:text-is("Wool socks")) .sitem-x`);
+      eq(lastDialog(tab), "Take “Wool socks” off this list?", "taking it off asks first");
+      eq([(await hk.listCard(tab, "Shoes")).state, (await hk.item(tab, id)).done], ["done", D(9)], "done today, and its errand");
+      await showErrands(tab);
+      await hk.tickErrand(tab, id);
+      eq([(await hk.listCard(tab, "Shoes")).state, await bought(), (await hk.item(tab, id)).done], ["ready", [""], ""], "taken back: the item bought last isn't, the list ready");
+      await hk.showLists(tab);
+
       // The list deleted (its pop-up): its errand too.
       await hk.pressList(tab, "Shoes", "Rename");
       await p.click("#kMount #listDeleteBtn");
@@ -137,7 +149,7 @@ module.exports = [
     }
   },
   {
-    name: "hawky lists: a backup's ready lists get an errand each (Unlock early too; kept through a reload, carried by Export, one on two devices; none for a list that never waited, done before or still locked); deleted, it stays deleted and the list stays ready",
+    name: "hawky lists: a backup's ready lists get an errand each (Unlock early too; kept through a reload, carried by Export, one on two devices, a late copy never undoing a change; none for a Bought list, one done before or still locked); deleted, it stays deleted and the list stays ready",
     async run(t) {
       const tab = await open(t, { app: "hawky", size: PHONE }), p = tab.page;
       const backup = listsBackup([
@@ -146,49 +158,55 @@ module.exports = [
         { id: "sl-books", vendor: "Bookshop", topic: "Books", items: ["Atlas"], lock: { at: D(-20), days: 7 }, done: D(-5) }, // done before
         { id: "sl-stove", vendor: "The Great Outdoors Company Store", topic: "Camping gear for the long weekend trip", items: ["Stove"],
           lock: { at: D(-3), days: 30 }, unlocked: D(-1) },                                                                  // unlocked early
-        { id: "sl-lamp", vendor: "Hardware Store", topic: "Lighting", items: ["Desk lamp"], lock: { at: D(-2), days: 30 }, unlocked: D(-2) } // never waited
+        { id: "sl-lamp", vendor: "Hardware Store", topic: "Lighting", items: ["Desk lamp"], lock: { at: D(-2), days: 30 }, unlocked: D(-2) }, // unlocked the day it was locked
+        { id: "sl-desk", vendor: "Wholesalefurniture Warehouse", topic: "Standing desk with electric motor", items: ["Desk"], lock: { at: D(-9), days: 7 } },
+        { id: "sl-gift", vendor: "Bookshop", topic: "Gifts", items: ["Fountain pen"], lock: { at: D(-2), days: 1 }, unlocked: D(-2) } // Bought, then un-ticked
       ]);
       await importBackup(tab, backup);
       const made = [
+        { id: "list:sl-desk", text: "Buy Standing desk with electric motor at Wholesalefurniture…", due: D(4), minutes: 30, done: "", deleted: false },
+        { id: "list:sl-lamp", text: "Buy Lighting at Hardware Store", due: D(4), minutes: 30, done: "", deleted: false },
         { id: "list:sl-shoes", text: "Buy Shoes at REI", due: D(4), minutes: 30, done: "", deleted: false },
         { id: "list:sl-stove", text: "Buy Camping gear for the long weekend trip at The Great…", due: D(4), minutes: 30, done: "", deleted: false }
       ];
       const byId = list => list.sort((a, b) => (a.id < b.id ? -1 : 1));
-      eq(byId(await errands(tab)), made, "an errand for each ready list that waited, a long one cut at a word's end");
-      eq((await hk.groups(tab)).week.map(i => [i.text, i.meta]), made.map(e => [e.text, "Sunday · 30m"]), "in This week");
+      eq(byId(await errands(tab)), made, "an errand for each ready list but the Bought one, long ones cut at a word's end");
+      eq((await hk.groups(tab)).week.map(i => [i.text, i.meta]).sort(), made.map(e => [e.text, "Sunday · 30m"]).sort(), "in This week");
       await reload(tab);
       eq(byId(await errands(tab)), made, "the same after a reload");
       const back = await exportBackup(tab);
       eq(back.items.map(i => Object.keys(i).sort().join(" ")), made.map(() => "at deleted done due id minutes note postponed text u"), "Export carries them as plain errands");
 
-      // Another device with the same lists makes the same errand, changed there a minute later (45 minutes): combined,
-      // there's one, theirs.
-      const other = await open(t, { app: "hawky", size: PHONE });
+      // Another device with the same lists makes the same errands, an hour later. Here, Shoes' is deleted from its pop-up;
+      // there, Desk's is changed (45 minutes). Combined both ways: one errand each, the deletion and the change kept (a copy
+      // made by a device that hadn't synced yet never undoes them).
+      const other = await open(t, { app: "hawky", size: PHONE, time: Date.parse(`${TODAY}T08:00:00Z`) });
       await importBackup(other, backup);
-      await other.ctx.clock.fastForward(60000);
-      await other.page.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
-      await other.page.fill("#kMount #errandMinutes", "45");
-      await other.page.click('#kMount #errandForm [type="submit"]');
-      const theirs = await exportBackup(other);
-      eq(theirs.items.filter(i => i.id === "list:sl-shoes").map(i => [i.text, i.minutes]), [["Buy Shoes at REI", 45]], "the other device made its own, the same id");
-      eq(await p.evaluate(raw => {
-        const H = Kyoshi.apps.hawky, r = H.data.combine(raw, { replace: false, plain: false });
-        r.apply();
-        H.data.afterSync();
-        return H.S.items.filter(i => i.id === "list:sl-shoes").map(i => i.minutes);
-      }, theirs), [45], "two devices, one errand: the later change");
-
-      // Deleted from its pop-up: the list stays ready, its line gone, and no errand comes back after a reload.
       await p.click('#kMount .errand[data-id="list:sl-shoes"] .errand-text');
       await p.click("#kMount #errandDeleteBtn");
       eq(lastDialog(tab), "Delete “Buy Shoes at REI”? This can't be undone.", "it asks first");
+      await other.page.click('#kMount .errand[data-id="list:sl-desk"] .errand-text');
+      await other.page.fill("#kMount #errandMinutes", "45");
+      await other.page.click('#kMount #errandForm [type="submit"]');
+      const combineIn = (tb, raw) => tb.page.evaluate(x => {
+        const H = Kyoshi.apps.hawky, r = H.data.combine(x, { replace: false, plain: false });
+        r.apply();
+        H.data.afterSync();
+        return H.S.items.map(i => [i.id, i.deleted, i.minutes]).sort();
+      }, raw);
+      const [mine, theirs] = [await exportBackup(tab), await exportBackup(other)];
+      const both = [["list:sl-desk", false, 45], ["list:sl-lamp", false, 30], ["list:sl-shoes", true, 30], ["list:sl-stove", false, 30]];
+      eq(await combineIn(tab, theirs), both, "here: one errand each, Shoes' still deleted, Desk's 45 minutes");
+      eq(await combineIn(other, mine), both, "there: the same");
+
+      // After a reload, no errand comes back for Shoes, and the list stays ready.
       await reload(tab);
-      eq(byId(await errands(tab)).map(e => [e.id, e.deleted]), [["list:sl-shoes", true], ["list:sl-stove", false]], "after a reload: its marker, no new errand");
+      eq(byId(await errands(tab)).map(e => [e.id, e.deleted]), [["list:sl-desk", false], ["list:sl-lamp", false], ["list:sl-shoes", true], ["list:sl-stove", false]], "after a reload: its marker, no new errand");
       await hk.showLists(tab);
-      const shoes = await hk.listCard(tab, "Shoes"), lamp = await hk.listCard(tab, "Lighting");
+      const shoes = await hk.listCard(tab, "Shoes"), gift = await hk.listCard(tab, "Gifts");
       eq([shoes.state, shoes.note], ["ready", ""], "the list stays ready, with no line about an errand");
-      eq([lamp.state, lamp.note], ["ready", ""], "the list that never waited: ready, no errand");
-      eq((await hk.listCard(tab, "Camping gear for the long weekend trip")).note, "Its errand waits in Errands and Momo.", "the one unlocked early: its errand waits");
+      eq([gift.state, gift.note], ["ready", ""], "the Bought list un-ticked: ready, no errand");
+      eq((await hk.listCard(tab, "Lighting")).note, "Its errand waits in Errands and Momo.", "the one unlocked early the day it was locked: its errand waits");
     }
   }
 ];

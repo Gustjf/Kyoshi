@@ -22,7 +22,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DEFAULT_DAY` "week", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`; a ready list's errand: `LIST_ERRAND` "list:" (its id's start), `LIST_ERRAND_MINUTES` 30; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_TEXT` 60, `MAX_NOTE` 200, minutes 5–480 with `DEFAULT_MINUTES` 15, `DEFAULT_DAY` "week", `DONE_PAGE`, `DOT_WHEN_OVERDUE`, `POSTPONE_WARN` 3; the lists' `MAX_VENDOR` and `MAX_TOPIC` 40, `MAX_ITEM` 100, `MAX_ITEM_NOTE` 300, `LOCK_DAYS` [30, 7], `MAX_LOCK_DAYS`, `BOUGHT_LOCK_DAYS` 1 (how Bought is kept); a ready list's errand: `LIST_ERRAND` "list:" (its id's start), `LIST_ERRAND_MINUTES` 30; `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`cleanLine`, `cleanText`, `firstLine`, `cleanMinutes`, `readMinutes`, `fmtMinutes`, `sundayOf`, `fmtDay`, `dayWords`, `waited`, `GROUPS`/`groupOf`, `openItems`, `overdueItems`, `doneItems`) |
 | `markup.js` | the page: the nav, Errands (quick add, the list, the Done fold), Shopping (the add row, the lists, their Done fold), the pop-ups (errand, list, item) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (errands, lists and their items), backups and sync merge (`A.data`) |
@@ -48,8 +48,8 @@ Saved:
   and how long they've waited), bought ("" or the day ticked), deleted }]; `lock` null while open, else { at: the day it
   was locked, days: 30 or 7 (any whole number up to 365 is kept from a file) }; `unlocked` the day it was unlocked early,
   or ""; `done` the day it was done, or ""; `u` when it or any of its items last changed. Deleted lists and items stay as
-  markers. Done lists are kept for good. Bought is kept as a 7-day lock and an early unlock on the same day (nothing new
-  stored).
+  markers. Done lists are kept for good. Bought is kept as a 1-day lock (`BOUGHT_LOCK_DAYS`: no button offers it) unlocked
+  early the day it was locked (nothing new stored).
 This device only: `view` ("errands" | "lists"; it opens on errands), `add` (quick add: `day` "none"|"today"|"week"|
 "nextweek"|"pick", `minutes` 5|15|30|60|"other", `note` its note line shown; This week, 15 and no note at first, and
 back to them after each add), `listNote` (the add row's note line shown), `listLast` ({ vendor, topic } of the add row's
@@ -102,23 +102,28 @@ any other.
   Lock 7 days. Locked: items only come off, and one added for its store and topic is refused (the owner's choice); Unlock
   early asks first. Ready: ✓ each, or Tick all (asks first); items can still be added, changed or taken off. Every item
   bought → done that day, into the Done fold (newest first); un-ticking one there makes it ready again. Bought (open
-  lists, a question first): every item bought today and the list done, kept as locked 7 days and unlocked early that
-  same day, so the Done fold and un-ticking work as for any list.
+  lists, a question first): every item bought today and the list done, kept as a 1-day lock unlocked early that same
+  day, so the Done fold and un-ticking work as for any list.
 - A ready list's errand (lists.js `keepErrands`): a list in state ready gets one errand, id `LIST_ERRAND` + the list's
   id (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>"
-  (cut at a word's end, with "…", past 60), due this Sunday, 30 minutes; its words are set when it's made (a list
-  renamed later doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list,
-  an item un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick
-  all and ✓ item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand
-  buys the list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the
-  list is ready again (the errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a
-  sync oddity) is left as it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its marker keeps
-  the id, so no other is made. No errand for a list that never waited (unlocked the day it was locked: Bought, or
-  Unlock early that day) nor for one done before this (until it's ready again), nor for a list whose id is too long
-  for an errand's 40 characters (from a file). Run by every list change (`touch`), the first draw, a new day, another
-  tab's save, sync (`afterSync`, which saves what it made: the other device makes the same id) and an import; the
-  caller saves. Its pop-up says which list it's for; a ready list's card says "Its errand waits in Errands and Momo."
-  while it's open.
+  (cut at a word's end, with "…", past 60), due this Sunday, 30 minutes, stamped `u` 0 ("never changed": a device that
+  hadn't synced yet makes it too, and that copy mustn't outrank what was done to it elsewhere, deleted, edited or
+  ticked; two such copies settle the same way everywhere); its words are set when it's made (a list renamed later
+  doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list, an item
+  un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick all and ✓
+  item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the
+  list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day (none bought
+  that day, as when the list was done by taking its last item off: those bought last) and the list is ready again (the
+  errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a sync oddity) is left as
+  it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its marker keeps the id, so no other is
+  made. No errand for a Bought list, which never waited (a 1-day lock unlocked the day it was locked: `neverWaited`),
+  not even once an item un-ticked makes it ready (Unlock early makes one, any day), nor for one done before this
+  (until it's ready again), nor for a list whose id is too long for an errand's 40 characters (from a file). Run by
+  every list change (`touch`), the first draw, a new day, another tab's save, sync (`afterSync`, which saves what it
+  made: the other device makes the same id) and an import; the caller saves. Its pop-up says which list it's for; a
+  ready list's card says "Its errand waits in Errands and Momo." while it's open. Known: a list deleted on one device
+  and changed on another before they sync comes back (the later change wins) without its errand (the deletion's
+  marker stays).
 - One list per store and topic (case-insensitive) among those not done: adding finds it, a done one's store and topic
   start a new list, Rename refuses another's (no merging), and a store typed in other capitals keeps the spelling already
   used. Two made on two devices before they synced both stay (adding goes to the one not locked).

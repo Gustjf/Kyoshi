@@ -40,6 +40,9 @@
     MAX_ITEM_NOTE: 300,
     LOCK_DAYS: [30, 7],    // the cooling-off locks a list can take, in days (its buttons, in this order)
     MAX_LOCK_DAYS: 365,    // the longest lock kept from a file (a newer version may offer other lengths)
+    // Bought (lists.js buyNow) is kept as a lock this many days, unlocked early the day it was locked: no button offers
+    // it, so a list bought without the wait is told apart from one unlocked early (it never waited: no errand).
+    BOUGHT_LOCK_DAYS: 1,
     // A ready list's errand (lists.js keepErrands): its id is LIST_ERRAND + the list's id, the link between the two;
     // due this Sunday, LIST_ERRAND_MINUTES long.
     LIST_ERRAND: "list:",
