@@ -1,6 +1,7 @@
 /* Kyoshi · tests/wanshitong.js — Wan Shi Tong's screens as the tests read and use them: the add / edit pop-up (opened to
- * add or by a tap on a name; its category pills, a movie's Director and Year row, its boxes, filled in and read back;
- * Add, Add another, Save, Cancel), the line under each name (the name, its muted info, the magnifier's search) in
+ * add or by a tap on a name; its category pills, a movie's Director and Year row, its boxes, filled in and read back,
+ * whether the info box shows and what it asks for, any example text; Add, Add another, Save, Cancel), the line under
+ * each name (the name, its muted info, the magnifier's search) in
  * Active media, the backlog and Finished, Start on a backlog line, and an item as Wan Shi Tong keeps it. Items are found
  * by their names. Selectors live here, so a markup change is fixed in one place. */
 "use strict";
@@ -25,14 +26,16 @@ async function fill(tab, fields) {
 // The pop-up's buttons: Add or Save ("save"), Add another ("another"), Cancel ("cancel").
 const press = (tab, btn) => tab.page.click(`${POP} #${{ save: "itemSaveBtn", another: "itemAnotherBtn", cancel: "itemCancelBtn" }[btn]}`);
 // The pop-up as it reads: { open, cat (its pressed pill), row (whether the Director and Year row shows), name, director,
-// year, info, infoLabel (what the info box asks for), status (the line under the buttons) }.
+// year, info, infoShown (whether the info box shows), infoLabel (what it asks for), placeholders (how many of its boxes
+// have example text), status (the line under the buttons) }.
 const editor = tab => tab.page.evaluate(pop => {
   const o = document.querySelector(pop), $ = id => o.querySelector(`#${id}`);
   return {
     open: o.classList.contains("open"), cat: o.querySelector("#itemCats .active").dataset.cat,
     row: getComputedStyle($("itemMovieRow")).display !== "none",
     name: $("itemName").value, director: $("itemDirector").value, year: $("itemYear").value, info: $("itemInfo").value,
-    infoLabel: $("itemInfoLabel").textContent, status: $("itemStatus").textContent
+    infoShown: getComputedStyle($("itemInfoField")).display !== "none", infoLabel: $("itemInfoLabel").textContent,
+    placeholders: o.querySelectorAll("[placeholder]").length, status: $("itemStatus").textContent
   };
 }, POP);
 

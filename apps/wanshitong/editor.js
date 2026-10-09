@@ -1,7 +1,8 @@
 /* Wan Shi Tong · editor.js — the add / edit pop-up (#itemOverlay): category, name, a movie's
- * director and year (a row shown for movies only), info, Available to me now (yes or no), why it's
- * here and, when editing, its dates. Add, Add another (keeps the pop-up open for the next one), Save
- * and Delete. */
+ * director and year (a row shown for movies only), info (the box its category asks for; none for
+ * a movie, but an older movie's info shows as "Note from before" until it's cleared), Available to
+ * me now (yes or no), why it's here and, when editing, its dates. Add, Add another (keeps the
+ * pop-up open for the next one), Save and Delete. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -30,14 +31,17 @@
     $("itemStatus").className = `modal-status${text ? " good" : ""}`;
   }
 
-  // Everything that depends on the category: its pill, a movie's Director and Year, and what the info field asks for.
+  // What the info box asks for: its category's question or, when the category asks for none but the item held info
+  // when it opened (an older movie's "Miyazaki, 2001"), "Note from before", until it's moved or cleared. "": no box.
+  const infoLabel = e => catOf(e.cat).info || (e.hadInfo ? "Note from before" : "");
+
+  // Everything that depends on the category: its pill, a movie's Director and Year, and the info box (what it asks for, or hidden).
   function renderCatFields() {
-    const e = S.editing, c = catOf(e.cat);
+    const e = S.editing, label = infoLabel(e);
     $("itemCats").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === e.cat));
     $("itemMovieRow").hidden = !isMovie(e.cat);
-    $("itemInfoLabel").textContent = c.info;
-    $("itemName").placeholder = c.nameEg ? `e.g. ${c.nameEg}` : "";
-    $("itemInfo").placeholder = c.infoEg ? `e.g. ${c.infoEg}` : "";
+    $("itemInfoField").hidden = !label;
+    $("itemInfoLabel").textContent = label;
     renderHave();
   }
   // Available to me now: Yes ("yes") or No ("").
@@ -50,7 +54,7 @@
   function openEditor(id) {
     const i = id ? A.itemById(id) : null;
     if (id && !i) return;
-    S.editing = { id: i ? i.id : null, cat: i ? i.cat : S.lastCat || CATS[0].id, have: i && i.have ? "yes" : "" };
+    S.editing = { id: i ? i.id : null, cat: i ? i.cat : S.lastCat || CATS[0].id, have: i && i.have ? "yes" : "", hadInfo: !!(i && i.info) };
     $("itemModalTitle").textContent = i ? "Edit recommendation" : "Add a recommendation";
     $("itemName").value = i ? i.name : "";
     $("itemDirector").value = i ? i.director : "";
@@ -95,10 +99,11 @@
     if (i && !isDate(added)) { $("itemAdded").focus(); return alert("Enter the day it was added."); }
     if (i && i.done && !isDate(done)) { $("itemDone").focus(); return alert("Enter the day you finished it."); }
     // A movie's Director and Year; any other category keeps neither (what was typed before switching is left out).
+    // The info box's text only while the box shows, else "" (a new movie has none).
     const movieOnly = (id, max) => (isMovie(e.cat) ? A.cleanLine($(id).value, max) : "");
     const fields = {
       cat: e.cat, name, director: movieOnly("itemDirector", MAX_DIRECTOR), year: movieOnly("itemYear", MAX_YEAR),
-      info: A.cleanLine($("itemInfo").value, MAX_INFO), have: e.have ? "yes" : "", why: A.cleanText($("itemWhy").value, MAX_WHY)
+      info: infoLabel(e) ? A.cleanLine($("itemInfo").value, MAX_INFO) : "", have: e.have ? "yes" : "", why: A.cleanText($("itemWhy").value, MAX_WHY)
     };
     if (i) {
       Object.assign(i, fields, { added, done: i.done ? done : "", u: Date.now() });

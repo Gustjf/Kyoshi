@@ -1,8 +1,9 @@
 /* Wan Shi Tong · markup.js — the page (A.markup): Active media, the backlog (a fold-away,
  * coloured group per category, filled in by render.js), the Finished list, the
- * add / edit pop-up (a movie's Director and Year in a row under its name), and the one asking
- * what makes room when Active media is full. The shell supplies the header, footer, Developer Mode
- * and bug reports. Ids only need to be unique within the app (look them up with A.$). */
+ * add / edit pop-up (a movie's Director and Year in a row under its name; the info box, hidden for
+ * a movie: editor.js), and the one asking what makes room when Active media is full. No example
+ * text in any box. The shell supplies the header, footer, Developer Mode and bug reports. Ids only
+ * need to be unique within the app (look them up with A.$). */
 Kyoshi.apps.wanshitong.markup = `
   <div class="spots">
     <section class="spot now">
@@ -43,14 +44,14 @@ Kyoshi.apps.wanshitong.markup = `
       <div class="field-row" id="itemMovieRow">
         <div class="field">
           <label for="itemDirector">Director</label>
-          <input type="text" id="itemDirector" maxlength="80" autocomplete="off" placeholder="e.g. Miyazaki">
+          <input type="text" id="itemDirector" maxlength="80" autocomplete="off">
         </div>
         <div class="field">
           <label for="itemYear">Year</label>
-          <input type="text" id="itemYear" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="e.g. 2001">
+          <input type="text" id="itemYear" inputmode="numeric" maxlength="12" autocomplete="off">
         </div>
       </div>
-      <div class="field">
+      <div class="field" id="itemInfoField">
         <label for="itemInfo" id="itemInfoLabel">Author</label>
         <input type="text" id="itemInfo" maxlength="120" autocomplete="off">
       </div>
@@ -63,7 +64,7 @@ Kyoshi.apps.wanshitong.markup = `
       </div>
       <div class="field">
         <label for="itemWhy">Why it's here (optional)</label>
-        <textarea id="itemWhy" rows="2" maxlength="500" placeholder="e.g. Sam's favourite, for when I want something hopeful"></textarea>
+        <textarea id="itemWhy" rows="2" maxlength="500"></textarea>
       </div>
       <div class="field-row" id="itemDates">
         <div class="field">

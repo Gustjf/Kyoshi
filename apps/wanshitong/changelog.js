@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.582", date: "2026-10-09", changes: [
+      "Movies no longer have a “Year or director” box (Director and Year are their own): what an older movie already holds there still shows under its name, and in its pop-up as “Note from before” until you move it into Director and Year or clear it.",
+      "TV/Anime's box asks for the year only, without “where to watch” (what a show already holds there stays).",
+      "The pop-up's boxes no longer show examples."
+    ] },
     { version: "2.482", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
     ] },

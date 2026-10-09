@@ -23,17 +23,17 @@
   // CONSTANTS
   // ==========================================================================
   // What a recommendation can be, in the order they're listed. Ids are what backups store; add
-  // more here and they show up everywhere. info: what the second field asks for (just enough to
-  // find it again); search: added to its Google search, so "Dune" finds the right Dune.
-  // Old ids: see OLD_CATS in data.js.
+  // more here and they show up everywhere. info: what the info box asks for (just enough to find
+  // it again; "" for no box: a movie has its own Director and Year); search: added to its Google
+  // search, so "Dune" finds the right Dune. Old ids: see OLD_CATS in data.js.
   const CATS = [
-    { id: "book", label: "Book", group: "Books", info: "Author or edition", nameEg: "Piranesi", infoEg: "Susanna Clarke", search: "book" },
-    { id: "movie", label: "Movie", group: "Movies", info: "Year or director", nameEg: "Spirited Away", infoEg: "Miyazaki, 2001", search: "movie" },
-    { id: "tv", label: "TV/Anime", group: "TV/Anime", info: "Year or where to watch", nameEg: "Frieren", infoEg: "2023, Crunchyroll", search: "series" },
-    { id: "game", label: "Game", group: "Games", info: "Platform", nameEg: "Outer Wilds", infoEg: "Switch or PC", search: "video game" },
+    { id: "book", label: "Book", group: "Books", info: "Author or edition", search: "book" },
+    { id: "movie", label: "Movie", group: "Movies", info: "", search: "movie" },
+    { id: "tv", label: "TV/Anime", group: "TV/Anime", info: "Year", search: "series" },
+    { id: "game", label: "Game", group: "Games", info: "Platform", search: "video game" },
   ];
   // A category from a newer version (kept as it is) shows as Other.
-  const OTHER = { id: "other", label: "Other", group: "Other", info: "Details", nameEg: "", infoEg: "", search: "" };
+  const OTHER = { id: "other", label: "Other", group: "Other", info: "Details", search: "" };
   // Active media's spots, in order: this many things can be going at once, of any kind. Ids are what
   // backups store; "now" was the only one before 2.000, so older data and backups fill the first.
   const NOW_SPOTS = ["now", "now2", "now3"];
@@ -65,7 +65,7 @@
     // ("" when empty), u = when that was set.
     slots: Object.fromEntries(SLOTS.map(k => [k, { id: "", u: 0 }])),
     folded: [],     // backlog groups folded away on this device (category ids)
-    editing: null,  // the add / edit pop-up: { id (null when adding), cat, have, snapshot }
+    editing: null,  // the add / edit pop-up: { id (null when adding), cat, have, hadInfo (the item held info when it opened), snapshot }
     swapping: null, // the "Active media is full" pop-up: the id of the one to start
     lastCat: "",    // the category last added, where the next add starts
     knownToday: ""  // today as of the last draw, to redraw when the date changes
