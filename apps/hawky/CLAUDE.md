@@ -31,7 +31,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `lists-view.js` | the Shopping view (`renderLists`): the add row and its suggestions (another store typed after an add clears its topic: `storeTyped`), the lists by store as cards (an open one's Lock 30 days, Lock 7 days and Bought; a ready one's line while its errand waits), each store in its colour (`storeColors`), the Done fold; the list pop-up (Rename, Delete list) and the item pop-up (words, note, Remove); its taps (`wireLists`) |
 | `render.js` | `renderAll` (the nav and both views), `showView`, `renderAdd`: the chips and the note line, the groups (each with its total time; Tomorrow → on overdue errands, the warning mark past `POSTPONE_WARN`), the Done fold (a page at a time) |
 | `editor.js` | the errand pop-up: text, note, due, minutes, how often it was postponed, the list a ready list's errand is for; Save (Enter), Cancel, Delete |
-| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo (a list's errand buys its list, and back), Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState`; each keeps the lists' errands in step (`keepErrands`) |
+| `events.js` | `A.init` wiring (the nav, quick add with + Note, ✓ and undo (a list's errand buys its list, and back), Tomorrow →) and the hooks: `onTick` (a new day), `onReload`, `attention` (overdue), `bugState`; the first draw, a new day and `onReload` keep the lists' errands in step (`keepErrands`) |
 | `hawky.css` | styles under `.app-hawky` |
 
 ## State (`A.S`)
@@ -41,7 +41,8 @@ Saved:
   `minutes` 5–480, `done` the day it was ticked or "" while open, `postponed` how many times Tomorrow → moved it (a whole
   number, up to 999 from a file; 0 before any, in errands from before it, and in a deleted one), `at` when it was added
   (the undated's order and how long they've waited), `u` when it last changed (the later wins in sync). Deleted ones stay
-  as markers. Done ones are kept for good. One whose id is `list:<a list's id>` is that list's errand (Invariants).
+  as markers. Done ones are kept for good (but a list's errand goes with its list). One whose id is `list:<a list's id>`
+  is that list's errand (Invariants).
 - `lists` [{ id, vendor, topic, items, lock, unlocked, done, deleted, at, u }]: shopping lists. `vendor` (the store) and
   `topic` ≤ 40 each; `items` [{ id, text ≤ 100, note ≤ 300 (a note or a web link, lines kept), at (when added: their order
   and how long they've waited), bought ("" or the day ticked), deleted }]; `lock` null while open, else { at: the day it
@@ -105,11 +106,13 @@ any other.
   same day, so the Done fold and un-ticking work as for any list.
 - A ready list's errand (lists.js `keepErrands`): a list in state ready gets one errand, id `LIST_ERRAND` + the list's id
   (the link: no new field, and the same on every device, so two devices make one errand), "Buy <topic> at <store>" (cut
-  at a word's end, with "…", past 60), due this Sunday, 30 minutes. It mirrors its list both ways: open while the list is
-  ready (due this Sunday again if its day has passed meanwhile), done on the list's done day (Tick all and ✓ item by item
-  included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the list (every
-  item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the list is ready again;
-  an errand whose list is open or locked (a sync oddity) is left as it is. Deleting the errand leaves the list, and its
+  at a word's end, with "…", past 60), due this Sunday, 30 minutes; its words are set when it's made (a list renamed
+  later doesn't rename it). It mirrors its list both ways: open while the list is ready (reopened by the list, an item
+  un-ticked or a sync, it's due this Sunday again if its day has passed), done on the list's done day (Tick all and ✓
+  item by item included), a marker once the list goes (deleted, or its last item taken off); ✓ on the errand buys the
+  list (every item bought today, as Tick all, no question), ✓ again un-buys the items bought that day and the list is
+  ready again (the errand keeps its due day, as any errand's undo); an errand whose list is open or locked (a sync
+  oddity) is left as it is, and its ✓ ticks it alone. Deleting the errand leaves the list, and its
   marker keeps the id, so no other is made. No errand for a list that never waited (unlocked the day it was locked:
   Bought, or Unlock early that day) nor for one done before this (until it's ready again), nor for a list whose id is
   too long for an errand's 40 characters (from a file). Run by every list change (`touch`), the first draw, a new day,
@@ -122,6 +125,6 @@ any other.
 - A list with no items left goes. Taking an item off asks first; deleting a list (its pop-up) too.
 - A note's web addresses (http and https only) show as the site's name and open in a new tab; the rest is plain text.
 - The dot on the icon (`A.attention`, "2 errands overdue") goes away with `DOT_WHEN_OVERDUE: false` in `app.js`; lists
-  never dot it.
+  never dot it (a list's errand does once it's overdue, as any errand).
 - Not now: recurring errands (Appa's job), tags, projects, sharing; prices or tax on lists; events placed by Hawky.
 - Bug reports and console messages hold counts only: never the errands' or lists' words.
