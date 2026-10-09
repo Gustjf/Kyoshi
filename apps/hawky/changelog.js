@@ -6,8 +6,8 @@
   "use strict";
   A.CHANGELOG = [
     { version: "2.340", date: "2026-10-09", changes: [
-      "A shopping list can be marked Bought without the 30- or 7-day wait (a question first): every item bought today, the list into Done.",
-      "When a list's wait is over, Hawky adds an errand for it (“Buy Running shoes at REI”, due this Sunday, 30 minutes), a card of its own in Momo like any errand: ✓ on the errand buys the whole list, and the list bought item by item ticks the errand; “Open in Hawky” shows the list. Deleting the list deletes its errand; deleting the errand leaves the list."
+      "A shopping list not locked yet can be marked Bought, without the 30- or 7-day waiting period (a question first): every item bought today, the list into Done.",
+      "When a list's waiting period is over, Hawky adds an errand for it (“Buy Running shoes at REI”, due this Sunday, 30 minutes), a card of its own in Momo like any errand: checking it off completes the list (✓ again undoes that), and completing the list checks it off; “Open in Hawky” shows the list. Deleting the list deletes its errand; deleting the errand leaves the list."
     ] },
     { version: "2.240", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
