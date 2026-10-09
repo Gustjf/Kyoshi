@@ -92,8 +92,10 @@ hid them).
   closes, writing nothing, so a change made to them meanwhile on another device stands.
 - A group typed as one in use in other capitals takes that one's spelling; the chips show each group once (any case).
 - "Today" is `K.util.todayStr()` (time travel works); `Date.now()` is only for the `u` stamps.
-- Birthdays: Feb 29 is kept, and falls on Feb 28 in a year without it; the pop-up checks the day against the month (and
-  the year, when given: 1900 to this one). Titles stay within Momo's limits by construction ("Visit " + 40; "'s birthday").
+- Birthdays: an age shows only with a year born before the year the person was added (`ageOn`: one from then on is no
+  birth year, but this year's typed by mistake; kept as typed, shown in the pop-up, never an age). Feb 29 is kept, and
+  falls on Feb 28 in a year without it; the pop-up checks the day against the month (and the year, when given: 1900 to
+  this one). Titles stay within Momo's limits by construction ("Visit " + 40; "'s birthday").
 - **The one you're with** (Set up, from Developer Mode; never asks for the owner's name): at most one `partner`, by
   construction (Save makes the one picked the partner with the anniversary read, and clears both from everyone else,
   stamping only those whose fields change; "— no one" clears all; nothing changed just closes). Should sync ever leave

@@ -408,5 +408,26 @@ module.exports = [
       eq(await line(tab, "Mom"), "Mom · Call monthly · due today · 🎂 Oct 12 · turns 61", "Mom's call is due again");
       has(await weekText(tab), "Call Mom · due today · 30m", "on This week");
     }
+  },
+  {
+    name: "pabu: no age without a real year born — none typed, or one from the year they were added on (this year's, by mistake); typed in, the age shows",
+    async run(t) {
+      const tab = await open(t, { app: "pabu", size: DESKTOP });
+      // Zoe (added in January) and Bo (added two days ago) with this year as their "year born", Kai with none, Ivy with a
+      // real one.
+      const circle = gen.CIRCLE.filter(x => ["pc-zoe", "pc-ivy", "pc-bo"].includes(x.id)).map(x =>
+        x.id === "pc-zoe" ? { ...x, birthday: "2026-03-15" } : x.id === "pc-bo" ? { ...x, birthday: "2026-10-20" } : x);
+      await importBackup(tab, gen.pabuCircle(circle.concat({ id: "pc-kai", name: "Kai", birthday: "10-12", cadences: [] })));
+      eq(await pb.people(tab), ["Bo · Text weekly · overdue 2 days · 🎂 Oct 20", "Ivy · Birthday only · 🎂 Feb 28 · turns 27", "Kai · Birthday only · 🎂 Oct 12", "Zoe · Friends · Visit quarterly · due in 12 days · 🎂 Mar 15"],
+        "an age for Ivy only: not \"turns 1\" for Zoe, nor Kai without a year");
+      eq(await pb.birthdays(tab), ["Kai · Oct 12 · in 12 days", "Bo · Oct 20 · in 20 days"], "the strip: no age");
+      eq(await tab.page.evaluate(() => Kyoshi.apps.pabu.agenda("2026-10-01", "2026-10-31").map(e => [e.title, e.note])), [["Bo's birthday", "Text"], ["Kai's birthday", ""]], "Momo's board: no age");
+      // The year as typed stays in the pop-up, under its clearer placeholder; the year born typed, the age shows.
+      await pb.openPerson(tab, "Zoe");
+      eq([(await pb.popup(tab)).year, await tab.page.getAttribute("#kMount #personBdayYear", "placeholder")], ["2026", "Year born (optional)"], "kept as typed");
+      await pb.fill(tab, { year: 1990 });
+      await pb.save(tab);
+      has(await line(tab, "Zoe"), "🎂 Mar 15 · turns 37", "Zoe's age, once her year born is in");
+    }
   }
 ];

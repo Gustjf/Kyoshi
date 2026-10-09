@@ -202,8 +202,12 @@
   // Their next birthday, or your next anniversary, today or later ("" for none).
   const nextBirthday = (p, today = todayStr()) => nextDay(p.birthday, today);
   const nextAnniversary = (p, today = todayStr()) => nextDay(anniversaryOf(p), today);
-  // How old they are on a day, or how many years you've been together: null without the year.
-  const ageOn = (p, date) => yearsSince(p.birthday, date);
+  // How old they are on a day, or how many years you've been together: null without the year. A birth year from the year
+  // they were added on is no birth year (this year's, typed by mistake): no age until the year born is.
+  function ageOn(p, date) {
+    const b = parseBirthday(p.birthday);
+    return b && b.year && p.at && b.year >= +dayOf(p.at).slice(0, 4) ? null : yearsSince(p.birthday, date);
+  }
   const yearsOn = (p, date) => yearsSince(anniversaryOf(p), date);
   // The 🎂 line: "🎂 Oct 12 · turns 60", "🎂 today · turns 60", "🎂 Oct 12"; "" without a birthday.
   function fmtBirthday(p, today = todayStr()) {

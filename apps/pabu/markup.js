@@ -86,7 +86,7 @@ Kyoshi.apps.pabu.markup = `
               <option value="12">December</option>
             </select>
             <input type="number" id="personBdayDay" min="1" max="31" step="1" inputmode="numeric" placeholder="Day" aria-label="Birthday: the day">
-            <input type="number" id="personBdayYear" min="1900" step="1" inputmode="numeric" placeholder="Year (optional)" aria-label="Birthday: the year born (optional)">
+            <input type="number" id="personBdayYear" min="1900" step="1" inputmode="numeric" placeholder="Year born (optional)" aria-label="Birthday: the year born (optional)">
           </div>
         </div>
         <div class="field">

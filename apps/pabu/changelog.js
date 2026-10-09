@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.242", date: "2026-10-09", changes: [
+      "No age for someone whose birthday has no real year born: a year from when you added them on (this year's, typed by mistake) no longer makes them “turn 1”; their age shows once the year born is typed. The box now reads “Year born (optional)”."
+    ] },
     { version: "2.241", date: "2026-10-09", changes: [
       "The Birthdays strip's heading says what it lists: “Birthdays & Anniversary”, “Anniversary” or “Birthdays”."
     ] },
