@@ -47,7 +47,7 @@ const addState = tab => tab.page.evaluate(() => {
 });
 
 // --- The Birthdays strip: ["Kai · Oct 1 · tomorrow", "♥ Mom · Oct 4 · in 4 days · 5 years" (the anniversary), "Mom · Oct 12 ·
-// in 12 days · turns 60"]; [] while it's hidden. Its heading: "Birthdays", or "Birthdays & anniversary" ---
+// in 12 days · turns 60"]; [] while it's hidden. Its heading: "Birthdays & Anniversary", "Anniversary" or "Birthdays" ---
 async function birthdays(tab) {
   if (await tab.page.locator(`${M} #bdaySection`).isHidden()) return [];
   return tab.page.$$eval(`${M} #bdayList .bday`, els => els.map(e => `${e.classList.contains("anniv") ? "♥ " : ""}${e.querySelector(".bday-name").textContent.trim()} · ${e.querySelector(".bday-when").textContent.trim()}`));

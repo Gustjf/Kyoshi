@@ -1,6 +1,6 @@
 /* Pabu · markup.js — the page (A.markup): This week (filled in by render.js; hidden while no one has a call, text or
  * visit), quick add (the name and Add, then the how-often and how chips), the Birthdays strip (shown when one is coming
- * up; its heading names the anniversary while there's one), People (the group chips and the list, filled in by
+ * up; its heading names what it lists), People (the group chips and the list, filled in by
  * render.js), the person pop-up (the name and group, the birthday as month, day and an optional year, notes, their
  * calls, texts and visits — filled in by editor.js — then the line saying what stopped Save, and Save, Cancel and
  * Delete, kept in view at its foot), and Set up (who you're in a relationship with — filled in by setup.js — and the

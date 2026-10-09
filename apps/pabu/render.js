@@ -53,14 +53,15 @@
   }
 
   // Birthdays, and the anniversary, in the next BIRTHDAY_DAYS, soonest first: the name (opens the pop-up), then "Oct 12 ·
-  // in 12 days · turns 60"; the anniversary's after a heart, "Oct 4 · in 4 days · 5 years". The heading names the
-  // anniversary while there's one.
+  // in 12 days · turns 60"; the anniversary's after a heart, "Oct 4 · in 4 days · 5 years". The heading names what's
+  // listed: "Birthdays & Anniversary", "Anniversary" or "Birthdays".
   function renderBirthdays(today) {
     const end = addDays(today, BIRTHDAY_DAYS), people = A.live();
     const list = people.flatMap(p => [[A.nextBirthday(p, today), p, false], [A.nextAnniversary(p, today), p, true]])
       .filter(([d]) => d && d <= end).sort(([a, p, x], [b, q, y]) => a.localeCompare(b) || A.byName(p, q) || x - y);
     $("bdaySection").hidden = !list.length;
-    $("bdayTitle").textContent = people.some(A.anniversaryOf) ? "Birthdays & anniversary" : "Birthdays";
+    const annivs = list.some(([, , a]) => a), bdays = list.some(([, , a]) => !a);
+    $("bdayTitle").textContent = annivs && bdays ? "Birthdays & Anniversary" : annivs ? "Anniversary" : "Birthdays";
     $("bdayList").innerHTML = list.map(([d, p, anniv]) => {
       const n = daysBetween(today, d), years = anniv ? A.yearsOn(p, d) : A.ageOn(p, d);
       const words = [fmtShort(d), n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`, !years ? "" : anniv ? A.plural(years, "year") : `turns ${years}`].filter(Boolean).join(" · ");

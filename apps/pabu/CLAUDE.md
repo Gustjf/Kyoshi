@@ -98,10 +98,10 @@ hid them).
   construction (Save makes the one picked the partner with the anniversary read, and clears both from everyone else,
   stamping only those whose fields change; "— no one" clears all; nothing changed just closes). Should sync ever leave
   two, both show. The anniversary counts only on the partner (`anniversaryOf`): a heart (Lucide's, 12 px, `#f43f5e`)
-  after their name on People and a line "♥ Oct 4 · 5 years" (the years only with the year given, as a birthday's age);
-  a row in the strip within `BIRTHDAY_DAYS`, sorted with the birthdays by day; the strip's heading reads "Birthdays &
-  anniversary" while one is set; "Our anniversary" on Momo's board, ✓ once you talked with them that day. The person
-  pop-up doesn't show or change either: Save there keeps them.
+  after their name on People and a line "♥ Oct 4 · 5 years" (the years only with the year given, as a birthday's age); a
+  row in the strip within `BIRTHDAY_DAYS`, sorted with the birthdays by day; the strip's heading names what it lists:
+  "Birthdays & Anniversary", "Anniversary" or "Birthdays"; "Our anniversary" on Momo's board, ✓ once you talked with
+  them that day. The person pop-up doesn't show or change either: Save there keeps them.
 - The dot on the icon (`A.attention`, "1 call and 2 texts overdue") goes away with `DOT_WHEN_OVERDUE: false` in `app.js`.
 - Not now: snooze, several groups or tags per person, phone numbers or other contact details, importing contacts,
   notifications, message history, other dates (anniversaries but your own).

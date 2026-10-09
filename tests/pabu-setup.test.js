@@ -1,6 +1,6 @@
 /* Kyoshi · tests/pabu-setup.test.js — Pabu's Set up (Developer Mode's Set up…): who you're in a relationship with and
  * your anniversary, as the user sees it: a heart by their name with the date and the years on People, a row in the strip
- * when it's within 30 days (its heading "Birthdays & anniversary"), "Our anniversary" on Momo's board on its day (✓ once
+ * when it's within 30 days (its heading "Birthdays & Anniversary", "Anniversary" or "Birthdays", by what it lists), "Our anniversary" on Momo's board on its day (✓ once
  * you talked that day); what Save can't take, said and marked; picking someone shows theirs; Esc asks first; another
  * person, then no one; only those changed are stamped; backups (Export carries it, an older one imports with none, a
  * damaged one keeps what's usable). */
@@ -39,7 +39,7 @@ module.exports = [
       await pb.saveSetup(tab);
       ok(!(await pb.setupOpen(tab)), "saved: closed");
       eq(await line(tab, "Mom"), "Mom ♥ · Family · Call weekly · Visit monthly · overdue 9 days · 🎂 Oct 12 · turns 60 · ♥ Oct 4 · 5 years", "a heart by her name, the anniversary with the years");
-      eq([await pb.stripTitle(tab), await pb.birthdays(tab)], ["Birthdays & anniversary", ["♥ Mom · Oct 4 · in 4 days · 5 years", "Mom · Oct 12 · in 12 days · turns 60", "Zoe · Oct 15 · in 15 days"]],
+      eq([await pb.stripTitle(tab), await pb.birthdays(tab)], ["Birthdays & Anniversary", ["♥ Mom · Oct 4 · in 4 days · 5 years", "Mom · Oct 12 · in 12 days · turns 60", "Zoe · Oct 15 · in 15 days"]],
         "the strip: the anniversary first, by day");
       const kept = (await exportBackup(tab)).people;
       eq(kept.filter(x => x.partner || x.anniversary).map(x => [x.id, x.partner, x.anniversary]), [["pc-mom", true, "2021-10-04"]], "Export carries it, on Mom alone");
@@ -110,6 +110,11 @@ module.exports = [
       eq((await exportBackup(tab)).people.map(x => [x.id, x.partner, x.anniversary]), [["x1", false, ""], ["x2", true, ""], ["x3", false, ""], ["x4", false, ""]],
         "\"yes\" isn't true, an impossible day is dropped (Feb 29 in a year without it too), a marker keeps neither");
       eq([await line(tab, "Ben"), await pb.stripTitle(tab)], ["Ben ♥ · Call monthly · due today", "Birthdays"], "Ben's heart, no anniversary");
+      // His anniversary, and no birthday in the next 30 days: the heading names only it.
+      await pb.openSetup(tab);
+      await pb.fillSetup(tab, { month: 10, day: 4 });
+      await pb.saveSetup(tab);
+      eq([await pb.stripTitle(tab), await pb.birthdays(tab)], ["Anniversary", ["♥ Ben · Oct 4 · in 4 days"]], "the anniversary alone");
 
       // With no one at all (the last one deleted), Set up offers only no one.
       await importBackup(tab, { schemaVersion: 2, people: [{ id: "x5", name: "Dee", partner: true }] });
