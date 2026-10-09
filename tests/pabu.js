@@ -1,10 +1,12 @@
 /* Kyoshi · tests/pabu.js — Pabu's screens as the tests read and use them: This week (a line per call, text or visit due,
  * its ✓, the count, the red ones), quick add with its chips and status line, the Birthdays strip, People (the group chips,
  * a line per person), the person pop-up (its fields, a box per call, text or visit with the days you talked, what Save
- * said above it and the fields it marked: read, filled in, saved, cancelled, deleted), the flash Momo's "Open in Pabu"
- * leaves, and a person as Pabu keeps them (for checks). Lines are found by what they say ("Call Mom", "Mom"), as the user
- * finds them. Selectors live here, so a markup change is fixed in one place. */
+ * said above it and the fields it marked: read, filled in, saved, cancelled, deleted), Set up (Developer Mode's: who
+ * you're with and the anniversary), the flash Momo's "Open in Pabu" leaves, and a person as Pabu keeps them (for checks).
+ * Lines are found by what they say ("Call Mom", "Mom"), as the user finds them. Selectors live here, so a markup change
+ * is fixed in one place. */
 "use strict";
+const { devPanel } = require("./lib");
 
 const M = "#kMount";
 
@@ -44,17 +46,20 @@ const addState = tab => tab.page.evaluate(() => {
   return { every: pressed("addEvery"), how: pressed("addHow"), name: $("addName").value, focused: document.activeElement === $("addName"), status: $("addStatus").textContent, bad: $("addStatus").classList.contains("bad") };
 });
 
-// --- The Birthdays strip: ["Kai · Oct 1 · tomorrow", "Mom · Oct 12 · in 12 days · turns 60"]; [] while it's hidden ---
+// --- The Birthdays strip: ["Kai · Oct 1 · tomorrow", "♥ Mom · Oct 4 · in 4 days · 5 years" (the anniversary), "Mom · Oct 12 ·
+// in 12 days · turns 60"]; [] while it's hidden. Its heading: "Birthdays", or "Birthdays & anniversary" ---
 async function birthdays(tab) {
   if (await tab.page.locator(`${M} #bdaySection`).isHidden()) return [];
-  return tab.page.$$eval(`${M} #bdayList .bday`, els => els.map(e => `${e.querySelector(".bday-name").textContent.trim()} · ${e.querySelector(".bday-when").textContent.trim()}`));
+  return tab.page.$$eval(`${M} #bdayList .bday`, els => els.map(e => `${e.classList.contains("anniv") ? "♥ " : ""}${e.querySelector(".bday-name").textContent.trim()} · ${e.querySelector(".bday-when").textContent.trim()}`));
 }
+const stripTitle = tab => tab.page.$eval(`${M} #bdayTitle`, e => e.textContent.trim());
 
 // --- People ---
 // A line per person as listed: "Mom · Family · Call monthly · overdue 4 days · 🎂 Oct 12 · turns 60" (name, group, their
-// calls, texts and visits with the next due, birthday).
-const people = tab => tab.page.$$eval(`${M} #roster .person`, els => els.map(li => [".person-name", ".person-group", ".person-meta", ".person-bday"]
-  .map(c => li.querySelector(c)).filter(Boolean).map(e => e.textContent.replace(/\s+/g, " ").trim()).join(" · ")));
+// calls, texts and visits with the next due, birthday); the one you're with "Mom ♥ · … · ♥ Oct 4 · 5 years" (a heart by
+// the name, the anniversary last).
+const people = tab => tab.page.$$eval(`${M} #roster .person`, els => els.map(li => [".person-name", ".person-group", ".person-meta", ".person-bday", ".person-anniv"]
+  .map(c => li.querySelector(c)).filter(Boolean).map(e => [...e.childNodes].map(n => (n.nodeName === "svg" ? "♥" : n.textContent)).join("").replace(/\s+/g, " ").trim()).join(" · ")));
 // Just the names listed.
 const names = async tab => (await people(tab)).map(line => line.split(" · ")[0]);
 // The heading's count ("7"; "" for none) and the empty list's words ("" while hidden).
@@ -155,6 +160,34 @@ const save = (tab, { enter = false } = {}) => (enter ? tab.page.press(`${M} #per
 const cancel = tab => tab.page.click(`${M} #personCancelBtn`);
 const remove = tab => tab.page.click(`${M} #personDeleteBtn`);
 
+// --- Set up (Developer Mode's Set up…): who you're in a relationship with, and the anniversary ---
+async function openSetup(tab) {
+  await devPanel(tab, true);
+  await tab.page.click("#kDevAppTools #pabuSetupBtn");
+  await tab.page.waitForSelector(`${M} #setupOverlay.open`);
+}
+const setupOpen = tab => tab.page.locator(`${M} #setupOverlay`).evaluate(el => el.classList.contains("open"));
+// As it is: { partner: the name picked ("— no one"), offered: every choice, month, day, year, off: the anniversary's fields
+// disabled, hint: the line above Save ("" while hidden), marked: the fields Save marked ("month", "day", "year") }.
+const setup = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`), pick = $("setupPartner"), days = { setupMonth: "month", setupDay: "day", setupYear: "year" };
+  return {
+    partner: pick.selectedOptions[0] ? pick.selectedOptions[0].textContent : "", offered: [...pick.options].map(o => o.textContent),
+    month: $("setupMonth").value, day: $("setupDay").value, year: $("setupYear").value, off: Object.keys(days).every(id => $(id).disabled),
+    hint: $("setupHint").hidden ? "" : $("setupHint").textContent, marked: [...$("setupForm").querySelectorAll("[aria-invalid]")].map(el => days[el.id] || el.id)
+  };
+});
+// Fills in what's given ({ partner: a name or "— no one", month ("10"; "" for —), day, year }), the one picked first.
+async function fillSetup(tab, f) {
+  const p = tab.page;
+  if (f.partner !== undefined) await p.selectOption(`${M} #setupPartner`, { label: f.partner });
+  if (f.month !== undefined) await p.selectOption(`${M} #setupMonth`, String(f.month));
+  if (f.day !== undefined) await p.fill(`${M} #setupDay`, String(f.day));
+  if (f.year !== undefined) await p.fill(`${M} #setupYear`, String(f.year));
+}
+const saveSetup = tab => tab.page.click(`${M} #setupForm button[type="submit"]`);
+const cancelSetup = tab => tab.page.click(`${M} #setupCancelBtn`);
+
 // --- Momo's "Open in Pabu": what flashes, ["week pp-mom c1"] (This week's line) or ["person pp-jo"] (People's) ---
 const flashing = tab => tab.page.$$eval(`${M} .flash`, els => els.map(e => (e.classList.contains("due-row") ? `week ${e.dataset.id} ${e.dataset.cid}` : `person ${e.dataset.id}`)));
 
@@ -162,6 +195,7 @@ const flashing = tab => tab.page.$$eval(`${M} .flash`, els => els.map(e => (e.cl
 const person = (tab, name) => tab.page.evaluate(x => { const p = Kyoshi.apps.pabu.live().find(q => q.name === x); return p ? JSON.parse(JSON.stringify(p)) : null; }, name);
 
 module.exports = {
-  thisWeek, tick, quickAdd, submitAdd, addState, birthdays, people, names, peopleHead, chips, pickChip, openPerson, isOpen, popup, said,
-  focused, hintInView, fill, setBox, addBox, removeBox, talkedOn, typeTalk, removeTalk, save, cancel, remove, flashing, person
+  thisWeek, tick, quickAdd, submitAdd, addState, birthdays, stripTitle, people, names, peopleHead, chips, pickChip, openPerson, isOpen, popup, said,
+  focused, hintInView, fill, setBox, addBox, removeBox, talkedOn, typeTalk, removeTalk, save, cancel, remove, openSetup, setupOpen, setup, fillSetup,
+  saveSetup, cancelSetup, flashing, person
 };

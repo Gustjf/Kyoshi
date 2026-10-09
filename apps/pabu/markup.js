@@ -1,10 +1,12 @@
 /* Pabu · markup.js — the page (A.markup): This week (filled in by render.js; hidden while no one has a call, text or
  * visit), quick add (the name and Add, then the how-often and how chips), the Birthdays strip (shown when one is coming
- * up), People (the group chips and the list, filled in by render.js), and the person pop-up (the name and
- * group, the birthday as month, day and an optional year, notes, their calls, texts and visits — filled in by
- * editor.js — then the line saying what stopped Save, and Save, Cancel and Delete, kept in view at its foot). The shell
- * supplies the header, footer, Developer Mode and bug reports. Ids only
- * need to be unique within the app (look them up with A.$). */
+ * up; its heading names the anniversary while there's one), People (the group chips and the list, filled in by
+ * render.js), the person pop-up (the name and group, the birthday as month, day and an optional year, notes, their
+ * calls, texts and visits — filled in by editor.js — then the line saying what stopped Save, and Save, Cancel and
+ * Delete, kept in view at its foot), and Set up (who you're in a relationship with — filled in by setup.js — and the
+ * anniversary as month, day and an optional year; the line saying what stopped Save, Save and Cancel). The shell
+ * supplies the header, footer, Developer Mode and bug reports. Ids only need to be unique within the app (look them up
+ * with A.$). */
 Kyoshi.apps.pabu.markup = `
   <section id="weekSection" hidden>
     <h2>This week <span class="count" id="weekCount"></span></h2>
@@ -37,7 +39,7 @@ Kyoshi.apps.pabu.markup = `
   </section>
 
   <section id="bdaySection" hidden>
-    <h2>Birthdays</h2>
+    <h2 id="bdayTitle">Birthdays</h2>
     <ul class="bdays" id="bdayList"></ul>
   </section>
 
@@ -105,6 +107,47 @@ Kyoshi.apps.pabu.markup = `
             <span class="spacer"></span>
             <button type="button" class="danger" id="personDeleteBtn">Delete</button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="setupOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="setupModalTitle">Set up</h3>
+      <form id="setupForm" novalidate autocomplete="off">
+        <div class="field">
+          <label for="setupPartner">Who are you in a relationship with?</label>
+          <select id="setupPartner"></select>
+        </div>
+        <div class="field">
+          <label for="setupMonth">Anniversary (optional)</label>
+          <div class="bday-fields">
+            <select id="setupMonth" aria-label="Anniversary: the month">
+              <option value="">—</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+            <input type="number" id="setupDay" min="1" max="31" step="1" inputmode="numeric" placeholder="Day" aria-label="Anniversary: the day">
+            <input type="number" id="setupYear" min="1900" step="1" inputmode="numeric" placeholder="Year (optional)" aria-label="Anniversary: the year (optional)">
+          </div>
+        </div>
+        <p class="modal-hint">It shows like a birthday: beside their name, in the strip when it's within 30 days, and on Momo's board.</p>
+        <p class="modal-hint" id="setupHint" role="status" hidden></p>
+        <div class="modal-actions">
+          <button type="submit">Save</button>
+          <button type="button" class="secondary" id="setupCancelBtn">Cancel</button>
         </div>
       </form>
     </div>

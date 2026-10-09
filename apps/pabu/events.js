@@ -2,7 +2,7 @@
  * visit, or none for birthday only; it clears the field and keeps its focus; tapping a chip leaves the phone's keyboard
  * up), This week's ✓ and its undo, the group chips, and the names that open the pop-up; and the hooks Kyoshi calls:
  * onTick (a new day), onReload (another tab saved), attention (calls, texts and visits overdue; DOT_WHEN_OVERDUE turns
- * it off) and bugState. */
+ * it off), renderDev (Developer Mode's Set up…) and bugState. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -36,7 +36,7 @@
     }
     const at = now(), what = HOW[how].label.toLowerCase(); // when they were added, time travel too: due that day
     const cadences = every === "none" ? [] : [{ id: newId(), every, how, minutes: HOW[how].minutes, talks: [], at }];
-    S.people.push({ id: newId(), name, group: "", note: "", birthday: "", cadences, deleted: false, at, u: Date.now() });
+    S.people.push({ id: newId(), name, group: "", note: "", birthday: "", partner: false, anniversary: "", cadences, deleted: false, at, u: Date.now() });
     A.save();
     S.add = { every: DEFAULT_EVERY, how: DEFAULT_HOW };
     $("addName").value = "";
@@ -69,6 +69,7 @@
 
   A.init = () => {
     A.wireEditor();
+    A.wireSetup();
     $("addForm").addEventListener("submit", e => { e.preventDefault(); add(); });
     // Tapping a chip or Add doesn't take the focus, so the phone's keyboard stays up while typing.
     $("addForm").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
@@ -97,7 +98,17 @@
     return words.length ? `${words.length > 1 ? `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}` : words[0]} overdue` : "";
   };
 
-  // Bug reports: counts and settings only — never names, groups, notes or birthdays.
+  // Developer Mode's tools: Set up… (setup.js), Developer Mode closing first, as Bosco's start-up info does.
+  A.renderDev = box => {
+    box.innerHTML = `<div class="dev-block"><button class="secondary small" id="pabuSetupBtn">Set up…</button>
+      <div class="dev-hint">Who you're in a relationship with, and your anniversary: a heart by their name, in the strip when it's near, on Momo's board.</div></div>`;
+    box.querySelector("#pabuSetupBtn").addEventListener("click", () => {
+      K.dev.toggle();
+      A.openSetup();
+    });
+  };
+
+  // Bug reports: counts and settings only — never names, groups, notes, birthdays or the anniversary.
   A.bugState = () => {
     const today = todayStr(), people = A.live(), all = A.allDue(today), week = A.thisWeek(today), soon = addDays(today, SOON_DAYS);
     const count = test => all.filter(r => test(r.due)).length;
@@ -105,6 +116,7 @@
       `- People: ${people.length} (birthday only ${people.filter(p => !p.cadences.length).length}, in a group ${people.filter(p => p.group).length}; groups ${A.groupsInUse().length}); +${S.people.length - people.length} deleted`,
       `- Calls, texts, visits: ${all.length} (overdue ${count(d => d < today)}, due today ${count(d => d === today)}, within ${SOON_DAYS} days ${count(d => d > today && d <= soon)}); this week ${week.length}, done ${week.filter(r => r.done).length}`,
       `- With a birthday: ${people.filter(p => p.birthday).length}; with notes: ${people.filter(p => p.note).length}; talks kept: ${all.reduce((n, r) => n + r.c.talks.length, 0)}`,
+      `- Partner: ${people.some(p => p.partner) ? "set" : "none"}; anniversary: ${people.some(p => A.anniversaryOf(p)) ? "yes" : "no"}`,
       `- Quick add: every ${S.add.every}, how ${S.add.how}; chips: ${S.filter === null ? "all" : S.filter ? "a group" : "no group"}; pop-up: ${S.editing ? "open" : "closed"}`
     ];
   };

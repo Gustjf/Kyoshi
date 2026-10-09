@@ -1,6 +1,6 @@
 /* Pabu · pabu.css — the app's own styles, every selector under .app-pabu.
  * Shared components (buttons, inputs, sections, pop-ups…) are in core/kyoshi.css.
- * Sections: Quick add · Birthdays · This week · People · The pop-up · Phones */
+ * Sections: Quick add · Birthdays · This week · People · The pop-up · Set up · Phones */
 
 /* --- Quick add: the field and Add, then the chips (core's .mode-btn, smaller): how often six to a line (three on a
    phone), how three --- */
@@ -14,12 +14,14 @@
 .app-pabu .add-status:empty { display: none; }
 .app-pabu .add-status.bad { color: var(--bad); }
 
-/* --- Birthdays: a compact list, today's stands out --- */
+/* --- Birthdays: a compact list, today's stands out; the anniversary's row starts with its heart --- */
 .app-pabu .bdays { list-style: none; margin: 6px 0 0; padding: 0; }
 .app-pabu .bday { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 2px 0; }
 .app-pabu .bday-when { font-size: .8em; color: var(--muted); }
 .app-pabu .bday.today .bday-name { font-weight: 600; }
 .app-pabu .bday.today .bday-when { color: var(--text); }
+.app-pabu .heart { width: 12px; height: 12px; flex: 0 0 auto; vertical-align: -1px; }
+.app-pabu .bday .heart { align-self: center; margin-right: -5px; }
 
 /* --- This week: each one due a line with its ✓ (a big target around a small circle); ticked ones muted --- */
 .app-pabu h2 .count { margin-left: 6px; font-weight: 400; letter-spacing: 0; text-transform: none; }
@@ -55,7 +57,7 @@
 .app-pabu .person-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .app-pabu .person-name { font-size: .95em; overflow-wrap: anywhere; }
 .app-pabu .person-group { padding: 0 7px; border: 1px solid var(--border); border-radius: 10px; font-size: .72em; color: var(--muted); overflow-wrap: anywhere; }
-.app-pabu .person-meta, .app-pabu .person-bday { display: block; margin-top: 1px; font-size: .8em; color: var(--muted); }
+.app-pabu .person-meta, .app-pabu .person-bday, .app-pabu .person-anniv { display: block; margin-top: 1px; font-size: .8em; color: var(--muted); }
 .app-pabu .person.overdue .person-due { color: var(--bad); }
 
 /* --- The pop-up: the birthday's three fields on one line; each call, text or visit a box (how, how often, ✕; minutes
@@ -81,11 +83,14 @@
 .app-pabu .talk-add input { flex: 1; min-width: 0; }
 .app-pabu .talk-add button { flex: 0 0 auto; }
 .app-pabu .talk-hint { margin: 4px 0 0; font-size: .82em; color: var(--bad); }
-.app-pabu #personOverlay [aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad-bg); }
+.app-pabu #personOverlay [aria-invalid="true"], .app-pabu #setupOverlay [aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 3px var(--bad-bg); }
 .app-pabu .modal-foot { position: sticky; bottom: 0; z-index: 1; margin: 4px -18px -16px; padding: 10px 18px 16px; background: var(--panel); border-top: 1px solid var(--border); }
 .app-pabu .modal-foot .modal-actions { margin-top: 0; }
 .app-pabu #personHint { margin: 0 0 8px; color: var(--bad); }
 .app-pabu #personHint.saved { color: var(--text); }
+
+/* --- Set up: the line saying what stopped Save, in red --- */
+.app-pabu #setupHint { margin: 0 0 4px; color: var(--bad); }
 
 /* --- Phones: taller field, Add, chips and ✕ for a thumb; how often three to a line --- */
 @media (max-width: 640px) {

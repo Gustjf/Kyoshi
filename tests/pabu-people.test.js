@@ -234,7 +234,7 @@ module.exports = [
       eq([await pb.names(tab), await pb.birthdays(tab)], [["Ana", "Gran", "Jo", "Kai", "Lee", "Sam"], ["Kai · Oct 1 · tomorrow"]], "gone from People and the strip");
       lacks(await weekText(tab), "Mom", "and from This week");
       const marker = (await exportBackup(tab)).people.find(x => x.id === "pp-mom");
-      eq({ ...marker, u: 0 }, { id: "pp-mom", name: "", group: "", note: "", birthday: "", cadences: [], deleted: true, at: data.people[1].at, u: 0 }, "the export's marker: nothing personal");
+      eq({ ...marker, u: 0 }, { id: "pp-mom", name: "", group: "", note: "", birthday: "", partner: false, anniversary: "", cadences: [], deleted: true, at: data.people[1].at, u: 0 }, "the export's marker: nothing personal");
       ok(marker.u > data.people[1].u, "stamped, so sync takes it");
     }
   },
@@ -325,7 +325,7 @@ module.exports = [
       has(lastDialog(tab), "Replace your 6 people with the 7 people in this backup? This backup is from ", "the counts, then the backup's date");
       eq([await pb.chips(tab), await pb.names(tab)], [{ shown: [], on: null }, ["Ana", "Gran", "Jo", "Kai", "Lee", "Mom", "Sam"]], "no groups now: no chips, and Work's is gone, so everyone shows");
       const kept = Object.fromEntries((await exportBackup(tab)).people.map(x => [x.id, x])), src = v1.people[1];
-      eq(kept["pp-mom"], { id: "pp-mom", name: "Mom", group: "", note: src.note, birthday: "1966-10-12", cadences: [{ id: "c1", every: "month", how: "call", minutes: 30,
+      eq(kept["pp-mom"], { id: "pp-mom", name: "Mom", group: "", note: src.note, birthday: "1966-10-12", partner: false, anniversary: "", cadences: [{ id: "c1", every: "month", how: "call", minutes: 30,
         talks: [D(-35), D(-70)], at: src.at }], deleted: false, at: src.at, u: src.u }, "Mom's one call, c1, with its days; the old keys at the top aren't written");
       eq([kept["pp-kai"].cadences, kept["pp-kai"].birthday], [[], "10-01"], "birthday only: none");
 
@@ -341,7 +341,7 @@ module.exports = [
       eq(fixed.d1.cadences, [{ id: "c1", every: "fortnight", how: "call", minutes: 30, talks: [D(2), D(-3)], at: 0 }], "a newer version's how often survives, the day ahead too; minutes out of range: a call's usual");
       eq([fixed.d1.birthday, fixed.d1.note, fixed.d2.birthday, fixed.d2.cadences[0].minutes, fixed.d4.cadences[0].minutes, fixed.d4.at, fixed.d4.u], ["", "", "02-29", 120, 13, 0, 0],
         "an impossible birthday dropped, Feb 29 kept; no number: how's minutes; 12.6 rounds to 13; moments no date can hold are dropped");
-      eq(fixed.d3, { id: "d3", name: "", group: "", note: "", birthday: "", cadences: [], deleted: true, at: 1, u: 1 }, "a deleted marker keeps nothing personal");
+      eq(fixed.d3, { id: "d3", name: "", group: "", note: "", birthday: "", partner: false, anniversary: "", cadences: [], deleted: true, at: 1, u: 1 }, "a deleted marker keeps nothing personal");
       // The pop-up reads that how often as every month, and leaves it as it came unless it's changed there.
       await pb.openPerson(tab, "Rae Lynn");
       eq((await pb.popup(tab)).boxes[0].every, "month", "read as every month");

@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.231", date: "2026-10-09", changes: [
+      "Set up… in Pabu's Developer Mode tools: pick the one person you're in a relationship with, and your anniversary if you like (the year optional). A small heart shows beside their name, with the anniversary's date under it (and the years, when you give the year); the anniversary comes up in the Birthdays strip when it's within 30 days, and on Momo's board on the day, like a birthday. Reload Pabu on every device after updating: an older copy drops them."
+    ] },
     { version: "2.131", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
     ] },

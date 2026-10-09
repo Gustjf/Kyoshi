@@ -4,7 +4,8 @@
  * how brings its usual length, unless they were changed), when you last talked and when it's due; the days you talked,
  * each with ✕; "Talked on" with Add (Enter there adds, not saves). "+ Add a call, text or visit" (up to 6). Save (or
  * Enter) writes the whole person at once and never stops without saying why, in #personHint above it (a name, birthday
- * or minutes it can't take; that field is marked). Cancel; Delete. */
+ * or minutes it can't take; that field is marked). Cancel; Delete. Its reader of a day's three fields (readDayFields)
+ * reads Set up's anniversary too. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -173,18 +174,18 @@
     renderDays(c);
   }
 
-  // The birthday from its three fields: "" for none, "MM-DD", or "YYYY-MM-DD" with the year; null (after saying why)
-  // when it can't be: the month and day go together, the day must be in that month (Feb 29 only in a leap year when the
-  // year is given), and the year is from 1900 to this one.
-  function readBirthday() {
-    const monthEl = $("personBdayMonth"), dayEl = $("personBdayDay"), yearEl = $("personBdayYear");
+  // A day from its three fields, the birthday's here and the anniversary's in Set up (setup.js): "" for none, "MM-DD",
+  // or "YYYY-MM-DD" with the year; null (after saying why: say(field, text) marks that field) when it can't be: the month
+  // and day go together, the day must be in that month (Feb 29 only in a leap year when the year is given), and the year
+  // is from 1900 to this one. word: "birthday" or "anniversary", in what it says.
+  function readDayFields(monthEl, dayEl, yearEl, word, say = stop) {
     const month = +monthEl.value || 0, day = readNumber(dayEl), year = readNumber(yearEl), thisYear = +todayStr().slice(0, 4);
-    if (!month && day === null) return year === null ? "" : stop(monthEl, "Pick the month and day of the birthday too, or clear the year.");
-    if (!month) return stop(monthEl, "Pick the month of the birthday too.");
-    if (day === null) return stop(dayEl, "Type the day of the birthday too.");
-    if (year !== null && !(Number.isInteger(year) && year >= 1900 && year <= thisYear)) return stop(yearEl, `The year born should be from 1900 to ${thisYear}, or left empty.`);
+    if (!month && day === null) return year === null ? "" : say(monthEl, `Pick the month and day of the ${word} too, or clear the year.`);
+    if (!month) return say(monthEl, `Pick the month of the ${word} too.`);
+    if (day === null) return say(dayEl, `Type the day of the ${word} too.`);
+    if (year !== null && !(Number.isInteger(year) && year >= 1900 && year <= thisYear)) return say(yearEl, `The ${word === "birthday" ? "year born" : "year"} should be from 1900 to ${thisYear}, or left empty.`);
     const max = daysInMonth(year || 2000, month); // 2000: a leap year, so Feb 29 is fine without a year
-    if (!Number.isInteger(day) || day < 1 || day > max) return stop(dayEl, `${MONTH_NAMES[month - 1]}${year ? ` ${year}` : ""} has ${max} days: pick a day from 1 to ${max}.`);
+    if (!Number.isInteger(day) || day < 1 || day > max) return say(dayEl, `${MONTH_NAMES[month - 1]}${year ? ` ${year}` : ""} has ${max} days: pick a day from 1 to ${max}.`);
     return `${year ? `${year}-` : ""}${pad2(month)}-${pad2(day)}`;
   }
 
@@ -207,7 +208,7 @@
     hint();
     const name = A.cleanLine($("personName").value, MAX_NAME);
     if (!name) return stop($("personName"), "Type their name.");
-    const birthday = bdayFields() === e.bday ? e.birthday : readBirthday();
+    const birthday = bdayFields() === e.bday ? e.birthday : readDayFields(...BDAY.map(f => $(f)), "birthday");
     if (birthday === null) return;
     const minutes = [];
     for (const c of e.cadences) {
@@ -260,7 +261,7 @@
       return alert("That person was already deleted on another device.");
     }
     if (!confirm(`Delete ${p.name}, and the days you talked? This can't be undone.`)) return;
-    Object.assign(p, { name: "", group: "", note: "", birthday: "", cadences: [], deleted: true, u: Date.now() });
+    Object.assign(p, { name: "", group: "", note: "", birthday: "", partner: false, anniversary: "", cadences: [], deleted: true, u: Date.now() });
     closeEditor();
     A.save();
     A.renderAll();
@@ -305,5 +306,5 @@
     $("personDeleteBtn").addEventListener("click", deletePerson);
   }
 
-  Object.assign(A, { wireEditor, openEditor });
+  Object.assign(A, { wireEditor, openEditor, readDayFields });
 })(Kyoshi, Kyoshi.apps.pabu);

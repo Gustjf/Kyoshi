@@ -2,10 +2,12 @@
  * text or visit due by `to`, soonest due first, each a card of its own in Momo (fill "card": "Call Mom", as long as it
  * takes), waiting in its Tasks from 6 days before it's due (any day once overdue) until you place it. Then the days you
  * talked by each between from and to, done, each completing its own (of "p:<id>:<cid>"): ✓ on that card, or one of its
- * own on that day. Birthday-only people send nothing there. Momo's board reads agenda() (core/agenda.js): birthdays, at
- * any time on their day, ✓ once you talked that day. Momo's "Open in Pabu" calls open(id), which brings the call, text or
- * visit (This week's line) or else the person into view and flashes it. The ids: "p:<id>:<cid>" (one due),
- * "p:<id>:<cid>:<day>" (a talk), "bday:<id>:<year>" (a birthday): change open() along with them (apps/pabu/CLAUDE.md). */
+ * own on that day. Birthday-only people send nothing there. Momo's board reads agenda() (core/agenda.js): birthdays and
+ * your anniversary, at any time on their day, ✓ once you talked that day. Momo's "Open in Pabu" calls open(id), which
+ * brings the call, text or visit (This week's line) or else the person into view and flashes it. The ids:
+ * "p:<id>:<cid>" (one due), "p:<id>:<cid>:<day>" (a talk), "bday:<id>:<year>" (a birthday), "anniv:<id>:<year>" (the
+ * anniversary): open() takes the person's id from the second part of any of them; change it along with them
+ * (apps/pabu/CLAUDE.md). */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -35,18 +37,21 @@
     return due.concat(talked);
   }
 
-  // Birthdays on days from `from` to `to`, as events at any time that day for 15 minutes: [{ id, title: "Mom's birthday",
-  // date, time: null, minutes, note: "Turns 60 · Call" (their first call, text or visit), done: talked that day }],
-  // read-only copies.
+  // Birthdays, and your anniversary, on days from `from` to `to`, as events at any time that day for 15 minutes: [{ id,
+  // title: "Mom's birthday", date, time: null, minutes, note: "Turns 60 · Call" (their first call, text or visit), done:
+  // talked that day }], the anniversary's titled "Our anniversary", its note "5 years · Sam"; read-only copies.
   function agenda(from, to) {
     const out = [];
-    A.live().filter(p => p.birthday).forEach(p => {
+    A.live().filter(p => p.birthday || A.anniversaryOf(p)).forEach(p => {
       for (let year = +from.slice(0, 4); year <= +to.slice(0, 4); year++) {
-        const date = A.birthdayIn(p, year), age = A.ageOn(p, date);
-        if (date < from || date > to) continue;
-        out.push({
+        const date = A.birthdayIn(p, year), age = date && A.ageOn(p, date), day = A.anniversaryIn(p, year), years = day && A.yearsOn(p, day);
+        if (date && date >= from && date <= to) out.push({
           id: `bday:${p.id}:${year}`, title: `${p.name}'s birthday`, date, time: null, minutes: 15,
           note: [age ? `Turns ${age}` : "", p.cadences.length ? A.howLabel(p.cadences[0]) : ""].filter(Boolean).join(" · "), done: A.talkedOn(p, date)
+        });
+        if (day && day >= from && day <= to) out.push({
+          id: `anniv:${p.id}:${year}`, title: "Our anniversary", date: day, time: null, minutes: 15,
+          note: [years ? A.plural(years, "year") : "", p.name].filter(Boolean).join(" · "), done: A.talkedOn(p, day)
         });
       }
     });
@@ -54,8 +59,8 @@
   }
 
   // From Momo's "Open in Pabu" (core/inbox.js puts Pabu on screen first): the person's id is the second part of any of
-  // the ids. A call, text or visit on This week comes into view there; else the person on the People list (shown
-  // whatever group the chips show). It flashes; nothing once they're deleted.
+  // the ids (a birthday's and the anniversary's too). A call, text or visit on This week comes into view there; else the
+  // person on the People list (shown whatever group the chips show). It flashes; nothing once they're deleted.
   function open(id) {
     const [kind, pid, cid] = String(id).split(":"), p = A.personById(pid);
     if (!p) return;

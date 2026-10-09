@@ -229,7 +229,8 @@ const damagedPabu = () => ({
   ]
 });
 // Pabu's people in today's shape (schemaVersion 2): a group, notes, a birthday, and calls, texts and visits each on its own
-// schedule ({ id, every, how, minutes, talks: days back, newest first }); added: days back (else a fixed stamp). As of
+// schedule ({ id, every, how, minutes, talks: days back, newest first }), and the one you're with (partner, anniversary:
+// none here); added: days back (else a fixed stamp). As of
 // TODAY (Wed Sep 30), This week holds Mom's visit (overdue 9 days), Bo's text (never talked: due Monday, the day he was
 // added), Dad's text (talked yesterday), Mom's weekly call (due today) and Raj's call (Saturday); Zoe's visit is due Oct
 // 12; Ivy is birthday only (Feb 29); Mom's group is "Family", Dad's "family"; Mom turns 60 on Oct 12, Zoe's birthday is
@@ -253,6 +254,7 @@ function pabuCircle(people = CIRCLE) {
       const added = p.added === undefined ? t + i : at(addDays(TODAY, -p.added)), gone = !!p.deleted;
       return {
         id: p.id, name: gone ? "" : p.name, group: gone ? "" : p.group || "", note: gone ? "" : p.note || "", birthday: gone ? "" : p.birthday || "",
+        partner: !gone && !!p.partner, anniversary: gone ? "" : p.anniversary || "",
         cadences: gone ? [] : (p.cadences || []).map(c => ({ id: c.id, every: c.every, how: c.how, minutes: c.minutes, talks: c.talks.map(n => addDays(TODAY, -n)), at: added })),
         deleted: gone, at: added, u: t
       };

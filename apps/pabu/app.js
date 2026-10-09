@@ -1,8 +1,8 @@
 /* Pabu · app.js — registers Pabu with Kyoshi, plus its constants (limits, how often and how, Momo's window), state
  * (A.S) and small helpers: text and minutes, each person's calls, texts and visits (the days you talked, when each is
- * due, this week's), the groups in use, days in words, and birthdays. Loads first of the app's files: the others
- * destructure what's here at the top, and call functions from each other as A.name(). File map and data model:
- * apps/pabu/CLAUDE.md. */
+ * due, this week's), the groups in use, days in words, birthdays and the anniversary. Loads first of the app's files:
+ * the others destructure what's here at the top, and call functions from each other as A.name(). File map and data
+ * model: apps/pabu/CLAUDE.md. */
 (function (K) {
   "use strict";
   const { isNum, readNumber, pad2, addDays, addMonths, daysBetween, daysInMonth, dateMs, localDate, fmtDate, fmtShort, todayStr } = K.util;
@@ -44,7 +44,7 @@
     DEFAULT_HOW: "call",
     WINDOW_DAYS: 6,         // Momo may place someone up to this many days before they're due (as core's meetings)
     SOON_DAYS: 14,          // Coming up: due within this many days
-    BIRTHDAY_DAYS: 30,      // the Birthdays strip: those in the next this many days
+    BIRTHDAY_DAYS: 30,      // the Birthdays strip: those (and the anniversary) in the next this many days
     DOT_WHEN_OVERDUE: true // a dot on Pabu's icon while someone is overdue: false turns it off
   });
   const EVERY_WORDS = Object.fromEntries(A.EVERY);
@@ -55,8 +55,8 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    // Everyone: { id, name, group, note, birthday, cadences: [{ id, every, how, minutes, talks, at }], deleted, at, u }
-    // (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
+    // Everyone: { id, name, group, note, birthday, partner, anniversary, cadences: [{ id, every, how, minutes, talks, at }],
+    // deleted, at, u } (CLAUDE.md has the details). Deleted ones stay as markers so sync can't bring them back.
     people: [],
     // Quick add's chips: how often and how. Back to every month and a call after each add.
     add: { every: A.DEFAULT_EVERY, how: A.DEFAULT_HOW },
@@ -173,32 +173,47 @@
     return allDue(today, monday).filter(r => r.due <= sunday).map(r => ({ ...r, done: r.c.talks.find(d => d >= monday && d <= today) || "" }));
   }
 
-  // --- Birthdays: kept as "MM-DD", or "YYYY-MM-DD" with the year born ---
+  // --- Birthdays and the anniversary: kept as "MM-DD", or "YYYY-MM-DD" with the year (born, or you got together) ---
   function parseBirthday(b) {
     const m = /^(?:(\d{4})-)?(\d{2})-(\d{2})$/.exec(typeof b === "string" ? b : "");
     return m ? { month: +m[2], day: +m[3], year: m[1] ? +m[1] : null } : null;
   }
-  // The day someone's birthday falls on in a year ("" for none): Feb 29 is Feb 28 in a year without it.
-  function birthdayIn(p, year) {
-    const b = parseBirthday(p.birthday);
+  // The anniversary counts only for the one you're with (Set up never leaves one on anyone else).
+  const anniversaryOf = p => (p.partner ? p.anniversary : "");
+  // The day such a date falls on in a year ("" for none): Feb 29 is Feb 28 in a year without it.
+  function dayIn(kept, year) {
+    const b = parseBirthday(kept);
     return b ? `${year}-${pad2(b.month)}-${pad2(Math.min(b.day, daysInMonth(year, b.month)))}` : "";
   }
-  // Their next birthday, today or later ("" for none).
-  function nextBirthday(p, today = todayStr()) {
-    const year = +today.slice(0, 4), d = birthdayIn(p, year);
-    return !d || d >= today ? d : birthdayIn(p, year + 1);
+  // Its next, today or later ("" for none).
+  function nextDay(kept, today) {
+    const year = +today.slice(0, 4), d = dayIn(kept, year);
+    return !d || d >= today ? d : dayIn(kept, year + 1);
   }
-  // How old they are on a day: null without the year born (or before it).
-  function ageOn(p, date) {
-    const b = parseBirthday(p.birthday), year = +date.slice(0, 4);
+  // The years since its year on a day: null without the year (or before it).
+  function yearsSince(kept, date) {
+    const b = parseBirthday(kept), year = +date.slice(0, 4);
     if (!b || !b.year) return null;
-    const age = year - b.year - (date < birthdayIn(p, year) ? 1 : 0);
-    return age >= 0 ? age : null;
+    const n = year - b.year - (date < dayIn(kept, year) ? 1 : 0);
+    return n >= 0 ? n : null;
   }
+  const birthdayIn = (p, year) => dayIn(p.birthday, year);
+  const anniversaryIn = (p, year) => dayIn(anniversaryOf(p), year);
+  // Their next birthday, or your next anniversary, today or later ("" for none).
+  const nextBirthday = (p, today = todayStr()) => nextDay(p.birthday, today);
+  const nextAnniversary = (p, today = todayStr()) => nextDay(anniversaryOf(p), today);
+  // How old they are on a day, or how many years you've been together: null without the year.
+  const ageOn = (p, date) => yearsSince(p.birthday, date);
+  const yearsOn = (p, date) => yearsSince(anniversaryOf(p), date);
   // The 🎂 line: "🎂 Oct 12 · turns 60", "🎂 today · turns 60", "🎂 Oct 12"; "" without a birthday.
   function fmtBirthday(p, today = todayStr()) {
     const next = nextBirthday(p, today), age = next && ageOn(p, next);
     return next ? `🎂 ${next === today ? "today" : fmtShort(next)}${age ? ` · turns ${age}` : ""}` : "";
+  }
+  // The anniversary's line (after a heart): "Oct 12 · 5 years", "today · 5 years", "Oct 12"; "" without one.
+  function fmtAnniversary(p, today = todayStr()) {
+    const next = nextAnniversary(p, today), years = next && yearsOn(p, next);
+    return next ? `${next === today ? "today" : fmtShort(next)}${years ? ` · ${plural(years, "year")}` : ""}` : "";
   }
   // Whether you talked on a day, by any call, text or visit.
   const talkedOn = (p, day) => p.cadences.some(c => c.talks.includes(day));
@@ -207,6 +222,7 @@
     MONTH_NAMES, cleanLine, cleanText, everyOf, howOf, everyWords, howLabel, cadenceWords, cleanMinutes, readMinutes,
     fmtMinutes, plural, cap, fmtDay, weekdayOf, mondayOf, dayOf, agoWords, talkedWords, dueWords, live, personById,
     cadenceById, byName, needTitle, groupsInUse, lastTalk, nextDue, addedDay, dueOf, allDue, nextDueOf, thisWeek,
-    parseBirthday, birthdayIn, nextBirthday, ageOn, fmtBirthday, talkedOn
+    parseBirthday, anniversaryOf, birthdayIn, anniversaryIn, nextBirthday, nextAnniversary, ageOn, yearsOn, fmtBirthday,
+    fmtAnniversary, talkedOn
   });
 })(Kyoshi);

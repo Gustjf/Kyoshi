@@ -24,7 +24,8 @@
   // device's clock may be ahead), but lastTalk never counts them.
   const cleanTalks = list => [...new Set((Array.isArray(list) ? list : []).filter(isDate))].sort().reverse().slice(0, MAX_TALKS);
 
-  // A birthday as kept: "" for none, a whole date ("1966-10-12"), or a month and day ("10-12"; Feb 29 is fine).
+  // A birthday (or the anniversary) as kept: "" for none, a whole date ("1966-10-12"), or a month and day ("10-12"; Feb 29
+  // is fine).
   function cleanBirthday(b) {
     if (isDate(b)) return b;
     const m = typeof b === "string" ? /^(\d{2})-(\d{2})$/.exec(b) : null, month = m ? +m[1] : 0;
@@ -58,7 +59,8 @@
   }
 
   // Saved or imported people in the current shape; anything unusable is dropped, so a damaged file
-  // can't break the app. A deleted one keeps only what sync needs.
+  // can't break the app. A deleted one keeps only what sync needs. Before 2.231 no one had partner or anniversary: false
+  // and "".
   function cleanPeople(list) {
     const ids = new Set();
     return (Array.isArray(list) ? list : []).filter(isObj).map(p => {
@@ -69,6 +71,8 @@
         group: gone ? "" : cleanLine(p.group, MAX_GROUP),
         note: gone ? "" : cleanText(p.note, MAX_NOTE),
         birthday: gone ? "" : cleanBirthday(p.birthday),
+        partner: !gone && p.partner === true, // the one you're in a relationship with (Set up: one at most)
+        anniversary: gone ? "" : cleanBirthday(p.anniversary),
         cadences: gone ? [] : cleanCadences(p, at),
         deleted: gone,
         at, // when they were added
