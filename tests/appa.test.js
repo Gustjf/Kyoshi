@@ -60,5 +60,17 @@ module.exports = [
       eq(await needs(tab), [["done:rec", 30]], "the usual 30 minutes");
       eq((await exportBackup(tab)).records.map(r => r.minutes), [null], "exported as none");
     }
-  }
+  },
+  {
+    name: "appa things: a thing's Next line keeps a date's capital (Dec 9), and words like \"in 9 days\" stay lowercase",
+    async run(t) {
+      const tab = await open(t, { app: "appa", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, gen.appaWorld({ things: [{ id: "car1", name: "Car" }], jobs: [{ id: "oil1", thingId: "car1", name: "Oil change", every: [6, "m"], from: { date: TODAY }, est: 30 }] }));
+      const sub = () => p.locator(`${M} .thing-row .row-sub`).first().textContent();
+      const far = await sub();
+      eq(/Next: Oil change, [A-Z][a-z]{2} \d/.test(far), true, "a far date keeps its capital: " + far);
+      await importBackup(tab, gen.appaWorld({ things: [{ id: "car1", name: "Car" }], jobs: [{ id: "oil1", thingId: "car1", name: "Oil change", every: [6, "m"], from: { date: "2026-04-10" }, est: 30 }] }));
+      eq(/Next: Oil change, [a-z]/.test(await sub()), true, "a near one reads lowercase: " + await sub());
+    }
+  },
 ];
