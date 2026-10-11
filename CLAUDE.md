@@ -38,7 +38,7 @@ Cloud sync runs against a fake GitHub in the tests (`tests/cloud.js`), never the
 ## Map
 ```
 index.html            shell markup (header, switcher, banners, dev panel, bug pop-up) + every <link>/<script>, in load order
-roadmap/             roadmap.md: the plan, upcoming phases & apps (read when starting one); archive/: finished plans, dated
+roadmap/             roadmap.md: the index (the plan in progress, how a plan is run, the finished ones); <date>_<name>_plan.md: a plan being built (read yours when starting a phase); archive/: finished plans, dated, kept for their decisions
 testplan.md           the flow test campaign: simulated lives through Momo and the apps that feed it (read when running it)
 core/                 the shared DNA — K = window.Kyoshi
   base.js             K namespace; console capture for bug reports (loads first)
