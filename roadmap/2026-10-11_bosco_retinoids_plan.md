@@ -46,8 +46,14 @@ runs. Phase 1 is the feature; Phase 2 adds the one-tap controls (Hold a week, Un
    repo. Bug reports hold counts, never names, dates or strengths.
 
 ## Status (tick each phase off here, with what was decided)
-- [ ] Phase 1 — Bosco: retinoids set up, their build-up schedule, the Upcoming section, the pop-up, storage, backups and
-  sync (Bosco +1 → 8.601)
+- [x] Phase 1 — Bosco: retinoids set up, their build-up schedule, the Upcoming section, the pop-up, storage, backups and
+  sync (Bosco +1 → 8.601). Done 2026-10-12. Small calls made along the way: `retinoidSnooze` is a list `[{ id, until }]`
+  (one "Not yet" per application; a single slot would bring the first back when the second is put off); `walk` never
+  starts before `start` (a start moved later starts over) and jumps ahead in the last step instead of only capping at
+  2,000 days; a step that is open-ended (or weeks missing) ends the ladder when cleaned; a single step reads
+  "every [N] days" in the editor (not "then every … from then on"); "last applied" uses the full weekday, as the cards;
+  the dose pop-up waits while a retinoid's is open (one pop-up at a time), and closing either pop-up with Not yet brings
+  the next one waiting straight away; the retinoid buttons are drawn from `RETINOIDS` at start (`initRetinoids`).
 - [ ] Phase 2 — Bosco: Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.701)
 
 ## Decisions (the architect's, 2026-10-11; the executing model adds its own small ones under Status)

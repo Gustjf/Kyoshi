@@ -1,8 +1,8 @@
 /* Bosco · data.js — Bosco's saved data: loading (and, on the first open, bringing in what the
  * standalone Bosco left in this browser), cleaning, saving, backups, and combining with other
  * devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
- * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, doseSnooze, sync
- * and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
+ * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, retinoids (retinoids.js),
+ * doseSnooze, retinoidSnooze, sync and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
  * marker of what it deleted (forget). */
 (function (K, A) {
   "use strict";
@@ -14,7 +14,7 @@
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
   const STANDALONE_KEYS = { entries: "weightTrackerEntries_v1", goals: "weightTrackerGoals_v1", profile: "weightTrackerProfile_v1" };
 
-  const persist = () => ["entries", "gone", "goals", "profile"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
+  const persist = () => ["entries", "gone", "goals", "profile", "retinoids"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
 
   // A day as kept, its fields in this order; its weigh-in's stamp (wu: when it last changed, 7.601 on) and its dose's
   // (du) only once they have one, so older data reads as it was.
@@ -87,7 +87,8 @@
       paceGoal: cleanPaceGoal(raw.paceGoal),
       sites: cleanSites(raw.sites),
       skipSites: cleanSkips(raw.skipSites),
-      asked: cleanAsked(raw.asked, raw.medication)
+      asked: cleanAsked(raw.asked, raw.medication),
+      retinoids: A.cleanRetinoids(raw.retinoids) // undefined from a file without them (an older copy's): ours stay
     };
   }
 
@@ -209,6 +210,7 @@
     S.entries = clean.entries;
     S.goals = clean.goals;
     S.gone = clean.gone;
+    S.retinoids = A.cleanRetinoids(A.store.json("retinoids")) || { regimens: [], log: [] };
     if (storedEntries !== null && (storedEntries !== JSON.stringify(S.entries) || storedGoals !== JSON.stringify(S.goals))) {
       A.store.set("entries", JSON.stringify(S.entries));
       A.store.set("goals", JSON.stringify(S.goals));
@@ -243,6 +245,7 @@
       sites: S.profile.sites,
       skipSites: S.profile.skipSites,
       asked: { medication: !!S.profile.medicationAsked, dosing: askedVersion(S.profile.dosingAsked) }, // start-up info's answers
+      retinoids: S.retinoids, // the retinoids and their applications (retinoids.js)
       entries: S.entries,
       gone: S.gone, // deleted days' markers (7.601 on)
       goals: S.goals,
@@ -277,6 +280,7 @@
     // …and the dosing questions by the later version answered, if this device's medication question was answered, by itself
     // or by the save (one a dose answered just now, or none, leaves the dosing questions to be asked).
     if (asked && answered && asked.dosing > askedVersion(S.profile.dosingAsked)) S.profile.dosingAsked = asked.dosing;
+    if (clean.retinoids) S.retinoids = A.mergeRetinoids(S.retinoids, clean.retinoids); // record by record; none in the file: ours
   }
 
   // Replaces all entries and goals with the backup's (raw: its parsed JSON), after
@@ -294,6 +298,12 @@
     const count = n => `${n} ${n === 1 ? "entry" : "entries"}`;
     if (ask && S.entries.length && !K.backup.ask(A, raw, `Replace your ${count(S.entries.length)} and goals with the ${count(clean.entries.length)} in this backup?`)) return;
     const was = { entries: new Map(S.entries.map(e => [e.date, e])), gone: S.gone };
+    // Its retinoids too are a change made here now: where both have a record, the backup's wins; the ones it lacks stay.
+    if (clean.retinoids) {
+      const ours = new Map(S.retinoids.regimens.concat(S.retinoids.log).map(x => [x.id, x]));
+      const restamp = list => list.map(x => ({ ...x, u: Math.max(x.u, A.stampAbove(ours.get(x.id))) }));
+      clean.retinoids = { regimens: restamp(clean.retinoids.regimens), log: restamp(clean.retinoids.log) };
+    }
     applyBackup(clean, backupUnit);
     // An import is a change made here now: its days win over older changes elsewhere, and a day deleted since that it
     // brings back stays (each part stamped above every version of it known here: this device's, the backup's, and
@@ -343,14 +353,15 @@
       sites: newer.sites || older.sites,
       // The newer save's skips whenever it knows them: a device that logged the dose (and so forgot them) wins.
       skipSites: newer.skipSites === undefined ? older.skipSites : newer.skipSites,
-      asked: joinAsked(newer.asked, older.asked)
+      asked: joinAsked(newer.asked, older.asked),
+      retinoids: A.mergeRetinoids(older.retinoids, newer.retinoids)
     };
   }
   // The answers count only as asked or not, and the dosing version: each device keeps its own medication answer, so two
   // different ones never keep the devices saving back and forth. stamps: false leaves out the days' stamps and markers
   // (an older copy's save has none: it isn't set apart by them alone, as for the answers).
   const dataKey = (d, stamps = true) => JSON.stringify([d.entries.map(e => [e.date, e.weight, e.doseMg, e.medication, e.site].concat(stamps ? [e.wu || 0, e.du || 0] : [])),
-    stamps ? d.gone : [], d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites, d.asked && [d.asked.medication, d.asked.dosing]]);
+    stamps ? d.gone : [], d.goals, d.name, d.dosePlan, d.vial, d.paceGoal, d.sites, d.skipSites, d.asked && [d.asked.medication, d.asked.dosing], d.retinoids]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -358,20 +369,21 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, gone: S.gone, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites,
+    const ours = { entries: S.entries, gone: S.gone, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites, retinoids: S.retinoids,
       asked: { medication: !!S.profile.medicationAsked, answer: S.profile.medicationAsked ? A.currentMedication() : "", dosing: askedVersion(S.profile.dosingAsked) } };
     const next = replace // as on import: the later dosing plan and vial, and the answers of both
-      ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked) }
+      ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked),
+        retinoids: A.mergeRetinoids(ours.retinoids, their.retinoids) }
       : mergeVersions({ ...ours, ...mine }, { ...their, ...theirs });
     const stamped = Array.isArray(raw.gone); // a save from 7.601 on: its days' stamps and markers count
     return {
       // An older copy's save says nothing of the answers, nor of the days' stamps and markers, so they alone don't set
       // ours apart from it (saving ours back for it would stamp them newer than that copy's next change, which a combine
       // would then lose).
-      same: dataKey(next, stamped) === dataKey(their.asked ? their : { ...their, asked: next.asked }, stamped),
+      same: dataKey(next, stamped) === dataKey({ ...their, ...(their.asked ? {} : { asked: next.asked }), ...(their.retinoids ? {} : { retinoids: next.retinoids }) }, stamped),
       apply() {
         const kept = { name: next.name || S.profile.name, paceGoal: next.paceGoal || S.profile.paceGoal, sites: next.sites || S.profile.sites,
-          skipSites: next.skipSites === undefined ? S.profile.skipSites : next.skipSites };
+          skipSites: next.skipSites === undefined ? S.profile.skipSites : next.skipSites, retinoids: next.retinoids || S.retinoids };
         if (!backupUnit && dataKey({ ...next, ...kept }) === dataKey(ours)) return false; // nothing new here
         applyBackup(next, backupUnit);
         return true;
@@ -391,7 +403,7 @@
     schemaVersion: DATA_SCHEMA_VERSION,
     build: buildBackup,
     looksLike: raw => Array.isArray(raw.entries),
-    hasData: () => S.entries.length > 0 || S.gone.length > 0, // markers too: a device that deleted every day still combines
+    hasData: () => S.entries.length > 0 || S.gone.length > 0 || S.retinoids.regimens.length > 0, // markers too: a device that deleted every day still combines
     importBackup, combine, afterSync
   };
   Object.assign(A, { persist, save, setDay, forget, normalizeBackup, cleanPaceGoal, askedVersion });

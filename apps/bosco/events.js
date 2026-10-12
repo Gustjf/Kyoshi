@@ -1,6 +1,6 @@
 /* Bosco · events.js — loads last: wires Bosco's buttons and fields (A.init), and the hooks
- * Kyoshi calls: onTick (a new day, doses coming due), onKeydown (Enter submits), onReload
- * (another tab saved), attention (a due dose), renderDev (its Developer Mode tools: start-up
+ * Kyoshi calls: onTick (a new day, doses and retinoids coming due), onKeydown (Enter submits), onReload
+ * (another tab saved), attention (a due dose or retinoid), renderDev (its Developer Mode tools: start-up
  * info, skipping the next dose's site) and bugState (its lines in bug reports). */
 (function (K, A) {
   "use strict";
@@ -138,6 +138,7 @@
 
     $("oneTimeInfoSaveBtn").addEventListener("click", A.saveOneTimeInfo);
     $("oneTimeInfoCancelBtn").addEventListener("click", () => A.renderOneTimeInfo());
+    A.initRetinoids(); // the retinoids' section, pop-up and start-up block
 
     $("customRate").value = "0"; // some browsers restore the last position on reload
     $("dateInput").value = S.entryDateDefault = todayStr();
@@ -149,6 +150,7 @@
   A.onTick = () => {
     rollOverToday();
     A.renderUpcomingDoses();
+    A.renderUpcomingRetinoids();
   };
 
   // Enter in an input submits its form row.
@@ -167,7 +169,7 @@
     A.renderAll();
   };
 
-  A.attention = () => (S.doseAsking ? "a dose is waiting to be confirmed" : "");
+  A.attention = () => (S.doseAsking ? "a dose is waiting to be confirmed" : S.applyAsking ? "a retinoid is waiting to be confirmed" : "");
 
   // Sites the next dose passes over (null: none), kept and shown at once (Developer Mode too: renderAll).
   function setSkips(list) {
@@ -200,9 +202,9 @@
     if (skips.length) box.querySelector("#boscoUnskipBtn").addEventListener("click", () => setSkips(null));
   };
 
-  // Bug reports leave out every weight, dose, and date.
+  // Bug reports leave out every weight, dose, and date (the retinoids: counts only).
   A.bugState = () => {
-    const med = A.currentMedication(), schedule = A.doseSchedule();
+    const med = A.currentMedication(), schedule = A.doseSchedule(), regimens = A.regimens();
     return [
       `- Unit: ${S.unit}`,
       `- GLP-1 medication: ${med}`,
@@ -211,6 +213,7 @@
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
       `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
       `- Sites skipped: ${(S.profile.skipSites || []).length}`,
+      `- Retinoids: ${regimens.length}${regimens.length ? ` (steps ${regimens.map(r => r.steps.length).join(", ")})` : ""}; applications logged: ${S.retinoids.log.filter(l => !l.x).length}; due now: ${A.allUpcoming().reduce((n, g) => n + g.list.filter(a => a.due).length, 0)}`,
       `- Entry count: ${S.entries.length}`,
       `- Goal count: ${S.goals.length}`,
       `- Rate mode: ${S.rateMode}`,

@@ -27,6 +27,14 @@
     semaglutide: { label: "Semaglutide", example: "0.5" },
     retatrutide: { label: "Retatrutide", example: "4" }
   };
+  // Retinoids, by generic name only (no brand names), each with its cream's prescription strengths in %, lowest first.
+  // Ids are what backups store: never change one (trim or add strengths freely: a stored one not listed is kept).
+  const RETINOIDS = {
+    tretinoin: { label: "Tretinoin", strengths: [0.025, 0.05, 0.1] },
+    tazarotene: { label: "Tazarotene", strengths: [0.05, 0.1] },
+    adapalene: { label: "Adapalene", strengths: [0.1] },
+    trifarotene: { label: "Trifarotene", strengths: [0.005] }
+  };
   // Injection sites, part by part in the order body parts take turns (PARTS), each part's sites in the
   // order its doses take them: an X, the other side every time and another height (the thighs also
   // swap faces on each leg; front: facing the ceiling when sitting, side: between buttock and thigh).
@@ -80,6 +88,14 @@
     // The weekly pace goal until one is saved in start-up info: lose 1% a week, give or take 0.25%.
     DEFAULT_PACE_GOAL: { dir: "lose", weeklyPct: 1, rangePct: 0.25 },
     MAX_PACE_PCT: 3,            // the highest weekly target, in % of body weight
+    // Retinoids (retinoids.js): up to 4 at once, each a ladder of up to 6 steps; 3 upcoming applications shown each.
+    MAX_REGIMENS: 4,
+    MAX_RETINOID_STEPS: 6,
+    MAX_UPCOMING_APPLICATIONS: 3,
+    DEFAULT_RETINOID_TIME: "21:00", // they go on at night
+    // A new retinoid's build-up: every 3 days for 2 weeks (about twice a week), every other day for 2 weeks, then every day.
+    DEFAULT_STEPS: [{ every: 3, weeks: 2 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }],
+    RETINOIDS,
     // Backup file format. Bump only when import has to migrate the data. v2:
     // entries gained doseMg. v3: entries gained medication (a dose without one is
     // Tirzepatide, the only medication older versions had). v4: doses are logged
@@ -116,7 +132,10 @@
     vialEditing: false,   // the vial calculator is open
     anchorEditing: false, // the anchor dose date is showing in start-up info
     vialMode: "mix",      // "mix" (vial mg + BAC water) | "known" (mg/mL)
-    doseAsking: null      // the scheduled dose the confirmation pop-up is open for
+    doseAsking: null,     // the scheduled dose the confirmation pop-up is open for
+    retinoids: { regimens: [], log: [] }, // the retinoids in use and their applications (retinoids.js)
+    retinoidEditing: null, // the retinoid editor in start-up info: null, or { id ("" for a new one), steps: the rows as edited }
+    applyAsking: null     // the scheduled application the retinoid pop-up is open for
   });
 
   // ==========================================================================
@@ -190,9 +209,20 @@
   // A number field in Bosco by id: null when empty, NaN when the browser couldn't parse it.
   const readNumber = id => K.util.readNumber(A.$(id));
 
+  // A retinoid's words: "Tazarotene" (an id from a newer version as it is, its first letter up), "0.1%",
+  // "Tazarotene 0.1%", "Tazarotene 0.1% · face" (plain text: escape it in HTML); "every other day".
+  const retinoidLabel = id => (Object.hasOwn(RETINOIDS, id) ? RETINOIDS[id].label : id.charAt(0).toUpperCase() + id.slice(1));
+  const strengthLabel = r => `${fmtNum(r.pct, 3)}%`;
+  const regimenName = r => `${retinoidLabel(r.retinoid)} ${strengthLabel(r)}`;
+  const regimenTitle = r => regimenName(r) + (r.where ? ` · ${r.where}` : "");
+  const fmtEvery = n => (n === 1 ? "every day" : n === 2 ? "every other day" : `every ${n} days`);
+  // The Upcoming section's X: the one retinoid in use, else "Retinoid".
+  const retinoidsTitle = list => { const ids = [...new Set(list.map(r => r.retinoid))]; return ids.length === 1 ? retinoidLabel(ids[0]) : "Retinoid"; };
+
   Object.assign(A, {
     hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight,
     currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
-    isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber
+    isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber,
+    retinoidLabel, strengthLabel, regimenName, regimenTitle, fmtEvery, retinoidsTitle
   });
 })(Kyoshi);

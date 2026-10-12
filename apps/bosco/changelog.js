@@ -5,6 +5,13 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.601", date: "2026-10-12", changes: [
+      "Retinoids in start-up info (Developer Mode → Edit start-up info): each one you use by its generic name, its cream's strength from the prescription list, where it goes (face, body), its usual time (9 PM to start), its start date, and its build-up as steps you set (every N days for W weeks, then from then on); a new one starts twice a week, then every other day, then every day, two weeks each.",
+      "\"Upcoming Tazarotene Doses\" (or Tretinoin, or Retinoid when you use more than one) sits under your GLP-1 doses: each retinoid's next three applications with their step, when you last applied it and where you are in the build-up.",
+      "When one is due it asks, as a dose does: Applied (or Applied it today for a late one), Not yet, Postpone to tomorrow; it's logged once you confirm it, and Bosco's icon shows a dot while one waits.",
+      "Backups, the sync folder and cloud sync carry your retinoids and their log.",
+      "Reload Bosco on every device after updating."
+    ] },
     { version: "7.601", date: "2026-10-08", changes: [
       "Sync keeps the latest change to each weigh-in and each dose: one you corrected or logged on one device is no longer undone by another device that saved later without touching it.",
       "A weigh-in or dose you delete stays deleted on every device, instead of coming back from another device's copy; a dose logged meanwhile on a device this one hadn't heard from yet is kept.",

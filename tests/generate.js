@@ -306,7 +306,8 @@ function iroh({ areas = [], goals = [], meet = null } = {}) {
 
 // Bosco: a weekly GLP-1 dose (its plan, the last dose taken) and weigh-ins [{ date, weight }] in lb. sites: the injection
 // sites on, doseSites: where the last doses went (the latest last); without them, a backup from before injection sites.
-function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, doseTime = null, lastDose = addDays(TODAY, -5), doses = 4, weights = [], meet = null, sites, doseSites = [] } = {}) {
+// retinoids: { regimens, log }, as the backup's key (without it, a backup from before retinoids).
+function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, doseTime = null, lastDose = addDays(TODAY, -5), doses = 4, weights = [], meet = null, sites, doseSites = [], retinoids } = {}) {
   const entries = weights.map(w => ({ date: w.date, weight: w.weight, doseMg: null, medication: null }));
   for (let i = 0; i < doses; i++) {
     const date = addDays(lastDose, -i * intervalDays), e = entries.find(x => x.date === date);
@@ -315,7 +316,7 @@ function bosco({ medication = "tirzepatide", intervalDays = 7, weeklyMg = 5, dos
   }
   doseSites.slice(-doses).forEach((site, i, list) => { entries.find(e => e.date === addDays(lastDose, (i - list.length + 1) * intervalDays)).site = site; });
   return {
-    schemaVersion: 4, appVersion: "5.900", unit: "lb", name: "", medication, ...(meet ? { meetings: meet } : {}), ...(sites ? { sites } : {}),
+    schemaVersion: 4, appVersion: "5.900", unit: "lb", name: "", medication, ...(meet ? { meetings: meet } : {}), ...(sites ? { sites } : {}), ...(retinoids ? { retinoids } : {}),
     dosePlan: { medication, intervalDays, weeklyMg, doseTime, nextDose: null, savedAt: "2026-01-05T00:00:00.000Z" },
     vial: null, paceGoal: null, goals: [180, 170], entries: entries.sort((a, b) => a.date.localeCompare(b.date))
   };
