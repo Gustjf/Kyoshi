@@ -4,10 +4,7 @@
 the plan you're running (its top sections and your phase).
 
 ## In progress
-- **Retinoid build-up reminders in Bosco** (tazarotene, tretinoin) — `2026-10-11_bosco_retinoids_plan.md`: two phases,
-  planned 2026-10-11, nothing built yet. Run one: `Execute phase N of roadmap/2026-10-11_bosco_retinoids_plan.md`
-  (Claude Opus, high reasoning effort). Phase 1 is the feature; Phase 2 (Hold a week, Undo, Developer Mode's lines) a
-  few days later. Nothing of it goes to Momo (the owner's choice).
+Nothing right now.
 
 ## How a plan is run
 1. A new session; the strongest model the budget allows for anything that touches stored data or sync. Say "Execute
@@ -35,3 +32,5 @@ the plan you're running (its top sections and your phase).
 - `2026-10-08_tests_speed_plan.md` — the end-to-end tests, faster and side by side.
 - `2026-10-08_feedback_batch_plan.md` — 8 reports, six phases (a report deleted, the theme and Bosco's answers following
   you, Hawky's Bought, Pabu's partner).
+- `2026-10-11_bosco_retinoids_plan.md` — retinoid build-up reminders in Bosco (tazarotene, tretinoin), two phases (the
+  feature; Hold this step a week, Undo, Developer Mode's lines). Nothing of it goes to Momo (the owner's choice).

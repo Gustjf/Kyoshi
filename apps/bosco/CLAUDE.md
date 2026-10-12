@@ -17,10 +17,10 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `render.js` | `renderAll` and each section: history, upcoming doses (then the retinoids': retinoids-ui.js), stats, goals & season projections, SVG chart |
 | `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, the Retinoids block shown with them (retinoids-ui.js), `saveOneTimeInfo` (an open retinoid editor saved first) |
 | `doses.js` | dose schedule and its sites (worked out, never stored: `lastSites`, `nextSiteIn`, `nextSite`), `dueAt`, the confirm / Not yet / postpone pop-up with its site menu (by body part), and `agenda` (the doses, for Momo's board) |
-| `retinoids.js` | the retinoids' data (`cleanRetinoids`, `mergeRetinoids`, `keepRetinoids`, `stampAbove`), their schedule (worked out, never stored: `regimens`, `lastApplied`, `stepAt`, `walk`, `allUpcoming`), their words (`stepWords`, `progressLine`, `stepsNote`, `scheduleWords`) and the pop-up's rules (`promptDueApplication`, `confirmApplication`, `postponeApplication`, `snoozeApplication`); no drawing |
-| `retinoids-ui.js` | the Upcoming Retinoid Doses section, the retinoid pop-up's words and buttons, start-up info's Retinoids block (list, Add / Edit / Remove, the editor with its steps and live note); `initRetinoids` (from `A.init`) |
+| `retinoids.js` | the retinoids' data (`cleanRetinoids`, `mergeRetinoids`, `keepRetinoids`, `stampAbove`), their schedule (worked out, never stored: `regimens`, `lastApplied`, `stepAt`, `walk`, `allUpcoming`), their words (`stepWords`, `progressLine`, `stepsNote`, `scheduleWords`), the pop-up's rules (`promptDueApplication`, `confirmApplication`, `postponeApplication`, `snoozeApplication`) and the section's one-tap ones (`holdable` / `holdStep`, `undoable` / `undoApplication`); no drawing |
+| `retinoids-ui.js` | the Upcoming Retinoid Doses section (with Undo and Hold this step a week), the retinoid pop-up's words and buttons, start-up info's Retinoids block (list, Add / Edit / Remove, the editor with its steps and live note); `initRetinoids` (from `A.init`) |
 | `image.js` | the progress image (PNG): the weigh-ins (a dot each, joined by straight lines) and the goal table |
-| `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose or retinoid), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips), `bugState` |
+| `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose or retinoid), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips; each retinoid's next application, read-only), `bugState` |
 | `bosco.css` | styles under `.app-bosco` |
 
 ## State (`A.S`)
@@ -113,4 +113,7 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
   and independent of the GLP-1 medication (not `.med`).
 - One pop-up at a time: a due dose's first, then one retinoid's (each retinoid's earliest due one; the next once it closes); never over another pop-up.
 - A removed retinoid and an undone application are markers (`x: true`, a later `u`), so they stay that way on every device.
+- Hold this step a week adds a week to the step today is in (`steps[i].weeks`, up to 52; the later steps start a week later): shown during a
+  timed step once started, never on the last (open-ended) one nor on a steady schedule. Undo takes back today's application only (shown while
+  the latest is today's): its record a marker, and the application due again put off an hour on this device (its card's Applied ✓ is there).
 - Bug reports never include weights, doses, dates or names (the retinoids: counts only).

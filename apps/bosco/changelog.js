@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.711", date: "2026-10-12", changes: [
+      "Hold this step a week keeps you on the build-up step you're on for one more week; Undo takes back an application confirmed today by mistake.",
+      "Developer Mode lists each retinoid's next application and its step.",
+    ] },
     { version: "8.611", date: "2026-10-12", changes: [
       "The subtitle now reads \"<your name>'s health tracker\".",
     ] },

@@ -19,6 +19,7 @@
 /* Upcoming retinoid doses: a group per retinoid, under a line naming it and where it stands in its build-up. */
 .app-bosco .retinoid-group + .retinoid-group { margin-top: 14px; }
 .app-bosco .retinoid-head { font-size: .9em; }
+.app-bosco .retinoid-head button { margin-left: 8px; } /* Undo, Hold this step a week */
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
 .app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */

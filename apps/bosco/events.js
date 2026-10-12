@@ -1,11 +1,11 @@
 /* Bosco · events.js — loads last: wires Bosco's buttons and fields (A.init), and the hooks
  * Kyoshi calls: onTick (a new day, doses and retinoids coming due), onKeydown (Enter submits), onReload
  * (another tab saved), attention (a due dose or retinoid), renderDev (its Developer Mode tools: start-up
- * info, skipping the next dose's site) and bugState (its lines in bug reports). */
+ * info, skipping the next dose's site, each retinoid's next application) and bugState (its lines in bug reports). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { isDate, isPos, todayStr, fmtDate } = K.util;
+  const { isDate, isPos, todayStr, fmtDate, fmtWeekday, esc } = K.util;
   const { hasWeight, hasDose, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
 
   // Adds a weigh-in. Doses aren't added here: they're logged by confirming them.
@@ -178,10 +178,17 @@
     A.renderAll();
   }
 
+  // Each retinoid's next application, for Developer Mode: "Next Tazarotene (face): Wednesday, Oct 14 · step 2 of 3 · …".
+  const nextApplication = ({ r, list: [a] }) => {
+    const words = a && A.stepWords(r, a.step);
+    return `<div class="dev-block-head">Next ${esc(A.retinoidLabel(r.retinoid))}${r.where ? ` (${esc(r.where)})` : ""}: <strong>${!a ? "none scheduled"
+      : `${fmtWeekday(a.date)}, ${fmtDateBrief(a.date)} · ${words.charAt(0).toLowerCase()}${words.slice(1)}${a.due ? " · due" : ""}`}</strong></div>`;
+  };
+
   // Developer Mode: start-up info; the next dose's injection site, with a skip for a week it isn't a good
-  // one (another press skips the new one too; never the last site left).
+  // one (another press skips the new one too; never the last site left); each retinoid's next application (read-only).
   A.renderDev = box => {
-    const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [];
+    const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [], retinoids = A.allUpcoming();
     const canSkip = !!site && A.activeSites().some(id => id !== site && !skips.includes(id));
     box.innerHTML = `<div class="dev-block"><button class="secondary small" id="boscoStartupBtn">Edit start-up info</button></div>
       <div class="dev-block">
@@ -192,7 +199,7 @@
           ${skips.length ? `<button class="secondary small" id="boscoUnskipBtn">Undo skips</button>` : ""}
         </div>
         <div class="dev-hint">For when a site isn't a good candidate this week: the next dose goes to that body part's next site. Forgotten once a dose is logged.</div>
-      </div>`;
+      </div>${retinoids.length ? `<div class="dev-block">${retinoids.map(nextApplication).join("")}</div>` : ""}`;
     box.querySelector("#boscoStartupBtn").addEventListener("click", () => {
       K.dev.toggle();
       A.renderOneTimeInfo(true);

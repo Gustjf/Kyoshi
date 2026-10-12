@@ -7,7 +7,9 @@
  * both lists merge record by record by the later change. An application comes due on its day at the usual time; the
  * interval after it is that of the step its day falls in. Like a dose, one is logged only once confirmed (on its day, or
  * today for a late one), "Not yet" asks again in an hour (this device), Postpone moves it to tomorrow, and one not
- * confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. Never sent to Momo. */
+ * confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. On the section, one tap
+ * each: Hold this step a week (a week more on the build-up step you're on) and Undo (today's application taken back, a
+ * marker). Never sent to Momo. */
 (function (K, A) {
   "use strict";
   const S = A.S;
@@ -195,17 +197,58 @@
     A.renderAll();
   }
 
+  // An application put off for an hour, on this device.
+  function putOff(a) {
+    const id = snoozeKey(a), t = now();
+    A.store.set("retinoidSnooze", JSON.stringify(snoozes().filter(s => t < s.until && s.id !== id).concat({ id, until: t + DOSE_SNOOZE_MS })));
+  }
   // "Not yet" asks again in an hour (on this device); then the next retinoid waiting, if any. Also Esc and a click beside it.
   function snoozeApplication() {
     if (!S.applyAsking) return;
-    const id = snoozeKey(S.applyAsking), t = now();
-    A.store.set("retinoidSnooze", JSON.stringify(snoozes().filter(s => t < s.until && s.id !== id).concat({ id, until: t + DOSE_SNOOZE_MS })));
+    putOff(S.applyAsking);
     A.closeApplicationModal();
+    A.renderAll();
+  }
+
+  // ==========================================================================
+  // ONE TAP ON THE SECTION: HOLD THIS STEP A WEEK, UNDO
+  // ==========================================================================
+  // The step today is in, if it can be held a week: a timed one (not the last), once started, under 52 weeks; else null.
+  function holdable(r) {
+    const today = todayStr();
+    if (today < r.start) return null;
+    const s = stepAt(r, today);
+    return s.to !== null && s.weeks < 52 ? s : null;
+  }
+  // Hold this step a week: one more week on the build-up step you're on; the steps after it start a week later.
+  function holdStep(id) {
+    const r = regimens().find(x => x.id === id), s = r && holdable(r);
+    if (!s) return;
+    const steps = r.steps.map((x, i) => (i === s.i ? { ...x, weeks: x.weeks + 1 } : x));
+    keepRetinoids({ ...S.retinoids, regimens: S.retinoids.regimens.map(x => (x === r ? { ...r, steps, u: stampAbove(r) } : x)) });
+    A.save();
+    A.renderAll();
+    A.renderRetinoidsSetup(); // start-up info's list says the weeks
+  }
+
+  // Whether the latest application is today's (one confirmed by mistake can be taken back).
+  const undoable = r => lastApplied(r) === todayStr();
+  // Undo: today's application taken back, its record a marker (so it stays undone on every device). The application
+  // due again is put off an hour, so the pop-up doesn't come straight back (its card's Applied ✓ is there).
+  function undoApplication(id) {
+    const r = regimens().find(x => x.id === id);
+    if (!r || !undoable(r)) return;
+    const rid = `${id}:${todayStr()}`;
+    keepRetinoids({ ...S.retinoids, log: S.retinoids.log.map(l => (l.id === rid ? { ...l, x: true, u: stampAbove(l) } : l)) });
+    const due = walk(r).find(a => a.due);
+    if (due) putOff(due);
+    A.save();
     A.renderAll();
   }
 
   Object.assign(A, {
     cleanRetinoids, mergeRetinoids, keepRetinoids, stampAbove, regimens, lastApplied, stepAt, walk, allUpcoming, stepWords, progressLine,
-    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, snoozeApplication
+    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, snoozeApplication, holdable, holdStep,
+    undoable, undoApplication
   });
 })(Kyoshi, Kyoshi.apps.bosco);

@@ -1,4 +1,4 @@
-/* Kyoshi · tests/bosco-retinoids.test.js — Bosco's retinoids (Phase 1 of roadmap/2026-10-11_bosco_retinoids_plan.md):
+/* Kyoshi · tests/bosco-retinoids.test.js — Bosco's retinoids (roadmap/archive/2026-10-11_bosco_retinoids_plan.md):
  * start-up info's Retinoids block (Add retinoid: Tazarotene, its lowest strength, 9 PM, today and the default build-up,
  * the steps' live note; Edit, Remove with its question); the "Upcoming <X> Doses" section (one retinoid's name, or
  * Retinoid for several), each retinoid's head (last applied, where it stands in its build-up) and its next three
@@ -6,7 +6,8 @@
  * Postpone to tomorrow), one at a time; the build-up over time (a new step's first application one old interval after
  * the last), missed ones dropped; the bug report's counts; Export, Import (an older backup keeps yours, a damaged one is
  * cleaned, the backup's records win where both have them) and sync's combine (a marker removes, an older copy's save
- * changes nothing, a newer one's regimen comes in); on a phone. */
+ * changes nothing, a newer one's regimen comes in); on a phone. Phase 2: Hold this step a week, Undo, Developer Mode's
+ * lines, and nothing in Momo's agenda. */
 "use strict";
 const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, lastDialog, importBackup, exportBackup, addDays, at } = require("./lib");
 const gen = require("./generate");
@@ -15,16 +16,20 @@ const M = "#kMount";
 const D = n => addDays(TODAY, n);
 const BUILD_UP = [{ every: 3, weeks: 2 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }];
 
-// The Upcoming section: its title, and each group's [head, progress, cards: [weekday, date line, step, due]].
+// The Upcoming section: its title, and each group's [head, progress, cards: [weekday, date line, step, due]] (the head's
+// buttons left out: buttons() has them).
 const section = tab => tab.page.evaluate(m => {
   const s = document.querySelector(`${m} #upcomingRetinoidsSection`);
+  const text = el => [...el.childNodes].filter(n => n.nodeName !== "BUTTON").map(n => n.textContent).join("").trim();
   return {
     shown: !s.hidden, title: s.querySelector("h2").textContent,
-    groups: [...s.querySelectorAll(".retinoid-group")].map(g => [g.querySelector(".retinoid-head > span").textContent.trim(), g.querySelector(".retinoid-progress").textContent,
+    groups: [...s.querySelectorAll(".retinoid-group")].map(g => [text(g.querySelector(".retinoid-head > span")), g.querySelector(".retinoid-progress").textContent,
       [...g.querySelectorAll(".stat")].map(c => [c.querySelector(".val").textContent, c.querySelector(".lbl").textContent, c.querySelector(".dose").textContent, c.classList.contains("due")])])
   };
 }, M);
 const cards = (s, i = 0) => s.groups[i][2].map(c => c[1].split(" · ")[0]);
+// Each group's head buttons (Undo, Hold this step a week).
+const buttons = tab => tab.page.evaluate(m => [...document.querySelectorAll(`${m} .retinoid-head`)].map(h => [...h.querySelectorAll("button")].map(b => b.textContent)), M);
 // The pop-up: open, title, text, the step, and the buttons shown.
 const popup = tab => tab.page.evaluate(m => {
   const o = document.querySelector(`${m} #retinoidOverlay`), t = id => o.querySelector(id).textContent;
@@ -96,6 +101,7 @@ module.exports = [
       s = await section(tab);
       eq([(await popup(tab)).open, s.groups[0][0], cards(s)], [false, "Tazarotene 0.1% · face · last applied Wednesday, Sep 30", ["Oct 3", "Oct 6", "Oct 9"]], "logged");
       eq(await bugLine(tab), "- Retinoids: 1 (steps 3); applications logged: 1; due now: 0", "the bug line");
+      eq(await buttons(tab), [["Undo", "Hold this step a week"]], "Undo after today's, Hold during step 1");
 
       // A second (start-up info still open: the name isn't answered): Tretinoin 0.05% on the body, every other day.
       await p.click(`${M} #addRetinoidBtn`);
@@ -123,6 +129,7 @@ module.exports = [
       eq(lastDialog(tab), "Remove Tazarotene 0.1% · face? Its past applications stay in your data.", "asked");
       s = await section(tab);
       eq([s.title, s.groups.length, (await editor(tab)).list.length], ["Upcoming Tretinoin Doses", 1, 1], "Tretinoin alone");
+      eq(await buttons(tab), [[]], "a steady schedule, nothing applied today: no Hold, no Undo");
 
       const backup = await exportBackup(tab);
       const [a, b] = backup.retinoids.regimens;
@@ -254,6 +261,65 @@ module.exports = [
       for (let i = 0; i < 3; i++) await p.click(`${M} #retinoidList button[data-remove-regimen]`);
       eq((await section(tab)).shown, false, "hidden");
       lacks(await p.locator(M).innerText(), "Upcoming Retinoid", "nowhere");
+    }
+  },
+  {
+    name: "bosco retinoids: Hold this step a week, Undo, Developer Mode's lines; nothing in Momo's agenda",
+    async run(t) {
+      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }], retinoids: taz(D(-12), [D(-12), D(-9), D(-6), D(-3)]) }));
+      const dev = () => p.evaluate(() => { const box = document.createElement("div"); Kyoshi.apps.bosco.renderDev(box); return [...box.querySelectorAll(".dev-block-head")].map(e => e.textContent).filter(l => !l.startsWith("Next dose")); });
+      let s = await section(tab);
+      eq([s.groups[0][1], await buttons(tab)], ["Step 1 of 3 · every 3 days · week 2 of 2 · every other day from Friday, Oct 2", [["Hold this step a week"]]], "Hold during step 1, no Undo");
+      eq(await dev(), ["Next Tazarotene (face): Wednesday, Sep 30 · step 1 of 3 · every 3 days"], "Developer Mode's line");
+
+      // Held a week: step 2 a week later, the cards in step 1 longer.
+      await p.click(`${M} button[data-hold]`);
+      s = await section(tab);
+      eq([s.groups[0][1], s.groups[0][2].map(c => [c[1].split(" · ")[0], c[2]])], ["Step 1 of 3 · every 3 days · week 2 of 3 · every other day from Friday, Oct 9",
+        [["Sep 30", "Step 1 of 3 · every 3 days"], ["Oct 3", "Step 1 of 3 · every 3 days"], ["Oct 6", "Step 1 of 3 · every 3 days"]]], "held a week");
+      eq((await exportBackup(tab)).retinoids.regimens[0].steps, [{ every: 3, weeks: 3 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }], "weeks: 3 in Export");
+      has((await editor(tab)).list[0], "every 3 days for 3 weeks", "start-up info's list");
+      await p.click(`${M} button[data-hold]`);
+      eq((await section(tab)).groups[0][1], "Step 1 of 3 · every 3 days · week 2 of 4 · every other day from Friday, Oct 16", "held again");
+
+      // Applied tonight, then taken back: the card due again, the pop-up put off, a marker in Export.
+      await until(tab, "21:01");
+      await p.click(`${M} #retinoidLogBtn`);
+      s = await section(tab);
+      eq([s.groups[0][0], await buttons(tab)], ["Tazarotene 0.1% · face · last applied Wednesday, Sep 30", [["Undo", "Hold this step a week"]]], "applied: Undo");
+      await p.click(`${M} button[data-undo]`);
+      s = await section(tab);
+      eq([s.groups[0][0], await buttons(tab), s.groups[0][2][0].slice(1), (await popup(tab)).open], ["Tazarotene 0.1% · face · last applied Sunday, Sep 27", [["Hold this step a week"]],
+        ["Sep 30 · 9:00 PM", "Step 1 of 3 · every 3 days", true], false], "undone: due again, no pop-up");
+      eq(await dev(), ["Next Tazarotene (face): Wednesday, Sep 30 · step 1 of 3 · every 3 days · due"], "Developer Mode: due");
+      let rec = (await exportBackup(tab)).retinoids.log.find(l => l.date === TODAY);
+      eq([rec.id, rec.x], [`taz1:${TODAY}`, true], "the marker in Export");
+      eq(await bugLine(tab), "- Retinoids: 1 (steps 3); applications logged: 4; due now: 1", "the bug line counts it out");
+
+      // Another device's copy of the record (an older change): the undo stays.
+      const changed = await p.evaluate(today => {
+        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build())), l = raw.retinoids.log.find(x => x.date === today);
+        delete l.x;
+        l.u = 1;
+        const c = A.data.combine(raw, { replace: false, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
+        const ch = c.apply();
+        if (ch) A.data.afterSync();
+        return ch;
+      }, TODAY);
+      eq(changed, false, "nothing changes here");
+      eq((await section(tab)).groups[0][0], "Tazarotene 0.1% · face · last applied Sunday, Sep 27", "still undone");
+      rec = (await exportBackup(tab)).retinoids.log.find(l => l.date === TODAY);
+      eq(rec.x, true, "still a marker");
+
+      // Nothing in Momo's agenda (only doses, none here).
+      eq(await p.evaluate(([from, to]) => Kyoshi.agenda(from, to).filter(e => e.app === "bosco" && !e.id.startsWith("dose:")).length, [D(-12), D(14)]), 0, "no retinoid events");
+
+      // Step 2 (Oct 16 on): Hold still there; the last step (Oct 30 on): gone.
+      await travel(tab, 16);
+      eq([(await section(tab)).groups[0][1], (await buttons(tab))[0].includes("Hold this step a week")], ["Step 2 of 3 · every other day · week 1 of 2 · every day from Friday, Oct 30", true], "step 2");
+      await travel(tab, 14);
+      eq([(await section(tab)).groups[0][1], (await buttons(tab))[0].includes("Hold this step a week")], ["Step 3 of 3 · every day from Oct 30 on", false], "the last step: no Hold");
     }
   }
 ];

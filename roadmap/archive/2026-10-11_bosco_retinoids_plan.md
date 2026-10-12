@@ -54,7 +54,11 @@ runs. Phase 1 is the feature; Phase 2 adds the one-tap controls (Hold a week, Un
   "every [N] days" in the editor (not "then every … from then on"); "last applied" uses the full weekday, as the cards;
   the dose pop-up waits while a retinoid's is open (one pop-up at a time), and closing either pop-up with Not yet brings
   the next one waiting straight away; the retinoid buttons are drawn from `RETINOIDS` at start (`initRetinoids`).
-- [ ] Phase 2 — Bosco: Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.701)
+- [x] Phase 2 — Bosco: Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.711: 8.611 came between).
+  Done 2026-10-12. Small calls: Hold shows once the start has come (not before it) and while the step is under 52 weeks;
+  it sits after the progress line, Undo after "last applied" (its date kept, not "today"); Undo puts off the
+  application then due (the earliest), which may be an earlier day's for one applied late; Developer Mode's line ends
+  "· due" when the next one is waiting, and uses the step's words in full ("step 2 of 3 · every other day").
 
 ## Decisions (the architect's, 2026-10-11; the executing model adds its own small ones under Status)
 - **D1 — Where it lives: one section, nothing else on the page changes.** A section "Upcoming <X> Doses" right under

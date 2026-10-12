@@ -1,7 +1,7 @@
 /* Bosco · retinoids-ui.js — the retinoids on the page: the "Upcoming <Retinoid> Doses" section (each retinoid's next
- * applications, where it stands in its build-up), its pop-up's words and buttons (#retinoidOverlay; its rules are
- * retinoids.js'), and start-up info's Retinoids block (the list, Add / Edit / Remove, the editor with its steps and live
- * note). Wired by initRetinoids, from A.init. */
+ * applications, where it stands in its build-up; Hold this step a week and Undo), its pop-up's words and buttons
+ * (#retinoidOverlay; its rules are retinoids.js'), and start-up info's Retinoids block (the list, Add / Edit / Remove,
+ * the editor with its steps and live note). Wired by initRetinoids, from A.init. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -14,8 +14,9 @@
   // ==========================================================================
   // THE UPCOMING SECTION
   // ==========================================================================
-  // Hidden while no retinoid is set up. Each retinoid: its name, its last application and where it stands, then its next
-  // applications (the weekday, the date and usual time, the step); a due one waits to be confirmed.
+  // Hidden while no retinoid is set up. Each retinoid: its name, its last application (Undo while it's today's) and where
+  // it stands (Hold this step a week during a timed step), then its next applications (the weekday, the date and usual
+  // time, the step); a due one waits to be confirmed.
   function renderUpcomingRetinoids() {
     const groups = A.allUpcoming();
     $("upcomingRetinoidsSection").hidden = !groups.length;
@@ -24,8 +25,8 @@
       const last = A.lastApplied(r);
       return `<div class="retinoid-group">
         <div class="summary-line retinoid-head">
-          <span><strong>${esc(regimenTitle(r))}</strong>${last ? `<span class="muted"> · last applied ${day(last)}</span>` : ""}</span>
-          <span class="muted retinoid-progress">${esc(A.progressLine(r))}</span>
+          <span><strong>${esc(regimenTitle(r))}</strong>${last ? `<span class="muted"> · last applied ${day(last)}</span>` : ""}${A.undoable(r) ? `<button type="button" class="secondary small" data-undo="${r.id}">Undo</button>` : ""}</span>
+          <span><span class="muted retinoid-progress">${esc(A.progressLine(r))}</span>${A.holdable(r) ? `<button type="button" class="secondary small" data-hold="${r.id}">Hold this step a week</button>` : ""}</span>
         </div>
         <div class="stat-grid">${list.map(a => `<div class="stat${a.due ? " due" : ""}">
           <div class="val">${fmtWeekday(a.date)}</div><div class="lbl"><span>${fmtDateBrief(a.date)}${r.time ? ` · ${fmtTime(r.time)}` : ""}</span></div>
@@ -199,6 +200,8 @@
       const a = A.allUpcoming().flatMap(g => g.list).find(x => `${x.r.id}:${x.date}` === btn.dataset.apply);
       if (a && a.due) openApplicationModal(a);
     });
+    onButton($("upcomingRetinoidsBody"), "button[data-hold]", btn => A.holdStep(btn.dataset.hold));
+    onButton($("upcomingRetinoidsBody"), "button[data-undo]", btn => A.undoApplication(btn.dataset.undo));
     // Esc and a click beside the pop-up count as "Not yet".
     K.modal.define($("retinoidOverlay"), { dismiss: A.snoozeApplication });
     $("retinoidLogBtn").addEventListener("click", () => A.confirmApplication(false));
