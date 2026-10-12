@@ -17,7 +17,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `render.js` | `renderAll` and each section: history, upcoming doses (then the retinoids': retinoids-ui.js), stats, goals & season projections, SVG chart |
 | `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, the Retinoids block shown with them (retinoids-ui.js), `saveOneTimeInfo` (an open retinoid editor saved first) |
 | `doses.js` | dose schedule and its sites (worked out, never stored: `lastSites`, `nextSiteIn`, `nextSite`), `dueAt`, the confirm / Not yet / postpone pop-up with its site menu (by body part), and `agenda` (the doses, for Momo's board) |
-| `retinoids.js` | the retinoids' data (`cleanRetinoids`, `mergeRetinoids`, `keepRetinoids`, `stampAbove`), their schedule (worked out, never stored: `regimens`, `lastApplied`, `stepAt`, `walk`, `allUpcoming`), their words (`stepWords`, `progressLine`, `stepsNote`, `scheduleWords`), the pop-up's rules (`promptDueApplication`, `confirmApplication`, `postponeApplication`, `snoozeApplication`) and the section's one-tap ones (`holdable` / `holdStep`, `undoable` / `undoApplication`); no drawing |
+| `retinoids.js` | the retinoids' data (`cleanRetinoids`, `mergeRetinoids`, `keepRetinoids`, `stampAbove`), their schedule (worked out, never stored: `regimens`, `lastApplied`, `stepAt`, `walk`, `allUpcoming`), their words (`stepWords`, `progressLine`, `stepsNote`, `scheduleWords`), the pop-up's rules (`promptDueApplication`, `confirmApplication`, `postponeApplication`, `skipTo` / `skipApplication`, `snoozeApplication`) and the section's one-tap ones (`holdable` / `holdStep`, `undoable` / `undoApplication`); no drawing |
 | `retinoids-ui.js` | the Upcoming Retinoid Doses section (with Undo and Hold this step a week), the retinoid pop-up's words and buttons, start-up info's Retinoids block (list, Add / Edit / Remove, the editor with its steps and live note); `initRetinoids` (from `A.init`) |
 | `image.js` | the progress image (PNG): the weigh-ins (a dot each, joined by straight lines) and the goal table |
 | `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose or retinoid), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips; each retinoid's next application, read-only), `bugState` |
@@ -30,9 +30,9 @@ question answered, here or on another device; `dosingAsked`: the version of the 
 answered, and it never goes down); `sites`: the injection sites on, in `SITES` order;
 null until changed in start-up info = `DEFAULT_SITES` (the abdomen's 4 and the thighs' 12); [] = sites off; `skipSites`: the sites the next dose passes over, set in
 Developer Mode, null once a dose is logged) · `unit` "lb"|"kg" ·
-`retinoids` { regimens, log } (`retinoids.js`): a regimen { id, retinoid: a `RETINOIDS` id (one from a newer version kept as it is), pct (the cream's
+`retinoids` { regimens, log } (`retinoids.js`): a regimen { id, retinoid: a `RETINOIDS` id (one from a newer version, or taken off the list (adapalene), kept as it is), pct (the cream's
 strength, a number), where (≤ 24 characters, may be ""), time "HH:MM"|null, start, steps: 1–6 of { every: 1–14 days, weeks: 1–52 }, the last's weeks
-null, next: { after, date }|null (Postpone's day, until one is applied after `after`), at (when added: the order), u, x? (removed) }; a log record
+null, next: { after, date }|null (Postpone's or Skip's day, until one is applied after `after`), at (when added: the order), u, x? (removed) }; a log record
 `{ id: "<regimen id>:<date>", r, date, u, x? (undone) }`, one per retinoid per day ·
 UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `dosingAsking`, `paceAsking`, `vialEditing`, `anchorEditing`, `vialMode`, `doseAsking` (+ `site`, `picked`: the pop-up's site),
 `retinoidEditing` (null, or `{ id: "" for a new one, steps: the rows as edited }`), `applyAsking` (the application the retinoid pop-up is open for).
@@ -109,6 +109,8 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
   a start moved later starts over), each next one the interval of the step the last one's day falls in (so a new step's first comes one old
   interval after the old step's last), or Postpone's day; steps run by calendar weeks from the start, the last open-ended; at most three on or before
   today (older ones count as missed), three in all. Applications are logged only by confirming one in the pop-up (its day, or today for a late one).
+- The pop-up's Postpone moves the application to tomorrow (the ones after follow from there); Skip (the skin not up to it) goes to the next one on
+  the schedule after it, never before today (`skipTo`), so the days stay as they were. Both set `next`; nothing is logged.
 - The retinoids' section is titled by the one retinoid in use ("Upcoming Tazarotene Doses"), or "Retinoid" for more than one; hidden with none,
   and independent of the GLP-1 medication (not `.med`).
 - One pop-up at a time: a due dose's first, then one retinoid's (each retinoid's earliest due one; the next once it closes); never over another pop-up.

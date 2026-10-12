@@ -3,7 +3,7 @@
  * the steps' live note; Edit, Remove with its question); the "Upcoming <X> Doses" section (one retinoid's name, or
  * Retinoid for several), each retinoid's head (last applied, where it stands in its build-up) and its next three
  * applications by step; the pop-up once one is due (Applied, Applied it <day> / today for a late one, Not yet for an hour,
- * Postpone to tomorrow), one at a time; the build-up over time (a new step's first application one old interval after
+ * Postpone to tomorrow, Skip to the next one on the schedule), one at a time; the build-up over time (a new step's first application one old interval after
  * the last), missed ones dropped; the bug report's counts; Export, Import (an older backup keeps yours, a damaged one is
  * cleaned, the backup's records win where both have them) and sync's combine (a marker removes, an older copy's save
  * changes nothing, a newer one's regimen comes in); on a phone. Phase 2: Hold this step a week, Undo, Developer Mode's
@@ -74,6 +74,7 @@ module.exports = [
       eq(await bugLine(tab), "- Retinoids: 0; applications logged: 0; due now: 0", "the bug line with none");
 
       await p.click(`${M} #addRetinoidBtn`);
+      eq(await p.evaluate(m => [...document.querySelectorAll(`${m} #retinoidKind button`)].map(b => b.textContent), M), ["Tretinoin", "Tazarotene", "Trifarotene"], "the retinoids to pick (no Adapalene)");
       ed = await editor(tab);
       eq(ed.editor, { kind: "Tazarotene", strengths: ["0.05%", "0.1%"], strength: "0.05%", where: "", time: "21:00", start: TODAY,
         rows: ["every [3] days for [2] weeks ✕", "every [2] days for [2] weeks ✕", "then every [1] days from then on"],
@@ -94,7 +95,7 @@ module.exports = [
       await until(tab, "21:01");
       let pop = await popup(tab);
       eq(pop, { open: true, title: "Did you apply your Tazarotene?", text: "Tazarotene 0.1% on your face was due Wednesday, Sep 30 at 9:00 PM. It goes in your log once you confirm it.",
-        step: step1, buttons: ["Applied", "Not yet", "Postpone to tomorrow"] }, "the pop-up");
+        step: step1, buttons: ["Applied", "Not yet", "Postpone to tomorrow", "Skip to Saturday"] }, "the pop-up");
       eq((await section(tab)).groups[0][2][0][3], true, "its card due");
       eq(await p.evaluate(() => Kyoshi.apps.bosco.attention()), "a retinoid is waiting to be confirmed", "the switcher's dot");
       await p.click(`${M} #retinoidLogBtn`);
@@ -151,7 +152,7 @@ module.exports = [
       // The next morning: late. Not yet puts it off an hour.
       await travel(tab, 1);
       let pop = await popup(tab);
-      eq([pop.open, pop.buttons], [true, ["Applied it Wednesday", "Applied it today", "Not yet", "Postpone to tomorrow"]], "late");
+      eq([pop.open, pop.buttons], [true, ["Applied it Wednesday", "Applied it today", "Not yet", "Postpone to tomorrow", "Skip to Saturday"]], "late");
       await p.click(`${M} #retinoidSnoozeBtn`);
       eq((await popup(tab)).open, false, "put off");
       await tab.ctx.clock.fastForward(61 * 60000);
@@ -188,6 +189,44 @@ module.exports = [
       await p.click(`${M} #retinoidPostponeBtn`);
       eq([(await popup(tab)).open, cards(await section(tab))], [false, ["Oct 28", "Oct 29", "Oct 30"]], "moved a day");
       eq((await exportBackup(tab)).retinoids.regimens[0].next, { after: "2026-10-26", date: "2026-10-28" }, "next in Export");
+    }
+  },
+  {
+    name: "bosco retinoids: Skip goes to the next one on the schedule (on time, late onto today's, late past a missed one)",
+    async run(t) {
+      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      // Started Sep 18: step 1 (every 3 days) to Oct 1, then every other day; applied every 3 days since, today's due at 9 PM.
+      await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }], retinoids: taz(D(-12), [D(-12), D(-9), D(-6), D(-3)]) }));
+      const log = async () => (await exportBackup(tab)).retinoids.log.length;
+      await until(tab, "21:01");
+      eq((await popup(tab)).buttons, ["Applied", "Not yet", "Postpone to tomorrow", "Skip to Saturday"], "on time: Skip to its next one, 3 days on");
+      await p.click(`${M} #retinoidSkipBtn`);
+      let s = await section(tab);
+      eq([(await popup(tab)).open, s.groups[0][0], cards(s)], [false, "Tazarotene 0.1% · face · last applied Sunday, Sep 27", ["Oct 3", "Oct 5", "Oct 7"]], "skipped: the schedule's days");
+      eq([(await exportBackup(tab)).retinoids.regimens[0].next, await log()], [{ after: D(-3), date: "2026-10-03" }, 4], "next in Export, nothing logged");
+
+      // Monday Oct 5 at 9 PM, Saturday's not applied: skipping it goes to today's, which asks next.
+      await travel(tab, 5);
+      let pop = await popup(tab);
+      eq([pop.text.split(" was due ")[1].split(" at ")[0], pop.buttons], ["Saturday, Oct 3", ["Applied it Saturday", "Applied it today", "Not yet", "Postpone to tomorrow", "Skip to today"]], "late, the next one today");
+      await p.click(`${M} #retinoidSkipBtn`);
+      pop = await popup(tab);
+      eq([pop.open, pop.text.split(" was due ")[1].split(" at ")[0], pop.buttons], [true, "Monday, Oct 5", ["Applied", "Not yet", "Postpone to tomorrow", "Skip to Wednesday"]], "today's asks");
+      await p.click(`${M} #retinoidSnoozeBtn`);
+
+      // Thursday Oct 8, neither applied: skipping Monday's passes Wednesday's too (past), to tomorrow's.
+      await travel(tab, 3);
+      pop = await popup(tab);
+      eq([pop.buttons[0], pop.buttons[4]], ["Applied it Monday", "Skip to tomorrow"], "two late ones");
+      await p.click(`${M} #retinoidSkipBtn`);
+      s = await section(tab);
+      eq([(await popup(tab)).open, cards(s), s.groups[0][2].map(c => c[3]), await log()], [false, ["Oct 9", "Oct 11", "Oct 13"], [false, false, false], 4], "on from tomorrow");
+
+      // Applied as it comes: the skip is behind it.
+      await travel(tab, 1);
+      await p.click(`${M} #retinoidLogBtn`);
+      s = await section(tab);
+      eq([s.groups[0][0], cards(s), await log()], ["Tazarotene 0.1% · face · last applied Friday, Oct 9", ["Oct 11", "Oct 13", "Oct 15"], 5], "applied");
     }
   },
   {

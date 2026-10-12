@@ -28,11 +28,11 @@
     retatrutide: { label: "Retatrutide", example: "4" }
   };
   // Retinoids, by generic name only (no brand names), each with its cream's prescription strengths in %, lowest first.
-  // Ids are what backups store: never change one (trim or add strengths freely: a stored one not listed is kept).
+  // Ids are what backups store: never change one (trim or add strengths freely: a stored one not listed is kept). One
+  // taken off the list (adapalene, 8.811) stays in old data as it is, read by its id ("Adapalene").
   const RETINOIDS = {
     tretinoin: { label: "Tretinoin", strengths: [0.025, 0.05, 0.1] },
     tazarotene: { label: "Tazarotene", strengths: [0.05, 0.1] },
-    adapalene: { label: "Adapalene", strengths: [0.1] },
     trifarotene: { label: "Trifarotene", strengths: [0.005] }
   };
   // Injection sites, part by part in the order body parts take turns (PARTS), each part's sites in the

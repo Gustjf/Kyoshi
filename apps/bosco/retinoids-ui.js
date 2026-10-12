@@ -1,6 +1,6 @@
 /* Bosco · retinoids-ui.js — the retinoids on the page: the "Upcoming <Retinoid> Doses" section (each retinoid's next
  * applications, where it stands in its build-up; Hold this step a week and Undo), its pop-up's words and buttons
- * (#retinoidOverlay; its rules are retinoids.js'), and start-up info's Retinoids block (the list, Add / Edit / Remove,
+ * (#retinoidOverlay: Applied, Not yet, Postpone, Skip; its rules are retinoids.js'), and start-up info's Retinoids block (the list, Add / Edit / Remove,
  * the editor with its steps and live note). Wired by initRetinoids, from A.init. */
 (function (K, A) {
   "use strict";
@@ -52,6 +52,9 @@
     // A late one is logged on the day it was applied: its own day, named (by weekday within the week), or today.
     $("retinoidLogBtn").textContent = late > 0 ? `Applied it ${late < 7 ? fmtWeekday(a.date) : fmtDateBrief(a.date)}` : "Applied";
     $("retinoidTodayBtn").hidden = !(late > 0);
+    // Skip names the day it goes to: today, tomorrow, a weekday within the week, else the date.
+    const to = A.skipTo(a), ahead = daysBetween(todayStr(), to);
+    $("retinoidSkipBtn").textContent = `Skip to ${ahead === 0 ? "today" : ahead === 1 ? "tomorrow" : ahead < 7 ? fmtWeekday(to) : fmtDateBrief(to)}`;
     K.modal.open($("retinoidOverlay"));
     K.refreshSwitcher(); // a dot on Bosco's icon while you're in another app
   }
@@ -208,6 +211,7 @@
     $("retinoidTodayBtn").addEventListener("click", () => A.confirmApplication(true));
     $("retinoidSnoozeBtn").addEventListener("click", A.snoozeApplication);
     $("retinoidPostponeBtn").addEventListener("click", A.postponeApplication);
+    $("retinoidSkipBtn").addEventListener("click", A.skipApplication);
     // Start-up info's block.
     $("retinoidKind").innerHTML = Object.entries(RETINOIDS).map(([id, x]) => `<button type="button" class="mode-btn" data-value="${id}">${x.label}</button>`).join("");
     onButton($("retinoidKind"), "button[data-value]", btn => setKind(btn.dataset.value, parseFloat($("retinoidStrength").value)));

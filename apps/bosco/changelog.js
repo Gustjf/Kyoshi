@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.811", date: "2026-10-12", changes: [
+      "A retinoid's pop-up can skip an application when your skin isn't up to it: Skip to <day> goes straight to the next one on the schedule, its days unchanged.",
+      "Adapalene is no longer on the list of retinoids (one already set up stays as it is).",
+    ] },
     { version: "8.711", date: "2026-10-12", changes: [
       "Hold this step a week keeps you on the build-up step you're on for one more week; Undo takes back an application confirmed today by mistake.",
       "Developer Mode lists each retinoid's next application and its step.",

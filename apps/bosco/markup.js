@@ -304,7 +304,8 @@ Kyoshi.apps.bosco.markup = `
     </div>
   </div>
 
-  <!-- Asks about a retinoid's application once it's due; logged only once confirmed, on its day or (a late one) today. -->
+  <!-- Asks about a retinoid's application once it's due; logged only once confirmed, on its day or (a late one) today.
+       Skip (the skin not up to it) goes to the next one on the schedule. -->
   <div class="overlay" id="retinoidOverlay">
     <div class="modal" role="dialog" aria-labelledby="retinoidModalTitle">
       <h3 id="retinoidModalTitle">Did you apply your retinoid?</h3>
@@ -318,6 +319,7 @@ Kyoshi.apps.bosco.markup = `
         <button id="retinoidTodayBtn" hidden>Applied it today</button>
         <button class="secondary" id="retinoidSnoozeBtn">Not yet</button>
         <button class="secondary" id="retinoidPostponeBtn">Postpone to tomorrow</button>
+        <button class="secondary" id="retinoidSkipBtn">Skip</button>
       </div>
     </div>
   </div>

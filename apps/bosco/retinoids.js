@@ -6,8 +6,8 @@
  * r, date, u, x? }. Nothing is deleted: a removed retinoid or an undone application is a marker (x: true, a later u), and
  * both lists merge record by record by the later change. An application comes due on its day at the usual time; the
  * interval after it is that of the step its day falls in. Like a dose, one is logged only once confirmed (on its day, or
- * today for a late one), "Not yet" asks again in an hour (this device), Postpone moves it to tomorrow, and one not
- * confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. On the section, one tap
+ * today for a late one), "Not yet" asks again in an hour (this device), Postpone moves it to tomorrow, Skip passes it
+ * over to the next one on the schedule (skin not up to it), and one not confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. On the section, one tap
  * each: Hold this step a week (a week more on the build-up step you're on) and Undo (today's application taken back, a
  * marker). Never sent to Momo. */
 (function (K, A) {
@@ -197,6 +197,25 @@
     A.renderAll();
   }
 
+  // The day Skip goes to: the next one on the schedule after the application's (each its own day's step's interval on),
+  // never before today (any in between are past: missed with it).
+  function skipTo(a) {
+    const today = todayStr();
+    let date = a.date;
+    do date = addDays(date, stepAt(a.r, date).every); while (date < today);
+    return date;
+  }
+  // Skips the application (the skin needs a rest): the next one is the schedule's next, its days kept as they were; nothing
+  // is logged.
+  function skipApplication() {
+    if (!S.applyAsking || !stillAsked()) return;
+    const { r: { id }, after } = S.applyAsking, next = { after, date: skipTo(S.applyAsking) };
+    keepRetinoids({ ...S.retinoids, regimens: S.retinoids.regimens.map(r => (r.id === id ? { ...r, next, u: stampAbove(r) } : r)) });
+    A.closeApplicationModal();
+    A.save();
+    A.renderAll();
+  }
+
   // An application put off for an hour, on this device.
   function putOff(a) {
     const id = snoozeKey(a), t = now();
@@ -248,7 +267,8 @@
 
   Object.assign(A, {
     cleanRetinoids, mergeRetinoids, keepRetinoids, stampAbove, regimens, lastApplied, stepAt, walk, allUpcoming, stepWords, progressLine,
-    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, snoozeApplication, holdable, holdStep,
+    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, skipTo, skipApplication,
+    snoozeApplication, holdable, holdStep,
     undoable, undoApplication
   });
 })(Kyoshi, Kyoshi.apps.bosco);
