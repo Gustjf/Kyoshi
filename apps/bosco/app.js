@@ -10,7 +10,7 @@
     id: "bosco",
     name: "Bosco",
     title: "Bosco — Weight Tracker & Projections",
-    subtitle: "A weight tracker with projections. Runs 100% locally, private & offline.",
+    subtitle: "A health tracker",
     width: 780,
     // Its checkup (core/meetings.js): when you last looked it over in depth; no schedule, so no reminders.
     meetings: [{ id: "checkup", title: "Checkup", every: "whenever", minutes: 30 }],

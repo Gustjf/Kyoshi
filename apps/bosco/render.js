@@ -15,7 +15,7 @@
       $("upcomingDosesTitle").textContent = `Upcoming ${med.label} Doses`;
       $("doseColumnHead").textContent = `${med.label} Dose`;
     }
-    A.setSubtitle(`${S.profile.name ? `${S.profile.name}'s weight tracker with projections.` : "A weight tracker with projections."} Runs 100% locally, private & offline.`);
+    A.setSubtitle(S.profile.name ? `${S.profile.name}'s health tracker` : "A health tracker");
     $("weightInputLabel").textContent = `Weight, ${S.unit}`;
     $("weightInput").placeholder = S.unit === "kg" ? "e.g. 84.1" : "e.g. 185.4";
     $("goalInput").placeholder = S.unit === "kg" ? "e.g. 68" : "e.g. 150";

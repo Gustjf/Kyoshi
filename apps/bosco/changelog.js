@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.611", date: "2026-10-12", changes: [
+      "The subtitle now reads \"<your name>'s health tracker\".",
+    ] },
     { version: "8.601", date: "2026-10-12", changes: [
       "Retinoids in start-up info (Developer Mode → Edit start-up info): each one you use by its generic name, its cream's strength from the prescription list, where it goes (face, body), its usual time (9 PM to start), its start date, and its build-up as steps you set (every N days for W weeks, then from then on); a new one starts twice a week, then every other day, then every day, two weeks each.",
       "\"Upcoming Tazarotene Doses\" (or Tretinoin, or Retinoid when you use more than one) sits under your GLP-1 doses: each retinoid's next three applications with their step, when you last applied it and where you are in the build-up.",
