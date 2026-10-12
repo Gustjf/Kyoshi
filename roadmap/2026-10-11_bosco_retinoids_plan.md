@@ -281,7 +281,7 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
   text, buttons shown; `editor(tab)`; `saveStartup`):
   1. **Set up, due, logged, two retinoids, the title, Export** (DESKTOP, clock at `TODAY` 07:00): a fresh profile's
      start-up info shows the block ("No retinoid yet."); Add retinoid → the editor prefilled (Tazarotene, 21:00,
-     today, the three default rows, the note's dates: Sep 30 – Oct 13, Oct 14 – Oct 27, from Oct 28); pick "0.1%
+     today, the three default rows, the note's dates: Sep 30 – Oct 13, Oct 14 – Oct 27, from Oct 28); pick "0.1%",
      type "face"; Save retinoid → the list line; the section "Upcoming Tazarotene Doses", one group: head
      "Tazarotene 0.1% · face", progress "Step 1 of 3 · every 3 days · week 1 of 2 · every other day from
      Wednesday, Oct 14", cards Wednesday Sep 30 · 9:00 PM, Saturday Oct 3, Tuesday Oct 6, each "Step 1 of 3 · every 3
