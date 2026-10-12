@@ -14,7 +14,7 @@ progressing, with parameters for me to change in the set-up window.»
 
 **The owner runs a phase by saying:** `Execute phase N of roadmap/2026-10-11_bosco_retinoids_plan.md`. The decisions are
 made (D1–D12 below, the architect's; each has one line to change if wrong), so nothing is left to decide before a phase
-runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap controls, a few days later.
+runs. Phase 1 is the feature; Phase 2 adds the one-tap controls (Hold a week, Undo), a few days later.
 
 ## How to use this file (you, the executing model — Claude Opus, high reasoning effort)
 1. Read the root `CLAUDE.md` (automatic), then **only** this file's top sections (down to the first phase) and **your
@@ -48,8 +48,7 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
 ## Status (tick each phase off here, with what was decided)
 - [ ] Phase 1 — Bosco: retinoids set up, their build-up schedule, the Upcoming section, the pop-up, storage, backups and
   sync (Bosco +1 → 8.601)
-- [ ] Phase 2 — Bosco: the applications on Momo's board; Hold this step a week; Undo; Developer Mode's lines (Bosco
-  +0.100 → 8.701)
+- [ ] Phase 2 — Bosco: Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.701)
 
 ## Decisions (the architect's, 2026-10-11; the executing model adds its own small ones under Status)
 - **D1 — Where it lives: one section, nothing else on the page changes.** A section "Upcoming <X> Doses" right under
@@ -92,9 +91,9 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
   key (an older copy) leaves yours and isn't saved back for (as `asked` is handled); Import brings the backup's in over
   what's here (the backup wins where both have a record: its records are stamped now) and keeps what the backup doesn't
   know. `DATA_SCHEMA_VERSION` stays 4 (nothing migrates). `hasData` counts a retinoid too.
-- **D10 — Momo (Phase 2):** each application is an event on Momo's board, as a dose is: 5 minutes at its usual time,
-  "Tazarotene · face", note "0.1%", ✓ once logged. That is the reminder on the phone (Bosco's pop-up only shows
-  while Bosco is open). *If the owner would rather keep Momo clear of them, Phase 2's 2.1 is skipped: say so.*
+- **D10 — Nothing goes to Momo** (the owner, 2026-10-12): no event on the board, no need in the inbox, in either
+  phase. `A.agenda` stays the doses' alone. The reminder is Bosco's own: the amber card, the pop-up and the switcher dot.
+  `apps/bosco/CLAUDE.md` says so under *Shared with other apps*, so no later change adds them.
 - **D11 — Not in this plan:** a History table of applications; irritation notes; short-contact mode (wash-off); fixed
   weeknights ("Mon & Thu": the ladder runs by days between applications, and the cards show the weekdays); pausing a
   retinoid (remove it, or postpone); notifications (Kyoshi has none). Any of these is a later phase if asked.
@@ -120,14 +119,14 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
   b.regimens), log: mergeById(a.log, b.log) }`, sorted as above. The same result on every device.
 - Derived, never stored: `A.regimens()` (the live ones: no `x`, by `at`); `lastApplied(r)` (the latest log date on or
   before today without `x`, "" if none); `stepAt(r, date)` → `{ i, every, weeks, from, to }` (step `i`'s window from
-  `start`: the weeks before it × 7 days; the last open-ended; a day before `start` is in step 0); `walk(r, { until })`
-  (the schedule, below).
+  `start`: the weeks before it × 7 days; the last open-ended; a day before `start` is in step 0); `walk(r)` (the
+  schedule, below).
 
 **The schedule (`walk`, the copy of `doseSchedule`):** `from` = `next.date` while `next` is valid (`lastApplied <=
 next.after`), else `lastApplied + stepAt(r, lastApplied).every`, else `start` (nothing applied yet: the first
 application is on the start day). Then dates one after another, each the previous + `stepAt(r, previous).every`. Keep at
 most `MAX_UPCOMING_APPLICATIONS` (3) dates on or before today (older ones are missed, dropped from the front, exactly
-Tirzepatide's three-intervals rule) and fill up to 3 in all; with `until`, every date up to it instead (Momo). Each date
+Tirzepatide's three-intervals rule) and fill up to 3 in all. Each date
 → `{ r, date, due: now() >= dueAt(date, r.time), after: lastApplied, step: stepAt(r, date) }`. Cap the loop at 2,000
 days from `from` (a start years back with nothing logged).
 
@@ -271,7 +270,8 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
 
 ### Docs & tests
 - `apps/bosco/CLAUDE.md`: the two files in the table; State (`retinoids`, `retinoidEditing`, `applyAsking`); Storage
-  (the `retinoids` key and backup key, D9's merge and import rules, `retinoidSnooze` this device's); Invariants (the
+  (the `retinoids` key and backup key, D9's merge and import rules, `retinoidSnooze` this device's); Shared with other
+  apps (the retinoids never go to Momo: the owner's choice, D10); Invariants (the
   schedule derived, never stored; steps by calendar weeks from the start, the interval of the step the last application
   falls in; the title rule; one pop-up at a time, the dose's first; a removed retinoid and an undone application are
   markers). Root `CLAUDE.md`: the map's `bosco/` line adds "and retinoid build-up reminders".
@@ -322,25 +322,15 @@ shows the next cards and saves nothing; two retinoids due at once open one pop-u
 
 ---
 
-## Phase 2 — Bosco: the applications on Momo's board; Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.701)
-Bosco only (Momo reads it through `K.agenda`, nothing to change there). Run a few days after Phase 1.
+## Phase 2 — Bosco: Hold this step a week; Undo; Developer Mode's lines (Bosco +0.100 → 8.701)
+Bosco only; nothing for Momo (D10). Run a few days after Phase 1.
 
-**Read first:** `apps/bosco/CLAUDE.md` (as Phase 1 left it); `doses.js` `agenda` (lines 85–106 as of `ed4e6d1`) and its
-`Object.assign`; `retinoids.js` (`walk` with `until`, `confirmApplication`, `lastApplied`); `retinoids-ui.js`
-(`renderUpcomingRetinoids`'s heading, `initRetinoids`); `events.js` `renderDev` (lines 181–202); `core/agenda.js`
-lines 1–12 (the contract); `tests/bosco-doses.test.js` line 85 (Momo's notes read through `Kyoshi.agenda`).
+**Read first:** `apps/bosco/CLAUDE.md` (as Phase 1 left it); `retinoids.js` (`walk`, `confirmApplication`,
+`lastApplied`, `snoozeApplication`); `retinoids-ui.js` (`renderUpcomingRetinoids`'s heading, `initRetinoids`);
+`events.js` `renderDev` (lines 181–202 as of `ed4e6d1`); `tests/bosco-retinoids.test.js` (Phase 1's helpers and
+fixtures).
 
-### 2.1 Momo's board (D10)
-- `doses.js`: rename its `agenda` to `doseAgenda` (export it; nothing else changes). `retinoids.js`:
-  `applicationAgenda(from, to)` → the log's records in range (`done: true`, each at its regimen's time) then each live
-  regimen's `walk(r, { until: to })` dates in range not already listed, each `{ id: "retinoid:<r>:<date>", title:
-  regimenName + (where ? " · " + where : "") cut to 60, date, time: r.time, minutes: 5, note: strengthLabel, done }`;
-  then `A.agenda = (from, to) => A.doseAgenda(from, to).concat(applicationAgenda(from, to))` (`index.html`'s order
-  loads `retinoids.js` after `doses.js`). Ids stay the same for the same day, so a move on Momo's board sticks.
-- Changelog: "Each retinoid application is on Momo's board (and Today) at its usual time, as the doses are, with a ✓
-  once you've confirmed it."
-
-### 2.2 Hold this step a week; Undo (one tap each, on the section)
+### 2.1 Hold this step a week; Undo (one tap each, on the section)
 - The heading's right side gains, during a timed step (not the last), `<button class="secondary small"
   data-hold="<id>">Hold this step a week</button>`: `steps[i].weeks += 1` (up to 52), `u` now, `A.save()`, redraw; the
   progress line then shows the later date. A note isn't needed: the line says what changed.
@@ -350,22 +340,18 @@ lines 1–12 (the contract); `tests/bosco-doses.test.js` line 85 (Momo's notes r
 - Changelog: "Hold this step a week keeps you on the build-up step you're on for one more week; Undo takes back an
   application confirmed today by mistake."
 
-### 2.3 Developer Mode
+### 2.2 Developer Mode
 - `renderDev`: under the next dose's block, a `.dev-block` listing each live regimen: "Next <Retinoid> (<where>):
   <weekday, date> · step 1 of 3" (read-only; from `walk`). Nothing to tap.
 
 ### Docs & tests
-- `apps/bosco/CLAUDE.md`: Shared with other apps (the applications' events, their ids and words; `A.agenda` joins the
-  doses' and theirs); Invariants (Hold adds a week to the current step; Undo is a marker). Root `CLAUDE.md` map: the
-  `bosco/` line mentions Momo for both doses and applications only if it names Momo for doses now (it doesn't: leave it).
-- `tests/bosco-retinoids.test.js`: a fourth test — Momo's events for the regimen of test 2's fixture
-  (`Kyoshi.agenda(D(-12), D(14))` filtered to ids starting `retinoid:`: the four logged ones done, then the scheduled,
-  titles "Tazarotene · face", notes "0.1%", 5 minutes, time "21:00"); Hold this step a week moves "every other
-  day from" seven days on and Export shows `weeks: 3`; Undo on an application confirmed today: the head loses "last
-  applied", the card is due again without the pop-up (snoozed), Export shows the record with `x: true`; the other
-  device's combine keeps the undo over its own copy of the record (an older `u`). Momo's board itself: open Momo on the
-  same profile and check the event's row text on the day (see `tests/momo.js` for the board's helpers), one check.
+- `apps/bosco/CLAUDE.md`: Invariants (Hold adds a week to the current step; Undo is a marker). Root `CLAUDE.md`: nothing.
+- `tests/bosco-retinoids.test.js`: a fourth test, on test 2's fixture — Hold this step a week moves "every other day
+  from" seven days on and Export shows `weeks: 3`; Hold again, then the button gone once the last step is reached (time
+  travel); Undo on an application confirmed today: the head loses "last applied", the card is due again without the
+  pop-up (snoozed), Export shows the record with `x: true`; the other device's combine keeps the undo over its own copy
+  of the record (an older `u`); `Kyoshi.agenda(D(-12), D(14))` has no id starting `retinoid:` (D10).
 
-**Checks (by hand):** `K.agenda` lists no duplicate ids (a logged day also in the walk); Hold hidden on the last step
-and on a steady schedule; Undo hidden unless the latest application is today; the dev block holds no dates in bug
-reports (bugState stays counts).
+**Checks (by hand):** Hold hidden on the last step and on a steady schedule; Undo hidden unless the latest application
+is today; the dev block holds no dates in bug reports (bugState stays counts); Momo's board and Today show nothing of
+the retinoids.
