@@ -57,14 +57,13 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
   no new start-up question. The title's X: the one retinoid in use ("Upcoming Tazarotene Doses"); more than one distinct
   retinoid → "Upcoming Retinoid Doses". Independent of the GLP-1 medication (works with "None" too: not inside `.med`).
 - **D2 — Each retinoid you use is one "retinoid" in Bosco (a regimen in the code):** the retinoid (generic name), its
-  strength and form, where it goes (a short word: face, body), its usual time, its start date, and its schedule. Up to 4.
+  strength, where it goes (a short word: face, body), its usual time, its start date, and its schedule. Up to 4.
   Taz on the face and Tret on the body are two; the same retinoid on two areas would be two as well.
-- **D3 — Generic names and the prescription strengths, as a pick list.** Tretinoin, tazarotene, adapalene, trifarotene
-  (no brand names anywhere). Each strength is a percentage with its form, the US prescription list (trim or add in
-  `RETINOIDS`, `app.js`): tretinoin 0.01% gel · 0.025% cream · 0.025% gel · 0.04% microsphere gel · 0.05% cream ·
-  0.05% gel · 0.05% lotion · 0.06% microsphere gel · 0.08% microsphere gel · 0.1% cream · 0.1% microsphere gel;
-  tazarotene 0.045% lotion · 0.05% cream · 0.05% gel · 0.1% cream · 0.1% foam · 0.1% gel; adapalene 0.1% cream · 0.1%
-  gel · 0.1% lotion · 0.3% gel; trifarotene 0.005% cream. Stored as a number (`pct`) and a word (`form`), never the label.
+- **D3 — Generic names and the cream strengths, as a pick list.** Tretinoin, tazarotene, adapalene, trifarotene (no
+  brand names anywhere). The owner uses creams only (2026-10-12), so the list is each cream's prescription strengths and
+  nothing says "cream" on the page: tretinoin 0.025% · 0.05% · 0.1%; tazarotene 0.05% · 0.1%; adapalene 0.1%;
+  trifarotene 0.005% (trim or add in `RETINOIDS`, `app.js`). Stored as a number (`pct`), never the label. Should a gel
+  or lotion ever come, a `form` field is additive.
 - **D4 — The schedule is a ladder of steps, each "every N days for W weeks", the last "from then on".** One step is a
   steady schedule (Tret on the body: "every other day", or "every day"). The **build-up** (the acclimatization program)
   is several. Steps run by calendar weeks from the start date, so what's coming is plain: the editor lists each step with
@@ -94,7 +93,7 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
   what's here (the backup wins where both have a record: its records are stamped now) and keeps what the backup doesn't
   know. `DATA_SCHEMA_VERSION` stays 4 (nothing migrates). `hasData` counts a retinoid too.
 - **D10 — Momo (Phase 2):** each application is an event on Momo's board, as a dose is: 5 minutes at its usual time,
-  "Tazarotene · face", note "0.1% cream", ✓ once logged. That is the reminder on the phone (Bosco's pop-up only shows
+  "Tazarotene · face", note "0.1%", ✓ once logged. That is the reminder on the phone (Bosco's pop-up only shows
   while Bosco is open). *If the owner would rather keep Momo clear of them, Phase 2's 2.1 is skipped: say so.*
 - **D11 — Not in this plan:** a History table of applications; irritation notes; short-contact mode (wash-off); fixed
   weeknights ("Mon & Thu": the ladder runs by days between applications, and the cards show the weekdays); pausing a
@@ -104,9 +103,9 @@ runs. Phase 1 is the feature; Phase 2 adds Momo's reminders and the one-tap cont
 
 ## The shape of the data (both phases)
 `A.S.retinoids = { regimens: [...], log: [...] }`, store key `retinoids`, backup key `retinoids` (the same object).
-- A regimen: `{ id, retinoid, pct, form, where, time, start, steps, next, at, u, x? }` — `id`: `K.util.newId()`;
+- A regimen: `{ id, retinoid, pct, where, time, start, steps, next, at, u, x? }` — `id`: `K.util.newId()`;
   `retinoid`: a key of `RETINOIDS` ("tazarotene"; an unknown plain id from a newer version is kept and shown as it is);
-  `pct`: a number (0.1); `form`: a word ("cream"; "microsphere gel" is one); `where`: text up to 24 characters, may be
+  `pct`: a number (0.1: the cream's strength, any positive number up to 5 from a file); `where`: text up to 24 characters, may be
   ""; `time`: "HH:MM" or null; `start`: "YYYY-MM-DD" (the first application's day; any day, past days included);
   `steps`: 1–6 of `{ every: 1–14 whole, weeks: 1–52 whole | null }`, only the last may be null and it always is (the
   cleaner forces it); `next`: `{ after: "" | date, date }` or null (postponed: the next application's day, counted from
@@ -149,15 +148,16 @@ start-up section's blocks and buttons), 125–131 (the doses section), 232–256
 1–60 (the helpers) and the first test; `tests/lib.js` (whole); `tests/generate.js` lines 309–322 (`bosco()`).
 
 ### 1.1 Constants, state and helpers (`app.js`, ~35 lines)
-- `RETINOIDS` next to `MEDICATIONS`: `{ tretinoin: { label: "Tretinoin", strengths: [[0.01, "gel"], [0.025, "cream"],
-  …] }, tazarotene: …, adapalene: …, trifarotene: … }`, D3's list in full, each retinoid's by strength then form. A
-  comment: generic names only; ids are stored, never change one.
+- `RETINOIDS` next to `MEDICATIONS`: `{ tretinoin: { label: "Tretinoin", strengths: [0.025, 0.05, 0.1] }, tazarotene:
+  { label: "Tazarotene", strengths: [0.05, 0.1] }, adapalene: { …, strengths: [0.1] }, trifarotene: { …, strengths:
+  [0.005] } }` (D3: the creams' strengths, lowest first). A comment: generic names and cream strengths only; ids are
+  stored, never change one.
 - On `A`: `MAX_REGIMENS: 4`, `MAX_RETINOID_STEPS: 6`, `MAX_UPCOMING_APPLICATIONS: 3`, `DEFAULT_RETINOID_TIME: "21:00"`,
   `DEFAULT_STEPS: [{ every: 3, weeks: 2 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }]` (D5), `RETINOIDS`.
 - State: `retinoids: { regimens: [], log: [] }`, `retinoidEditing: null` (null, or `{ id }` with `id` "" for a new one,
   plus `steps`: the rows as edited), `applyAsking: null` (the scheduled application the pop-up is open for).
-- Helpers: `retinoidLabel(id)` (the label, or the id with its first letter up); `strengthLabel(r)` → "0.1% cream"
-  (`fmtNum(pct, 3)`); `regimenName(r)` → "Tazarotene 0.1% cream"; `regimenTitle(r)` → that plus " · face" when `where`
+- Helpers: `retinoidLabel(id)` (the label, or the id with its first letter up); `strengthLabel(r)` → "0.1%"
+  (`fmtNum(pct, 3)`); `regimenName(r)` → "Tazarotene 0.1%"; `regimenTitle(r)` → that plus " · face" when `where`
   is set (escaped with `K.util.esc` wherever it's put in HTML); `fmtEvery(n)` → "every day" / "every other day" / "every
   3 days"; `retinoidsTitle(list)` → the one distinct retinoid's label, else "Retinoid".
 
@@ -191,7 +191,8 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
   muted while none, else nothing; the button `#addRetinoidBtn` "Add retinoid", hidden at `MAX_REGIMENS`), and the editor
   `<div class="vial-card" id="retinoidEditor" hidden>`: the retinoid as a `.mode-toggle.many` of four buttons
   (`#retinoidKind`, `data-value`), a `.dose-fields` row: Strength (`<select id="retinoidStrength">`, the retinoid's
-  list as "0.1% cream", value `"0.1|cream"`), Where (`<input type="text" id="retinoidWhere" maxlength="24"
+  list as "0.1%", value the number; a stored strength not on the list is added as an option so an edit keeps it), Where
+  (`<input type="text" id="retinoidWhere" maxlength="24"
   placeholder="e.g. face">`), Usual time (`<input type="time" id="retinoidTime">`); a second row: Start date (`<input
   type="date" id="retinoidStart">`) with the note "The first application is on this day; a past day is fine if you're
   already on it."; then `<div class="subhead sites-head">Schedule</div>`, the steps `#retinoidSteps` (a `.step-row` per
@@ -260,8 +261,8 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
   nor saved back for, by them alone — fold it into the existing expression), `kept` adds `retinoids: next.retinoids ||
   S.retinoids`; `hasData` adds `|| S.retinoids.regimens.length > 0`. `data.js` ends near 406 lines: fine (the rule is
   approximate; don't refactor to make room).
-- Changelog (8.601, in the owner's words, five lines): the retinoids in start-up info (generic name, strength and form
-  from the prescription list, where it goes, the usual time, the start date, the build-up as steps you set: every N
+- Changelog (8.601, in the owner's words, five lines): the retinoids in start-up info (generic name, the cream's
+  strength from its prescription list, where it goes, the usual time, the start date, the build-up as steps you set: every N
   days for W weeks, then from then on; the default twice a week, every other day, then every day, two weeks each);
   "Upcoming Tazarotene Doses" (or Tretinoin, or Retinoid for both) under the Tirzepatide doses, each next application
   with its step and where you are in the build-up; the pop-up when one is due, Applied / Not yet / Postpone to tomorrow,
@@ -281,14 +282,14 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
   1. **Set up, due, logged, two retinoids, the title, Export** (DESKTOP, clock at `TODAY` 07:00): a fresh profile's
      start-up info shows the block ("No retinoid yet."); Add retinoid → the editor prefilled (Tazarotene, 21:00,
      today, the three default rows, the note's dates: Sep 30 – Oct 13, Oct 14 – Oct 27, from Oct 28); pick "0.1%
-     cream", type "face"; Save retinoid → the list line; the section "Upcoming Tazarotene Doses", one group: head
-     "Tazarotene 0.1% cream · face", progress "Step 1 of 3 · every 3 days · week 1 of 2 · every other day from
+     type "face"; Save retinoid → the list line; the section "Upcoming Tazarotene Doses", one group: head
+     "Tazarotene 0.1% · face", progress "Step 1 of 3 · every 3 days · week 1 of 2 · every other day from
      Wednesday, Oct 14", cards Wednesday Sep 30 · 9:00 PM, Saturday Oct 3, Tuesday Oct 6, each "Step 1 of 3 · every 3
      days", none due; `fastForward` to 21:01 → the first due, the pop-up ("Did you apply your Tazarotene?", "…on your
      face was due Wednesday, Sep 30 at 9:00 PM…"); Applied → closed, head says "last applied Wednesday, Sep 30"
      (brief dates as the cards: use `fmtDateBrief`), cards Oct 3, 6, 9; bug line "- Retinoids: 1 (steps 3);
      applications logged: 1; due now: 0". Then Add retinoid again (the section is still open: the name isn't
-     answered yet): Tretinoin "0.05% cream", "body",
+     answered yet): Tretinoin "0.05%", "body",
      two ✕ → one row "then every [2] days from then on" (note "Every other day from Sep 30"), Save → the title
      "Upcoming Retinoid Doses", two groups, Tretinoin's cards Sep 30, Oct 2, Oct 4 "Every other day". Remove
      Tazarotene (the confirm's words checked with `lastDialog`) → "Upcoming Tretinoin Doses". Export: `retinoids.regimens`
@@ -307,7 +308,7 @@ Both new files go in `index.html` after `doses.js` and before `image.js`: `retin
      `document.documentElement.scrollWidth <= 390` and the section's text has the group; `gen.bosco()` (no key) imported
      over a set-up retinoid keeps it; a damaged file (a step with `every: 0`, weeks "two", a last step with weeks, an
      unknown retinoid "newstuff" with `pct` 0.2, a log record with a bad date, a regimen without `at`) → the bad step
-     dropped, the last step's weeks null, "Newstuff 0.2% cream" shown as it is, the bad record gone; Import of a backup
+     dropped, the last step's weeks null, "Newstuff 0.2%" shown as it is, the bad record gone; Import of a backup
      holding the same regimen with other steps replaces them (stamped now) and keeps a second regimen the backup
      lacks; `A.data.combine` as the doses test does it: another device's save with this regimen removed (`x: true`,
      a later `u`) while this one logged today → the regimen gone from the section, the record kept in Export; an older
@@ -359,7 +360,7 @@ lines 1–12 (the contract); `tests/bosco-doses.test.js` line 85 (Momo's notes r
   `bosco/` line mentions Momo for both doses and applications only if it names Momo for doses now (it doesn't: leave it).
 - `tests/bosco-retinoids.test.js`: a fourth test — Momo's events for the regimen of test 2's fixture
   (`Kyoshi.agenda(D(-12), D(14))` filtered to ids starting `retinoid:`: the four logged ones done, then the scheduled,
-  titles "Tazarotene · face", notes "0.1% cream", 5 minutes, time "21:00"); Hold this step a week moves "every other
+  titles "Tazarotene · face", notes "0.1%", 5 minutes, time "21:00"); Hold this step a week moves "every other
   day from" seven days on and Export shows `weeks: 3`; Undo on an application confirmed today: the head loses "last
   applied", the card is due again without the pop-up (snoozed), Export shows the record with `x: true`; the other
   device's combine keeps the undo over its own copy of the record (an older `u`). Momo's board itself: open Momo on the
