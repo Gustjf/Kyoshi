@@ -4,7 +4,7 @@
  * File map and data model: apps/bosco/CLAUDE.md. */
 (function (K) {
   "use strict";
-  const { isNum, fmtNum, fmtDate, fmtShort, todayStr, addDays, extent } = K.util;
+  const { isNum, isPos, fmtNum, fmtDate, fmtShort, todayStr, addDays, extent } = K.util;
 
   const A = K.register({
     id: "bosco",
@@ -162,6 +162,10 @@
     if (!isNum(v) || from === to) return v;
     return Math.round((to === "kg" ? v / A.LB_PER_KG : v * A.LB_PER_KG) * 10) / 10;
   }
+  // A weigh-in (weight, in unit) as it was typed: the one given ({ weight, unit }) if it still shows as that weight
+  // (an older copy that changed the weight drops it), else as it is now. Shown from it in either unit, it never drifts.
+  const typedAs = (t, weight, unit) => (t && isPos(t.weight) && (t.unit === "lb" || t.unit === "kg") && convertWeight(t.weight, t.unit, unit) === weight
+    ? { weight: t.weight, unit: t.unit } : { weight, unit });
   // Each goal (in unit) as it was typed, from the list given ([{ weight, unit }], the first that shows as it), or
   // as it is now: a goal is always shown from what was typed, so 150 lb stays 150 lb after kg and back (never 149.9).
   const goalsAsEntered = (goals, unit, entered) => goals.map(g => entered.find(o => convertWeight(o.weight, o.unit, unit) === g) || { weight: g, unit });
@@ -224,7 +228,7 @@
   const retinoidsTitle = list => { const ids = [...new Set(list.map(r => r.retinoid))]; return ids.length === 1 ? retinoidLabel(ids[0]) : "Retinoid"; };
 
   Object.assign(A, {
-    hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight, goalsAsEntered,
+    hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight, typedAs, goalsAsEntered,
     currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
     isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber,
     retinoidLabel, strengthLabel, regimenName, regimenTitle, fmtEvery, retinoidsTitle

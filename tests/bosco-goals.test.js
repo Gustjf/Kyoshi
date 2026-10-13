@@ -3,7 +3,8 @@
  * (the chart then drops its line); the ETAs and the season projections start from the latest average, while the chart's
  * dots stay the weigh-ins; deleting a weigh-in, a day with a dose or a goal asks first, and No keeps it. The progress
  * image (Phase 3 of 2026-10-08_feedback_batch_plan.md) joins the weigh-ins with straight lines, a dot at each. A goal keeps
- * the number typed through a change of units and back (8.812), and History's last page keeps seven rows. */
+ * the number typed through a change of units and back (8.812), as does a weigh-in (8.813), and History's last page keeps
+ * seven rows. */
 "use strict";
 const { TODAY, DESKTOP, eq, has, open, importBackup, exportBackup, lastDialog, addDays } = require("./lib");
 const gen = require("./generate");
@@ -123,7 +124,7 @@ module.exports = [
     }
   },
   {
-    name: "bosco goals: a goal keeps the number typed when units change and back; History's last page keeps seven rows",
+    name: "bosco goals: a goal and a weigh-in keep the number typed when units change and back; History's last page keeps seven rows",
     async run(t) {
       const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
       // Ten weigh-ins: two pages, the last with three.
@@ -161,6 +162,29 @@ module.exports = [
       await p.waitForFunction(() => Kyoshi.apps.bosco.started);
       await units("lb");
       eq(await shown(), ["180.0 lb", "170.0 lb", "154.3 lb", "150.0 lb"], "after a reload");
+
+      // Weigh-ins: 184 lb (once back as 184.1) typed in lb today, and 84 kg typed in kg: each as typed after kg and lb and back.
+      const history = () => p.$$eval(`${M} #historyBody tr:not(.blank)`, rs => rs.map(r => r.cells[1].textContent.trim()));
+      const weigh = async (date, v) => { await p.fill(`${M} #dateInput`, date); await p.fill(`${M} #weightInput`, String(v)); await p.click(`${M} #addBtn`); };
+      await weigh(TODAY, 184); // in place of the backup's 185.5
+      eq((await history())[0], "184.0 lb", "184 lb today");
+      await units("kg");
+      eq((await history())[0], "83.5 kg", "in kg, converted");
+      await weigh(D(-12), 84);
+      await units("lb");
+      eq((await history())[0], "184.0 lb", "back in lb: as typed (not 184.1)");
+      const back = await exportBackup(tab), byDay = d => back.entries.find(e => e.date === d);
+      eq([byDay(TODAY).weight, byDay(TODAY).typed], [184, undefined], "typed in this unit: nothing more kept");
+      eq([byDay(D(-12)).weight, byDay(D(-12)).typed], [185.2, { weight: 84, unit: "kg" }], "the one typed in kg says so");
+      eq(back.entries.filter(e => e.typed).length, 1, "only it");
+      eq(back.entries.map(e => e.weight), [185.2].concat(weights.slice(0, -1).map(w => w.weight), 184), "every weigh-in as it was typed in lb");
+      await units("kg");
+      await units("lb");
+      eq((await exportBackup(tab)).entries.map(e => e.weight), back.entries.map(e => e.weight), "the same after kg and lb again");
+      await units("kg");
+      const kg = await exportBackup(tab);
+      eq([kg.entries[0].weight, kg.entries[0].typed], [84, undefined], "in kg: 84 as typed");
+      eq(kg.entries.filter(e => e.typed).length, kg.entries.length - 1, "the others typed in lb");
     }
   }
 ];

@@ -9,7 +9,7 @@
   const S = A.S;
   const { isNum, isPos, isDate, isTime, todayStr } = K.util;
   const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, LEGACY_SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
-    byDate, convertWeight, goalsAsEntered, isDoseInterval, weeklyFor, hasWeight, hasDose } = A;
+    byDate, convertWeight, typedAs, goalsAsEntered, isDoseInterval, weeklyFor, hasWeight, hasDose } = A;
 
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
   const STANDALONE_KEYS = { entries: "weightTrackerEntries_v1", goals: "weightTrackerGoals_v1", profile: "weightTrackerProfile_v1" };
@@ -17,15 +17,18 @@
   const persist = () => ["entries", "gone", "goals", "goalsAsEntered", "profile", "retinoids"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
 
   // A day as kept, its fields in this order; its weigh-in's stamp (wu: when it last changed, 7.601 on) and its dose's
-  // (du) only once they have one, so older data reads as it was.
-  const day = (date, weight, doseMg, medication, site, wu, du) => ({ date, weight, doseMg, medication, site, ...(wu ? { wu } : {}), ...(du ? { du } : {}) });
+  // (du) only once they have one, so older data reads as it was; typed ({ weight, unit }, 8.813 on) only while its weigh-in
+  // shows in another unit than the one it was typed in: what it's shown from, so it never drifts as units change.
+  const day = (date, weight, doseMg, medication, site, wu, du, typed) => ({ date, weight, doseMg, medication, site,
+    ...(wu ? { wu } : {}), ...(du ? { du } : {}), ...(typed && weight !== null ? { typed } : {}) });
   // A day's weigh-in ({ weight }) or dose ({ doseMg, medication, site }) set here: its entry made or changed, and that
   // part stamped now, so where two devices changed it, the later change wins (mergeVersions); always later than the
   // version it replaces and than its deletion here, whatever the clocks say (another device's may run ahead).
   function setDay(date, part) {
     const old = S.entries.find(x => x.date === date), k = "doseMg" in part ? "du" : "wu", t = above(old, S.gone.find(g => g.date === date), k);
     const e = { ...(old || { date, weight: null, doseMg: null, medication: null, site: null }), ...part };
-    S.entries = S.entries.filter(x => x.date !== date).concat(day(date, e.weight, e.doseMg, e.medication, e.site, k === "wu" ? t : e.wu, k === "du" ? t : e.du)).sort(byDate);
+    S.entries = S.entries.filter(x => x.date !== date).concat(day(date, e.weight, e.doseMg, e.medication, e.site, k === "wu" ? t : e.wu, k === "du" ? t : e.du,
+      k === "wu" ? null : e.typed)).sort(byDate); // a weigh-in set here is typed in this unit
   }
   // A stamp for a part (k: "wu", "du") changed now: later than now and than its stamp in each copy or marker given.
   const above = (...args) => { const k = args.pop(); return Math.max(Date.now(), ...args.map(x => ((x && x[k]) ?? -1) + 1)); };
@@ -53,7 +56,8 @@
    * valid weight or dose, are dropped — as are fields from removed features,
    * and (before v4) doses still ahead of today, which were never taken.
    * On duplicate dates the last row wins. Missing goals fall back to defaults.
-   * Goals are converted from how each was typed (goalsAsEntered, 8.812 on), so they never drift as units change.
+   * Weigh-ins (typed, 8.813 on) and goals (goalsAsEntered, 8.812 on) are converted from how each was typed, so they
+   * never drift as units change.
    * A day's stamps (wu, du: 7.601 on) are kept only with their part, so older data reads as it was.
    */
   function normalizeBackup(raw, targetUnit) {
@@ -64,14 +68,16 @@
     const days = new Map();
     (Array.isArray(raw.entries) ? raw.entries : []).forEach(e => {
       if (!e || !isDate(e.date)) return;
-      const weight = pos(convertWeight(pos(e.weight), from, targetUnit));
+      const typed = isPos(e.weight) ? typedAs(e.typed, e.weight, from) : null;
+      const weight = typed ? pos(convertWeight(typed.weight, typed.unit, targetUnit)) : null;
       const doseMg = wasUpcoming(e) ? null : pos(e.doseMg);
       // Unknown but plain ids (from a newer version) are kept as they are.
       const med = typeof e.medication === "string" ? e.medication.trim().toLowerCase() : "";
       const medication = doseMg === null ? null : /^[a-z0-9 -]{1,40}$/.test(med) ? med : LEGACY_MEDICATION;
       // Where a dose went: a site's id (one from a newer version kept as it is), or null.
       const site = doseMg !== null && typeof e.site === "string" && /^[a-z0-9-]{1,40}$/.test(e.site) ? e.site : null;
-      if (weight !== null || doseMg !== null) days.set(e.date, day(e.date, weight, doseMg, medication, site, weight !== null && isPos(e.wu) ? e.wu : 0, doseMg !== null && isPos(e.du) ? e.du : 0));
+      if (weight !== null || doseMg !== null) days.set(e.date, day(e.date, weight, doseMg, medication, site, weight !== null && isPos(e.wu) ? e.wu : 0, doseMg !== null && isPos(e.du) ? e.du : 0,
+        typed && typed.unit !== targetUnit ? typed : null));
     });
     const typed = (Array.isArray(raw.goalsAsEntered) ? raw.goalsAsEntered : [])
       .filter(o => o && isPos(o.weight) && (o.unit === "lb" || o.unit === "kg")).map(o => ({ weight: o.weight, unit: o.unit }));
@@ -227,7 +233,7 @@
     const marks = new Map(S.gone.map(g => [g.date, g]));
     S.entries = S.entries.map(e => {
       const m = marks.get(e.date) || {}, wu = hasWeight(e) && m.wu >= (e.wu || 0) ? m.wu + 1 : e.wu, du = hasDose(e) && m.du >= (e.du || 0) ? m.du + 1 : e.du;
-      return wu === e.wu && du === e.du ? e : day(e.date, e.weight, e.doseMg, e.medication, e.site, wu, du);
+      return wu === e.wu && du === e.du ? e : day(e.date, e.weight, e.doseMg, e.medication, e.site, wu, du, e.typed);
     });
     if (S.profile.schemaVersion !== DATA_SCHEMA_VERSION) {
       S.profile.schemaVersion = DATA_SCHEMA_VERSION;
@@ -318,7 +324,7 @@
     // their markers, which stay); a day deleted here that the backup doesn't have stays deleted.
     S.gone = joinGone([was.gone, S.gone]);
     const marks = new Map(S.gone.map(g => [g.date, g])), at = (e, k) => above(e, was.entries.get(e.date), marks.get(e.date), k);
-    S.entries = S.entries.map(e => day(e.date, e.weight, e.doseMg, e.medication, e.site, hasWeight(e) ? at(e, "wu") : 0, hasDose(e) ? at(e, "du") : 0));
+    S.entries = S.entries.map(e => day(e.date, e.weight, e.doseMg, e.medication, e.site, hasWeight(e) ? at(e, "wu") : 0, hasDose(e) ? at(e, "du") : 0, e.typed));
     save(false);
     S.currentPage = 1;
     A.renderOneTimeInfo();
@@ -348,7 +354,7 @@
       if (!w && !d) return null;
       // (the same dose without a site keeps the other's: a copy older than sites drops them)
       const x = d && (d === n.d ? o.d : n.d), site = d ? d.site ?? (x && x.doseMg === d.doseMg && x.medication === d.medication ? x.site : null) ?? null : null;
-      return day(date, w ? w.weight : null, d ? d.doseMg : null, d ? d.medication : null, site, w ? w.wu : 0, d ? d.du : 0);
+      return day(date, w ? w.weight : null, d ? d.doseMg : null, d ? d.medication : null, site, w ? w.wu : 0, d ? d.du : 0, w ? w.typed : null);
     }).filter(Boolean).sort(byDate);
     return {
       entries,

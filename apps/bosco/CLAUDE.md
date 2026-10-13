@@ -24,7 +24,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `bosco.css` | styles under `.app-bosco` |
 
 ## State (`A.S`)
-`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept), wu, du: when its weigh-in, its dose last changed (`Date.now()`; each only with its part, once it has one, 7.601 on: a weigh-in added or replaced, a dose logged, an import) }] one per date, sorted · `gone` [{ date, wu, du }]: the deleted days' markers, one per date, kept apart from `entries` so nothing else sees them, and for good: the stamps of the weigh-in and the dose each deletion took (0: unstamped; a part's only when it had one; the latest of each) · `goals` [numbers] high→low · `goalsAsEntered` [{ weight, unit }]: each goal as typed, in `goals`' order (8.812 on); goals are always converted from it, so a goal never drifts as units change ·
+`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept), wu, du: when its weigh-in, its dose last changed (`Date.now()`; each only with its part, once it has one, 7.601 on: a weigh-in added or replaced, a dose logged, an import), typed: { weight, unit }: the weigh-in as typed, only while it shows in the other unit (8.813 on; `typedAs`; an older copy drops it, and one that no longer shows as `weight` is ignored) }] one per date, sorted · `gone` [{ date, wu, du }]: the deleted days' markers, one per date, kept apart from `entries` so nothing else sees them, and for good: the stamps of the weigh-in and the dose each deletion took (0: unstamped; a part's only when it had one; the latest of each) · `goals` [numbers] high→low · `goalsAsEntered` [{ weight, unit }]: each goal as typed, in `goals`' order (8.812 on); goals are always converted from it, so a goal never drifts as units change ·
 `profile` { name, unit, medication, medicationAsked, dosingAsked, dosePlan, vial, paceGoal, sites, skipSites, schemaVersion } (`medicationAsked`: the medication
 question answered, here or on another device; `dosingAsked`: the version of the dosing questions answered (`DOSING_QUESTIONS_VERSION`; a later one counts as
 answered, and it never goes down); `sites`: the injection sites on, in `SITES` order;
@@ -54,7 +54,7 @@ just now, or none, leaves the dosing questions to be asked).
 Combining counts the answers only as asked or not, and the dosing version (`dataKey`; cleaned, `medication` is that yes or no and `answer` the
 answer), so two devices with different medication answers never keep saving back and forth; an older copy's save, without them, isn't set apart by
 them (no saving back for it, which would stamp ours newer than its next change).
-Sync combines day by day and part by part (`mergeVersions`, 7.601): the weigh-in, and the dose with its medication and its site, each take
+Sync combines day by day and part by part (`mergeVersions`, 7.601): the weigh-in (with its `typed`), and the dose with its medication and its site, each take
 the later change to them (`wu`, `du`; with neither stamped, or a tie, the more recent save's, as before 7.601), and a part only one save has
 comes along. A marker deletes, on either side, the versions of the parts it names up to its stamps, so a part changed after them stays: a
 dose logged on a device that hadn't seen the deletion, a day weighed in again (it doesn't get its old dose back). A stamp set here is
@@ -82,7 +82,7 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
 
 ## Invariants
 - Dates are calendar-day strings; date math is UTC (`K.util`), and "today" is `K.util.todayStr()` (time-travel aware).
-- One unit at a time: weights are stored in `S.unit` at 1 decimal; changing units converts everything (goals from how each was typed: `goalsAsEntered`).
+- One unit at a time: weights are stored in `S.unit` at 1 decimal; changing units converts everything, from how each was typed (weigh-ins: `typed`; goals: `goalsAsEntered`), so nothing drifts going back and forth.
 - History's last page is filled out to 7 rows with blank ones (when there's more than one page), so the page buttons never move.
 - Doses are logged only by confirming a due dose; the schedule is derived from the plan, never stored.
 - Injection sites, worked out from the logged sites, never stored: the body parts with a site on take turns (`PARTS`:
