@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.812", date: "2026-10-13", changes: [
+      "Goal weights keep the number you typed when you switch units and back (150 lb no longer comes back as 149.9 lb); the other unit shows it converted.",
+      "History keeps seven rows on its last page too, so the page buttons don't jump as you flip through it.",
+    ] },
     { version: "8.811", date: "2026-10-12", changes: [
       "A retinoid's pop-up can skip an application when your skin isn't up to it: Skip to <day> goes straight to the next one on the schedule, its days unchanged.",
       "Adapalene is no longer on the list of retinoids (one already set up stays as it is).",

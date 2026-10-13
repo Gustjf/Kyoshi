@@ -283,10 +283,11 @@
     if (vial) storeVial(vial, med); // its warning came when the calculator was opened
     S.unit = profile.unit || "lb";
     if (S.unit !== prevUnit) {
-      // Changing units converts every stored weight, so nothing is ever mixed.
-      const converted = A.normalizeBackup({ unit: prevUnit, schemaVersion: DATA_SCHEMA_VERSION, entries: S.entries, goals: S.goals }, S.unit);
+      // Changing units converts every stored weight, so nothing is ever mixed; goals from how each was typed.
+      const converted = A.normalizeBackup({ unit: prevUnit, schemaVersion: DATA_SCHEMA_VERSION, entries: S.entries, goals: S.goals, goalsAsEntered: S.goalsAsEntered }, S.unit);
       S.entries = converted.entries;
       S.goals = converted.goals;
+      S.goalsAsEntered = converted.goalsAsEntered;
     }
     A.save();
     S.currentPage = 1;

@@ -120,6 +120,7 @@
     entries: [],          // { date: "YYYY-MM-DD", weight: number|null, doseMg: number|null, medication: id|null, site, wu, du (when its weigh-in, its dose last changed: once they have, 7.601 on) }, one per date, sorted
     gone: [],             // deleted days' markers { date, wu, du } (what was deleted, by its stamps): apart from the entries, so nothing else sees them
     goals: [],            // goal weights, sorted high to low
+    goalsAsEntered: [],   // each goal as typed { weight, unit }, in goals' order: what it's shown from in either unit
     profile: {},          // start-up answers
     unit: "lb",           // the whole app uses one unit at a time: profile.unit, or lb until chosen
     rateMode: "trend",    // "trend" | "custom"
@@ -161,6 +162,9 @@
     if (!isNum(v) || from === to) return v;
     return Math.round((to === "kg" ? v / A.LB_PER_KG : v * A.LB_PER_KG) * 10) / 10;
   }
+  // Each goal (in unit) as it was typed, from the list given ([{ weight, unit }], the first that shows as it), or
+  // as it is now: a goal is always shown from what was typed, so 150 lb stays 150 lb after kg and back (never 149.9).
+  const goalsAsEntered = (goals, unit, entered) => goals.map(g => entered.find(o => convertWeight(o.weight, o.unit, unit) === g) || { weight: g, unit });
 
   // The medication new doses are for: the start-up answer, Tirzepatide until answered.
   const currentMedication = () => (S.profile.medication === "none" || Object.hasOwn(MEDICATIONS, S.profile.medication) ? S.profile.medication : A.LEGACY_MEDICATION);
@@ -220,7 +224,7 @@
   const retinoidsTitle = list => { const ids = [...new Set(list.map(r => r.retinoid))]; return ids.length === 1 ? retinoidLabel(ids[0]) : "Retinoid"; };
 
   Object.assign(A, {
-    hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight,
+    hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight, goalsAsEntered,
     currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
     isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber,
     retinoidLabel, strengthLabel, regimenName, regimenTitle, fmtEvery, retinoidsTitle

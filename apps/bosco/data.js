@@ -2,19 +2,19 @@
  * standalone Bosco left in this browser), cleaning, saving, backups, and combining with other
  * devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
  * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, retinoids (retinoids.js),
- * doseSnooze, retinoidSnooze, sync and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
+ * goalsAsEntered (each goal as typed, 8.812 on), doseSnooze, retinoidSnooze, sync and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
  * marker of what it deleted (forget). */
 (function (K, A) {
   "use strict";
   const S = A.S;
   const { isNum, isPos, isDate, isTime, todayStr } = K.util;
   const { DEFAULT_GOALS, MEDICATIONS, LEGACY_MEDICATION, SITES, LEGACY_SITES, BAC_ML_RANGE, MAX_PACE_PCT, DATA_SCHEMA_VERSION,
-    byDate, convertWeight, isDoseInterval, weeklyFor, hasWeight, hasDose } = A;
+    byDate, convertWeight, goalsAsEntered, isDoseInterval, weeklyFor, hasWeight, hasDose } = A;
 
   // The standalone Bosco's keys: read (never changed) on the first open in Kyoshi.
   const STANDALONE_KEYS = { entries: "weightTrackerEntries_v1", goals: "weightTrackerGoals_v1", profile: "weightTrackerProfile_v1" };
 
-  const persist = () => ["entries", "gone", "goals", "profile", "retinoids"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
+  const persist = () => ["entries", "gone", "goals", "goalsAsEntered", "profile", "retinoids"].forEach(k => A.store.set(k, JSON.stringify(S[k])));
 
   // A day as kept, its fields in this order; its weigh-in's stamp (wu: when it last changed, 7.601 on) and its dose's
   // (du) only once they have one, so older data reads as it was.
@@ -53,6 +53,7 @@
    * valid weight or dose, are dropped — as are fields from removed features,
    * and (before v4) doses still ahead of today, which were never taken.
    * On duplicate dates the last row wins. Missing goals fall back to defaults.
+   * Goals are converted from how each was typed (goalsAsEntered, 8.812 on), so they never drift as units change.
    * A day's stamps (wu, du: 7.601 on) are kept only with their part, so older data reads as it was.
    */
   function normalizeBackup(raw, targetUnit) {
@@ -72,14 +73,18 @@
       const site = doseMg !== null && typeof e.site === "string" && /^[a-z0-9-]{1,40}$/.test(e.site) ? e.site : null;
       if (weight !== null || doseMg !== null) days.set(e.date, day(e.date, weight, doseMg, medication, site, weight !== null && isPos(e.wu) ? e.wu : 0, doseMg !== null && isPos(e.du) ? e.du : 0));
     });
-    const goalList = Array.isArray(raw.goals)
-      ? raw.goals.filter(isPos).map(g => convertWeight(g, from, targetUnit))
-      : DEFAULT_GOALS.map(g => convertWeight(g, "lb", targetUnit));
+    const typed = (Array.isArray(raw.goalsAsEntered) ? raw.goalsAsEntered : [])
+      .filter(o => o && isPos(o.weight) && (o.unit === "lb" || o.unit === "kg")).map(o => ({ weight: o.weight, unit: o.unit }));
+    const asTyped = Array.isArray(raw.goals) ? goalsAsEntered(raw.goals.filter(isPos), from, typed) : DEFAULT_GOALS.map(g => ({ weight: g, unit: "lb" }));
+    const goalList = new Map(); // goal (in targetUnit) → as typed; the first of a goal wins
+    asTyped.forEach(o => { const g = convertWeight(o.weight, o.unit, targetUnit); if (isPos(g) && !goalList.has(g)) goalList.set(g, o); });
+    const goals = [...goalList.keys()].sort((a, b) => b - a);
     return {
       schemaVersion,
       entries: [...days.values()].sort(byDate),
       gone: cleanGone(raw.gone),
-      goals: [...new Set(goalList.filter(isPos))].sort((a, b) => b - a),
+      goals,
+      goalsAsEntered: goals.map(g => goalList.get(g)),
       name: typeof raw.name === "string" ? raw.name.trim() : "",
       medication: Object.hasOwn(MEDICATIONS, raw.medication) ? raw.medication : "",
       dosePlan: cleanDosePlan(raw.dosePlan),
@@ -206,9 +211,10 @@
     // saved in, noted since v4), so damaged storage can't break the app; write
     // it back if anything had to change.
     const storedEntries = A.store.get("entries"), storedGoals = A.store.get("goals"), storedGone = A.store.get("gone");
-    const clean = normalizeBackup({ unit: S.unit, schemaVersion: S.profile.schemaVersion || 3, entries: A.store.json("entries"), goals: A.store.json("goals"), gone: A.store.json("gone") }, S.unit);
+    const clean = normalizeBackup({ unit: S.unit, schemaVersion: S.profile.schemaVersion || 3, entries: A.store.json("entries"), goals: A.store.json("goals"), goalsAsEntered: A.store.json("goalsAsEntered"), gone: A.store.json("gone") }, S.unit);
     S.entries = clean.entries;
     S.goals = clean.goals;
+    S.goalsAsEntered = clean.goalsAsEntered; // (stored with the next change)
     S.gone = clean.gone;
     S.retinoids = A.cleanRetinoids(A.store.json("retinoids")) || { regimens: [], log: [] };
     if (storedEntries !== null && (storedEntries !== JSON.stringify(S.entries) || storedGoals !== JSON.stringify(S.goals))) {
@@ -249,6 +255,7 @@
       entries: S.entries,
       gone: S.gone, // deleted days' markers (7.601 on)
       goals: S.goals,
+      goalsAsEntered: S.goalsAsEntered, // each goal as typed (8.812 on): what goals is shown from, in either unit
       cumulativeDoseMgByMedication: A.cumulativeDoseMg() // derived totals for reference; not read on import
     };
   }
@@ -260,6 +267,7 @@
     S.entries = clean.entries;
     S.gone = clean.gone; // an older backup has none
     S.goals = clean.goals;
+    S.goalsAsEntered = goalsAsEntered(clean.goals, S.unit, clean.goalsAsEntered);
     if (clean.name) S.profile.name = clean.name; // older backups have no name; keep ours
     if (clean.paceGoal) S.profile.paceGoal = clean.paceGoal; // nor a pace goal
     if (clean.sites) S.profile.sites = clean.sites; // nor injection sites
@@ -346,6 +354,7 @@
       entries,
       gone,
       goals: [...new Set(older.goals.concat(newer.goals))].sort((x, y) => y - x),
+      goalsAsEntered: newer.goalsAsEntered.concat(older.goalsAsEntered), // each goal's (applyBackup picks them out)
       name: newer.name || older.name,
       dosePlan: latest(older.dosePlan, newer.dosePlan),
       vial: latest(older.vial, newer.vial),
@@ -369,7 +378,7 @@
     const backupUnit = replace && !S.profile.unit && (raw.unit === "kg" || raw.unit === "lb") ? raw.unit : "";
     const their = normalizeBackup(raw, backupUnit || S.unit);
     if (plain && !their.entries.length) return null;
-    const ours = { entries: S.entries, gone: S.gone, goals: S.goals, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites, retinoids: S.retinoids,
+    const ours = { entries: S.entries, gone: S.gone, goals: S.goals, goalsAsEntered: S.goalsAsEntered, name: S.profile.name, dosePlan: S.profile.dosePlan, vial: S.profile.vial, paceGoal: S.profile.paceGoal, sites: S.profile.sites, skipSites: S.profile.skipSites, retinoids: S.retinoids,
       asked: { medication: !!S.profile.medicationAsked, answer: S.profile.medicationAsked ? A.currentMedication() : "", dosing: askedVersion(S.profile.dosingAsked) } };
     const next = replace // as on import: the later dosing plan and vial, and the answers of both
       ? { ...their, dosePlan: latest(ours.dosePlan, their.dosePlan), vial: latest(ours.vial, their.vial), asked: joinAsked(ours.asked, their.asked),

@@ -44,7 +44,11 @@
     const pages = Math.ceil(visible.length / PAGE_SIZE);
     S.currentPage = Math.min(Math.max(S.currentPage, 1), pages);
     const prevWeight = new Map(w.map((e, i) => [e.date, i ? w[i - 1].weight : null])); // change vs last weigh-in
-    $("historyBody").innerHTML = visible.slice((S.currentPage - 1) * PAGE_SIZE, S.currentPage * PAGE_SIZE).map(e => {
+    const shown = visible.slice((S.currentPage - 1) * PAGE_SIZE, S.currentPage * PAGE_SIZE);
+    // With more than one page, the last is filled out with blank rows, so the table (and the page
+    // buttons under it) never change height as the pages are flipped.
+    const blanks = pages > 1 ? PAGE_SIZE - shown.length : 0;
+    $("historyBody").innerHTML = shown.map(e => {
       const prev = hasWeight(e) ? prevWeight.get(e.date) : null;
       const change = prev === null ? null : Math.round((e.weight - prev) * 10) / 10; // as displayed
       const cls = change ? ((dir === "gain") === (change > 0) ? "good" : "bad") : "";
@@ -55,7 +59,7 @@
         <td class="med">${hasDose(e) ? `${e.doseMg} mg${otherMedNote(e)}${e.site ? `${SEP}${siteShort(e.site)}` : ""}` : "&mdash;"}</td>
         <td><button class="danger" data-date="${e.date}">Delete</button></td>
       </tr>`;
-    }).join("");
+    }).join("") + `<tr class="blank" aria-hidden="true"><td>&nbsp;</td><td></td><td></td><td class="med"></td><td><button class="danger" tabindex="-1">Delete</button></td></tr>`.repeat(blanks);
     $("pageInfo").textContent = `Page ${S.currentPage} of ${pages} (${visible.length} entries)`;
     $("prevPageBtn").disabled = S.currentPage === 1;
     $("nextPageBtn").disabled = S.currentPage === pages;

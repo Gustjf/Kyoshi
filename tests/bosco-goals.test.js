@@ -2,9 +2,10 @@
  * counts as reached once the 7-day average passes it, not a single weigh-in, dated the first day the average got there
  * (the chart then drops its line); the ETAs and the season projections start from the latest average, while the chart's
  * dots stay the weigh-ins; deleting a weigh-in, a day with a dose or a goal asks first, and No keeps it. The progress
- * image (Phase 3 of 2026-10-08_feedback_batch_plan.md) joins the weigh-ins with straight lines, a dot at each. */
+ * image (Phase 3 of 2026-10-08_feedback_batch_plan.md) joins the weigh-ins with straight lines, a dot at each. A goal keeps
+ * the number typed through a change of units and back (8.812), and History's last page keeps seven rows. */
 "use strict";
-const { TODAY, DESKTOP, eq, has, open, importBackup, lastDialog, addDays } = require("./lib");
+const { TODAY, DESKTOP, eq, has, open, importBackup, exportBackup, lastDialog, addDays } = require("./lib");
 const gen = require("./generate");
 
 const M = "#kMount";
@@ -119,6 +120,47 @@ module.exports = [
       eq((await goals(tab)).map(r => r[0]), ["180.0 lb", "170.0 lb"], "kept");
       await p.click(`${M} #goalsBody button[data-goal="170"]`);
       eq((await goals(tab)).map(r => r[0]), ["180.0 lb"], "removed");
+    }
+  },
+  {
+    name: "bosco goals: a goal keeps the number typed when units change and back; History's last page keeps seven rows",
+    async run(t) {
+      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      // Ten weigh-ins: two pages, the last with three.
+      const weights = Array.from({ length: 10 }, (_, i) => ({ date: D(i - 9), weight: +(190 - 0.5 * i).toFixed(1) }));
+      await importBackup(tab, gen.bosco({ doses: 0, weights }));
+      const rows = () => p.$$eval(`${M} #historyBody tr`, rs => rs.map(r => [r.classList.contains("blank"), Math.round(r.getBoundingClientRect().height)]));
+      const pager = () => p.evaluate(m => Math.round(document.querySelector(`${m} #nextPageBtn`).getBoundingClientRect().top + scrollY), M);
+      const top = await pager(), first = await rows();
+      eq(first.length, 7, "seven on the first page");
+      await p.click(`${M} #nextPageBtn`);
+      const last = await rows();
+      eq(last.map(r => r[0]), [false, false, false, true, true, true, true], "three weigh-ins, four blank rows");
+      eq(new Set(last.map(r => r[1])).size, 1, "the blank rows as tall as the others");
+      eq(await pager(), top, "the page buttons stay put");
+
+      // 150 lb typed in lb, 68 kg typed in kg: each comes back as typed, the other unit converted.
+      const units = async unit => {
+        await p.evaluate(() => Kyoshi.apps.bosco.renderOneTimeInfo(true));
+        await p.click(`${M} #oneTimeInput_unit button[data-value="${unit}"]`);
+        await p.click(`${M} #oneTimeInfoSaveBtn`);
+      };
+      const addGoal = async v => { await p.fill(`${M} #goalInput`, String(v)); await p.click(`${M} #addGoalBtn`); };
+      await addGoal(150); // with the backup's 180 and 170
+      await units("kg");
+      await addGoal(70);
+      const shown = async () => (await goals(tab)).map(r => r[0]);
+      eq(await shown(), ["81.6 kg", "77.1 kg", "70.0 kg", "68.0 kg"], "in kg: 150 lb converted, 70 kg as typed");
+      await units("lb");
+      eq(await shown(), ["180.0 lb", "170.0 lb", "154.3 lb", "150.0 lb"], "back in lb: 150 as typed (not 149.9), 70 kg converted");
+      eq((await exportBackup(tab)).goalsAsEntered, [{ weight: 180, unit: "lb" }, { weight: 170, unit: "lb" }, { weight: 70, unit: "kg" }, { weight: 150, unit: "lb" }], "the backup says how each was typed");
+      await units("kg");
+      eq(await shown(), ["81.6 kg", "77.1 kg", "70.0 kg", "68.0 kg"], "and in kg again: 70 as typed");
+      // Kept through a reload.
+      await p.reload();
+      await p.waitForFunction(() => Kyoshi.apps.bosco.started);
+      await units("lb");
+      eq(await shown(), ["180.0 lb", "170.0 lb", "154.3 lb", "150.0 lb"], "after a reload");
     }
   }
 ];

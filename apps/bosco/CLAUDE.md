@@ -24,7 +24,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `bosco.css` | styles under `.app-bosco` |
 
 ## State (`A.S`)
-`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept), wu, du: when its weigh-in, its dose last changed (`Date.now()`; each only with its part, once it has one, 7.601 on: a weigh-in added or replaced, a dose logged, an import) }] one per date, sorted · `gone` [{ date, wu, du }]: the deleted days' markers, one per date, kept apart from `entries` so nothing else sees them, and for good: the stamps of the weigh-in and the dose each deletion took (0: unstamped; a part's only when it had one; the latest of each) · `goals` [numbers] high→low ·
+`entries` [{ date "YYYY-MM-DD", weight|null, doseMg|null, medication|null, site: a `SITES` or `LEGACY_SITES` id|null (only with a dose; an unknown plain id from a newer version is kept), wu, du: when its weigh-in, its dose last changed (`Date.now()`; each only with its part, once it has one, 7.601 on: a weigh-in added or replaced, a dose logged, an import) }] one per date, sorted · `gone` [{ date, wu, du }]: the deleted days' markers, one per date, kept apart from `entries` so nothing else sees them, and for good: the stamps of the weigh-in and the dose each deletion took (0: unstamped; a part's only when it had one; the latest of each) · `goals` [numbers] high→low · `goalsAsEntered` [{ weight, unit }]: each goal as typed, in `goals`' order (8.812 on); goals are always converted from it, so a goal never drifts as units change ·
 `profile` { name, unit, medication, medicationAsked, dosingAsked, dosePlan, vial, paceGoal, sites, skipSites, schemaVersion } (`medicationAsked`: the medication
 question answered, here or on another device; `dosingAsked`: the version of the dosing questions answered (`DOSING_QUESTIONS_VERSION`; a later one counts as
 answered, and it never goes down); `sites`: the injection sites on, in `SITES` order;
@@ -38,10 +38,11 @@ UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `
 `retinoidEditing` (null, or `{ id: "" for a new one, steps: the rows as edited }`), `applyAsking` (the application the retinoid pop-up is open for).
 
 ## Storage (`A.store`) and backups
-Keys: `entries`, `gone`, `goals`, `profile`, `retinoids`, `doseSnooze` and `retinoidSnooze` (this device's "Not yet"s; the retinoids' a list
+Keys: `entries`, `gone`, `goals`, `goalsAsEntered`, `profile`, `retinoids`, `doseSnooze` and `retinoidSnooze` (this device's "Not yet"s; the retinoids' a list
 `[{ id: "<regimen>:<date>", until }]`), `sync` and `meetings` (core's). First open reads the standalone's
 `weightTrackerEntries_v1` / `weightTrackerGoals_v1` / `weightTrackerProfile_v1` (never changes them).
-Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, sites, skipSites, asked, retinoids, entries, gone, goals, cumulativeDoseMgByMedication }`
+Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, sites, skipSites, asked, retinoids, entries, gone, goals, goalsAsEntered, cumulativeDoseMgByMedication }`
+(`goals` stay numbers in the file's unit, so older copies read them; `goalsAsEntered`, when there, says how each was typed, and every goal from either save keeps its own)
 (`sites`, `skipSites`: as in `profile`; a file without them keeps yours, and where two saves combine the newer one's win — for `skipSites`, whenever
 the newer save has the field, so a device that logged the dose and forgot them wins).
 `asked` (7.600 on): start-up info's answers, `{ medication: true|false, dosing: the version answered }` from `profile.medicationAsked` / `dosingAsked`.
@@ -81,7 +82,8 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
 
 ## Invariants
 - Dates are calendar-day strings; date math is UTC (`K.util`), and "today" is `K.util.todayStr()` (time-travel aware).
-- One unit at a time: weights are stored in `S.unit` at 1 decimal; changing units converts everything.
+- One unit at a time: weights are stored in `S.unit` at 1 decimal; changing units converts everything (goals from how each was typed: `goalsAsEntered`).
+- History's last page is filled out to 7 rows with blank ones (when there's more than one page), so the page buttons never move.
 - Doses are logged only by confirming a due dose; the schedule is derived from the plan, never stored.
 - Injection sites, worked out from the logged sites, never stored: the body parts with a site on take turns (`PARTS`:
   abdomen, thigh, buttock, upper arm), each dose at the next part after the last dose's; within a part, at its next site

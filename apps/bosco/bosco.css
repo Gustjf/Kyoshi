@@ -6,6 +6,7 @@
 .app-bosco.no-med .med { display: none !important; } /* dose tracking off */
 .app-bosco .row > .date-cell { min-width: 140px; } /* room for the whole date beside its calendar icon */
 .app-bosco .mode-toggle { margin-bottom: 10px; }
+.app-bosco #historyBody tr.blank button { visibility: hidden; } /* a blank row on History's last page: as tall as a full one, nothing to tap */
 
 /* --- Stats & badges --- */
 .app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */

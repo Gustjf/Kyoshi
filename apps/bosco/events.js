@@ -33,6 +33,7 @@
     if (!isPos(goal)) return alert("Please enter a valid positive goal weight.");
     if (!S.goals.includes(goal)) {
       S.goals = S.goals.concat(goal).sort((a, b) => b - a);
+      S.goalsAsEntered = A.goalsAsEntered(S.goals, S.unit, S.goalsAsEntered); // typed in this unit
       A.save();
     }
     $("goalInput").value = "";
@@ -132,6 +133,7 @@
       const goal = parseFloat(btn.dataset.goal);
       if (!confirm(`Remove the ${goal.toFixed(1)} ${S.unit} goal? This can't be undone.`)) return;
       S.goals = S.goals.filter(g => g !== goal);
+      S.goalsAsEntered = A.goalsAsEntered(S.goals, S.unit, S.goalsAsEntered);
       A.save();
       A.renderAll();
     });
