@@ -90,7 +90,8 @@
     const live = A.live(S.files);
     box.innerHTML = `<div class="dev-block"><div class="dev-block-head">Photos &amp; PDFs: <strong>${live.length}</strong> (${fmtBytes(live.reduce((n, f) => n + f.size, 0))})</div>
       <div class="dev-hint" id="appaFilesNote">Checking this device…</div>
-      <div class="dev-actions"><button class="secondary small" id="appaUnusedBtn" hidden>Remove unused files</button></div></div>`;
+      <div class="dev-actions"><button class="secondary small" id="appaUnusedBtn" hidden>Remove unused files</button></div></div>` + A.spreadDevHTML();
+    A.wireSpread(box); // Spread out due dates… (spread.js)
     Promise.all([A.files.ids(), K.files.unused(A)]).then(([ids, unused]) => {
       const note = box.querySelector("#appaFilesNote"), btn = box.querySelector("#appaUnusedBtn");
       if (!note) return;
@@ -114,7 +115,8 @@
       `- Jobs: ${A.live(S.jobs).length} (${count("overdue")} overdue, ${count("soon")} soon, ${count("near")} near, ${count("unknown")} unknown)${uk.jobs ? `; upkeep about ${Math.round(uk.minutes)} min a month (${uk.noTime + uk.noPace} left out)` : ""}`,
       `- Records: ${A.live(S.records).length}, readings: ${A.live(S.readings).length}, photos & PDFs: ${A.live(S.files).length}`,
       `- Deleted markers: ${["things", "jobs", "records", "readings", "files"].map(k => S[k].filter(i => i.deleted).length).join("/")}`,
-      `- Needs for Momo: ${A.inbox().length}; reading asks: ${things.filter(A.readingAsk).length}; timer: ${S.timer ? "running" : "off"}`
+      `- Needs for Momo: ${A.inbox().length}; reading asks: ${things.filter(A.readingAsk).length}; timer: ${S.timer ? "running" : "off"}`,
+      `- Moved due dates (Spread out): ${A.live(S.jobs).filter(j => A.dueOf(j).moved).length}; kept but no longer holding: ${A.live(S.jobs).filter(j => j.moved && !A.dueOf(j).moved).length}`
     ];
   };
 })(Kyoshi, Kyoshi.apps.appa);

@@ -153,7 +153,25 @@ the lockstep for good: once you talk or record it, the next due counts from that
   `general-purpose` agent: code, `tests/appa-upkeep.test.js` with 7 tests, docs); reviewed by Opus, who changed the
   wording and its tests; a Haiku checklist (clean) and a Sonnet closer. Full run 178 passed before the wording change;
   `node tests/run.js appa` 13 passed after it.
-- [ ] Phase 4 — core, Pabu, Appa: Spread out due dates (Kyoshi +0.100 → 5.381 · Pabu +0.100 → 2.342 · Appa +0.100 → 1.565)
+- [x] Phase 4 — core, Pabu, Appa: Spread out due dates (Kyoshi +0.100 → 5.381 · Pabu +0.100 → 2.342 · Appa +0.100 → 1.565)
+  — done 2026-10-14, D7–D8 with these calls. The pop-up is one, core's (`core/spread.js`, `#kSpreadOverlay` in
+  `index.html`, `K.spread.show({ what, items, current, apply })`, `K.spread.init` from `shell.js`), not one per app: the
+  apps' `spread.js` only gather their items, keep the moves and draw the Developer Mode block (Spread out due dates…, Put
+  them back). From the Sonnet bench: apps hand in each item's usual due and Apply replaces every kept move with the plan's,
+  so spreading again gives the same plan and nothing drifts past its reach (it drifted up to 33 days when moved dates
+  were fed back); a 0-minute item never moves. From fresh eyes: an overdue item weighs in this week (it was dropped);
+  weeks are compared by minutes a day left (this week from today), so a Saturday's last two days don't pull everything
+  in; the pop-up lists the kept moves a new plan lets go ("back to Oct 6") and Apply counts them; Put them back clears
+  stale moves too (its button shows while any is kept); an Appa job whose meter now comes sooner doesn't count as moved.
+  Pabu's weekly calls weigh in their week but never move; Appa takes 30 minutes for a job without any. A cleaned move is
+  2–14 days (`K.level.MOVE_MAX_DAYS`), kept only while there is one (no key otherwise: exact-shape tests unchanged).
+  Judged and kept: a spread applied on one device and a ✓ on another before they sync keep the later person whole (Pabu's
+  merge, the owner's earlier call); a move stops holding when a talk is taken back to before it only to hold again
+  (by design); the pop-up's Save restores a move put back meanwhile while it was open (rare); a monthly due clamped at a
+  month's end can keep a move after a new talk on the 31st (rare). Helpers: two Haiku scouts (planning), the Sonnet bench,
+  the Sonnet test writer (`tests/spread.test.js`, 8 tests, 447 lines), a Haiku checklist (clean), two Sonnet fresh eyes
+  (18 leads: 8 fixed), the Sonnet closer (its "the spread doesn't last" is a misreading: done on its new day, the next
+  counts from there; the changelogs now say so, the 8 weeks and up to two weeks). Full run 186 passed.
 
 ## Decisions (the architect's, 2026-10-14; the executing model adds its own small ones under Status)
 - **D1 — R4: both Upcoming weekends folds start open.** Under the board and under Today, on every load. Closing one keeps

@@ -61,6 +61,8 @@ core/                 the shared DNA — K = window.Kyoshi
   record.js           K.record: core's own record, the hidden Kyoshi app (id kyoshi: no page, never shown) holding the bug log and core's synced preferences (the theme), so they sync and are backed up as an app's data (data/kyoshi.json, apps.kyoshi; Clear and Delete leave markers)
   bugs.js             K.bugs: "Bugs & requests" pop-up (bug or feature request; all listed until cleared, a tap opens one to edit or delete) and the report's text
   dev.js              K.dev: the one Developer Mode (Ctrl+9 / DEV badge): Cloud sync, Backup & sync, time travel & test mode
+  level.js            K.level: evens out the coming weeks for the apps that keep schedules (Pabu, Appa): which next due dates move a few days, and each week's time before and after. No UI.
+  spread.js           K.spread: the "Spread out due dates" pop-up (#kSpreadOverlay) those apps open from Developer Mode; they keep the moves on their items (`moved`)
   agenda.js           K.agenda: events at set times that apps share (each app's A.agenda), for Momo's board
   routine.js          K.routine: the slots apps keep at set times every week (each app's A.routine: Turtleduck's meals, its trips), for Momo's baseline; K.routine.unreadable (an app not started, or failing)
   meetings.js         K.meetings: each app's checkup ("Last checkup: 12 days ago", no schedule) or meetings (on a schedule, into K.inbox, once the app is in use): header line, Done ✓, settings pop-up, its "meetings" key

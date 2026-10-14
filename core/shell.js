@@ -54,6 +54,7 @@
     K.cloudUI.init();
     K.record.init(); // core's own record, the hidden Kyoshi app (core/record.js): registered now, so it starts last
     K.bugs.init();
+    K.spread.init(); // the Spread out due dates pop-up (core/spread.js)
     K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));
     K.ready = true; // every app has started (or failed to): what one reads from the others is all there now

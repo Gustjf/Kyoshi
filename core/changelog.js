@@ -5,6 +5,9 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.381", date: "2026-10-14", changes: [
+      "Spread out due dates: the maths and the pop-up that even out your coming weeks, for the apps that keep schedules (Pabu, Appa): each week's time now and spread out, the dates that would move, and Apply."
+    ] },
     { version: "5.281", date: "2026-10-08", changes: [
       "Momo is told which apps couldn't be read just now (one that failed to start, or couldn't say what it needs or when its slots are), so it leaves their cards alone until they can be, instead of taking them away and syncing that to your other devices.",
       "The sync folder no longer brings in a save made by a newer version of Kyoshi: it stops and asks you to reload the page (as cloud sync already did), so an out-of-date page can't drop what it doesn't know and save that for every device."

@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.342", date: "2026-10-14", changes: [
+      "Developer Mode → Spread out due dates…: when many calls, texts and visits come due the same week (all entered at the start of a month, say), it moves the next due date of some by up to a week, earlier or later (two weeks for a quarterly or yearly one), so the next 8 weeks carry about the same time; it shows each week before and after, and the dates it would move, before you Apply. The spread lasts: once you talk, the next one counts from that day as always. Weekly ones never move. A moved date says \"(spread out)\"; Put them back undoes it.",
+      "Reload Pabu on every device after updating."
+    ] },
     { version: "2.242", date: "2026-10-09", changes: [
       "No age for someone whose birthday has no real year born: a year from when you added them on (this year's, typed by mistake) no longer makes them “turn 1”; their age shows once the year born is typed. The box now reads “Year born (optional)”."
     ] },

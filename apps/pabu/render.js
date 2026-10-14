@@ -32,10 +32,12 @@
   }
 
   // One line of This week: ✓ (filled once you've talked this week; tapping it again takes that day off), "Call Mom"
-  // (opens the pop-up), then "due Thu · 30m", "overdue 4 days · 30m" or "talked today · 30m".
+  // (opens the pop-up), then "due Thu · 30m" ("due Thu (spread out)" once Spread out moved it), "overdue 4 days · 30m" or
+  // "talked today · 30m".
   function rowHTML({ p, c, due, done, title }, today) {
     const late = !done && due < today;
-    const when = done ? `talked ${dayWords(done, today)}` : late ? `overdue ${A.plural(daysBetween(due, today), "day")}` : `due ${dayWords(due, today)}`;
+    const when = done ? `talked ${dayWords(done, today)}` : late ? `overdue ${A.plural(daysBetween(due, today), "day")}` :
+      `due ${dayWords(due, today)}${A.isMoved(p, c, today) ? " (spread out)" : ""}`;
     const tick = done ? `Not talked ${dayWords(done, today)}` : "Talked today";
     return `<li class="due-row${late ? " overdue" : ""}${done ? " done" : ""}" data-id="${esc(p.id)}" data-cid="${esc(c.id)}">` +
       `<button type="button" class="tick" data-act="${done ? "untick" : "tick"}" data-id="${esc(p.id)}" data-cid="${esc(c.id)}" title="${esc(tick)}" aria-label="${esc(`${tick}: ${title}`)}"><span class="box">${CHECK}</span></button>` +

@@ -4,7 +4,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId, daysInMonth, mergeById } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, daysInMonth, daysBetween, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_NAME, MAX_GROUP, MAX_NOTE, MAX_CADENCES, MAX_TALKS, DEFAULT_EVERY, DEFAULT_HOW, cleanLine, cleanText, cleanMinutes, plural } = A;
 
   const MAX_MS = 8.64e15; // the last moment a date can hold
@@ -38,6 +38,9 @@
   // used, gets the first free of c1, c2…: the same on every device). Before there were several (schemaVersion 1),
   // a person had one, its how often, how, minutes and days at the top: that one becomes their only one, "c1" (none
   // when it was birthday only).
+  // Spread out's move of a due day: { from, to }, two days at most MOVE_MAX_DAYS apart (core/level.js), else none.
+  const moved = m => (isObj(m) && isDate(m.from) && isDate(m.to) && m.from !== m.to && Math.abs(daysBetween(m.from, m.to)) <= K.level.MOVE_MAX_DAYS
+    ? { from: m.from, to: m.to } : null);
   function cleanCadences(p, at) {
     const list = Array.isArray(p.cadences) ? p.cadences.filter(c => isObj(c) && c.every !== "none")
       : p.cadences !== undefined || p.every === "none" ? [] : [{ id: "c1", every: p.every, how: p.how, minutes: p.minutes, talks: p.talks }];
@@ -53,7 +56,8 @@
         how,
         minutes: cleanMinutes(c.minutes, how),
         talks: cleanTalks(c.talks),
-        at: cleanAt(c.at) || at // when it was added: due that day until you first talk (the person's, carried over)
+        at: cleanAt(c.at) || at, // when it was added: due that day until you first talk (the person's, carried over)
+        ...(moved(c.moved) ? { moved: moved(c.moved) } : {}) // Spread out's move (app.js isMoved), only while there is one
       };
     });
   }

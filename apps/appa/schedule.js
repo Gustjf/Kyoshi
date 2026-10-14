@@ -86,7 +86,10 @@
   const FAR = 36525; // days: a century, past which a meter's pace says nothing (and dates run out)
   const dueOf = job => remember(`due:${job.id}`, () => {
     const thing = A.thingById(job.thingId), b = baseOf(job), today = todayStr();
-    const timeDate = job.every ? after(b.date, job.every) : job.seasons.length ? nextSeason(b.date, job.seasons) : null;
+    const usual = job.every ? after(b.date, job.every) : job.seasons.length ? nextSeason(b.date, job.seasons) : null;
+    // Spread out's move (spread.js) holds while the usual day by time is still the one it moved; a record or a new
+    // schedule makes it another day, and the next counts from that as always.
+    const moved = !!usual && !!job.moved && job.moved.from === usual, timeDate = moved ? job.moved.to : usual;
     let reading = null, meterDate = null, reached = false;
     if (thing && thing.meter && job.meterEvery && b.reading !== null) {
       reading = b.reading + job.meterEvery;
@@ -98,7 +101,7 @@
     }
     const date = [timeDate, meterDate].filter(Boolean).sort()[0] || null;
     return {
-      date, reading, timeDate, meterDate,
+      date, reading, timeDate, meterDate, usual, moved,
       by: date && date === meterDate && date !== timeDate ? "meter" : "time",
       overdue: reached || (!!date && date < today),
       days: date ? daysBetween(today, date) : null
@@ -186,15 +189,17 @@
     if (job.meterEvery && meterOf(thing)) parts.push(`${parts.length ? "" : "Every "}${fmtReading(job.meterEvery, thing)}`);
     return parts.join(" or ") || "No schedule";
   }
-  // "3 days overdue", "Due today", "Due in 9 days", "Due Oct 20", "About Nov 20 (53,210 mi)", "At 53,210 mi".
+  // "3 days overdue", "Due today", "Due in 9 days", "Due Oct 20", "About Nov 20 (53,210 mi)", "At 53,210 mi"; a day Spread
+  // out moved it to says so: "Due Oct 20 (spread out)".
   function dueText(job) {
     const d = dueOf(job), thing = A.thingById(job.thingId), at = d.reading !== null && d.by === "meter" ? ` (${fmtReading(Math.round(d.reading), thing)})` : "";
     if (d.date === null) return d.reading !== null ? `At ${fmtReading(Math.round(d.reading), thing)}` : "Needs a reading";
     if (d.overdue) return d.days < 0 ? `${-d.days} day${d.days === -1 ? "" : "s"} overdue${at}` : `Due now${at}`;
-    if (d.days === 0) return `Due today${at}`;
-    if (d.days === 1) return `Due tomorrow${at}`;
-    if (d.days <= LEAD_DAYS) return `Due in ${d.days} days${at}`;
-    return `${d.by === "meter" ? "About " : "Due "}${fmtDay(d.date)}${at}`;
+    const sp = d.moved && d.by === "time" ? " (spread out)" : ""; // Spread out moved it (spread.js)
+    if (d.days === 0) return `Due today${at}${sp}`;
+    if (d.days === 1) return `Due tomorrow${at}${sp}`;
+    if (d.days <= LEAD_DAYS) return `Due in ${d.days} days${at}${sp}`;
+    return `${d.by === "meter" ? "About " : "Due "}${fmtDay(d.date)}${at}${sp}`;
   }
   // "Sep 12 · 48,210 mi" for a job's last time, or "Not yet".
   function lastText(job) {

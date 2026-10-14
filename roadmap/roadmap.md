@@ -4,10 +4,7 @@
 the plan you're running (its top sections and your phase).
 
 ## In progress
-- `2026-10-14_feedback_batch_plan.md` — 4 reports, four phases: Upcoming weekends open at first (Momo), holidays that
-  join a weekend without costing PTO (Momo), the upkeep a month in hours (Appa), Spread out due dates (core, Pabu,
-  Appa). Helper agents are back on: its *Helpers* section says which model (Opus, Sonnet, Haiku) does what, phase by
-  phase.
+Nothing right now.
 
 ## How a plan is run
 1. A new session; the strongest model the budget allows for anything that touches stored data or sync. Say "Execute
@@ -37,3 +34,6 @@ the plan you're running (its top sections and your phase).
   you, Hawky's Bought, Pabu's partner).
 - `2026-10-11_bosco_retinoids_plan.md` — retinoid build-up reminders in Bosco (tazarotene, tretinoin), two phases (the
   feature; Hold this step a week, Undo, Developer Mode's lines). Nothing of it goes to Momo (the owner's choice).
+- `2026-10-14_feedback_batch_plan.md` — 4 reports, four phases: Upcoming weekends open at first and holidays that join a
+  weekend without costing PTO (Momo), the maintenance a month in hours (Appa), Spread out due dates (core, Pabu, Appa).
+  Its *Helpers* section is the model for using Sonnet and Haiku agents (which model does what, phase by phase).

@@ -17,7 +17,7 @@
 (function (K, A) {
   "use strict";
   const S = A.S;
-  const { isObj, isNum, isPos, isDate, newId } = K.util;
+  const { isObj, isNum, isPos, isDate, newId, daysBetween } = K.util;
   const { cleanText, cleanLine, safeLink, METERS, UNITS } = A;
 
   const cleanId = v => (typeof v === "string" && /^[a-z0-9]{4,40}$/i.test(v) ? v : "");
@@ -55,6 +55,9 @@
     };
   });
 
+  // Spread out's move of a job's next day by time: { from, to }, at most MOVE_MAX_DAYS apart (core/level.js), else none.
+  const moved = m => (isObj(m) && isDate(m.from) && isDate(m.to) && m.from !== m.to && Math.abs(daysBetween(m.from, m.to)) <= K.level.MOVE_MAX_DAYS
+    ? { from: m.from, to: m.to } : null);
   const cleanJobs = list => cleanList(list, (j, b) => {
     const name = cleanLine(j.name, A.MAX_TITLE), thingId = cleanId(j.thingId);
     if (!name || !thingId) return null;
@@ -67,7 +70,8 @@
       from: { date: isDate(from.date) ? from.date : "", reading: num(from.reading) },
       est: Number.isInteger(j.est) && j.est > 0 ? Math.min(j.est, A.MAX_MINUTES) : null,
       source: { docId: cleanId(isObj(j.source) && j.source.docId), where: cleanLine(isObj(j.source) && j.source.where, A.MAX_WHERE) },
-      notes: cleanText(j.notes, A.MAX_NOTES)
+      notes: cleanText(j.notes, A.MAX_NOTES),
+      ...(moved(j.moved) ? { moved: moved(j.moved) } : {}) // Spread out's move (schedule.js dueOf), only while there is one
     };
   });
 

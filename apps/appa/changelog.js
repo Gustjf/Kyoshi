@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.565", date: "2026-10-14", changes: [
+      "Developer Mode → Spread out due dates…: when many jobs come due the same week (all entered on one evening, say), it moves the next due date of some by up to two weeks, earlier or later (a quarter of how often they come at most), so the next 8 weeks carry about the same time; it shows each week before and after, and the dates it would move, before you Apply. The spread lasts: once you record a job, the next counts from that day as always. Jobs by the meter alone never move. A moved date says \"(spread out)\"; Put them back undoes it.",
+      "Reload Appa on every device after updating."
+    ] },
     { version: "1.465", date: "2026-10-14", changes: [
       "Appa shows the average maintenance a month, in hours, on its home (\"About 3½ h of maintenance a month\"), and each thing's on its page: what its jobs take in an average month (its tooltip says what was left out: jobs without minutes, or by the meter before Appa knows the pace)."
     ] },

@@ -16,7 +16,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `changelog.js` | version history |
 | `model.js` | **the data model** (header comment documents it): cleaners for every list, lookups (`thingById`, `jobsOf`, `recordsOf`, `workOf`…) |
 | `data.js` | storage (`load`, `persist`, `save`, `storeTimer`), backups and sync merge (`A.data`, incl. `files()` for folder sync) |
-| `schedule.js` | the maths, never stored, memoized by `S.version` and today: readings & pace, next due (`dueOf`: time/season/meter), `statusOf`, `minutesOf` (the estimate), `perMonth` (times a job comes in an average month) and `upkeep` (the minutes a month, with what was left out), `readingAsk`, `upcoming`, and the words (`dueText`, `everyText`…) |
+| `schedule.js` | the maths, never stored, memoized by `S.version` and today: readings & pace, next due (`dueOf`: time/season/meter, with `usual` and `moved` for Spread out), `statusOf`, `minutesOf` (the estimate), `perMonth` (times a job comes in an average month) and `upkeep` (the minutes a month, with what was left out), `readingAsk`, `upcoming`, and the words (`dueText`, `everyText`…) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
 | `render.js` | `showView`, `renderAll`: home (Coming up, Things, Records), a thing (reading, sources, Schedule, History), the records tables, the timer bar; `upkeepHTML` (the upkeep line and its tooltip) |
 | `job-view.js` | the job view (notes as bullets, last time), the timer (`start`/`finish`/`stopTimer`, this device only; it tells `K.wakeLock` when it starts and stops) |
@@ -26,7 +26,8 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `job-editor.js` | the job pop-up: how often (every N / each season / meter only, plus every N on the meter), last done, how long, source + page, notes |
 | `report.js` | the report pop-up and gathering (`gather`) |
 | `report-pdf.js` | the report's layout with `K.pdf` (`buildReport`) |
-| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a running timer keeps the screen on: core/wakelock.js), `onTick`, `onKeydown` (Enter saves), `onReload`, `attention` (overdue, a reading asked for), `renderDev` (photos & PDFs), `bugState` |
+| `spread.js` | Spread out due dates (Developer Mode; core/spread.js shows it, core/level.js works it out): the jobs whose day by time or season can move (the usual day, while it's the sooner of time and meter), Apply (every move replaced by the plan's, those jobs stamped, one save), Put them back (asked first); the block (`spreadDevHTML`, `wireSpread`) |
+| `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a running timer keeps the screen on: core/wakelock.js), `onTick`, `onKeydown` (Enter saves), `onReload`, `attention` (overdue, a reading asked for), `renderDev` (photos & PDFs, Spread out), `bugState` |
 | `appa.css` | styles under `.app-appa` |
 
 ## State (`A.S`)
@@ -59,6 +60,12 @@ one on the record's day. `A.open(id)` (Momo's "Open in Appa") shows that job (or
   their days, months and years by the calendar, each season picked once a year, the meter as pace × a month ÷ `meterEvery`, the more
   often of time and meter; a meter job without a pace is left out). It shows in hours by quarters ("About 3½ h of maintenance a month";
   under 7½ minutes, "Under ¼ h a month": the owner asked for hours); the tooltip says what was left out. Bug reports carry the counts only.
+- **Spread out** (Developer Mode, 2026-10-14 plan Phase 4): a job's `moved: { from, to }` (at most 14 days apart; only
+  while there is one) makes its day by time `to` while the usual one (`dueOf`'s `usual`: after its latest record, or
+  `from`) is still `from`; the sooner of time and meter then as ever. A record, or a new schedule, makes the usual day
+  another and the move no longer holds. Jobs by the meter alone never move. Apply replaces every move with the plan's
+  (core/level.js); spreading again gives the same plan. A moved day says "(spread out)" (`dueText`). It came in 1.565 (no
+  schema bump): an older copy drops it when it saves, so reload Appa on every device. Bug reports count moves.
 - Due dates, statuses and estimates are worked out, never stored. "Today" is `K.util.todayStr()` (time travel works);
   `Date.now()` is only for `at` / `u` stamps and the timer's real minutes.
 - A job counts from its latest record, else `from` (the day and reading given, else the day it was added). A reading

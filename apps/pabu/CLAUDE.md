@@ -14,7 +14,7 @@ rose). Rules, versioning and the app contract: the root `CLAUDE.md`. Version & c
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_NAME` 40, `MAX_GROUP` 30, `MAX_NOTE` 1000, `MAX_CADENCES` 6, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `OFTEN`, `HOW` with each one's minutes, `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`/`cadenceWords`, `needTitle`, `groupsInUse`, `lastTalk`, `nextDue`, `dueOf`, `allDue`, `nextDueOf`, `thisWeek`, `mondayOf`, the words for days, birthdays and the anniversary: `parseBirthday`, `anniversaryOf` (the partner's only), `birthdayIn`/`anniversaryIn`, `nextBirthday`/`nextAnniversary`, `ageOn`/`yearsOn`, `fmtBirthday`/`fmtAnniversary`, `talkedOn`) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, its checkup); constants (`MAX_NAME` 40, `MAX_GROUP` 30, `MAX_NOTE` 1000, `MAX_CADENCES` 6, minutes 5–480, `MAX_TALKS` 200, `EVERY`, `OFTEN`, `HOW` with each one's minutes, `WINDOW_DAYS` 6, `SOON_DAYS` 14, `BIRTHDAY_DAYS` 30, `DOT_WHEN_OVERDUE`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text and minutes, `everyOf`/`howOf`/`cadenceWords`, `needTitle`, `groupsInUse`, `lastTalk`, `nextDue`, `usualDue`, `isMoved`, `dueOf`, `allDue`, `nextDueOf`, `thisWeek`, `mondayOf`, the words for days, birthdays and the anniversary: `parseBirthday`, `anniversaryOf` (the partner's only), `birthdayIn`/`anniversaryIn`, `nextBirthday`/`nextAnniversary`, `ageOn`/`yearsOn`, `fmtBirthday`/`fmtAnniversary`, `talkedOn`) |
 | `markup.js` | the page: This week, quick add with its chips, the Birthdays strip (`#bdayTitle`), People (group chips, the list), the person pop-up (its foot, the hint and Save, Cancel, Delete, kept in view), Set up (`#setupOverlay`) |
 | `changelog.js` | version history |
 | `data.js` | storage (`load`, `save`), cleaning (`cleanPeople`, `cleanCadences`: carries a version 1 person's one schedule over, `cleanTalks`, `cleanBirthday`: the anniversary's too), backups and sync merge (`A.data`) |
@@ -22,6 +22,7 @@ rose). Rules, versioning and the app contract: the root `CLAUDE.md`. Version & c
 | `render.js` | `renderAll`, `renderAdd`: This week, the chips, the Birthdays strip (the anniversary's row after a heart; its heading), People (the group chips, each person's line: the partner's heart, the anniversary's line) |
 | `editor.js` | the person pop-up: name, group (a datalist of those in use), the birthday's three fields, notes, a box per call, text or visit (how, how often, ✕; minutes, last talked and due; its days, each with ✕; "Talked on" and Add), "+ Add a call, text or visit"; Save (Enter), Cancel, Delete; `readDayFields` (a day's three fields, Set up's too) |
 | `setup.js` | Set up (`openSetup`, `wireSetup`): who you're in a relationship with ("— no one", then everyone A to Z) and the anniversary (month, day, an optional year; off while no one is picked; picking someone shows theirs); Save, Cancel |
+| `spread.js` | Spread out due dates (Developer Mode; core/spread.js shows it, core/level.js works it out): the calls, texts and visits with their usual due (`items`; weekly ones only weigh), Apply (`keep`: every move replaced by the plan's, those people stamped, one save), Put them back (`putBack`, asked first); the block (`spreadDevHTML`, `wireSpread`) |
 | `events.js` | `A.init` wiring (quick add, This week's ✓ and its undo, the group chips) and the hooks: `onTick` (a new day), `onReload`, `attention` (calls, texts and visits overdue), `renderDev` (Set up…), `bugState` |
 | `pabu.css` | styles under `.app-pabu` |
 
@@ -30,11 +31,12 @@ Saved: `people` [{ id, name, group, note, birthday, partner, anniversary, cadenc
 `group` ≤ 30 ("" for none; one person, one group); `note` ≤ 1000 (lines kept); `birthday` "MM-DD", "YYYY-MM-DD" (with
 the year born) or ""; `partner` true for the one you're in a relationship with, else false; `anniversary` as a birthday
 is ("" for none; the year you got together optional), set in Set up on the partner only; `cadences` their calls, texts
-and visits, at most 6 (none: birthday only, never due), each { id, every, how, minutes, talks, at }: `id` a short id of
+and visits, at most 6 (none: birthday only, never due), each { id, every, how, minutes, talks, at, moved? }: `id` a short id of
 its own within the person ("c1" for one carried over from version 1); `every` "week" | "2weeks" | "month" | "quarter" |
 "year"; `how` "call" | "text" | "visit"; `minutes` 5–480 (how's usual length until changed: 30, 10, 120); `talks` the
 days you talked that way, "YYYY-MM-DD", newest first, each once, at most 200; `at` when it was added (due that day until
-you first talk; the person's, for one carried over). The person's `at` is when they were added (time travel aware, from
+you first talk; the person's, for one carried over); `moved` `{ from, to }` only once Spread out moved its due (at most 14
+days apart). The person's `at` is when they were added (time travel aware, from
 `K.util.now()`), `u` when they last changed (the later wins in sync). Deleted ones stay as markers, with nothing
 personal (no name, group, note, birthday, partner, anniversary or calls, texts and visits).
 This device only: `add` (quick add's chips: `every`, `how`; back to every month and a call after each add), `filter`
@@ -47,7 +49,9 @@ visits, each with the how last picked there, and the snapshot that tells whether
 Key: `people` (plus core's `sync` and `meetings`). Backup JSON: `{ schemaVersion: 2, appVersion, people }` (plus core's
 `meetings`). Version 1 (one schedule per person, at the top: `every`, `how`, `minutes`, `talks`) still imports, and
 syncs: `cleanPeople` makes it one call, text or visit, "c1", with those days (none for birthday only, `every: "none"`);
-the old top-level keys are no longer written. `partner` and `anniversary` came in 2.231 (no schema bump): an older file
+the old top-level keys are no longer written. A call, text or visit's `moved` came in 2.342 (no schema bump; there only while
+there is one): an older copy drops it when it saves (that due goes back to the usual), so reload Pabu on every device.
+`partner` and `anniversary` came in 2.231 (no schema bump): an older file
 has neither (false and ""), and an older copy of Pabu drops them, so reload Pabu on every device. Merged person by
 person by `u`, deleted ones kept as markers (Hawky's merge): the later change to a person wins whole, so a ✓ on one
 device and an edit of the same person on another, before they sync, keep only the later (the owner's choice; joining the
@@ -81,6 +85,13 @@ hid them).
   its last talk on or before today (`lastTalk`; a day ahead from a device whose clock was wrong is kept but never
   counts) + every (`addDays` 7 or 14, `addMonths` 1, 3 or 12, as core's meetings); never talked, the day it was added.
   A birthday never makes anyone due. A person's next due is the soonest of theirs.
+- **Spread out** (Developer Mode, 2026-10-14 plan Phase 4): a call, text or visit's `moved: { from, to }` makes it due
+  `to` while its usual due (`usualDue`: its last talk and how often, as above) is still `from` (`isMoved`); everything
+  that reads `dueOf` (This week, People, the pop-up, Momo's inbox and its `from`, the dot) follows. A talk, a talk taken
+  back, or a new how often makes the usual due another day, and the move no longer holds (a talk taken back to as
+  before brings it back): the next counts from what you did. Saving the pop-up keeps a move that still holds, else
+  drops it. Apply replaces every move with the plan's (core/level.js; weekly ones only weigh in their week); spreading
+  again gives the same plan. A moved due says "(spread out)" on This week and in the pop-up. Bug reports count moves.
 - This week runs Monday to Sunday (as Momo's): each call, text or visit due by Sunday, or overdue, as the week began
   (its talks before Monday), soonest first; done when you talked that way any day this week, so a ticked one keeps its
   place, ✓, until Sunday. ✓ adds today to that one only; ✓ again takes off the day that ticked it.

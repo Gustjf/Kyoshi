@@ -98,14 +98,17 @@
     return words.length ? `${words.length > 1 ? `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}` : words[0]} overdue` : "";
   };
 
-  // Developer Mode's tools: Set up… (setup.js), Developer Mode closing first, as Bosco's start-up info does.
+  // Developer Mode's tools: Set up… (setup.js), Developer Mode closing first, as Bosco's start-up info does; Spread out
+  // due dates… and Put them back (spread.js).
   A.renderDev = box => {
     box.innerHTML = `<div class="dev-block"><button class="secondary small" id="pabuSetupBtn">Set up…</button>
-      <div class="dev-hint">Who you're in a relationship with, and your anniversary: a heart by their name, in the strip when it's near, on Momo's board.</div></div>`;
+      <div class="dev-hint">Who you're in a relationship with, and your anniversary: a heart by their name, in the strip when it's near, on Momo's board.</div></div>` +
+      A.spreadDevHTML();
     box.querySelector("#pabuSetupBtn").addEventListener("click", () => {
       K.dev.toggle();
       A.openSetup();
     });
+    A.wireSpread(box);
   };
 
   // Bug reports: counts and settings only — never names, groups, notes, birthdays or the anniversary.
@@ -117,6 +120,7 @@
       `- Calls, texts, visits: ${all.length} (overdue ${count(d => d < today)}, due today ${count(d => d === today)}, within ${SOON_DAYS} days ${count(d => d > today && d <= soon)}); this week ${week.length}, done ${week.filter(r => r.done).length}`,
       `- With a birthday: ${people.filter(p => p.birthday).length}; with notes: ${people.filter(p => p.note).length}; talks kept: ${all.reduce((n, r) => n + r.c.talks.length, 0)}`,
       `- Partner: ${people.some(p => p.partner) ? "set" : "none"}; anniversary: ${people.some(p => A.anniversaryOf(p)) ? "yes" : "no"}`,
+      `- Moved due dates (Spread out): ${all.filter(r => A.isMoved(r.p, r.c, today)).length}; kept but no longer holding: ${all.filter(r => r.c.moved && !A.isMoved(r.p, r.c, today)).length}`,
       `- Quick add: every ${S.add.every}, how ${S.add.how}; chips: ${S.filter === null ? "all" : S.filter ? "a group" : "no group"}; pop-up: ${S.editing ? "open" : "closed"}`
     ];
   };

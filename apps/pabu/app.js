@@ -151,11 +151,16 @@
   // The day a call, text or visit was added ("" if unknown): the person's, for one carried over from before there were
   // several.
   const addedDay = (p, c) => dayOf(c.at || p.at);
-  // When it's due: its last talk and how often; never talked, the day it was added (today without one).
-  function dueOf(p, c, today = todayStr()) {
+  // When it's usually due: its last talk and how often; never talked, the day it was added (today without one).
+  function usualDue(p, c, today = todayStr()) {
     const last = lastTalk(c, today);
     return last ? nextDue(last, everyOf(c)) : addedDay(p, c) || today;
   }
+  // Whether Spread out's move (Developer Mode, spread.js) holds: while the usual due is still the one it moved. Once
+  // you talk, or change how often, the usual due is another day and the next counts from what you did.
+  const isMoved = (p, c, today = todayStr()) => !!c.moved && c.moved.from === usualDue(p, c, today);
+  // When it's due: the usual, or the day Spread out moved it to.
+  const dueOf = (p, c, today = todayStr()) => (isMoved(p, c, today) ? c.moved.to : usualDue(p, c, today));
   const byDue = (a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
   // Everyone's calls, texts and visits with when each is due, soonest first, then by title: [{ p, c, due, title, key }].
   // Due as the day before `upTo` began, when given: its talks before that day only.
@@ -225,7 +230,7 @@
   Object.assign(A, {
     MONTH_NAMES, cleanLine, cleanText, everyOf, howOf, everyWords, howLabel, cadenceWords, cleanMinutes, readMinutes,
     fmtMinutes, plural, cap, fmtDay, weekdayOf, mondayOf, dayOf, agoWords, talkedWords, dueWords, live, personById,
-    cadenceById, byName, needTitle, groupsInUse, lastTalk, nextDue, addedDay, dueOf, allDue, nextDueOf, thisWeek,
+    cadenceById, byName, needTitle, groupsInUse, lastTalk, nextDue, addedDay, usualDue, isMoved, dueOf, allDue, nextDueOf, thisWeek,
     parseBirthday, anniversaryOf, birthdayIn, anniversaryIn, nextBirthday, nextAnniversary, ageOn, yearsOn, fmtBirthday,
     fmtAnniversary, talkedOn
   });

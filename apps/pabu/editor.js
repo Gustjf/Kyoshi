@@ -80,7 +80,8 @@
   // 3 days". A day after today can't be picked.
   function renderDays(c) {
     const today = todayStr(), list = field(c, ".talks");
-    field(c, ".cadence-last").textContent = `${A.cap(A.talkedWords(A.lastTalk(c, today), today))} · ${A.dueWords(A.dueOf({ at: S.editing.at }, c, today), today)}`;
+    const p = { at: S.editing.at };
+    field(c, ".cadence-last").textContent = `${A.cap(A.talkedWords(A.lastTalk(c, today), today))} · ${A.dueWords(A.dueOf(p, c, today), today)}${A.isMoved(p, c, today) ? " (spread out)" : ""}`;
     list.hidden = !c.talks.length;
     list.innerHTML = c.talks.map(d => `<li><span>${esc(A.fmtDay(d, today))}</span>` +
       `<button type="button" class="talk-x" data-act="talk-remove" data-day="${esc(d)}" title="Remove" aria-label="Remove ${esc(A.fmtDay(d, today))}">✕</button></li>`).join("");
@@ -234,7 +235,11 @@
       group: A.groupsInUse(p.id).find(g => g.toLowerCase() === typed.toLowerCase()) || typed,
       note: A.cleanText($("personNote").value, MAX_NOTE),
       birthday,
-      cadences: e.cadences.map((c, i) => ({ id: c.id, every: c.every, how: c.how, minutes: minutes[i], talks: c.talks.slice(), at: c.at }))
+      cadences: e.cadences.map((c, i) => {
+        const kept = { id: c.id, every: c.every, how: c.how, minutes: minutes[i], talks: c.talks.slice(), at: c.at };
+        // Spread out's move stays while it still holds (how often and the talks as they were), else it goes.
+        return c.moved && A.isMoved({ at: e.at }, { ...kept, moved: c.moved }, today) ? { ...kept, moved: c.moved } : kept;
+      })
     };
     if (Object.keys(next).some(k => JSON.stringify(next[k]) !== JSON.stringify(p[k]))) {
       Object.assign(p, next, { u: Date.now() });
