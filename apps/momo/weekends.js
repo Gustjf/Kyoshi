@@ -1,5 +1,5 @@
-/* Momo · weekends.js — Upcoming weekends, so they get spent on purpose: a folded line under the board and under Today
- * ("Upcoming weekends · 4 of 13 planned · next without a plan: Oct 18 · 1½ days off ahead"), closed at first, opening
+/* Momo · weekends.js — Upcoming weekends, so they get spent on purpose: a line, open at first, under the board and under Today
+ * ("Upcoming weekends · 4 of 13 planned · next without a plan: Oct 18 · 1½ days off ahead"), opening
  * into the next WEEKENDS weekends from this one (on a Saturday or Sunday, the one it's in; else the coming one): each its
  * days and its plan, cut short, in green, or "No plan" in red. The board's Saturday heading (this week's and next week's)
  * shows the plan too. Tapping a weekend, or that plan, opens its pop-up (#weekendOverlay) to type a brief one and take
@@ -97,7 +97,7 @@
   }
 
   // Both folds (render.js renderAll): how many of the weekends have a plan, the first without one and the days off ahead,
-  // then the tiles. Each stays open or closed as it is.
+  // then the tiles. Both start open; each stays open or closed as you leave it until the page reloads.
   let drawn = "";
   function renderWeekends() {
     const sats = upcomingWeekends(), next = sats.find(sat => !planOf(sat)), ahead = offAhead(sats);

@@ -118,7 +118,12 @@ again in step every month after. Done on time, each stays in step forever. One n
 the lockstep for good: once you talk or record it, the next due counts from that day.
 
 ## Status (tick each phase off here, with what was decided)
-- [ ] Phase 1 — Momo: Upcoming weekends open at first (Momo +0.010 → 10.495)
+- [x] Phase 1 — Momo: Upcoming weekends open at first (Momo +0.010 → 10.495) — done 2026-10-14: both `details.weekends`
+  carry `open`; the comments and `apps/momo/CLAUDE.md` (also its markup.js row) say "open at first"; one new test (open under
+  the board and under Today, a tap closes one, a redraw leaves it closed: the redraw sets a plan in the page and calls
+  `renderAll`, since `mo.openWeekend` reopens the fold first). No existing test needed a change; full run 161 passed.
+  Built by Sonnet (as a `general-purpose` agent, Opus reviewing the diff and pushing); a Haiku checklist, whose one FAIL
+  (a bare `?v=`) is `index.html`'s comment about the stamps, not a stamp.
 - [ ] Phase 2 — Momo: holidays and free days off (Momo +0.100 → 10.595)
 - [ ] Phase 3 — Appa: the upkeep a month, in hours (Appa +0.100 → 1.465)
 - [ ] Phase 4 — core, Pabu, Appa: Spread out due dates (Kyoshi +0.100 → 5.381 · Pabu +0.100 → 2.342 · Appa +0.100 → 1.565)

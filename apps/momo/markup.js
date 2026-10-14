@@ -1,5 +1,5 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
- * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends folded at its bottom, and
+ * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends (open at first) at its bottom, and
  * its pop-ups (card editor, an event, a card on Today, a weekend's plan and days off, the sleep routine, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within Momo (look them up with A.$). */
@@ -22,7 +22,7 @@ Kyoshi.apps.momo.markup = `
       <button class="secondary" id="weekBtn">Week</button>
     </div>
     <div id="todayBody"></div>
-    <details class="weekends"><summary></summary><div class="weekend-list"></div></details>
+    <details class="weekends" open><summary></summary><div class="weekend-list"></div></details>
   </div>
 
   <div id="boardView">
@@ -70,8 +70,8 @@ Kyoshi.apps.momo.markup = `
   <div class="board-wrap" id="boardWrap">
     <div class="board" id="board"></div>
   </div>
-  <!-- Upcoming weekends (weekends.js), folded: also at the bottom of Today. -->
-  <details class="weekends"><summary></summary><div class="weekend-list"></div></details>
+  <!-- Upcoming weekends (weekends.js), open at first: also at the bottom of Today. -->
+  <details class="weekends" open><summary></summary><div class="weekend-list"></div></details>
   </div>
 
   <!-- Where a dragged card would land: one line per day it lands on (drop.js). -->

@@ -38,6 +38,28 @@ async function folds(tab) {
 
 module.exports = [
   {
+    name: "momo weekends: Upcoming weekends start open under the board and under Today; a tap closes one, and a redraw leaves it closed",
+    async run(t) {
+      const boxOf = (tab, view) => tab.page.locator(`#kMount #${view} details.weekends`);
+      const isOpen = (tab, view) => boxOf(tab, view).evaluate(d => d.open);
+      // The desktop: the board's, open before anything is tapped.
+      const desk = await open(t, { app: "momo", size: DESKTOP });
+      eq(await isOpen(desk, "boardView"), true, "open under the board at first");
+      // The phone opens on Today: its fold is open before anything is tapped.
+      const tab = await open(t, { app: "momo", size: PHONE });
+      eq(await isOpen(tab, "todayView"), true, "open under Today at first");
+      // A tap on the line closes it; a redraw with a changed line (a weekend's plan saved) leaves it closed.
+      await boxOf(tab, "todayView").locator("summary").click();
+      eq(await isOpen(tab, "todayView"), false, "a tap closes it");
+      await tab.page.evaluate(sat => { const A = Kyoshi.apps.momo; A.S.data.weekends[sat] = { plan: "Walk", off: { before: 0, after: 0 }, u: Date.now() }; A.save(); A.renderAll(); }, SAT);
+      ok(/1 of 13 planned/.test(await boxOf(tab, "todayView").locator("summary").textContent()), "the line was redrawn");
+      eq(await isOpen(tab, "todayView"), false, "still closed after a redraw");
+      // Tapped again it opens, and the weekend's plan is there.
+      await boxOf(tab, "todayView").locator("summary").click();
+      eq([await isOpen(tab, "todayView"), (await mo.weekends(tab)).tiles[0].plan], [true, "Walk"], "opens again with its plan");
+    }
+  },
+  {
     name: "momo weekends: days off before and after, its tile over them, a sun on the board and on Today, Clear, export and import",
     async run(t) {
       const tab = await open(t, { app: "momo", size: DESKTOP }), p = tab.page;

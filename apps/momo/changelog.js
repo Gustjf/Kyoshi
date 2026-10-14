@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.495", date: "2026-10-14", changes: [
+      "Upcoming weekends start open, under the board and under Today."
+    ] },
     { version: "10.485", date: "2026-10-08", changes: [
       "A card you put Inside “Dinner” goes inside your own Dinner card, never Turtleduck's Dinner slot (on a day with only the slot, it stays on its own); a card that ended up inside a slot before goes back on its own.",
       "If Turtleduck (or another app) fails to start one day, Momo keeps its slot cards and its cards on your week as they are, instead of taking them away and syncing that everywhere; Save as baseline keeps those slots too.",
