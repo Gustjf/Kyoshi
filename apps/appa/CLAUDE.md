@@ -12,13 +12,13 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | File | What's in it |
 |---|---|
 | `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note); constants (`METERS`, `UNITS`, `LEAD_DAYS` 14, `SOON_DAYS`, reading rules, `ESTIMATE_RUNS`, limits, `ICONS`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (`niceMinutes`, `fmtMinutes`, `parseMinutes`, `fmtReading`, `fmtMoney`/`parseMoney` in cents, `fmtDay`, `safeLink`, `sourceLink` (#page=N)) |
-| `markup.js` | the page: three views (home, a thing, a job) and the pop-ups (thing, job, record, reading, report) |
+| `markup.js` | the page: three views (home, a thing, a job; `#upkeepLine` under Coming up and `#thingUpkeep` under Schedule) and the pop-ups (thing, job, record, reading, report) |
 | `changelog.js` | version history |
 | `model.js` | **the data model** (header comment documents it): cleaners for every list, lookups (`thingById`, `jobsOf`, `recordsOf`, `workOf`…) |
 | `data.js` | storage (`load`, `persist`, `save`, `storeTimer`), backups and sync merge (`A.data`, incl. `files()` for folder sync) |
-| `schedule.js` | the maths, never stored, memoized by `S.version` and today: readings & pace, next due (`dueOf`: time/season/meter), `statusOf`, `minutesOf` (the estimate), `readingAsk`, `upcoming`, and the words (`dueText`, `everyText`…) |
+| `schedule.js` | the maths, never stored, memoized by `S.version` and today: readings & pace, next due (`dueOf`: time/season/meter), `statusOf`, `minutesOf` (the estimate), `perMonth` (times a job comes in an average month) and `upkeep` (the minutes a month, with what was left out), `readingAsk`, `upcoming`, and the words (`dueText`, `everyText`…) |
 | `share.js` | what Momo reads (`inbox`) and opens (`open`) |
-| `render.js` | `showView`, `renderAll`: home (Coming up, Things, Records), a thing (reading, sources, Schedule, History), the records tables, the timer bar |
+| `render.js` | `showView`, `renderAll`: home (Coming up, Things, Records), a thing (reading, sources, Schedule, History), the records tables, the timer bar; `upkeepHTML` (the upkeep line and its tooltip) |
 | `job-view.js` | the job view (notes as bullets, last time), the timer (`start`/`finish`/`stopTimer`, this device only; it tells `K.wakeLock` when it starts and stops) |
 | `proof.js` | photos (upright JPEGs ≤ 2000 px on white), PDFs (`K.pdf.inspect`: protected or unreadable ones flagged), links, thumbnails |
 | `record.js` | the record pop-up (done / log / full: see its header) and the reading pop-up (`saveReading`) |
@@ -54,6 +54,11 @@ between `from` and `to` (up to today), done on its record's day: `{ id: "done:<r
 one on the record's day. `A.open(id)` (Momo's "Open in Appa") shows that job (or the thing's reading pop-up, or a recorded job's record).
 
 ## Invariants
+- The upkeep a month is worked out, never stored: the minutes of each live job on a thing in use (`minutesOf`: the timed average,
+  else the guess; none: left out) times how often it comes in an average month (`perMonth`, 365.25 / 12 days: every N days/weeks by
+  their days, months and years by the calendar, each season picked once a year, the meter as pace × a month ÷ `meterEvery`, the more
+  often of time and meter; a meter job without a pace is left out). It shows in hours by quarters ("About 3½ h of maintenance a month";
+  under 7½ minutes, "Under ¼ h a month": the owner asked for hours); the tooltip says what was left out. Bug reports carry the counts only.
 - Due dates, statuses and estimates are worked out, never stored. "Today" is `K.util.todayStr()` (time travel works);
   `Date.now()` is only for `at` / `u` stamps and the timer's real minutes.
 - A job counts from its latest record, else `from` (the day and reading given, else the day it was added). A reading

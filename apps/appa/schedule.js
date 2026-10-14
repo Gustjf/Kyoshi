@@ -119,6 +119,36 @@
     return times.length ? niceMinutes(mean(times)) : job.est ? niceMinutes(job.est) : null;
   });
 
+  // How many times a month a job comes in an average month (365.25 / 12 days), or null when that can't be told: by
+  // time (every N days or weeks by their days, months and years by the calendar; each season picked once a year), by
+  // the meter (the thing's pace × a month ÷ meterEvery; none without a pace), or the more often of the two.
+  const MONTH = 365.25 / 12;
+  const perMonth = job => {
+    const e = job.every, thing = A.thingById(job.thingId), p = thing && thing.meter && job.meterEvery ? pace(thing) : null;
+    const byTime = e ? (e.unit === "d" ? MONTH / e.n : e.unit === "w" ? MONTH / (7 * e.n) : e.unit === "m" ? 1 / e.n : 1 / (12 * e.n))
+      : job.seasons.length ? job.seasons.length / 12 : null;
+    const byMeter = p ? p * MONTH / job.meterEvery : null;
+    return byTime === null ? byMeter : byMeter === null ? byTime : Math.max(byTime, byMeter);
+  };
+
+  // The upkeep in an average month, over the live jobs of the things in use (one thing's when given):
+  // { minutes (a month), jobs (counted), things (they're on), noTime (left out: no minutes), noPace (left out:
+  // only the meter, and no pace yet) }. Never stored.
+  const upkeep = (thingId = "") => remember(`upkeep:${thingId}`, () => {
+    const u = { minutes: 0, jobs: 0, things: 0, noTime: 0, noPace: 0 };
+    A.activeThings().filter(t => !thingId || t.id === thingId).forEach(t => {
+      let counted = 0;
+      A.jobsOf(t.id).forEach(job => {
+        const m = minutesOf(job), n = perMonth(job);
+        if (!m) u.noTime++;
+        else if (n === null) { if (t.meter && job.meterEvery) u.noPace++; }
+        else { u.minutes += m * n; u.jobs++; counted++; }
+      });
+      if (counted) u.things++;
+    });
+    return u;
+  });
+
   // Whether a thing's meter needs a fresh reading: { since, why: "none" | "stale" | "due" }, or null.
   // Only things with meter jobs ask: with no reading yet, when the last is over READING_STALE days old,
   // or once per job when a meter job is projected within READING_AHEAD days.
@@ -181,7 +211,7 @@
   }
 
   Object.assign(A, {
-    remember, dateOf, points, lastReading, pace, estimate, addMonths, nextSeason, lastDone, baseOf, dueOf, statusOf, minutesOf,
+    remember, dateOf, points, lastReading, pace, estimate, addMonths, nextSeason, lastDone, baseOf, dueOf, statusOf, minutesOf, perMonth, upkeep,
     readingAsk, upcoming, nextOf, everyText, dueText, lastText, paceText
   });
 })(Kyoshi, Kyoshi.apps.appa);

@@ -107,11 +107,11 @@
 
   // Bug reports: counts and settings only.
   A.bugState = () => {
-    const things = A.live(S.things), up = A.upcoming(), count = st => up.filter(x => x.status === st).length;
+    const things = A.live(S.things), up = A.upcoming(), count = st => up.filter(x => x.status === st).length, uk = A.upkeep();
     return [
       `- View: ${S.view}${S.rec ? `, record pop-up (${S.rec.mode})` : ""}${S.editing ? `, ${S.editing.kind} editor` : ""}`,
       `- Things: ${things.length} (${things.filter(t => t.archived).length} archived; meters: ${Object.keys(A.METERS).map(m => `${m} ${things.filter(t => t.meter === m).length}`).join(", ")})`,
-      `- Jobs: ${A.live(S.jobs).length} (${count("overdue")} overdue, ${count("soon")} soon, ${count("near")} near, ${count("unknown")} unknown)`,
+      `- Jobs: ${A.live(S.jobs).length} (${count("overdue")} overdue, ${count("soon")} soon, ${count("near")} near, ${count("unknown")} unknown)${uk.jobs ? `; upkeep about ${Math.round(uk.minutes)} min a month (${uk.noTime + uk.noPace} left out)` : ""}`,
       `- Records: ${A.live(S.records).length}, readings: ${A.live(S.readings).length}, photos & PDFs: ${A.live(S.files).length}`,
       `- Deleted markers: ${["things", "jobs", "records", "readings", "files"].map(k => S[k].filter(i => i.deleted).length).join("/")}`,
       `- Needs for Momo: ${A.inbox().length}; reading asks: ${things.filter(A.readingAsk).length}; timer: ${S.timer ? "running" : "off"}`

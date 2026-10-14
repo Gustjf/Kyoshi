@@ -12,6 +12,7 @@ Kyoshi.apps.appa.markup = `
         <h2>Coming up</h2>
         <button class="secondary small" id="logWorkBtn" hidden>+ Log work</button>
       </div>
+      <div class="upkeep" id="upkeepLine" hidden></div>
       <div id="comingUp"></div>
     </section>
 
@@ -58,6 +59,7 @@ Kyoshi.apps.appa.markup = `
         <h2>Schedule</h2>
         <button class="small" id="addJobBtn">+ Job</button>
       </div>
+      <div class="upkeep" id="thingUpkeep" hidden></div>
       <div class="empty-msg" id="jobsEmpty">No jobs yet. Add each one from the manual: what to do, how often, and where it says so.</div>
       <div class="rows" id="jobsList"></div>
     </section>

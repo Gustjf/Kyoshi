@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "1.465", date: "2026-10-14", changes: [
+      "Appa shows the average maintenance a month, in hours, on its home (\"About 3½ h of maintenance a month\"), and each thing's on its page: what its jobs take in an average month (its tooltip says what was left out: jobs without minutes, or by the meter before Appa knows the pace)."
+    ] },
     { version: "1.365", date: "2026-10-09", changes: [
       "A thing's \"Next:\" line in the Things list keeps its date capitalized (Oct 20, not oct 20); the first fix had capitalized nothing."
     ] },

@@ -42,6 +42,7 @@
   // ==========================================================================
   function renderHome() {
     const things = A.activeThings(), archived = A.archivedThings();
+    drawUpkeep("upkeepLine", A.upkeep(), false);
     $("comingUp").innerHTML = comingUpHTML(things);
     $("logWorkBtn").hidden = !things.length;
     $("thingsEmpty").hidden = things.length > 0 || archived.length > 0;
@@ -52,6 +53,24 @@
     const records = A.recordsOf("");
     $("recordsSection").hidden = !records.length;
     $("homeRecords").innerHTML = records.length ? recordsHTML(records, { withThing: true, recent: !S.allRecords }) : "";
+  }
+
+  // The maintenance a month as a line with its tooltip, or "" while no job counts: "About 3½ h of maintenance a month"
+  // (short: "About ¾ h a month"). In hours by quarters (the owner's "in terms of hours"); under 7½ minutes, "Under ¼ h".
+  function upkeepHTML(u, short = false) {
+    if (!u || !u.jobs) return "";
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const q = Math.round(u.minutes / 15), whole = Math.floor(q / 4), frac = ["", "¼", "½", "¾"][q % 4];
+    const amount = q ? `About ${whole || ""}${frac} h` : "Under ¼ h";
+    const tip = `From ${plural(u.jobs, "job", "jobs")} on ${plural(u.things, "thing", "things")}` +
+      (u.noPace ? `; ${u.noPace} by the meter left out until Appa knows the pace` : "") + (u.noTime ? `; ${u.noTime} without minutes left out` : "");
+    return `<span title="${esc(tip)}">${amount}${short ? "" : " of maintenance"} a month</span>`;
+  }
+  // Fills a line (#upkeepLine, #thingUpkeep), hidden while no job counts.
+  function drawUpkeep(id, u, short) {
+    const html = upkeepHTML(u, short);
+    $(id).hidden = !html;
+    $(id).innerHTML = html;
   }
 
   // Coming up: readings asked for, then jobs overdue or due within SOON_DAYS; else when the next one is.
@@ -111,6 +130,7 @@
     $("jobsEmpty").hidden = jobs.length > 0;
     $("jobsList").innerHTML = jobs.map(job => jobRowHTML(t, job)).join("");
     $("addJobBtn").hidden = t.archived;
+    drawUpkeep("thingUpkeep", A.upkeep(t.id), true);
     $("thingRecords").innerHTML = recordsHTML(A.recordsOf(t.id), { withThing: false }) || `<div class="empty-msg">No records yet. They show up here as you do jobs, or add past ones with + Record.</div>`;
   }
 
@@ -163,5 +183,5 @@
       `<button class="small" data-act="open-job" data-id="${esc(job.id)}">Open</button>`;
   }
 
-  Object.assign(A, { showView, openThing, openJob, renderAll, renderTimerBar, dot });
+  Object.assign(A, { showView, openThing, openJob, renderAll, renderTimerBar, dot, upkeepHTML });
 })(Kyoshi, Kyoshi.apps.appa);

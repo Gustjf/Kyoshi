@@ -143,7 +143,16 @@ the lockstep for good: once you talk or record it, the next due counts from that
   fine), two Sonnet fresh eyes (20 leads: 13 fixed, the rest above), the Sonnet test writer (`tests/momo-holidays.test.js`,
   10 tests, 427 lines: tests aren't site files; six helpers in `tests/momo.js`), the Sonnet closer (nothing missing).
   Full run 171 passed.
-- [ ] Phase 3 — Appa: the upkeep a month, in hours (Appa +0.100 → 1.465)
+- [x] Phase 3 — Appa: the upkeep a month, in hours (Appa +0.100 → 1.465) — done 2026-10-14: `perMonth` and `upkeep` in
+  `schedule.js` (memoized), `upkeepHTML` in `render.js`, `#upkeepLine` under Coming up and `#thingUpkeep` under Schedule
+  (hidden while no job counts; an archived thing's page has none). The line reads "About 3½ h of maintenance a month"
+  (a thing's: "About ¾ h a month"), always in hours by quarters, "Under ¼ h" below 7½ minutes: D9's minutes under an
+  hour went, after the closer pointed at the owner's "in terms of hours", and "upkeep" became the owner's "maintenance".
+  The tooltip: "From 4 jobs on 3 things; 1 without minutes left out" (and meter jobs before Appa knows the pace). A job
+  with only `meterEvery` on a thing without a meter is left out silently (it can't come due either). Built by Sonnet (a
+  `general-purpose` agent: code, `tests/appa-upkeep.test.js` with 7 tests, docs); reviewed by Opus, who changed the
+  wording and its tests; a Haiku checklist (clean) and a Sonnet closer. Full run 178 passed before the wording change;
+  `node tests/run.js appa` 13 passed after it.
 - [ ] Phase 4 — core, Pabu, Appa: Spread out due dates (Kyoshi +0.100 → 5.381 · Pabu +0.100 → 2.342 · Appa +0.100 → 1.565)
 
 ## Decisions (the architect's, 2026-10-14; the executing model adds its own small ones under Status)
