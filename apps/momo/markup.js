@@ -266,6 +266,11 @@ Kyoshi.apps.momo.markup = `
         <label for="holidaysText">Paste your holidays</label>
         <textarea id="holidaysText" rows="5" autocomplete="off" spellcheck="false"></textarea>
         <div class="note">A line each: the date, then its name. A run of days: Dec 24 – Dec 26 Winter break.</div>
+        <div class="field-row holidays-tools">
+          <button type="button" class="secondary small" id="holidaysTemplateBtn">Fill with a template</button>
+          <button type="button" class="secondary small" id="holidaysCopyBtn">Copy</button>
+          <span class="note" id="holidaysCopied" aria-live="polite"></span>
+        </div>
       </div>
       <div class="field-row holidays-file">
         <button type="button" class="secondary small" id="holidaysFileBtn">Choose a file…</button>

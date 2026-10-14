@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.605", date: "2026-10-14", changes: [
+      "Holidays…: Fill with a template puts the next 12 months of common US holidays in the box, each on its date that year, for you to edit (change a date, delete what you don't get off, add your own) and Add; Copy copies the box, to keep your list elsewhere."
+    ] },
     { version: "10.595", date: "2026-10-14", changes: [
       "Holidays: paste your work's holidays and free days off, or pick its calendar file (Developer Mode → Time off → Holidays…). One next to a weekend joins it and costs no PTO; one on its own shows among Upcoming weekends, in its place by date, where it can have a plan. A purple sun marks them, like the gold one for days off.",
       "A day off that falls on a holiday gives its PTO back.",

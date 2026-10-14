@@ -1,7 +1,8 @@
 /* Momo · holidays-import.js — the Holidays pop-up (#holidaysOverlay), opened from Developer Mode's Time off block
  * (timeoff.js): a box to paste a list (a date, then its name, a line each) and Choose a file… (a calendar's .ics, or a
  * .txt / .csv read as pasted), what it read shown under them before anything is kept ("3 holidays: Nov 26 Thanksgiving,
- * …; line 4 not understood"), Add (holidays.js addHolidays); then the holidays from today on, each with ✕ (removed at
+ * …; line 4 not understood"), Add (holidays.js addHolidays); Fill with a template (the next 12 months of common US
+ * holidays on their dates, to edit) and Copy (the box, to keep your list elsewhere); then the holidays from today on, each with ✕ (removed at
  * once: Momo's Undo brings it back once the pop-up is closed). Esc or × with something pasted or picked asks first; Close doesn't. */
 (function (K, A) {
   "use strict";
@@ -15,6 +16,41 @@
   const dayWords = date => `${DAY_NAMES[dayIndex(date)]} ${fmtShort(date)}`;
   const reading = () => (picked ? picked.read : A.readHolidays($("holidaysText").value));
   const pending = () => !!picked || !!$("holidaysText").value.trim();
+
+  // The template: common US holidays in the next 12 months from today (today counts), by date, each on its day that
+  // year (Thanksgiving the 4th Thursday of November…), as lines to edit: "2026-11-26 Thanksgiving".
+  const pad = n => String(n).padStart(2, "0");
+  const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+  const weekday = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sunday
+  const nth = (y, m, wd, n) => 1 + ((wd - weekday(y, m, 1) + 7) % 7) + 7 * (n - 1); // the nth weekday of a month
+  const last = (y, m, wd) => { const end = new Date(Date.UTC(y, m, 0)).getUTCDate(); return end - ((weekday(y, m, end) - wd + 7) % 7); };
+  const US = [
+    ["New Year's Day", y => ymd(y, 1, 1)], ["Martin Luther King Jr. Day", y => ymd(y, 1, nth(y, 1, 1, 3))],
+    ["Presidents' Day", y => ymd(y, 2, nth(y, 2, 1, 3))], ["Memorial Day", y => ymd(y, 5, last(y, 5, 1))],
+    ["Juneteenth", y => ymd(y, 6, 19)], ["Independence Day", y => ymd(y, 7, 4)], ["Labor Day", y => ymd(y, 9, nth(y, 9, 1, 1))],
+    ["Columbus Day", y => ymd(y, 10, nth(y, 10, 1, 2))], ["Veterans Day", y => ymd(y, 11, 11)],
+    ["Thanksgiving", y => ymd(y, 11, nth(y, 11, 4, 4))], ["Day after Thanksgiving", y => ymd(y, 11, nth(y, 11, 4, 4) + 1)],
+    ["Christmas Eve", y => ymd(y, 12, 24)], ["Christmas Day", y => ymd(y, 12, 25)], ["New Year's Eve", y => ymd(y, 12, 31)]
+  ];
+  function template() {
+    const today = todayStr(), y = +today.slice(0, 4);
+    const lines = US.map(([name, day]) => [day(y) >= today ? day(y) : day(y + 1), name]).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    return `# Edit the dates and names, delete the lines you don't get off, add your own; then Add.\n${lines.map(([d, n]) => `${d} ${n}`).join("\n")}\n`;
+  }
+  function fillTemplate() {
+    if ($("holidaysText").value.trim() && !confirm("Replace what's in the box with the template?")) return;
+    picked = null;
+    $("holidaysText").value = template();
+    $("holidaysText").rows = 12; // the whole list in view, to edit
+    renderRead();
+    $("holidaysText").focus();
+    $("holidaysText").setSelectionRange(0, 0);
+    $("holidaysText").scrollTop = 0;
+  }
+  async function copyBox() {
+    const text = $("holidaysText").value;
+    $("holidaysCopied").textContent = !text.trim() ? "Nothing to copy." : (await K.util.copyText(text)) ? "Copied." : "Couldn't copy: select the text and copy it.";
+  }
 
   // What was read: "From work.ics: 3 holidays: Thu Nov 26 Thanksgiving, …; 1 event not understood".
   function renderRead() {
@@ -41,6 +77,8 @@
     picked = null;
     $("holidaysText").value = "";
     $("holidaysFile").value = "";
+    $("holidaysCopied").textContent = "";
+    $("holidaysText").rows = 5;
     renderRead();
     renderList();
     K.modal.open(overlay());
@@ -74,7 +112,9 @@
 
   function initHolidays() {
     K.modal.define(overlay(), { dismiss: closeHolidays, pending, ask: "Discard the holidays you've pasted or picked?" });
-    $("holidaysText").addEventListener("input", () => { picked = null; renderRead(); });
+    $("holidaysText").addEventListener("input", () => { picked = null; $("holidaysCopied").textContent = ""; renderRead(); });
+    $("holidaysTemplateBtn").addEventListener("click", fillTemplate);
+    $("holidaysCopyBtn").addEventListener("click", copyBox);
     $("holidaysFileBtn").addEventListener("click", () => $("holidaysFile").click());
     $("holidaysFile").addEventListener("change", e => pick(e.target.files[0]));
     $("holidaysAddBtn").addEventListener("click", add);

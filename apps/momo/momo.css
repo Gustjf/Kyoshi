@@ -296,6 +296,9 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .weekend.holiday .we-days { max-width: 100%; overflow-wrap: anywhere; }
 /* The Holidays pop-up (holidays-import.js). */
 .app-momo .holidays-file { align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.app-momo .holidays-tools { align-items: baseline; gap: 8px; margin-top: 6px; }
+.app-momo .holidays-tools .note { margin-top: 0; }
+.app-momo #holidaysText { font-variant-numeric: tabular-nums; }
 .app-momo .holidays-read { min-height: 1.2em; margin-bottom: 4px; }
 .app-momo .holidays-read.bad { color: var(--bad); }
 .app-momo .holiday-list { max-height: 40vh; overflow-y: auto; margin: 10px 0 6px; border-top: 1px solid var(--border); }
