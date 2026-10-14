@@ -1,6 +1,7 @@
 /* Momo · markup.js — Momo's page (A.markup): the board's view (the week tabs, the To Be Budgeted bank
  * with Tasks, a chunk per app, the board) or Today's, each with Upcoming weekends (open at first) at its bottom, and
- * its pop-ups (card editor, an event, a card on Today, a weekend's plan and days off, the sleep routine, close-out).
+ * its pop-ups (card editor, an event, a card on Today, a weekend's plan and days off (a lone holiday's plan too), the
+ * holidays, the sleep routine, close-out).
  * The shell supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within Momo (look them up with A.$). */
 Kyoshi.apps.momo.markup = `
@@ -222,7 +223,7 @@ Kyoshi.apps.momo.markup = `
         <label for="weekendPlan">Plan</label>
         <input type="text" id="weekendPlan" maxlength="120" placeholder="Camping with …, or Rest" autocomplete="off">
       </div>
-      <div class="field">
+      <div class="field" id="weekendOffField">
         <label>Days off</label>
         <div class="field-row off-row">
           <div class="field">
@@ -253,6 +254,31 @@ Kyoshi.apps.momo.markup = `
         <span class="spacer"></span>
         <button class="secondary" id="weekendClearBtn">Clear</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Holidays (holidays.js, holidays-import.js): pasted or from a calendar file, from Developer Mode's Time off block. -->
+  <div class="overlay" id="holidaysOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="holidaysTitle">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="holidaysTitle">Holidays</h3>
+      <div class="field">
+        <label for="holidaysText">Paste your holidays</label>
+        <textarea id="holidaysText" rows="5" autocomplete="off" spellcheck="false"></textarea>
+        <div class="note">A line each: the date, then its name. A run of days: Dec 24 – Dec 26 Winter break.</div>
+      </div>
+      <div class="field-row holidays-file">
+        <button type="button" class="secondary small" id="holidaysFileBtn">Choose a file…</button>
+        <span class="note">or a calendar file (.ics) from work</span>
+        <input type="file" id="holidaysFile" accept=".ics,.txt,.csv,text/calendar,text/plain,text/csv" hidden>
+      </div>
+      <div class="note holidays-read" id="holidaysRead" aria-live="polite"></div>
+      <div class="modal-actions">
+        <button id="holidaysAddBtn" disabled>Add</button>
+        <button class="secondary" id="holidaysCloseBtn">Close</button>
+      </div>
+      <div class="holiday-list" id="holidaysList"></div>
+      <div class="note">One next to a weekend joins it and costs no PTO. Removed by mistake? Close this, then Undo (Ctrl+Z).</div>
     </div>
   </div>
 

@@ -124,7 +124,25 @@ the lockstep for good: once you talk or record it, the next due counts from that
   `renderAll`, since `mo.openWeekend` reopens the fold first). No existing test needed a change; full run 161 passed.
   Built by Sonnet (as a `general-purpose` agent, Opus reviewing the diff and pushing); a Haiku checklist, whose one FAIL
   (a bare `?v=`) is `index.html`'s comment about the stamps, not a stamp.
-- [ ] Phase 2 — Momo: holidays and free days off (Momo +0.100 → 10.595)
+- [x] Phase 2 — Momo: holidays and free days off (Momo +0.100 → 10.595) — done 2026-10-14: as D2–D6, with these calls.
+  `holidays.js` (the record, reading) and `holidays-import.js` (the pop-up) split from the start; `cleanHolidays` lives in
+  `holidays.js` (data.js was at 387 lines). `S.holiday` beside `S.weekend` (not an object in it: fewer callers touched).
+  The span walks at most 5 weekdays each way, through holidays and whole days off, stopping after a half day; a day off
+  and a holiday on one day shows only the violet sun (a tile too). A lone holiday is one none of the 13 weekends'
+  spans reaches (last weekend's not counted, so a Monday holiday today still has a row). From the reviews: a calendar
+  file's timed events are meetings, left out and counted ("1 timed event left out"), cancelled ones not understood; at
+  most 400 holidays a reading, the rest counted; past ones read are kept (for the PTO since `asOf`) and said ("2
+  already past"); Undo of an Add leaves a removed marker (`stampChanges`); "Marathon 12" isn't March, Feb 29 finds the
+  next leap year, "Dec 24 - 2 hours early" keeps its name, ordinals and a CSV's name-first lines read; the file input is
+  let go after each pick; ✕ keeps the focus in the pop-up; the textarea isn't focused on a phone (the keyboard would
+  hide the list). Judged and kept: two devices' rename and plan edit of one holiday keep the later whole (as weekends);
+  markers alone aren't data (`hasData`, as weekends' cleared ones); Import replaces holidays with the backup's; a lone
+  holiday's plan is hidden while days off reach it (kept, back when they shrink); M/D is read month first (en-US); a run
+  already under way pasted without a year is read as next year's; a holiday on a Saturday or Sunday gets the violet
+  sun too. Helpers: two Haiku scouts, a Haiku checklist (its FAIL: the pop-up's own ids, which the plan didn't list;
+  fine), two Sonnet fresh eyes (20 leads: 13 fixed, the rest above), the Sonnet test writer (`tests/momo-holidays.test.js`,
+  10 tests, 427 lines: tests aren't site files; six helpers in `tests/momo.js`), the Sonnet closer (nothing missing).
+  Full run 171 passed.
 - [ ] Phase 3 — Appa: the upkeep a month, in hours (Appa +0.100 → 1.465)
 - [ ] Phase 4 — core, Pabu, Appa: Spread out due dates (Kyoshi +0.100 → 5.381 · Pabu +0.100 → 2.342 · Appa +0.100 → 1.565)
 

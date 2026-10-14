@@ -26,6 +26,10 @@
  *           were saved in Developer Mode), on the 15-minute grid, TIME_OFF_MIN to TIME_OFF_MAX; never lowered here: what's
  *           left is worked out (PTO less the days off entered on a weekend from asOf on). Once cleared, 0s and asOf "",
  *           kept with its time so the clearing wins when two devices combine; null while never set.
+ * holidays: { "YYYY-MM-DD": { name, plan, u } } — your work's holidays and free days off (holidays.js), a whole day
+ *           each: its name (at most 40), and the plan of one no weekend reaches (at most PLAN_MAX). Next to a weekend it
+ *           joins it and costs no PTO. "" and "" once removed, kept so the removal wins when two devices combine.
+ *           Past ones stay. Apart from the weeks too; it takes no hours.
  * goals:    [{ id, name, target, perWeek, start, due, maxWeek, log: { weekKey: hours }, deleted, u }]
  *           — Momo's long-term goals from before they moved to Iroh: kept as they were,
  *           in backups and sync too, but nothing reads them any more
@@ -59,7 +63,7 @@
   const { sum } = K.util;
   const { DAY_HOURS, DAYS, AUTO, thisWeekKey, nextWeekKey, firstDay } = A;
 
-  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {}, weekends: {}, timeOff: null }; }
+  function emptyData() { return { weeks: {}, baseline: { cards: [], u: 0 }, goals: [], colors: {}, asks: {}, weekends: {}, timeOff: null, holidays: {} }; }
   const blankWeek = () => ({ cards: [], closed: false, u: 0 });
   const weekOf = key => S.data.weeks[key] || blankWeek(); // for reading: a week not planned yet reads as empty
   const ensureWeek = key => S.data.weeks[key] || (S.data.weeks[key] = blankWeek());
@@ -73,7 +77,8 @@
   // cards) don't count, so a new device that just made them still takes a sync folder's data whole (core/sync.js).
   const yours = c => !c.slot && !c.auto;
   const hasData = d => d.goals.length > 0 || d.baseline.cards.some(yours) || Object.values(d.weeks).some(w => w.cards.some(yours)) ||
-    Object.values(d.weekends).some(w => w.plan || w.off.before || w.off.after) || !!(d.timeOff && d.timeOff.asOf);
+    Object.values(d.weekends).some(w => w.plan || w.off.before || w.off.after) || !!(d.timeOff && d.timeOff.asOf) ||
+    Object.values(d.holidays).some(h => h.name);
   // A week is planned once it has a card on a day besides the ones Momo placed by itself for the apps' needs.
   const isPlanned = list => list.cards.some(c => c.day !== null && !(c.auto && c.need));
 

@@ -36,6 +36,10 @@
     const planned = prev.weekends || {};
     Object.keys(data.weekends).forEach(k => { if (!same(data.weekends[k], planned[k])) data.weekends[k].u = now; });
     if (data.timeOff && !same(data.timeOff, prev.timeOff)) data.timeOff.u = now;
+    const kept = prev.holidays || {};
+    Object.keys(data.holidays).forEach(k => { if (!same(data.holidays[k], kept[k])) data.holidays[k].u = now; });
+    // A holiday gone altogether (Undo of its Add) is kept removed, so another device's copy doesn't bring it back.
+    Object.keys(kept).forEach(k => { if (!data.holidays[k]) data.holidays[k] = { name: "", plan: "", u: now }; });
   }
 
   // Keeps a change made on this device, with colours for any new titles: the
@@ -211,6 +215,7 @@
     out.asks = cleanAsks(raw.asks);
     out.weekends = cleanWeekends(raw.weekends);
     out.timeOff = cleanTimeOff(raw.timeOff);
+    out.holidays = A.cleanHolidays(raw.holidays); // holidays.js
     return out;
   }
   // Colours as saved (a title's, an old goal's or an app's: colors.js), in key order; ensureColors sorts out any two keys
@@ -296,7 +301,8 @@
       colors: S.data.colors,
       asks: S.data.asks,
       weekends: S.data.weekends,
-      timeOff: S.data.timeOff
+      timeOff: S.data.timeOff,
+      holidays: S.data.holidays
     };
   }
 
@@ -310,7 +316,7 @@
     if (isNum(raw.schemaVersion) && raw.schemaVersion > DATA_SCHEMA_VERSION) {
       alert("Heads up: this backup was made by a newer version of Momo. Importing it anyway, but some data may not carry over.");
     }
-    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline, weekend plans, days off and time off — with this backup?")) return;
+    if (ask && A.hasData(S.data) && !K.backup.ask(A, raw, "Replace everything in Momo — your weeks, baseline, weekend plans, days off, time off and holidays — with this backup?")) return;
     S.data = clean;
     A.ensureColors();
     S.undoStack = [];
@@ -344,10 +350,11 @@
     const colors = {};
     [older.colors, newer.colors].forEach(side => Object.keys(side).forEach(k => { colors[k] = pick(colors[k], side[k]); }));
     return { weeks: byKey(older.weeks, newer.weeks), baseline: pick(older.baseline, newer.baseline), goals: [...goals.values()], colors, asks: byKey(older.asks || {}, newer.asks || {}),
-      weekends: byKey(older.weekends || {}, newer.weekends || {}), timeOff: pick(older.timeOff, newer.timeOff) || null };
+      weekends: byKey(older.weekends || {}, newer.weekends || {}), timeOff: pick(older.timeOff, newer.timeOff) || null,
+      holidays: byKey(older.holidays || {}, newer.holidays || {}) };
   }
   const sorted = o => Object.keys(o).sort().map(k => [k, o[k]]);
-  const dataKey = d => JSON.stringify([sorted(d.weeks), d.baseline, d.goals, d.colors, sorted(d.asks), sorted(d.weekends), d.timeOff]);
+  const dataKey = d => JSON.stringify([sorted(d.weeks), d.baseline, d.goals, d.colors, sorted(d.asks), sorted(d.weekends), d.timeOff, sorted(d.holidays)]);
 
   // A save from the folder, taken whole (replace) or combined with ours; see core/sync.js.
   function combine(raw, { replace, plain, mine, theirs }) {
@@ -360,7 +367,7 @@
       same: dataKey(next) === theirKey,
       apply() {
         if (dataKey(next) === dataKey(S.data)) return false; // nothing new here
-        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks, weekends: next.weekends, timeOff: next.timeOff };
+        S.data = { weeks: next.weeks, baseline: next.baseline, goals: next.goals, colors: next.colors, asks: next.asks, weekends: next.weekends, timeOff: next.timeOff, holidays: next.holidays };
         return true;
       }
     };

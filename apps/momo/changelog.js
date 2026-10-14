@@ -5,6 +5,11 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.595", date: "2026-10-14", changes: [
+      "Holidays: paste your work's holidays and free days off, or pick its calendar file (Developer Mode → Time off → Holidays…). One next to a weekend joins it and costs no PTO; one on its own shows among Upcoming weekends, in its place by date, where it can have a plan. A purple sun marks them, like the gold one for days off.",
+      "A day off that falls on a holiday gives its PTO back.",
+      "Reload Momo on every device after updating."
+    ] },
     { version: "10.495", date: "2026-10-14", changes: [
       "Upcoming weekends start open, under the board and under Today."
     ] },

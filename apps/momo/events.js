@@ -89,6 +89,7 @@
     A.defineCloseOutOverlay();
     A.initToday(); // Today, its buttons and its card pop-up; on a phone Momo opens on it
     A.initWeekends(); // a weekend's pop-up, opened from Upcoming weekends or the board's Saturday
+    A.initHolidays(); // the Holidays pop-up, opened from Developer Mode's Time off block
     A.initSleep(); // the sleep routine's pop-up, from the Baseline tab
 
     $("cardSaveBtn").addEventListener("click", A.saveCard);
@@ -245,6 +246,7 @@
       `- Weeks waiting for close-out: ${A.reviewWeeks().length}${A.laterToday() ? " (put off until tomorrow)" : ""}`,
       `- Weekends: ${A.upcomingWeekends().filter(A.planOf).length} of the next ${A.WEEKENDS} planned, ${A.upcomingWeekends().filter(A.hasOff).length} with days off; kept with a plan: ${Object.values(data.weekends).filter(w => w.plan).length}, with days off: ${Object.values(data.weekends).filter(w => w.off.before || w.off.after).length}, cleared: ${Object.values(data.weekends).filter(w => !w.plan && !w.off.before && !w.off.after).length}`,
       `- Time off: ${A.timeOffSet() ? "set up" : data.timeOff ? "not set up (cleared)" : "not set up"}`,
+      `- Holidays: ${A.holidaysIn(todayStr(), "9999-12-31").length} from today on (${new Set(A.upcomingWeekends().flatMap(sat => A.holidaysIn(A.spanOf(sat).first, A.spanOf(sat).last).map(h => h.date))).size} joined to the next ${A.WEEKENDS} weekends, ${A.loneHolidays(A.upcomingWeekends()).length} on their own); kept: ${Object.values(data.holidays).filter(h => h.name).length} (+${Object.values(data.holidays).filter(h => !h.name).length} removed)`,
       `- Undo steps: ${S.undoStack.length}`
     ];
   };

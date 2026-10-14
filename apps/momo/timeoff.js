@@ -1,12 +1,13 @@
 /* Momo · timeoff.js — PTO and sick time, lightly: the hours you had on a day, as saved in Developer Mode's "Time off" block
  * (data.timeOff, model.js), and what's left, worked out every time and never lowered in storage: PTO less every day off
  * entered on a weekend from that day on, those ahead too (a whole day DAY_OFF_HOURS, half a day half that; a day two
- * weekends reach counts once), so a weekend's days off changed or cleared give their hours back by themselves; sick time
+ * weekends reach counts once; a holiday never counts, holidays.js), so a weekend's days off changed or cleared give their
+ * hours back by themselves; sick time
  * as saved (it changes only there). Shown in 8-hour days by halves, a remainder in hours ("5½ days", "1 day 2h"; below 0
  * with "−", in red), once it's set: at the end of Upcoming weekends' line ("· PTO 5½ days · Sick 2 days") and live in a
  * weekend's pop-up under its days off ("PTO: 5½ days now, 4 days after this weekend"). The block itself: its fields hold
  * the hours as of today (before the days off from today on, which come off them), −½ day / −1 day beside each, Save as of
- * today, Clear (asked first). Days off still take no hours. */
+ * today, Clear (asked first); and Holidays… (holidays-import.js). Days off still take no hours. */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
@@ -16,11 +17,12 @@
   const isSet = () => !!S.data.timeOff && !!S.data.timeOff.asOf;
 
   // The hours of the days off on or after from (and before to, when given), over every weekend kept: a whole day
-  // DAY_OFF_HOURS, half a day half that; typed ({ sat, off }) stands in for that weekend's days off (its pop-up's).
+  // DAY_OFF_HOURS, half a day half that, a holiday none; typed ({ sat, off }) stands in for that weekend's days off (its
+  // pop-up's).
   function offHours(from, to = "", typed = null) {
     const offFor = sat => (typed && sat === typed.sat ? typed.off : A.offOf(sat));
     const sats = Object.keys(S.data.weekends).concat(typed ? [typed.sat] : []);
-    const dates = new Set(sats.flatMap(sat => A.offDays(sat, offFor(sat))).map(x => x.date).filter(d => d >= from && (!to || d < to)));
+    const dates = new Set(sats.flatMap(sat => A.offDays(sat, offFor(sat))).map(x => x.date).filter(d => d >= from && (!to || d < to) && !A.holidayOn(d)));
     return sum([...dates].map(d => (A.partOff(d, offFor) === "whole" ? DAY_OFF_HOURS : DAY_OFF_HOURS / 2)));
   }
   // PTO left: as saved, less every day off from that day on; typed: a weekend's days off as its pop-up has them.
@@ -67,6 +69,8 @@
       ${field("momoPto", "PTO hours", set ? ptoToday() : 0)}${field("momoSick", "Sick hours", set ? sickLeft() : 0)}
       <div class="dev-actions"><button type="button" class="secondary small" id="momoTimeOffSave">Save as of today</button>${set ? `<button type="button" class="danger" id="momoTimeOffClear">Clear</button>` : ""}</div>
       <div class="dev-hint">Type the hours you have today. Days off entered on a weekend come off PTO from the day you save this, those ahead too; sick time only changes here.</div>
+      <div class="dev-actions"><button type="button" class="secondary small" id="momoHolidaysBtn">Holidays…</button></div>
+      <div class="dev-hint">Your work's holidays and free days off: one next to a weekend joins it and costs no PTO.</div>
     </div>`;
   }
 
@@ -96,6 +100,10 @@
     }));
     block.querySelector("#momoTimeOffSave").addEventListener("click", () => saveTimeOff(box));
     if (isSet()) block.querySelector("#momoTimeOffClear").addEventListener("click", clearTimeOff);
+    block.querySelector("#momoHolidaysBtn").addEventListener("click", () => {
+      K.dev.toggle(); // the pop-up is Momo's, over the page
+      A.openHolidays();
+    });
     block.addEventListener("keydown", e => {
       if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); saveTimeOff(box); }
     });

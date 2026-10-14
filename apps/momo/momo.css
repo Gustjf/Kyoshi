@@ -1,6 +1,6 @@
 /* Momo · momo.css — Momo's own styles, every selector under .app-momo (a few page-wide ones are marked).
  * Shared components (buttons, inputs, sections, pop-ups, banners…) are in core/kyoshi.css.
- * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Upcoming weekends (days off too) · Time off
+ * Sections: Tokens · Week tabs · Bank & Tasks · Board & cards · Events · Today · Upcoming weekends (days off and holidays too) · Time off
  * · Pop-up fields · Phones */
 
 /* --- Tokens --- */
@@ -289,6 +289,20 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .off-sun.half { opacity: .55; }
 .app-momo .off-sun svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .app-momo .we-days .off-sun { margin: 0 4px 0 0; }
+/* A holiday (holidays.js): the same sun in violet, wherever a day off's would be; a lone holiday's row among the
+   weekends, its "No plan" muted (it isn't a weekend to plan). */
+.app-momo .off-sun.holiday { color: #8b5cf6; opacity: 1; }
+.app-momo .weekend.holiday .we-plan.none { color: var(--muted); }
+.app-momo .weekend.holiday .we-days { max-width: 100%; overflow-wrap: anywhere; }
+/* The Holidays pop-up (holidays-import.js). */
+.app-momo .holidays-file { align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.app-momo .holidays-read { min-height: 1.2em; margin-bottom: 4px; }
+.app-momo .holidays-read.bad { color: var(--bad); }
+.app-momo .holiday-list { max-height: 40vh; overflow-y: auto; margin: 10px 0 6px; border-top: 1px solid var(--border); }
+.app-momo .holiday-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: .9em; }
+.app-momo .holiday-day { flex: none; width: 6.5em; font-variant-numeric: tabular-nums; color: var(--muted); }
+.app-momo .holiday-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.app-momo .holiday-x { flex: none; }
 /* Its pop-up's days off: Before and After side by side (on phones too), each with the days it takes under it. */
 .app-momo .off-row { flex-direction: row; }
 .app-momo .off-row > .field { margin: 0; }

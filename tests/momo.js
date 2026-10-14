@@ -360,6 +360,37 @@ async function clearTimeOff(tab) {
   await devPanel(tab, was);
 }
 
+// --- Holidays (holidays.js, holidays-import.js): Developer Mode's Holidays… and its pop-up ---
+// Holidays… in the Time off block: Developer Mode closes and the pop-up opens.
+async function openHolidays(tab) {
+  await devPanel(tab, true);
+  await tab.page.click("#kDevAppTools #momoHolidaysBtn");
+  await tab.page.waitForSelector(`${M} #holidaysOverlay.open`);
+}
+// The pop-up as it is: { open, text (the box), read (what it read, "" when nothing), bad (the reading is red), canAdd,
+// rows: [{ date, day, name }] (the holidays from today on) }.
+const holidaysForm = tab => tab.page.evaluate(() => {
+  const $ = id => document.querySelector(`#kMount #${id}`);
+  return { open: $("holidaysOverlay").classList.contains("open"), text: $("holidaysText").value, read: $("holidaysRead").textContent.trim(),
+    bad: $("holidaysRead").classList.contains("bad"), canAdd: !$("holidaysAddBtn").disabled,
+    rows: [...document.querySelectorAll("#kMount #holidaysList .holiday-row")].map(r => ({ date: r.querySelector("[data-remove]").dataset.remove,
+      day: r.querySelector(".holiday-day").textContent.trim(), name: r.querySelector(".holiday-name").textContent.trim() })) };
+});
+// Pastes a list (typed in the box as a whole), Add pressed after unless add is false.
+async function pasteHolidays(tab, text, { add = true } = {}) {
+  await tab.page.fill(`${M} #holidaysText`, text);
+  if (add) await tab.page.click(`${M} #holidaysAddBtn`);
+}
+const closeHolidays = tab => tab.page.click(`${M} #holidaysCloseBtn`);
+// A lone holiday's row among the weekends' tiles, tapped (by its date): its pop-up opens.
+async function openHoliday(tab, date) {
+  await weekends(tab);
+  await tab.page.click(`${M} ${(await isToday(tab)) ? "#todayView" : "#boardView"} details.weekends [data-holiday="${date}"]`);
+  await tab.page.waitForSelector(`${M} #weekendOverlay.open`);
+}
+// The holidays as Momo keeps them (a removed one as a marker).
+const keptHolidays = tab => tab.page.evaluate(() => JSON.parse(JSON.stringify(Kyoshi.apps.momo.S.data.holidays)));
+
 // --- The close-out ---
 // The banner's words ("" while it's hidden).
 async function banner(tab) {
@@ -435,5 +466,6 @@ module.exports = {
   newCard, sides, setSides, saveCard, openCard, baselineCards, weekCards, cardLook, tryDrag, altClick, shortcut,
   fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible, sleepForm, sleepRoutine, removeSleep, closeSleep,
   weekends, openWeekend, weekendForm, stepOff, fillWeekend, saveWeekend, clearWeekend, cancelWeekend, offMarks, todayOff, ptoLine, timeOff, setTimeOff, clearTimeOff,
+  openHolidays, holidaysForm, pasteHolidays, closeHolidays, openHoliday, keptHolidays,
   banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
 };

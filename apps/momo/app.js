@@ -92,7 +92,7 @@
   // STATE
   // ==========================================================================
   Object.assign(A.S, {
-    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks, weekends, timeOff } (model.js)
+    data: null,            // everything saved and synced: { weeks, baseline, goals (old, kept), colors, asks, weekends, timeOff, holidays } (model.js)
     view: "this",          // "this" | "next" | "base" — the board's tab; always opens on this week
     today: false,          // Today on screen in place of the board (today.js): at first on a phone only
     undoStack: [],         // earlier versions of data as JSON, newest last
@@ -115,6 +115,7 @@
     triage: null,          // an event's pop-up (triage.js): { key: its week, ev: its key, day, at: the spot picked }
     detail: null,          // a card's pop-up on Today (today.js): { key: its week, id }
     weekend: null,         // the weekend in its pop-up (weekends.js): its Saturday
+    holiday: null,         // or the lone holiday in it, by its date (its plan only)
     sleep: null,           // the sleep routine's pop-up while it's open (sleep.js): { nights (a Set of days), snapshot }
     ruler: { t: [0], y: [0], hour: 0 } // the board's ruler as last drawn (times.js)
   });
