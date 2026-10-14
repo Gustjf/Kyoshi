@@ -303,7 +303,7 @@ body.is-dragging .app-momo .event, body.is-resizing .app-momo .event { pointer-e
 .app-momo .holidays-read.bad { color: var(--bad); }
 .app-momo .holiday-list { max-height: 40vh; overflow-y: auto; margin: 10px 0 6px; border-top: 1px solid var(--border); }
 .app-momo .holiday-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: .9em; }
-.app-momo .holiday-day { flex: none; width: 6.5em; font-variant-numeric: tabular-nums; color: var(--muted); }
+.app-momo .holiday-day { flex: 0 0 auto; min-width: 6.5em; font-variant-numeric: tabular-nums; color: var(--muted); }
 .app-momo .holiday-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .app-momo .holiday-x { flex: none; }
 /* Its pop-up's days off: Before and After side by side (on phones too), each with the days it takes under it. */

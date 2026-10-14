@@ -2,9 +2,10 @@
  * with its name. One next to a weekend joins it (weekends.js: its span runs over it) and costs no PTO, a day off on it
  * included (timeoff.js); one on its own is a row among Upcoming weekends, which can hold a plan. Either way a violet sun
  * marks it where a day off's gold one would be (offHTML). Brought in from Developer Mode's Time off block (Holidays…):
- * a pop-up (#holidaysOverlay) to paste a list (a date, then its name, a line each; a run of days too) or pick a calendar
- * file (.ics: its all-day events; .txt / .csv as pasted), showing what it read before Add keeps it; then the holidays
- * from today on, each with ✕ (Undo brings one back). Removing one keeps it as "" with its time, so the removal wins
+ * a pop-up (#holidaysOverlay) to paste a list (a date, then its name, a line each; a run of days as "2026-12-24 to
+ * 2026-12-26 Winter break" or "2026-12-24 for 3 days Winter break") or pick a calendar file (.ics: its all-day events;
+ * .txt / .csv as pasted), showing what it read before Add keeps it; then the holidays from today on, a run of days with
+ * the same name as one, each with ✕ (Undo brings it back). Removing one keeps it as "" with its time, so the removal wins
  * over an older copy's when two devices combine. Nothing goes over the network. */
 (function (K, A) {
   "use strict";
@@ -50,8 +51,21 @@
       S.data.holidays[date] = { name, plan: holidayPlan(date), u: had ? had.u : 0 };
     }));
   }
-  function removeHoliday(date) {
-    if (holiday(date)) keep(() => { S.data.holidays[date] = { name: "", plan: "", u: S.data.holidays[date].u }; });
+  // One or several (a run of days, ✕ once): one save, so one Undo brings them back.
+  function removeHolidays(dates) {
+    const live = dates.filter(holiday);
+    if (live.length) keep(() => live.forEach(date => { S.data.holidays[date] = { name: "", plan: "", u: S.data.holidays[date].u }; }));
+  }
+  const removeHoliday = date => removeHolidays([date]);
+  // Days in a row with the same name, as runs: [{ from, to, name, dates }] (a single day: from = to), from a list by date.
+  function runsOf(list) {
+    const out = [];
+    list.forEach(h => {
+      const r = out[out.length - 1];
+      if (r && r.name === h.name && addDays(r.to, 1) === h.date) { r.to = h.date; r.dates.push(h.date); }
+      else out.push({ from: h.date, to: h.date, name: h.name, dates: [h.date] });
+    });
+    return out;
   }
   function setHolidayPlan(date, plan) {
     const h = holiday(date);
@@ -107,10 +121,14 @@
     const first = dayOf(at.y, at.m, at.d, today);
     if (!first) return null;
     let last = first, rest = at.rest;
-    // A run: "Dec 24 – Dec 26", "Dec 24–26", "Nov 26 to 28th"; taken only when its end is a later day (else the dash is
-    // the name's: "Dec 24 - 2 hours early").
-    const to = /^\s*(?:-|–|—|(?:to|through|thru|until)\b)\s*/i.exec(rest);
-    if (to) {
+    // A run: "2026-12-24 to 2026-12-26", "Dec 24 – Dec 26", "Dec 24–26", "Nov 26 to 28th"; taken only when its end is a
+    // later day (else the dash is the name's: "Dec 24 - 2 hours early"). Or "2026-12-24 for 3 days".
+    const to = /^\s*(?:-|–|—|(?:to|through|thru|till|until)\b)\s*/i.exec(rest), days = /^\s*for\s+(\d{1,2})\s+days?\b/i.exec(rest);
+    if (days) {
+      if (+days[1] < 1 || +days[1] > RUN_MAX) return null; // a run is 1 to 14 days: the line is said not understood
+      last = addDays(first, +days[1] - 1);
+      rest = rest.slice(days[0].length);
+    } else if (to) {
       const after = rest.slice(to[0].length), end = dateAt(after), day = /^(\d{1,2})(?:st|nd|rd|th)?\b/.exec(after);
       let upTo = "", left = "";
       if (end) {
@@ -181,5 +199,5 @@
   }
 
   Object.assign(A, { cleanHolidays, holidayOn, holidayPlan, holidaysIn, addHolidays, removeHoliday, setHolidayPlan, readHolidays,
-    HOLIDAY_NAME_MAX: NAME_MAX });
+    removeHolidays, runsOf, HOLIDAY_NAME_MAX: NAME_MAX });
 })(Kyoshi, Kyoshi.apps.momo);

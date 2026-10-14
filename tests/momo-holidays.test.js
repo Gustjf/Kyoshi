@@ -41,15 +41,14 @@ module.exports = [
       // Typed (all at once), it says what it read, sorted by date, and what it did not understand; Add is on.
       await mo.pasteHolidays(tab, LIST, { add: false });
       eq(await mo.holidaysForm(tab).then(f => [f.read, f.bad, f.canAdd]),
-        ["5 holidays: Wed Nov 11 Lone day, Fri Nov 27 Day after, Thu Dec 24 Winter break, Fri Dec 25 Winter break, Sat Dec 26 Winter break; 1 line not understood (line 4).", false, true], "what it read");
+        ["5 holidays: Wed Nov 11 Lone day, Fri Nov 27 Day after, Thu Dec 24 – Sat Dec 26 Winter break; 1 line not understood (line 4).", false, true], "what it read");
       eq((await mo.keptHolidays(tab)), {}, "nothing kept before Add");
       await p.click("#kMount #holidaysAddBtn");
       let f = await mo.holidaysForm(tab);
       eq([f.text, f.read, f.canAdd], ["", "", false], "the box is emptied after Add");
       eq(f.rows, [
         { date: "2026-11-11", day: "Wed Nov 11", name: "Lone day" }, { date: "2026-11-27", day: "Fri Nov 27", name: "Day after" },
-        { date: "2026-12-24", day: "Thu Dec 24", name: "Winter break" }, { date: "2026-12-25", day: "Fri Dec 25", name: "Winter break" },
-        { date: "2026-12-26", day: "Sat Dec 26", name: "Winter break" }], "listed by date");
+        { date: "2026-12-24", day: "Thu Dec 24 – Sat Dec 26", name: "Winter break" }], "listed by date, a run of days as one");
       const kept = await mo.keptHolidays(tab);
       eq(Object.keys(kept), ["2026-11-11", "2026-11-27", "2026-12-24", "2026-12-25", "2026-12-26"], "5 kept");
       eq([kept["2026-11-27"].name, kept["2026-11-27"].plan], ["Day after", ""], "a name and no plan");
@@ -214,13 +213,13 @@ module.exports = [
       await p.setInputFiles("#kMount #holidaysFile", { name: "work.ics", mimeType: "text/calendar", buffer: Buffer.from(file) });
       await p.waitForFunction(() => document.querySelector("#kMount #holidaysRead").textContent.trim() !== "");
       let f = await mo.holidaysForm(tab);
-      eq([f.read, f.canAdd, f.text], ["From work.ics: 3 holidays: Thu Nov 12 Founders Day observed, Thu Dec 31 Year end, closed, Fri Jan 1 Year end, closed; 2 events not understood; 1 timed event left out (only all-day ones are holidays).", true, ""], "what it read");
+      eq([f.read, f.canAdd, f.text], ["From work.ics: 3 holidays: Thu Nov 12 Founders Day observed, Thu Dec 31 – Fri Jan 1 Year end, closed; 2 events not understood; 1 timed event left out (only all-day ones are holidays).", true, ""], "what it read");
       eq(await mo.keptHolidays(tab), {}, "nothing kept before Add");
       await p.click("#kMount #holidaysAddBtn");
       f = await mo.holidaysForm(tab);
       eq(f.rows, [
         { date: "2026-11-12", day: "Thu Nov 12", name: "Founders Day observed" },
-        { date: "2026-12-31", day: "Thu Dec 31", name: "Year end, closed" }, { date: "2027-01-01", day: "Fri Jan 1", name: "Year end, closed" }], "kept");
+        { date: "2026-12-31", day: "Thu Dec 31 – Fri Jan 1", name: "Year end, closed" }], "kept, the run as one");
       eq([f.read, f.canAdd], ["", false], "the reading is cleared after Add");
       eq(await p.$eval("#kMount #holidaysFile", e => e.value), "", "the file is let go");
       await mo.closeHolidays(tab);
@@ -367,7 +366,7 @@ module.exports = [
         "Boxing,2026-12-08", "Dec 14", "Dec 20–22 Short run", "", "2025-01-01 Long ago", "Dec 1 ISO again"];
       await mo.pasteHolidays(tab, lines.join("\n"), { add: false });
       eq(await mo.holidaysForm(tab).then(f => f.read),
-        `11 holidays: Tue Dec 1 ISO again, Wed Dec 2 Slash year, Thu Dec 3 Slash short, Fri Dec 4 Long, Sat Dec 5 Day first, Mon Dec 7 Weekday, and 5 more; 1 line not understood (line ${lines.indexOf("2025-01-01 Long ago") + 1}).`, "what it read");
+        `11 holidays: Tue Dec 1 ISO again, Wed Dec 2 Slash year, Thu Dec 3 Slash short, Fri Dec 4 Long, Sat Dec 5 Day first, Mon Dec 7 Weekday, and 3 more; 1 line not understood (line ${lines.indexOf("2025-01-01 Long ago") + 1}).`, "what it read");
       await p.click("#kMount #holidaysAddBtn");
       const kept = await mo.keptHolidays(tab);
       eq(Object.entries(kept).map(([d, h]) => [d, h.name]), [["2026-12-01", "ISO again"], ["2026-12-02", "Slash year"], ["2026-12-03", "Slash short"], ["2026-12-04", "Long"], ["2026-12-05", "Day first"],
@@ -423,7 +422,7 @@ module.exports = [
       const box = await p.locator("#kMount #holidaysOverlay .modal").boundingBox();
       ok(box.x >= 0 && box.x + box.width <= PHONE.width, "the pop-up is on the screen");
       const rows = await p.$$eval("#kMount #holidaysList .holiday-row", els => els.map(e => { const r = e.getBoundingClientRect(), x = e.querySelector("[data-remove]").getBoundingClientRect(); return [r.left >= 0 && r.right <= window.innerWidth, x.left >= 0 && x.right <= window.innerWidth]; }));
-      eq(rows.length, 6, "six rows");
+      eq(rows.length, 4, "four rows (Dec 24–26 is one)");
       ok(rows.every(r => r[0] && r[1]), "each row and its ✕ on the screen");
       ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "no sideways scroll");
       await mo.closeHolidays(tab);

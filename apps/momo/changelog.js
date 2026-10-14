@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.615", date: "2026-10-14", changes: [
+      "Holidays…: several days in a row are typed as \"2026-12-24 to 2026-12-26 Winter break\" (or \"2026-12-24 for 3 days Winter break\"), and the template shows how: Thanksgiving with the day after, Christmas Eve with Christmas Day. A run shows as one line (\"Thu Dec 24 – Sat Dec 26 · Winter break\"), and its ✕ removes all of it."
+    ] },
     { version: "10.605", date: "2026-10-14", changes: [
       "Holidays…: Fill with a template puts the next 12 months of common US holidays in the box, each on its date that year, for you to edit (change a date, delete what you don't get off, add your own) and Add; Copy copies the box, to keep your list elsewhere."
     ] },
