@@ -4,7 +4,10 @@
 the plan you're running (its top sections and your phase).
 
 ## In progress
-Nothing right now.
+- `2026-10-14_feedback_batch_plan.md` — 4 reports, four phases: Upcoming weekends open at first (Momo), holidays that
+  join a weekend without costing PTO (Momo), the upkeep a month in hours (Appa), Spread out due dates (core, Pabu,
+  Appa). Helper agents are back on: its *Helpers* section says which model (Opus, Sonnet, Haiku) does what, phase by
+  phase.
 
 ## How a plan is run
 1. A new session; the strongest model the budget allows for anything that touches stored data or sync. Say "Execute
