@@ -41,7 +41,9 @@ exactly which model does what, phase by phase.
    additive and every cleaner keeps accepting older shapes and files without the field; older copies drop fields they
    don't know when they save → the changelog says to reload every device. No personal data anywhere in the repo (tests
    use made-up names and holidays). Bug reports and console lines hold counts, never names, dates or the owner's words.
-7. Phases are independent. Do them in the numbered order unless the owner says otherwise; one phase per session.
+7. Do the phases in the numbered order unless the owner says otherwise, one per session. They don't depend on one
+   another, except that Phase 4 goes after Phase 3 when both are pending (both touch Appa's `schedule.js`). The target
+   versions in the titles assume that order; the version you write is always one tier up from the top changelog entry.
 
 ## Helpers: which model does what (the owner, 2026-10-14: Sonnet and Haiku are authorized)
 Three models, each where it pays. **Opus** (the strongest) builds whatever touches stored data, sync, core or a
@@ -51,7 +53,7 @@ file from the phase's exact list, and benches the Phase 4 algorithm. **Haiku 5.5
 quotes, counts and compares, and never judges a design, words what the owner sees, or writes a line of code or test.
 
 Spawn a helper with the Agent tool. `model: "haiku"` or `model: "sonnet"`; `subagent_type: "Explore"` (read-only: no
-Edit or Write) for every job but **Test writer** (`general-purpose`); several at once in one message when they don't
+Edit or Write) for every job but **Test writer** and **Bench** (`general-purpose`); several at once in one message when they don't
 depend on each other, in the background, while you keep working. A helper sees nothing of your conversation: its brief
 is self-contained (the goal, the exact files or the `git diff`, the checklist, the output shape, "open nothing else").
 Give it the artifact and a question, never your conclusion to confirm. **Every claim a helper returns is a lead, not a
@@ -170,15 +172,15 @@ the lockstep for good: once you talk or record it, the next due counts from that
 - **D8 — R2: one leveling rule in core, a tool in each app's Developer Mode.** `core/level.js` (`K.level`, no UI, no
   storage) does the maths for both apps; each app's Developer Mode gets **Spread out due dates…**: a pop-up shows each
   week's minutes for the next 8 weeks before and after (a row of small bars or numbers), the moves it would make
-  ("Call Sam: Nov 2 → Nov 10"), and **Apply** (one save, its own question) or Cancel; nothing is kept until Apply.
+  ("Call Sam: Nov 2 → Nov 8"), and **Apply** (one save, its own question) or Cancel; nothing is kept until Apply.
   While anything is moved, the block also offers **Put them back** (clears every `moved`, asked first). Each app levels
   its own items only. *(Change: count the other app's due items as fixed weight in each week, from `K.inbox`.)*
 - **D9 — R1: the upkeep a month is one line, worked out, never stored.** On Appa's home, under the Coming up heading:
-  "About 3½ h a month of upkeep" (its tooltip: "From 8 jobs on 10 things; 2 by the meter left out until Appa knows the
+  "About 3½ h a month of upkeep" (its tooltip: "From 8 jobs on 4 things; 2 by the meter left out until Appa knows the
   pace"); on a thing's page, under Schedule: "About 40 min a month". Each live job on a thing in use (not archived)
   counts its minutes (`minutesOf`: the timed average, else the guess; none: left out and said in the tooltip) times how
-  often it comes in an average month (below). Shown in hours by quarters from 1 h ("1¼ h"), in minutes under it ("40
-  min"); none at all while no job counts.
+  often it comes in an average month (below). Shown in hours by quarters from 1 h ("1¼ h"), in minutes under it, to the nearest 5
+  (`niceMinutes`: "40 min"); none at all while no job counts.
 - Assumptions, each one line to change if wrong:
   1. R1: a month is 365.25 / 12 days; every N days/weeks/months/years comes 30.44 / (its days) times a month, months
      and years by calendar (1 month = once, 1 year = 1/12); each season picked comes once a year (2 seasons: 1/6);
@@ -207,7 +209,8 @@ Closes R4 (D1). Momo only. **Executing model: Sonnet 5.5** (the owner picks it f
 
 - `markup.js`: both `<details class="weekends">` gain `open`. `renderWeekends` only rewrites the summary and the list, so
   the browser's own toggle keeps a fold closed once tapped, until the page reloads. `weekends.js`'s comment above
-  `renderWeekends`: "Both start open; each stays open or closed as you leave it until the page reloads."
+  `renderWeekends`: "Both start open; each stays open or closed as you leave it until the page reloads."; the file's
+  header (L1–2: "a folded line", "closed at first") and the markup comment at L73 ("folded") say the same.
   `apps/momo/CLAUDE.md` Invariants → Weekends: "(closed at first)" → "(open at first)"; Purpose line 15: "a folded line"
   → "a line, open at first,".
 - Tests: in `tests/momo-weekends.test.js`, one check on a fresh page (desktop and phone): `details.weekends` is open under
@@ -224,12 +227,13 @@ Closes R3 (D2–D6, assumption 4). Momo only. **Executing model: Opus** (a new s
 **Read first:** `apps/momo/CLAUDE.md` (Weekends, Days off, Time off, Sync), `apps/momo/model.js` lines 1–35 (the header:
 `weekends`, `timeOff`) and 60–80 (`emptyData`, `hasData`), `apps/momo/weekends.js` (whole, 230 lines), `apps/momo/timeoff.js`
 (whole, 105 lines), `apps/momo/data.js` lines 30–40 (stamping), 176–215 (`cleanWeekends`, `cleanTimeOff`,
-`normalizeData`), 290–300 (`build`), 335–365 (`combine`, `dataKey`, apply), `apps/momo/markup.js` lines 8–12 (`#i-sun`),
+`normalizeData`), 289–300 (`buildBackup`, exported as `build` at L381), 333–365 (`mergeVersions` with its local
+`byKey`, `dataKey`, apply), `apps/momo/markup.js` lines 8–12 (`#i-sun`),
 215–255 (`#weekendOverlay`), `apps/momo/momo.css` lines 285–292 (`.off-sun`), `apps/momo/render.js` line 212 and
 `apps/momo/today.js` lines 115 and 133 (where `offHTML` is called), `tests/momo-weekends.test.js` lines 1–60 (a model
 test), `tests/momo.js` lines 282–330 and its exports (line ~437).
 **Scouts (Haiku, two in parallel):** (a) `apps/momo/data.js`: line ranges and signatures of every function, quote whole
-`cleanWeekends`, `normalizeData`, `combine`, `byKey`, `dataKey`, the stamping lines 30–40, and `importBackup`'s question;
+`cleanWeekends`, `normalizeData`, `buildBackup`, `mergeVersions` (its local `byKey`), `dataKey`, the stamping lines 30–40, and `importBackup`'s question;
 (b) `apps/momo/events.js` `renderDev` and `checkDev` (line ranges, quoted), `timeoff.js` `devHTML` / `wireTimeOff`
 (quoted), `tests/momo.js` lines 282–437 (every helper's name and signature, and its exports line).
 
@@ -240,9 +244,9 @@ test), `tests/momo.js` lines 282–330 and its exports (line ~437).
   through `save()`.
 - Parsing, `readHolidays(text)` → `{ found: [{ date, name }], bad: [line numbers] }`: a line's date first (ISO; M/D/YYYY;
   "Nov 26, 2026"; "November 26"; a run "Dec 24 – Dec 26" or "2026-12-24 to 2026-12-26", at most 14 days), the rest of
-  the line its name (cut to 40, trimmed of separators `-–:,|`); blank lines and lines starting `#` skipped. An `.ics`
+  the line its name (trimmed of separators `-–:,|`, cut to 40; "Holiday" when nothing is left); blank lines and lines starting `#` skipped. An `.ics`
   (text with `BEGIN:VCALENDAR`) is read by events instead: `DTSTART` (all-day `VALUE=DATE` or a date-time, its date),
-  `DTEND` (exclusive; none: one day), `SUMMARY` (unfolded: a line starting with a space continues the last), at most
+  `DTEND` (exclusive; none: one day), `SUMMARY` (unfolded: a line starting with a space continues the last; none: "Holiday"), at most
   400 events; anything else ignored. A day without a year → its next from `todayStr()` (today counts). Dates outside
   today −1 year … today +3 years are left out and counted as not understood.
 - The pop-up `#holidaysOverlay` (markup in `markup.js`, `K.modal`): a textarea, Choose a file… (`<input type="file"
@@ -317,7 +321,7 @@ headings), `apps/appa/app.js` (`niceMinutes`, `fmtMinutes`), `tests/appa.test.js
   a thing without a meter but with only `meterEvery`); `upkeep(thingId = "")` → `{ minutes, jobs, left: { noTime,
   noPace } }` over live jobs of active things (one thing's when given). Memoized like the rest (`remember`).
 - `render.js`: `upkeepHTML(u)` → "About 3½ h a month of upkeep" (hours by quarters from 60 minutes: "1¼ h", "3½ h";
-  under 60: "40 min"), with its tooltip (D9); drawn in `renderHome` into a new `<div class="upkeep" id="upkeepLine">`
+  under 60, `niceMinutes`' 5-minute steps: "40 min"), with its tooltip (D9); drawn in `renderHome` into a new `<div class="upkeep" id="upkeepLine">`
   under the Coming up heading (hidden while no job counts), and in `renderThing` under Schedule ("About 40 min a month").
 - `appa.css`: `.app-appa .upkeep` (muted, small, like the other hints).
 - `events.js` `bugState`: the Jobs line gains "; upkeep about N min a month (K left out)". `CLAUDE.md`: schedule.js'
@@ -391,8 +395,9 @@ dates: N".
   undoes it." · "Reload <App> on every device after updating."
 
 **Tests** (Sonnet test writer, from this list; `tests/pabu-momo.test.js` and `tests/appa.test.js` as models): a new
-`tests/spread.test.js`: Pabu with 10 made-up people, 8 monthly calls all added on Oct 1 and 2 weekly texts → the pop-up
-shows 8 weeks, before has one week with 240 min; Apply → no week over 90 min, no move over 7 days, no weekly text moved,
+`tests/spread.test.js`: Pabu with 10 made-up people, 8 monthly calls (30 min) last talked Sep 1, so due Oct 1, and 2 weekly
+texts (the tests' TODAY is 2026-09-30, `tests/lib.js` L12) → the pop-up shows 8 weeks, before has 240 min in the week of
+Sep 28; Apply → 120 min in each of that week and the next (the only two their windows reach: Sep 30 to Oct 8), no move over 7 days, no weekly text moved,
 nothing before today; Momo's Tasks show the moved dues; a ✓ on a moved call → its next due is a month after the ✓ and
 `moved` no longer applies; Put them back → the original dues; Export then Import keeps `moved`; an older backup imports
 with none. Appa: 6 jobs every 3 months added the same day, one meter-only job → after Apply the meter job is untouched,
