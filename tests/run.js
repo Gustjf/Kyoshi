@@ -4,12 +4,14 @@
  *   node tests/run.js                  every test (each *.test.js in this folder), several side by side
  *   node tests/run.js session          only those whose name has "session" in it
  *   node tests/run.js --parallel 2 …   2 at a time (default: twice the core count, as measured on 4 cores: 1 at a
- *                                      time 173 s, 2 98 s, 3 79 s, 4 69 s, 6 62 s, 8 58 s; a test waits on its page
- *                                      as much as it works)
+ *                                      time 173 s, 2 98 s, 3 79 s, 4 69 s, 6 62 s, 8 58 s, before launchBrowser below;
+ *                                      the tests are CPU-bound: ~2.7 CPU-seconds each over the whole process tree
+ *                                      (browser, pages, GPU, Node; measured under load), of which `time` shows only
+ *                                      about 40%, the rest being processes it can't reap)
  *   node tests/run.js --serial …       one at a time (= --parallel 1)
  * Needs Node 18+ and Playwright with its Chromium (installed globally in Claude's cloud sessions; elsewhere
- * `npm i -g playwright && npx playwright install chromium`). One browser; each test gets fresh browser profiles of its
- * own (contexts) and a fixed clock (lib.js), so tests side by side share nothing but the browser. A test with
+ * `npm i -g playwright && npx playwright install chromium`). One browser (launchBrowser); each test gets fresh browser
+ * profiles of its own (contexts) and a fixed clock (lib.js), so tests side by side share nothing but the browser. A test with
  * `serial: true` (one that measures speed) runs alone, after the others. Longest first, from the last run's times
  * (kyoshi-tests/times.json in the system's temp folder), so the long ones don't finish last and alone; each line prints
  * as its test finishes (only the tests that passed leave their time). A test fails on a failed check, an error, anything
@@ -28,6 +30,26 @@ function playwright() {
   try { return require("playwright"); } catch (err) { /* not local */ }
   const root = require("child_process").execSync("npm root -g").toString().trim();
   return require(path.join(root, "playwright"));
+}
+
+// The one browser. Two of Playwright's defaults cost the tests about a tenth of their CPU (14-test sample, whole process
+// tree, median of 3 under heavy load: 40.7 → 36.4 CPU-seconds, 84 → 57 s wall): --disable-dev-shm-usage keeps Chromium's
+// shared memory (a file per file:// load) in /tmp, a real disk on many machines, so it's dropped when /dev/shm has room;
+// and Chromium streams each of the page's ~160 file:// scripts on a worker thread of its own (~100 threads per page, each
+// one re-read by the browser from /proc), so that one feature is turned off (ScriptStreamingForNonHTTP; nothing the page
+// or a test can see). Chromium keeps only the last --disable-features, so Playwright's own list is read back from a first
+// launch and kept; if anything here fails, the plain browser is used (same behaviour, only slower).
+async function launchBrowser(chromium) {
+  const opts = {};
+  try { const st = fs.statfsSync("/dev/shm"); if (st.bavail * st.bsize >= 2 ** 30) opts.ignoreDefaultArgs = ["--disable-dev-shm-usage"]; } catch (err) { /* no /dev/shm, or an older Node */ }
+  const first = await chromium.launch(opts);
+  let own;
+  try {
+    const { arguments: argv } = await (await first.newBrowserCDPSession()).send("Browser.getBrowserCommandLine");
+    own = (argv.find(a => a.startsWith("--disable-features=")) || "--disable-features=").slice("--disable-features=".length);
+  } catch (err) { return first; }
+  await first.close();
+  return chromium.launch({ ...opts, args: [`--disable-features=${[own, "ScriptStreamingForNonHTTP"].filter(Boolean).join(",")}`] });
 }
 
 const OUT = path.join(os.tmpdir(), "kyoshi-tests"); // screenshots of failed tests and times.json (outside the repo)
@@ -130,7 +152,7 @@ async function main() {
     .sort((a, b) => (times[b.name] || 0) - (times[a.name] || 0)); // stable: file order without times
   if (!tests.length) { console.log(`no test matches "${filter}" (of ${every.length})`); process.exitCode = 1; return; }
   const queue = tests.filter(x => !x.serial), alone = tests.filter(x => x.serial);
-  const browser = await playwright().chromium.launch();
+  const browser = await launchBrowser(playwright().chromium);
   const results = [];
   const started = Date.now();
   const width = Math.min(parallel, queue.length) || 1;
