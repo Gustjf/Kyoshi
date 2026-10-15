@@ -106,6 +106,29 @@ module.exports = [
     }
   },
   {
+    name: "turtleduck groceries: names merge across plurals and units (onions with onion, tsp with tbsp, oz with lb, cups with ml), shown as entered, metric or US",
+    async run(t) {
+      // Made up: two recipes that name the same things in other words and other units.
+      const recipes = [
+        { id: "rc-dressing", name: "Dressing", meal: "lunch", servings: 1, kcal: 100, protein: 5, ingredients: ["1 tbsp olive oil", "1 onion", "1 lb butter", "1 cup milk"], steps: "" },
+        { id: "rc-glaze", name: "Glaze", meal: "lunch", servings: 1, kcal: 100, protein: 5, ingredients: ["3 tsp olive oil", "2 onions", "8 oz butter", "100 ml milk"], steps: "" }
+      ];
+      const plan = [{ date: D(1), meal: "lunch", recipeId: "rc-dressing" }, { date: D(2), meal: "lunch", recipeId: "rc-glaze" }];
+      const tab = await withPlan(t, { recipes, plan }), p = tab.page;
+      await td.view(tab, "groceries");
+      const rows = async () => (await td.lists(tab))[0].rows, both = "Dressing, Glaze";
+      // As entered: US units all round are shown the US way (1 tbsp + 3 tsp = 2 tbsp, 1 lb + 8 oz = 1.5 lb), a cup and
+      // 100 ml are metric (236.6 + 100 ml); "onion" and "onions" are one row, spelled the plural way.
+      eq(await rows(), [`3 onions · ${both} · Produce`, `1.5 lb butter · ${both} · Dairy & eggs`, `336.6 ml milk · ${both} · Dairy & eggs`, `2 tbsp olive oil · ${both} · Pantry`], "as entered");
+      await p.click("#kMount #settingsBox > summary");
+      await p.click('#kMount #unitsToggle [data-units="metric"]');
+      eq(await rows(), [`3 onions · ${both} · Produce`, `680.4 g butter · ${both} · Dairy & eggs`, `336.6 ml milk · ${both} · Dairy & eggs`, `29.6 ml olive oil · ${both} · Pantry`], "metric: grams and millilitres");
+      await p.click('#kMount #unitsToggle [data-units="us"]');
+      eq(await rows(), [`3 onions · ${both} · Produce`, `1.5 lb butter · ${both} · Dairy & eggs`, `1½ cups milk · ${both} · Dairy & eggs`, `2 tbsp olive oil · ${both} · Pantry`], "US: pounds, cups and spoons");
+      ok(tab.problems.length === 0, "a clean console");
+    }
+  },
+  {
     name: "turtleduck groceries: the Now list before the first trip, a past trip after time travel, a phone's thumbs",
     async run(t) {
       const plan = [{ date: TODAY, meal: "breakfast", recipeId: "rc-oats" }, { date: D(1), meal: "dinner", recipeId: "rc-salad" }, { date: D(2), meal: "dinner", recipeId: "rc-curry" }];
@@ -191,6 +214,14 @@ module.exports = [
       await td.view(tab, "groceries");
       lists = await td.lists(tab);
       eq([lists[0].rows, lists[0].bought], [["Greek yogurt · Greek yogurt · Dairy & eggs"], ["2 Protein shake · store-bought · Other"]], "two to buy now");
+      // A meal eaten as two portions uses two of what's on hand: Friday's shake as two runs the stock out, one more to buy.
+      await td.view(tab, "plan");
+      await td.openEntry(tab, D(2), "lunch", "Protein shake");
+      await td.entryAct(tab, "servings", '[data-dir="1"]');
+      has(await td.entryText(tab), "Store-bought · on hand runs out before this", "two portions of the one left");
+      await td.closeEntry(tab);
+      await td.view(tab, "groceries");
+      eq((await td.lists(tab))[0].bought, ["3 Protein shake · store-bought · Other"], "three to buy now");
 
       // Never on the Cook row: the drag finds no cell lit, the picker leaves it out.
       await td.view(tab, "plan");

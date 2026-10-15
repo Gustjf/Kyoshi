@@ -95,6 +95,8 @@ module.exports = [
       eq(week.filter(c => c.day === 3 && c.app).map(c => [c.title, c.slot, c.need]), [["Breakfast", "turtleduck:breakfast:3", null], ["Groceries", null, `turtleduck:groceries:${D(1)}`],
         ["Lunch", "turtleduck:lunch:3", null], ["Dinner: Chili + Salad", "turtleduck:dinner:3", null]], "slot cards hold the meals; the extra trip is a card of its own");
       eq(b.tasks.tasks.filter(x => x.label.includes("Turtleduck")).length, 0, "still nothing in Tasks");
+      const cook = await p.evaluate(d => Kyoshi.inbox(d, d).filter(n => n.app === "turtleduck" && n.id === `cook:${d}`).map(n => [n.title, n.minutes, n.details]), D(4));
+      eq(cook, [["Cook: Curry ×1½ · Chili", 120, ["2 recipes · 13 portions", "Curry ×1½ · Chili ×1"]]], "Sunday's cooking card: its minutes, portions (6 × 1½ and 4) and recipes");
 
       // Next week, not planned in Momo: once confirmed, its cooking and its scheduled trip are there anyway, pinned.
       await switchTo(tab, "turtleduck");

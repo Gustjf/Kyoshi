@@ -49,6 +49,7 @@ module.exports = [
       await importBackup(tab, gen.turtleduck());
       await td.view(tab, "recipes");
       await held(tab, 0, "nothing while browsing recipes");
+      eq((await wake(tab)).requests, 0, "none even asked for");
       await p.click('#kMount #recipeGroups [data-act="cook"][data-id="rc-chili"]');
       await held(tab, 1, "on in the cook view");
       await switchTo(tab, "momo");
@@ -69,6 +70,7 @@ module.exports = [
       const tab = await open(t, { init: fakeWakeLock }), p = tab.page;
       await importBackup(tab, gen.setup());
       await held(tab, 0, "nothing before a workout");
+      eq((await wake(tab)).requests, 0, "none even asked for");
       await bm.start(tab, "Push");
       await held(tab, 1, "on during the workout");
       await switchTo(tab, "momo");

@@ -10,8 +10,12 @@ const view = async (tab, v) => { await tab.page.click(`#kMount #nav [data-view="
 const week = (tab, w) => tab.page.click(`#kMount #weekToggle [data-week="${w}"]`);
 const cell = (date, meal) => `#kMount #planGrid .cell[data-date="${date}"][data-meal="${meal}"]`;
 const flat = s => s.replace(/\s+/g, " ").trim();
-// A cell's chips, each its name ("Chili"), in order.
-const chips = (tab, date, meal) => tab.page.$$eval(`${cell(date, meal)} .chip`, els => els.map(e => e.querySelector(".chip-name").innerText.trim()));
+// A cell's chips, each its name ("Chili"), in order. The cell has to be on the grid (a wrong date or meal throws), so an
+// empty answer is a real "nothing there", never a selector that matched nothing.
+async function chips(tab, date, meal) {
+  if (!(await tab.page.$(cell(date, meal)))) throw new Error(`td.chips: no ${meal} cell for ${date} on the grid`);
+  return tab.page.$$eval(`${cell(date, meal)} .chip`, els => els.map(e => e.querySelector(".chip-name").innerText.trim()));
+}
 // A chip by name in a cell (the first with it).
 const chip = (date, meal, name) => `${cell(date, meal)} .chip:has(.chip-name:text-is("${name}"))`;
 // The shelf: "Chili · 3 left · Mon", in order.

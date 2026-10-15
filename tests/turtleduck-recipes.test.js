@@ -52,20 +52,28 @@ module.exports = [
       eq(await td.recipeRows(tab), ["Pancakes · 350 kcal", "Chili · 650 kcal · P 45 · 1 h"], "Tacos is archived");
       eq([await p.locator("#kMount #archivedCount").innerText(), await td.recipeRows(tab, "archivedList")], ["(1)", ["Tacos · 500 kcal"]], "in the Archived fold");
       await td.view(tab, "plan");
-      lacks(await p.locator("#kMount #sideRecipes").innerText(), "Tacos", "not in the sidebar");
+      const side = await p.locator("#kMount #sideRecipes").innerText();
+      lacks(side, "Tacos", "not in the sidebar");
+      has(side, "Pancakes", "which still lists the others");
       await td.openPicker(tab, TODAY, "dinner");
       lacks((await td.pickList(tab)).join(" | "), "Tacos", "nor the picker");
       await td.pickRecipe(tab, "Chili");
 
       // Delete a planned recipe: asked, with how often it's planned; the meal keeps its name; the lists drop it.
+      await td.view(tab, "groceries");
+      has(await p.locator("#kMount #lists").innerText(), "ground beef", "the Chili's ingredients are on the list until it's deleted");
       await td.view(tab, "recipes");
+      // Renamed since it was planned: the day keeps the last name the recipe had.
       await p.click('#kMount #recipeGroups [data-act="recipe"]:has-text("Chili")');
+      await p.fill("#kMount #recipeName", "Chili con carne");
+      await p.click('#kMount #recipeForm button[type="submit"]');
+      await p.click('#kMount #recipeGroups [data-act="recipe"]:has-text("Chili con carne")');
       has(await p.locator("#kMount #recipeUse").innerText(), "planned 1 time from today", "the pop-up says it's planned");
       await p.click("#kMount #recipeDeleteBtn");
-      eq(lastDialog(tab), "Delete “Chili”? It's planned 1 time: those days keep its name. This can't be undone.", "asked first");
+      eq(lastDialog(tab), "Delete “Chili con carne”? It's planned 1 time: those days keep its name. This can't be undone.", "asked first");
       await td.view(tab, "plan");
-      eq(await td.chips(tab, TODAY, "dinner"), ["Chili"], "the planned meal keeps the name");
-      await td.openEntry(tab, TODAY, "dinner", "Chili");
+      eq(await td.chips(tab, TODAY, "dinner"), ["Chili con carne"], "the planned meal keeps the name");
+      await td.openEntry(tab, TODAY, "dinner", "Chili con carne");
       has(await td.entryText(tab), "This recipe was deleted", "its pop-up says so");
       ok(await p.locator('#kMount #entryOverlay [data-entry="read"]').isHidden(), "nothing to read");
       await td.closeEntry(tab);
@@ -78,9 +86,11 @@ module.exports = [
     async run(t) {
       const past = [-21, -14, -7, -2].map((n, i) => ({ date: D(n), meal: "dinner", recipeId: "rc-chili", id: `past-${i}` }));
       const tab = await open(t, { app: "turtleduck", size: DESKTOP }), p = tab.page;
-      await importBackup(tab, gen.turtleduck({ plan: past.concat([{ date: D(1), meal: "dinner", recipeId: "rc-chili", scale: 2 }, { date: D(2), meal: "dinner", recipeId: "rc-chili" }]) }));
+      // (Yesterday's lunch is a leftover portion of the batch cooked two days ago: eaten, but not cooked again.)
+      const left = { date: D(-1), meal: "lunch", recipeId: "rc-chili", leftover: true, from: "past-3" };
+      await importBackup(tab, gen.turtleduck({ plan: past.concat([left, { date: D(1), meal: "dinner", recipeId: "rc-chili", scale: 2 }, { date: D(2), meal: "dinner", recipeId: "rc-chili" }]) }));
       await td.view(tab, "recipes");
-      has((await td.recipeRows(tab)).join(" | "), "Chili · 650 kcal · P 45 · 1 h · last cooked Sep 28 · 4×", "cooked 4 times up to today, the planned ones not yet");
+      has((await td.recipeRows(tab)).join(" | "), "Chili · 650 kcal · P 45 · 1 h · last cooked Sep 28 · 4×", "cooked 4 times up to today, not its leftover portions, the planned ones not yet");
       await p.click("#kMount #pasteBtn");
       await p.fill("#kMount #pasteText", [
         "# Chili", "- 1 egg", "",
@@ -185,6 +195,9 @@ module.exports = [
       eq((await rows())[1], "Protein shake · store-bought · 4 on hand · 160 kcal · P 30 · last had Oct 1 · 2×", "a day on");
       await openRow("Protein shake");
       eq(await p.locator("#kMount #recipeStock").inputValue(), "5", "5 before today's");
+      await save();
+      eq((await mine())[1], ["Protein shake", true, { count: 6, date: TODAY }], "saved as it is a day later, it's still the count of 6 from its own day");
+      await openRow("Protein shake");
       await p.fill("#kMount #recipeStock", "10");
       await save();
       eq([(await mine())[1], (await rows())[1]], [["Protein shake", true, { count: 10, date: D(1) }], "Protein shake · store-bought · 9 on hand · 160 kcal · P 30 · last had Oct 1 · 2×"], "counted again today");

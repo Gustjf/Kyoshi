@@ -105,21 +105,27 @@ module.exports = [
       eq([await td.chips(tab, TUE, "dinner"), fri.map(e => e.id)], [[], [tueId]], "moved, keeping it");
       await td.key(tab, td.cell(SAT, "dinner"), "Control+v");
       ok((await td.entries(tab)).filter(e => e.date === SAT && e.id !== tueId).length === 1, "then a copy");
+      ok(await p.locator("#kMount .chip.clipped").count() > 0, "shaded again after the paste");
       await p.keyboard.press("Escape");
-      ok(!(await p.locator(".chip.clipped").count()), "Esc drops it");
+      ok(!(await p.locator("#kMount .chip.clipped").count()), "Esc drops it");
 
       // The Cook row: Curry cooked on Sunday for later. All six portions go on the shelf; Sunday eats nothing.
       await td.dragRecipe(tab, "rc-curry", SUN, "cook");
       eq(await td.chips(tab, SUN, "cook"), ["Curry"], "on Sunday's Cook row");
       has((await td.shelf(tab)).join(" | "), "Curry · 6 left · Sun", "six on the shelf");
       eq((await td.totals(tab, SUN)).text, "", "nothing eaten on Sunday");
-      // A portion of it is a leftover, which a Cook row won't take, by dragging or pasting.
+      // A portion of it is a leftover, which a Cook row won't take, by dragging or pasting. A refused one adds nothing, not
+      // even out of sight: the same meals, and the same five portions on the shelf.
       await td.dragPortion(tab, "Curry", SUN, "dinner");
+      const meals = (await td.entries(tab)).length, curryShelf = async () => (await td.shelf(tab)).filter(s => s.startsWith("Curry"));
+      eq(await curryShelf(), ["Curry · 5 left · Sun"], "five left after Sunday's dinner");
       await td.dragPortion(tab, "Curry", SUN, "cook");
       eq(await td.chips(tab, SUN, "cook"), ["Curry"], "no leftover on the Cook row");
+      eq([(await td.entries(tab)).length, await curryShelf()], [meals, ["Curry · 5 left · Sun"]], "the drag added nothing");
       await td.key(tab, td.chip(SUN, "dinner", "Curry"), "Control+c");
       await td.key(tab, td.cell(SAT, "cook"), "Control+v");
       eq(await td.chips(tab, SAT, "cook"), [], "nor pasted there");
+      eq([(await td.entries(tab)).length, await curryShelf()], [meals, ["Curry · 5 left · Sun"]], "the paste added nothing");
       await p.keyboard.press("Escape");
       // A quick meal can't go on the Cook row either; a Cook row batch can go on a meal (eaten there then).
       await td.dragChip(tab, { date: SUN, meal: "cook" }, "Curry", SAT, "lunch");
@@ -294,6 +300,8 @@ module.exports = [
       eq(await td.alsoDays(tab), ["Tue 29 ×2"], "nothing placed on Wednesday");
       await td.entryAct(tab, "servings", '[data-dir="1"]');
       eq(lastDialog(tab), NONE_LEFT, "nor one more portion eaten on Monday");
+      await td.entryAct(tab, "also", `[data-date="${TUE}"]`);
+      eq([lastDialog(tab), await td.alsoDays(tab)], [NONE_LEFT, ["Tue 29 ×2"]], "nor a third on Tuesday, which already holds two");
       // − takes one off Tuesday; tapping the day puts it back.
       await td.entryAct(tab, "also-less", `[data-date="${TUE}"]`);
       eq(await td.alsoDays(tab), ["Tue 29"], "− takes one off");
@@ -301,6 +309,11 @@ module.exports = [
       await td.entryAct(tab, "also", `[data-date="${TUE}"]`);
       await td.closeEntry(tab);
       eq(await td.chipWords(tab, td.chip(TUE, "dinner", "Chili")), "Chili ×2 · 1,300 · P 90", "the grid's chip says ×2");
+      // Tuesday's leftover can't take a portion more of its own either (its Portions +).
+      await td.openEntry(tab, TUE, "dinner", "Chili");
+      await td.entryAct(tab, "servings", '[data-dir="1"]');
+      eq([lastDialog(tab), (await td.entries(tab)).filter(e => e.leftover).map(e => e.servings)], [NONE_LEFT, [2]], "a leftover's own Portions + is refused too");
+      await td.closeEntry(tab);
       eq(await td.chipWords(tab, td.chip(MON, "dinner", "Chili")), "Chili 650 · P 45", "one portion says nothing");
       // A copy of Tuesday's leftover pasted on Saturday: refused too.
       await td.key(tab, td.chip(TUE, "dinner", "Chili"), "Control+c");
@@ -324,7 +337,11 @@ module.exports = [
       await td.closeEntry(tab);
       await td.openEntry(tab, MON, "dinner", "Chili");
       has(await td.entryText(tab), "Placed 3 portions of 1: -2 left", "the batch's says what's over");
+      // Raising its × on its cook day, as the refusal advised, makes portions again: serves 1 at ×3 yields the 3 placed.
+      for (let i = 0; i < 4; i++) await td.entryAct(tab, "scale", '[data-dir="1"]');
+      has(await td.entryText(tab), "No portions left", "×3 yields 3");
       await td.closeEntry(tab);
+      ok(!(await tue.evaluate(el => el.classList.contains("short"))), "and Tuesday's leftover isn't short any more");
 
       // Curry eaten as two portions on Thursday: ×2 on its chip, and in Momo's card once the week is confirmed.
       await td.openEntry(tab, THU, "dinner", "Curry");
