@@ -21,16 +21,16 @@ const gen = require("./generate");
 const M = "#kMount";
 const D = n => addDays(TODAY, n);
 const ABD = ["Abdomen · left, upper", "Abdomen · right, lower", "Abdomen · left, lower", "Abdomen · right, upper"];
-const THIGH = ["Thigh · left front, upper", "Thigh · right side, middle", "Thigh · left side, lower", "Thigh · right front, upper",
-  "Thigh · left front, middle", "Thigh · right side, lower", "Thigh · left side, upper", "Thigh · right front, middle",
-  "Thigh · left front, lower", "Thigh · right side, upper", "Thigh · left side, middle", "Thigh · right front, lower"];
+const THIGH = ["Thigh · left front, upper", "Thigh · right outer, middle", "Thigh · left outer, lower", "Thigh · right front, upper",
+  "Thigh · left front, middle", "Thigh · right outer, lower", "Thigh · left outer, upper", "Thigh · right front, middle",
+  "Thigh · left front, lower", "Thigh · right outer, upper", "Thigh · left outer, middle", "Thigh · right front, lower"];
 const GLUTE = ["Buttock · left, upper", "Buttock · right, lower", "Buttock · left, lower", "Buttock · right, upper"];
 const ARM = ["Upper arm · left", "Upper arm · right"];
 const THIGH_IDS = ["thigh-l-front-upper", "thigh-r-side-middle", "thigh-l-side-lower", "thigh-r-front-upper", "thigh-l-front-middle", "thigh-r-side-lower",
   "thigh-l-side-upper", "thigh-r-front-middle", "thigh-l-front-lower", "thigh-r-side-upper", "thigh-l-side-middle", "thigh-r-front-lower"];
 // Start-up info's buttons, by body part: the X's short words.
-const PILLS = ["L upper", "R lower", "L lower", "R upper", "L front upper", "R side middle", "L side lower", "R front upper", "L front middle", "R side lower",
-  "L side upper", "R front middle", "L front lower", "R side upper", "L side middle", "R front lower", "L upper", "R lower", "L lower", "R upper", "L", "R"];
+const PILLS = ["L upper", "R lower", "L lower", "R upper", "L front upper", "R outer middle", "L outer lower", "R front upper", "L front middle", "R outer lower",
+  "L outer upper", "R front middle", "L front lower", "R outer upper", "L outer middle", "R front lower", "L upper", "R lower", "L lower", "R upper", "L", "R"];
 
 // The upcoming doses' sites, as their cards say them ("" for none).
 const cardSites = tab => tab.page.$$eval(`${M} #upcomingDosesGrid .stat`, cards => cards.map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent));
@@ -94,7 +94,7 @@ module.exports = [
       eq([pop.open, pop.picked], [true, ABD[3]], "still picked a minute later");
       await p.click(`${M} #doseLogBtn`);
       eq((await popup(tab)).open, false, "logged");
-      eq((await history(tab))[0], ["Sep 30, 2026", "5 mg|Abd R upper"], "History says where it went");
+      eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R upper"], "History says where it went");
       // The thighs' turn; the abdomen then goes on from the site used, starting over after its last (not from the planned one).
       eq(await cardSites(tab), [THIGH[0], ABD[0], THIGH[1]], "on from Abd R upper");
 
@@ -122,7 +122,7 @@ module.exports = [
       await importBackup(other, backup);
       eq((await buttons(other)).map(b => b[1]), PILLS.map((b, i) => i >= 4 && i < 16), "its start-up info: the thighs on");
       eq(await cardSites(other), THIGH.slice(0, 3), "the same doses' sites");
-      eq((await history(other))[0], ["Sep 30, 2026", "5 mg|Abd R upper"], "the same History");
+      eq((await history(other))[0], ["Sep 30", "5 mg|Abd R upper"], "the same History");
 
       // A week on (time travel; its pop-up then covers Developer Mode's badge): the next dose comes due at its
       // site; logged, the next ones follow it.
@@ -130,7 +130,7 @@ module.exports = [
       pop = await popup(other);
       eq([pop.open, pop.picked, pop.groups], [true, THIGH[0], [["Thighs", THIGH], ["Other", ABD.concat(GLUTE, ARM)]]], "the pop-up a week on");
       await other.page.click(`${M} #doseLogBtn`);
-      eq((await history(other))[0], ["Oct 7, 2026", "5 mg|Thigh L front upper"], "logged at the planned site");
+      eq((await history(other))[0], ["Oct 7", "5 mg|Thigh L front upper"], "logged at the planned site");
       eq(await cardSites(other), THIGH.slice(1, 4), "the next ones");
     }
   },
@@ -147,7 +147,7 @@ module.exports = [
         await p.click(`${M} #doseLogBtn`);
         logged.push((await history(tab))[0][1].replace("5 mg|", ""));
       }
-      eq(logged, ["Abd L upper", "Thigh L front upper", "Abd R lower", "Thigh R side middle", "Abd L lower", "Thigh L side lower", "Abd R upper",
+      eq(logged, ["Abd L upper", "Thigh L front upper", "Abd R lower", "Thigh R outer middle", "Abd L lower", "Thigh L outer lower", "Abd R upper",
         "Thigh R front upper", "Abd L upper", "Thigh L front middle"], "the abdomen starting over every fourth of its turns, the thighs going on");
       eq(await cardSites(tab), [ABD[1], THIGH[5], ABD[2]], "the next ones");
 
@@ -213,7 +213,7 @@ module.exports = [
       await p.click(`${M} #upcomingDosesGrid button[data-confirm-dose]`);
       eq((await popup(tab)).picked, ABD[1], "the pop-up plans the next site");
       await p.click(`${M} #doseLogBtn`);
-      eq((await history(tab))[0], ["Sep 30, 2026", "5 mg|Abd R lower"], "logged there");
+      eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R lower"], "logged there");
       eq(await cardSites(tab), [THIGH[0], ABD[2], THIGH[1]], "on from it");
       eq([(await exportBackup(tab)).skipSites, await bugLine(tab, "- Sites skipped")], [null, "- Sites skipped: 0"], "forgotten");
 
@@ -268,7 +268,7 @@ module.exports = [
       await p.click(`${M} #upcomingDosesGrid button[data-confirm-dose]`);
       eq([(await popup(tab)).open, (await popup(tab)).shown], [true, false], "the pop-up without a site");
       await p.click(`${M} #doseLogBtn`);
-      eq((await history(tab))[0], ["Sep 30, 2026", "5 mg"], "logged without a site");
+      eq((await history(tab))[0], ["Sep 30", "5 mg"], "logged without a site");
       backup = await exportBackup(tab);
       eq([backup.sites, entrySite(backup, TODAY)], [[], null], "exported: sites off");
 
@@ -299,7 +299,7 @@ module.exports = [
       }, [edit, newer]);
       eq(await combine("arms"), true, "the newer save combined");
       eq(await cardSites(tab), [ARM[1], ARM[0], ARM[1]], "its sites, on from its dose's");
-      eq((await history(tab))[0], ["Sep 30, 2026", "5 mg|Upper arm L"], "its dose's site");
+      eq((await history(tab))[0], ["Sep 30", "5 mg|Upper arm L"], "its dose's site");
       eq(await combine("skip"), true, "a newer save's skip");
       eq(await cardSites(tab), [ARM[0], ARM[1], ARM[0]], "the next dose passes over the right arm");
       eq(await combine("older"), false, "an older copy, even saved later, changes nothing");

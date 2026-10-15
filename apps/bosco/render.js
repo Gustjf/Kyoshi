@@ -53,7 +53,7 @@
       const change = prev === null ? null : Math.round((e.weight - prev) * 10) / 10; // as displayed
       const cls = change ? ((dir === "gain") === (change > 0) ? "good" : "bad") : "";
       return `<tr>
-        <td>${fmtDate(e.date)}</td>
+        <td>${fmtDateBrief(e.date)}</td>
         <td>${hasWeight(e) ? `${e.weight.toFixed(1)} ${unit}` : "&mdash;"}</td>
         <td class="${cls}">${change === null ? "&mdash;" : `${change > 0 ? "+" : ""}${change.toFixed(1)} ${unit}`}</td>
         <td class="med">${hasDose(e) ? `${e.doseMg} mg${otherMedNote(e)}${e.site ? `${SEP}${siteShort(e.site)}` : ""}` : "&mdash;"}</td>

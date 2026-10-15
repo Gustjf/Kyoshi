@@ -37,18 +37,18 @@
   };
   // Injection sites, part by part in the order body parts take turns (PARTS), each part's sites in the
   // order its doses take them: an X, the other side every time and another height (the thighs also
-  // swap faces on each leg; front: facing the ceiling when sitting, side: between buttock and thigh).
+  // swap faces on each leg; front: facing the ceiling when sitting, outer: between buttock and thigh).
   // [id, label, short label, part]; ids are what backups store, so never change one (a retired one
   // goes to LEGACY_SITES).
   const SITES = [
     ["abd-l-upper", "Abdomen · left, upper", "Abd L upper", "abd"], ["abd-r-lower", "Abdomen · right, lower", "Abd R lower", "abd"],
     ["abd-l-lower", "Abdomen · left, lower", "Abd L lower", "abd"], ["abd-r-upper", "Abdomen · right, upper", "Abd R upper", "abd"],
-    ["thigh-l-front-upper", "Thigh · left front, upper", "Thigh L front upper", "thigh"], ["thigh-r-side-middle", "Thigh · right side, middle", "Thigh R side middle", "thigh"],
-    ["thigh-l-side-lower", "Thigh · left side, lower", "Thigh L side lower", "thigh"], ["thigh-r-front-upper", "Thigh · right front, upper", "Thigh R front upper", "thigh"],
-    ["thigh-l-front-middle", "Thigh · left front, middle", "Thigh L front middle", "thigh"], ["thigh-r-side-lower", "Thigh · right side, lower", "Thigh R side lower", "thigh"],
-    ["thigh-l-side-upper", "Thigh · left side, upper", "Thigh L side upper", "thigh"], ["thigh-r-front-middle", "Thigh · right front, middle", "Thigh R front middle", "thigh"],
-    ["thigh-l-front-lower", "Thigh · left front, lower", "Thigh L front lower", "thigh"], ["thigh-r-side-upper", "Thigh · right side, upper", "Thigh R side upper", "thigh"],
-    ["thigh-l-side-middle", "Thigh · left side, middle", "Thigh L side middle", "thigh"], ["thigh-r-front-lower", "Thigh · right front, lower", "Thigh R front lower", "thigh"],
+    ["thigh-l-front-upper", "Thigh · left front, upper", "Thigh L front upper", "thigh"], ["thigh-r-side-middle", "Thigh · right outer, middle", "Thigh R outer middle", "thigh"],
+    ["thigh-l-side-lower", "Thigh · left outer, lower", "Thigh L outer lower", "thigh"], ["thigh-r-front-upper", "Thigh · right front, upper", "Thigh R front upper", "thigh"],
+    ["thigh-l-front-middle", "Thigh · left front, middle", "Thigh L front middle", "thigh"], ["thigh-r-side-lower", "Thigh · right outer, lower", "Thigh R outer lower", "thigh"],
+    ["thigh-l-side-upper", "Thigh · left outer, upper", "Thigh L outer upper", "thigh"], ["thigh-r-front-middle", "Thigh · right front, middle", "Thigh R front middle", "thigh"],
+    ["thigh-l-front-lower", "Thigh · left front, lower", "Thigh L front lower", "thigh"], ["thigh-r-side-upper", "Thigh · right outer, upper", "Thigh R outer upper", "thigh"],
+    ["thigh-l-side-middle", "Thigh · left outer, middle", "Thigh L outer middle", "thigh"], ["thigh-r-front-lower", "Thigh · right front, lower", "Thigh R front lower", "thigh"],
     ["glute-l-upper", "Buttock · left, upper", "Buttock L upper", "glute"], ["glute-r-lower", "Buttock · right, lower", "Buttock R lower", "glute"],
     ["glute-l-lower", "Buttock · left, lower", "Buttock L lower", "glute"], ["glute-r-upper", "Buttock · right, upper", "Buttock R upper", "glute"],
     ["arm-l", "Upper arm · left", "Upper arm L", "arm"], ["arm-r", "Upper arm · right", "Upper arm R", "arm"]

@@ -41,7 +41,7 @@ Kyoshi.apps.bosco.markup = `
       <!-- Where doses go: a button per injection site (as many on as you like), grouped by body part, in the order doses take them. -->
       <div class="subhead sites-head" id="sitesLabel">Injection sites</div>
       <div class="site-parts" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
-      <div class="note">Body parts with a site on take turns, top to bottom; within each, doses go through its sites that are on, in this order. A thigh's front faces the ceiling when you sit; its side is between buttock and thigh.</div>
+      <div class="note">Body parts with a site on take turns, top to bottom; within each, doses go through its sites that are on, in this order. A thigh's front faces the ceiling when you sit; its outer face is between buttock and thigh.</div>
       <div class="subhead vial-head">Active vial</div>
       <div id="vialSummary">
         <div class="summary-line">

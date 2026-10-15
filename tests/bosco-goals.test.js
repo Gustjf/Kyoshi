@@ -96,6 +96,9 @@ module.exports = [
     name: "bosco goals: deleting a weigh-in, a day with a dose, or a goal asks first; No keeps it",
     async run(t) {
       const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      // History gives a day's year only when it isn't this year.
+      await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-300), weight: 190 }, { date: TODAY, weight: 184 }] }));
+      eq(await historyDates(tab), ["Sep 30", "Dec 4, 2025"], "this year's day without its year, last year's with it");
       const weights = Array.from({ length: 6 }, (_, i) => ({ date: D(i - 5), weight: +(186 - 0.4 * i).toFixed(1) }));
       await importBackup(tab, gen.bosco({ doses: 1, lastDose: D(-2), weights }));
       eq((await historyDates(tab)).length, 6, "six days");
@@ -104,9 +107,9 @@ module.exports = [
       tab.answers.push(false);
       await p.click(`${M} #historyBody button[data-date="${TODAY}"]`);
       eq(lastDialog(tab), "Delete the weigh-in of 184.0 lb on Sep 30? This can't be undone.", "asked");
-      eq((await historyDates(tab))[0], "Sep 30, 2026", "kept");
+      eq((await historyDates(tab))[0], "Sep 30", "kept");
       await p.click(`${M} #historyBody button[data-date="${TODAY}"]`);
-      eq((await historyDates(tab))[0], "Sep 29, 2026", "deleted");
+      eq((await historyDates(tab))[0], "Sep 29", "deleted");
 
       // A day with a dose says the dose, and the weigh-in with it.
       tab.answers.push(false);

@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.823", date: "2026-10-15", changes: [
+      "History leaves out a day's year unless it's from another year, so its rows don't wrap on a phone.",
+      "The thighs' side sites are now called outer (Thigh R outer middle); doses already logged there read the new way.",
+    ] },
     { version: "8.813", date: "2026-10-13", changes: [
       "Weigh-ins, like goals, keep the number you typed when you switch units and back (184 lb no longer comes back as 184.1 lb).",
     ] },
