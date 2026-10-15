@@ -53,8 +53,9 @@ function setup({ program = ["rt-push", "rt-pull", "rt-legs"], target = 3, unit =
 }
 
 // One session of a routine on a day: every planned set, the weights a few steps up per `level`, a set short now and
-// then (rng), started at 18:00 and lasting 40–70 minutes; kg sessions keep their weights in kg (to the nearest 2.5).
-function session(id, routineId, date, { level = 0, rng = Math.random, kg = false, allHit = false } = {}) {
+// then (rng; seeded by default, so the same session every time), started at 18:00 and lasting 40–70 minutes; kg
+// sessions keep their weights in kg (to the nearest 2.5).
+function session(id, routineId, date, { level = 0, rng = random(1), kg = false, allHit = false } = {}) {
   const [, name, lines] = ROUTINES.find(r => r[0] === routineId);
   const started = at(date, "18:00") + Math.floor(rng() * 20) * 60000, minutes = 40 + Math.floor(rng() * 31);
   const sets = [];

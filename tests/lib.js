@@ -3,7 +3,8 @@
  * real date), watching the console (the browser's own lines about cloud requests the fake GitHub turned down aside),
  * answering dialogs (alert / confirm; a test can queue answers and read what was asked), switching apps through the
  * switcher, opening Developer Mode, importing a backup through its file picker (waiting for the import itself),
- * exporting one, time travel, and small checks. Used by run.js and every *.test.js. */
+ * exporting one, time travel (checked to have happened), and small checks. Opening says at once, with the page's
+ * console, when an app couldn't start. Used by run.js and every *.test.js. */
 "use strict";
 const path = require("path");
 
@@ -14,12 +15,16 @@ const PHONE = { width: 390, height: 844 }; // a phone held upright
 const DESKTOP = { width: 1280, height: 900 };
 
 // --- Checks: each throws with what was expected, so the runner can say which step failed ---
+// JSON can't tell NaN or Infinity from null, nor one Set or Map from another: those are written out, so they never
+// match by accident.
+const plain = (k, x) => typeof x === "number" && !Number.isFinite(x) ? `<${x}>` : x instanceof Set ? { Set: [...x] } : x instanceof Map ? { Map: [...x] } : x;
 function eq(actual, expected, what) {
-  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  const a = JSON.stringify(actual, plain), e = JSON.stringify(expected, plain);
   if (a !== e) throw new Error(`${what}: expected ${e}, got ${a}`);
 }
 function ok(value, what) { if (!value) throw new Error(`${what}: not true`); }
 function has(text, part, what) {
+  if (part === "") throw new Error(`${what}: nothing to look for (an empty part is in every text)`);
   if (!String(text).includes(part)) throw new Error(`${what}: expected to find ${JSON.stringify(part)} in ${JSON.stringify(String(text).slice(0, 400))}`);
 }
 function lacks(text, part, what) {
@@ -40,6 +45,8 @@ const at = (d, hm = "07:00") => Date.parse(`${d}T${hm}:00Z`);
 // dialogs: every alert / confirm, as [type, message]; answers: what the next confirms say (true when empty). init: a
 // function run in every page of a new profile before Kyoshi loads (to stand in for a browser feature).
 async function open(t, { app = "badgermole", size = PHONE, time = at(TODAY), ctx = null, init = null } = {}) {
+  // A test that ran past its time must not start browsers beside the next tests.
+  if (t.over) throw new Error("open: the test is over (timed out); it opens nothing more");
   if (!ctx) {
     ctx = await t.browser.newContext({ viewport: size, locale: "en-US", timezoneId: "UTC" });
     await ctx.clock.install({ time });
@@ -63,7 +70,17 @@ async function open(t, { app = "badgermole", size = PHONE, time = at(TODAY), ctx
   });
   t.tabs.push(tab);
   await page.goto(app ? `${PAGE}#${app}` : PAGE); // no app: whichever Kyoshi opens on
-  await page.waitForFunction(id => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started && (!id || Kyoshi.active() === Kyoshi.apps[id]), app);
+  // Waits for the app asked for to be on screen and started. Once every app has had its go (K.ready), one that couldn't
+  // start (it stays unstarted: shell.js) or isn't there (its script didn't load) is said at once (run.js adds the page's
+  // console lines to a failure), not after the 30 s of a wait that can't end.
+  const state = await page.waitForFunction(id => {
+    const K = window.Kyoshi, A = K && K.active && K.active();
+    if (!A || !K.ready) return false;
+    if (id && !K.apps[id]) return `there is no app "${id}"`;
+    if (!A.started) return `${A.meta.name} couldn't start`;
+    return !id || A === K.apps[id] || false;
+  }, app).then(h => h.jsonValue(), err => err.message.split("\n")[0]);
+  if (state !== true) throw new Error(`open ${app || "Kyoshi"}: ${state}`);
   return tab;
 }
 
@@ -126,13 +143,16 @@ async function exportBackup(tab) {
 }
 
 // Time travel (Developer Mode): days forward; the first jump switches to test mode (nothing saved until a reload).
+// Throws when the page didn't move by them: the test-mode question answered "no" (tab.answers), for one.
 async function travel(tab, days) {
-  const p = tab.page;
-  if (!(await p.evaluate(() => document.body.classList.contains("dev-mode")))) await p.click("#kDevBadge");
+  const p = tab.page, offset = () => p.evaluate(() => Kyoshi.dayOffset), before = await offset();
+  await devPanel(tab, true);
   const btn = { 1: "#kDevPlusDay", 7: "#kDevPlusWeek" }[days];
   if (btn) await p.click(btn);
   else await p.evaluate(n => Kyoshi.dev.travel(n), days);
-  await p.click("#kDevBadge"); // the panel closes again
+  await devPanel(tab, false); // the panel closes again
+  const moved = (await offset()) - before;
+  if (moved !== days) throw new Error(`travel: asked for ${days} days, the page moved ${moved} (a "no" to the test-mode question?)`);
 }
 
 // The page's visible text in an element.
