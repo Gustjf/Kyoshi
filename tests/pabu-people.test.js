@@ -8,7 +8,7 @@
  * 1 imports, a damaged file keeps what's usable, others change nothing), and time travel (a call comes due again, the
  * Birthdays strip follows the days). */
 "use strict";
-const { TODAY, PHONE, DESKTOP, eq, ok, has, lacks, open, lastDialog, importBackup, exportBackup, travel, addDays } = require("./lib");
+const { TODAY, PHONE, DESKTOP, eq, ok, has, lacks, open, lastDialog, importBackup, exportBackup, travel, addDays, at } = require("./lib");
 const gen = require("./generate");
 const pb = require("./pabu");
 
@@ -86,6 +86,9 @@ module.exports = [
         await pb.talkedOn(tab, 1, day);
         eq((await pb.popup(tab)).boxes[0].hint, why, `"${day}" refused`);
       }
+      await pb.talkedOn(tab, 1, TODAY); // today is fine: added, then taken off again
+      eq([(await pb.popup(tab)).boxes[0].talks[0], (await pb.popup(tab)).boxes[0].hint], ["Sep 30", ""], "today can be added");
+      await pb.removeTalk(tab, 1, TODAY);
       await pb.talkedOn(tab, 1, D(-2), { enter: true });
       ok(await pb.isOpen(tab), "Enter in Talked on doesn't save");
       await pb.removeTalk(tab, 1, D(-70));
@@ -108,8 +111,17 @@ module.exports = [
       eq(await line(tab, "Mom"), "Mom · Family · Call weekly · Text every 2 weeks · due today · 🎂 Oct 12 · turns 60", "her line");
       eq((await pb.thisWeek(tab)).lines, ["✓ Text Sam · talked yesterday · 10m", "✓ Call Mom · talked Mon · 45m", "Visit Gran · overdue 9 days · 2h", "Call Ana · overdue 3 days · 30m", "Text Mom · due today · 10m"], "This week: her call talked Monday, her new text due today");
       const mom = await pb.person(tab, "Mom");
+      ok(mom.u >= at(TODAY), "changed, so stamped now (the backup's was January's): sync takes it");
       eq([mom.group, mom.note, mom.cadences.map(c => [c.every, c.how, c.minutes, c.talks])], ["Family", "Ask about the garden.\n\nShe's back on Friday.", [["week", "call", 45, [D(-2), D(-35)]], ["2weeks", "text", 10, []]]], "as kept, the note's lines tidied");
       ok(mom.cadences[0].id === "c1" && /^[a-z0-9]{1,12}$/.test(mom.cadences[1].id) && mom.cadences[1].id !== "c1", "the call keeps its id, the text has one of its own");
+
+      // ✓ again takes off only the last day talked this week: talked Monday and yesterday, ✓ takes yesterday off, Monday stays.
+      await pb.openPerson(tab, "Mom");
+      await pb.talkedOn(tab, 1, D(-1));
+      await pb.save(tab);
+      has(await weekText(tab), "✓ Call Mom · talked yesterday · 45m", "talked Monday and yesterday: the line says the last");
+      await pb.tick(tab, "Call Mom");
+      eq([(await pb.person(tab, "Mom")).cadences[0].talks, (await pb.thisWeek(tab)).lines[1]], [[D(-2), D(-35)], "✓ Call Mom · talked Mon · 45m"], "✓ again: yesterday's off, Monday's stays");
 
       // A group typed in other capitals takes the spelling in use (offered as you type); Enter saves. With groups, chips.
       await pb.openPerson(tab, "Jo");
@@ -218,6 +230,20 @@ module.exports = [
       eq([ana.note, ana.cadences[0].talks], ["Likes jazz and tea.", [D(-1)]], "the note in, the day not");
       await pb.cancel(tab);
 
+      // The limits themselves are taken: 5 and 480 minutes, a year born of 1900 and of this year (Lee, a visit every quarter).
+      await pb.openPerson(tab, "Lee");
+      await pb.setBox(tab, 1, { minutes: 480 });
+      await pb.fill(tab, { month: 3, day: 5, year: 1900 });
+      await pb.save(tab);
+      let lee = await pb.person(tab, "Lee");
+      eq([await pb.isOpen(tab), lee.cadences[0].minutes, lee.birthday], [false, 480, "1900-03-05"], "480 minutes and 1900 are taken");
+      await pb.openPerson(tab, "Lee");
+      await pb.setBox(tab, 1, { minutes: 5 });
+      await pb.fill(tab, { year: 2026 });
+      await pb.save(tab);
+      lee = await pb.person(tab, "Lee");
+      eq([await pb.isOpen(tab), lee.cadences[0].minutes, lee.birthday], [false, 5, "2026-03-05"], "5 minutes and this year are taken");
+
       // An unchanged Save saves nothing.
       const jo = await pb.person(tab, "Jo");
       await pb.openPerson(tab, "Jo");
@@ -226,6 +252,7 @@ module.exports = [
 
       // Delete asks first; then Mom is gone, and the backup keeps a marker with nothing personal in it.
       await pb.openPerson(tab, "Mom");
+      const before = await pb.person(tab, "Mom"); // changed above, so stamped already: the marker must be later still
       tab.answers.push(false);
       await pb.remove(tab);
       eq([lastDialog(tab), await pb.isOpen(tab)], ["Delete Mom, and the days you talked? This can't be undone.", true], "Delete asks; No: Mom stays");
@@ -235,7 +262,7 @@ module.exports = [
       lacks(await weekText(tab), "Mom", "and from This week");
       const marker = (await exportBackup(tab)).people.find(x => x.id === "pp-mom");
       eq({ ...marker, u: 0 }, { id: "pp-mom", name: "", group: "", note: "", birthday: "", partner: false, anniversary: "", cadences: [], deleted: true, at: data.people[1].at, u: 0 }, "the export's marker: nothing personal");
-      ok(marker.u > data.people[1].u, "stamped, so sync takes it");
+      ok(marker.u > before.u, "stamped, so sync takes it");
     }
   },
   {
@@ -245,6 +272,7 @@ module.exports = [
       const a = await open(t, { app: "pabu", size: DESKTOP }), p = a.page;
       await importBackup(a, gen.pabu(gen.PEOPLE.concat(flo)));
       const b = await open(t, { ctx: a.ctx, app: "pabu", size: DESKTOP });
+      eq(await line(a, "Great-aunt Flo"), "Great-aunt Flo · Visit yearly · due Mar 14, 2027 · 🎂 Mar 1 · turns 177", "a visit every year: due a year after the last (200 days ago)");
 
       // Mom's pop-up is open here while her call gets its ✓ in the other tab: This week here shows it, the pop-up as opened.
       await pb.openPerson(a, "Mom");
@@ -428,6 +456,10 @@ module.exports = [
       await pb.fill(tab, { year: 1990 });
       await pb.save(tab);
       has(await line(tab, "Zoe"), "🎂 Mar 15 · turns 37", "Zoe's age, once her year born is in");
+
+      // The strip's edge: a birthday 30 days away is in it, one 31 days away is not.
+      await importBackup(tab, gen.pabuCircle([{ id: "pc-ned", name: "Ned", birthday: "10-30", cadences: [] }, { id: "pc-oli", name: "Oli", birthday: "10-31", cadences: [] }]));
+      eq(await pb.birthdays(tab), ["Ned · Oct 30 · in 30 days"], "the strip: 30 days away is in, 31 is out");
     }
   }
 ];

@@ -105,11 +105,13 @@ module.exports = [
         { id: "x1", name: "Ann", partner: "yes", anniversary: "13-45" },
         { id: "x2", name: "Ben", partner: true, anniversary: "02-30" },
         { id: "x3", name: "Cy", partner: false, anniversary: `${TODAY.slice(0, 4)}-02-29` },
+        { id: "x6", name: "Eve", partner: false, anniversary: "10-05" },
         { id: "x4", deleted: true, partner: true, anniversary: "10-04" }
       ] });
-      eq((await exportBackup(tab)).people.map(x => [x.id, x.partner, x.anniversary]), [["x1", false, ""], ["x2", true, ""], ["x3", false, ""], ["x4", false, ""]],
-        "\"yes\" isn't true, an impossible day is dropped (Feb 29 in a year without it too), a marker keeps neither");
-      eq([await line(tab, "Ben"), await pb.stripTitle(tab)], ["Ben ♥ · Call monthly · due today", "Birthdays"], "Ben's heart, no anniversary");
+      eq((await exportBackup(tab)).people.map(x => [x.id, x.partner, x.anniversary]), [["x1", false, ""], ["x2", true, ""], ["x3", false, ""], ["x6", false, "10-05"], ["x4", false, ""]],
+        "\"yes\" isn't true, an impossible day is dropped (Feb 29 in a year without it too), a possible one is kept even on someone who isn't the partner, a marker keeps neither");
+      eq([await line(tab, "Ben"), await line(tab, "Eve"), await pb.stripTitle(tab), await pb.birthdays(tab)], ["Ben ♥ · Call monthly · due today", "Eve · Call monthly · due today", "Birthdays", []],
+        "Ben's heart, no anniversary; Eve's date counts for nothing: she isn't the one you're with");
       // His anniversary, and no birthday in the next 30 days: the heading names only it.
       await pb.openSetup(tab);
       await pb.fillSetup(tab, { month: 10, day: 4 });

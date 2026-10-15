@@ -126,11 +126,13 @@ module.exports = [
   {
     name: "pabu momo: on the phone, Today shows tomorrow's birthday as an any-time row, and the card holding an overdue call says Late till you talk",
     async run(t) {
-      const tab = await both(t, { size: PHONE, cards: [{ date: D(0), title: "Sleep", hours: 8 }, holding(D(0), "Call Mom", "pp-mom")] }), p = tab.page;
+      const zed = { id: "pp-zed", name: "Zed", every: "week", how: "text", minutes: 10, talks: [7] }; // due today, not before
+      const tab = await both(t, { size: PHONE, people: gen.PEOPLE.concat(zed), cards: [{ date: D(0), title: "Sleep", hours: 8 }, holding(D(0), "Call Mom", "pp-mom"), holding(D(0), "Text Zed", "pp-zed")] }), p = tab.page;
       await p.waitForSelector("#kMount #todayView:not([hidden])");
       const rows = async head => (await mo.today(tab)).sections.find(s => s.head === head).rows.map(r => [r.when, r.title, r.sub, r.len, r.done, r.label]);
       eq(await rows("Tomorrow"), [["any time", "Kai's birthday", "", "15m", false, "Kai's birthday, any time, from Pabu"]], "Kai's birthday, tomorrow, at any time");
       eq(await rows("Next"), [["0800", "Call Mom", "Late", "30m", false, "Call Mom (from Pabu — late), 0800–0830"]], "next, after Sleep: Mom's call, late");
+      eq((await rows("Later today")).slice(0, 1), [["0830", "Text Zed", "", "30m", false, "Text Zed (from Pabu), 0830–0900"]], "then Zed's text (the free time after it left out): due today is not late");
       // The birthday's row opens its pop-up.
       await p.click('#kMount #todayBody .t-row.t-event[data-ev="pabu:bday:pp-kai:2026"]');
       await p.waitForSelector("#kMount #eventOverlay.open");
