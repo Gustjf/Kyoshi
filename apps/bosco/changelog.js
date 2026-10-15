@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.824", date: "2026-10-15", changes: [
+      "History's dates stay on one line, two-digit days (Oct 15) like one-digit ones; only a date with its year may wrap before the year.",
+    ] },
     { version: "8.823", date: "2026-10-15", changes: [
       "History leaves out a day's year unless it's from another year, so its rows don't wrap on a phone.",
       "The thighs' side sites are now called outer (Thigh R outer middle); doses already logged there read the new way.",

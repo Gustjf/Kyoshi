@@ -99,6 +99,10 @@ module.exports = [
       // History gives a day's year only when it isn't this year.
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-300), weight: 190 }, { date: TODAY, weight: 184 }] }));
       eq(await historyDates(tab), ["Sep 30", "Dec 4, 2025"], "this year's day without its year, last year's with it");
+      await p.setViewportSize({ width: 360, height: 800 });
+      eq(await p.evaluate(() => [...document.querySelectorAll("#historyBody td:first-child .nowrap")].map(s => s.getClientRects().length)), [1, 1],
+        "on a phone, each date's month and day stay on one line (Sep 30, Dec 4,)");
+      await p.setViewportSize(DESKTOP);
       const weights = Array.from({ length: 6 }, (_, i) => ({ date: D(i - 5), weight: +(186 - 0.4 * i).toFixed(1) }));
       await importBackup(tab, gen.bosco({ doses: 1, lastDose: D(-2), weights }));
       eq((await historyDates(tab)).length, 6, "six days");

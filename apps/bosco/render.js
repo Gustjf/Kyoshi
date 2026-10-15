@@ -53,7 +53,7 @@
       const change = prev === null ? null : Math.round((e.weight - prev) * 10) / 10; // as displayed
       const cls = change ? ((dir === "gain") === (change > 0) ? "good" : "bad") : "";
       return `<tr>
-        <td>${fmtDateBrief(e.date)}</td>
+        <td>${oneLine(fmtDateBrief(e.date))}</td>
         <td>${hasWeight(e) ? `${e.weight.toFixed(1)} ${unit}` : "&mdash;"}</td>
         <td class="${cls}">${change === null ? "&mdash;" : `${change > 0 ? "+" : ""}${change.toFixed(1)} ${unit}`}</td>
         <td class="med">${hasDose(e) ? `${e.doseMg} mg${otherMedNote(e)}${e.site ? `${SEP}${siteShort(e.site)}` : ""}` : "&mdash;"}</td>
@@ -64,6 +64,13 @@
     $("prevPageBtn").disabled = S.currentPage === 1;
     $("nextPageBtn").disabled = S.currentPage === pages;
   }
+
+  // A date kept on one line ("Oct 5" and "Oct 15" alike); with its year, it may wrap
+  // only before the year ("Oct 15, 2025").
+  const oneLine = text => {
+    const m = text.match(/^(.*\S)(\s+\d{4})$/);
+    return m ? `<span class="nowrap">${m[1]}</span>${m[2]}` : `<span class="nowrap">${text}</span>`;
+  };
 
   // The saved vial's concentration (or nothing without one), shown beside the
   // doses whose syringe units come from it, to check against the vial in hand.

@@ -7,6 +7,7 @@
 .app-bosco .row > .date-cell { min-width: 140px; } /* room for the whole date beside its calendar icon */
 .app-bosco .mode-toggle { margin-bottom: 10px; }
 .app-bosco #historyBody tr.blank button { visibility: hidden; } /* a blank row on History's last page: as tall as a full one, nothing to tap */
+.app-bosco #historyBody .nowrap { white-space: nowrap; } /* a date's month and day on one line; one with its year may wrap before it */
 
 /* --- Stats & badges --- */
 .app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */
