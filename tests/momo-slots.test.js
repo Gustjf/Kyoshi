@@ -95,6 +95,12 @@ module.exports = [
       eq((await mo.baselineCards(tab)).filter(c => c.slot).map(c => [c.slot, c.pin, c.hours]), [["turtleduck:dinner:0", 19, 1], ["turtleduck:groceries:6", 8, 0.75]], "the baseline follows");
       eq((await mo.weekCards(tab, next)).filter(c => c.slot).map(c => [c.slot, c.pin, c.hours]), [["turtleduck:dinner:0", 19, 1], ["turtleduck:groceries:6", 8, 0.75]], "so does next week's copy");
 
+      // A second card for one slot (two devices each made theirs) is taken back; the first stays.
+      const dinnerId = (await mo.baselineCards(tab)).find(c => c.slot === "turtleduck:dinner:0").id;
+      await p.evaluate(() => { const cards = Kyoshi.apps.momo.S.data.baseline.cards; cards.push({ ...cards.find(c => c.slot === "turtleduck:dinner:0"), id: "dinner-twin" }); });
+      await tick(tab);
+      eq((await mo.baselineCards(tab)).filter(c => c.slot === "turtleduck:dinner:0").map(c => c.id), [dinnerId], "one card for the slot: the first");
+
       // Clear baseline: yours go, the slots stay.
       await mo.view(tab, "base");
       await mo.clearWeek(tab);
@@ -119,6 +125,8 @@ module.exports = [
       const cook = { id: "cook:2026-10-08", title: "Cook: Curry", fill: "card", date: "2026-10-08", time: "16:00", minutes: 60, fixed: true };
       const soup = { id: "cook:2026-09-30", title: "Cook: Soup", fill: "card", date: "2026-09-30", time: "20:00", minutes: 45, fixed: true };
       await standIn(tab, [0, 1, 2, 3, 4, 5, 6].map(d => slot("dinner", d, "18:00", 45)), [soup, meal, cook]);
+      // Read before Momo has placed their cards (it does on the minute), a fixed need still isn't short: it never waits in Tasks.
+      eq(await p.evaluate(() => Kyoshi.apps.momo.fill().short.map(n => n.id)), [], "fixed needs aren't short, even before their cards are placed");
       await tick(tab);
       const tk = await p.evaluate(() => Kyoshi.apps.momo.thisWeekKey()), nk = await p.evaluate(() => Kyoshi.apps.momo.nextWeekKey());
       eq((await mo.baselineCards(tab)).filter(c => c.slot).length, 7, "a Dinner slot each day");

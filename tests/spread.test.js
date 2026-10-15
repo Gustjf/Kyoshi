@@ -352,8 +352,10 @@ module.exports = [
       bad.jobs.find(j => j.name === "Job 1").moved = { from: "2026-10-01", to: "2027-01-30" };
       bad.jobs.find(j => j.name === "Job 2").moved = "soon";
       bad.jobs.find(j => j.name === "Job 3").moved = { from: "x", to: "2026-10-05" };
+      bad.jobs.find(j => j.name === "Job 0").moved = { from: "2026-10-01", to: "2026-10-16" }; // 15 days: one too many
+      bad.jobs.find(j => j.name === "Job 5").moved = { from: "2026-10-01", to: "2026-10-15" }; // 14 days: the longest
       await importBackup(tab, bad); // Job 4's is sound as it was
-      eq((await jobs(tab)).filter(j => j.keeps).map(j => j.name), ["Job 4"], "damaged moves are dropped");
+      eq((await jobs(tab)).filter(j => j.keeps).map(j => j.name), ["Job 4", "Job 5"], "damaged moves are dropped (a move of 14 days is the longest)");
       await importBackup(tab, file);
       eq((await jobs(tab)).filter(j => j.keeps).length, 4, "imported with their moves");
 
@@ -400,7 +402,11 @@ module.exports = [
         const items = movable.concat(others);
         const plan = L.plan(items, { today });
         const rev = items.slice().reverse(), mid = items.slice(3).concat(items.slice(0, 3));
+        // The edge of "weekly": with Sunday's week busy and the next empty, an item due every 7 days stays (a quarter is under 2
+        // days) while one every 8 days (2 days either way) goes to Monday.
+        const busy = d("busy", "2026-10-02", 60, 2), edge = L.plan([busy, d("wk7", "2026-10-04", 60, 7)], { today }).concat(L.plan([busy, d("wk8", "2026-10-04", 60, 8)], { today }));
         return {
+          edge,
           plan, again: L.plan(items, { today }), reversed: L.plan(rev, { today }), rotated: L.plan(mid, { today }),
           doubled: L.plan(items.concat(items.map(i => ({ ...i }))), { today }),
           empty: L.plan([], { today }), noToday: L.plan(items, {}), notAList: L.plan(null, { today }),
@@ -421,6 +427,7 @@ module.exports = [
       eq(out.weeks.mondays.length, 8, "eight weeks");
       eq([out.weeks.mondays[0], out.monday, out.constants], ["2026-09-28", "2026-09-28", [8, 0.25, 14]], "this week's Monday, the constants");
       eq(out.untouched, true, "the items handed in are left as they were");
+      eq(out.edge, [{ id: "wk8", from: "2026-10-04", to: "2026-10-05" }], "a Sunday item every 7 days stays; every 8 days it can go to Monday");
     }
   },
   {

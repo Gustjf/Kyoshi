@@ -51,6 +51,13 @@ module.exports = [
       await switchTo(tab, "badgermole");
       await bm.doSession(tab, "Pull");
       eq(await why(tab, "badgermole"), "", "logged today: no dot");
+      // A target out of reach (7 for this week: 5 left, 2 days to go) says "keep going" by the sums, but today's is logged: still no dot.
+      await bm.openFold(tab, "settings");
+      await p.fill("#targetInput", "7");
+      await p.locator("#targetInput").blur();
+      eq(await why(tab, "badgermole"), "", "a target out of reach, today's logged: no dot");
+      await p.fill("#targetInput", "3");
+      await p.locator("#targetInput").blur();
       await p.evaluate(() => Kyoshi.dev.travel(1));
       eq(await why(tab, "badgermole"), "today's workout keeps this week's 3 (1 workout left, 1 day to go)", "Sunday, one to go: the dot again");
       await p.evaluate(() => Kyoshi.dev.travel(1));
@@ -70,8 +77,8 @@ module.exports = [
       await td.dragRecipe(tab, "rc-salad", D(1), "dinner");
       eq(await why(tab, "turtleduck"), "", "planned: no dot");
       await switchTo(tab, "pabu");
-      await importBackup(tab, gen.pabu());
-      eq(await why(tab, "pabu"), "2 calls and 1 visit overdue", "Mom's and Ana's calls, Gran's visit");
+      await importBackup(tab, gen.pabu(gen.PEOPLE.concat([{ id: "pp-dee", name: "Dee", every: "week", how: "text", minutes: 10, talks: [7] }]))); // Dee's text is due today
+      eq(await why(tab, "pabu"), "2 calls and 1 visit overdue", "Mom's and Ana's calls, Gran's visit; Dee's text, due today, isn't overdue");
     }
   },
   {
