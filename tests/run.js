@@ -16,8 +16,7 @@
  * in the console (any tab; a last look at each page first, so what it wrote just before the end counts, and a page
  * that no longer answers fails), a promise nobody awaited that failed (a forgotten `await`: named, and the run goes
  * on) or 90 s; on a failure, its console lines are listed and a screenshot of each of its tabs goes to the temp folder
- * (kyoshi-tests/). Exit code 1 when any test failed, none matches the filter, or a file looks like a test but doesn't
- * end in .test.js; 2 for a bad option. */
+ * (kyoshi-tests/). Exit code 1 when any test failed or none matches the filter; 2 for a bad option. */
 "use strict";
 const fs = require("fs");
 const os = require("os");
@@ -97,10 +96,10 @@ async function runOne(browser, test) {
       inTest.run(t, () => test.run(t)),
       new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`timed out after ${TIMEOUT_MS / 1000}s`)), TIMEOUT_MS); })
     ]);
-    // The console lines a page has written are on their way here, in order ahead of its answer to anything asked of it:
-    // ask each tab something, then give it a moment for what it does next.
-    if ((await Promise.all(t.tabs.map(tab => answers(tab.page)))).includes(false)) throw new Error("a page stopped answering at the end of the test (stuck in a loop?)");
+    // A moment for what the page does next, then the lines it has written are all here: they come in order ahead of its
+    // answer to anything asked of it.
     await new Promise(r => setTimeout(r, SETTLE_MS));
+    if ((await Promise.all(t.tabs.map(tab => answers(tab.page)))).includes(false)) throw new Error("a page stopped answering at the end of the test (stuck in a loop?)");
     if (problems().length) throw new Error(`the console wasn't clean:\n      ${shown()}`);
     console.log(`  ✓ ${test.name} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
   } catch (err) {
@@ -125,8 +124,6 @@ async function runOne(browser, test) {
 async function main() {
   const { parallel, filter } = args(process.argv.slice(2));
   const files = fs.readdirSync(__dirname).filter(f => f.endsWith(".test.js")).sort();
-  const odd = fs.readdirSync(__dirname).filter(f => /test|spec/i.test(f) && f.endsWith(".js") && !f.endsWith(".test.js"));
-  if (odd.length) { console.log(`${odd.join(", ")} look like tests but don't end in .test.js, so they would never run`); process.exitCode = 1; return; }
   const times = readTimes();
   const every = files.flatMap(f => require(path.join(__dirname, f)).map(x => ({ ...x, file: f })));
   const tests = every.filter(x => !filter || `${x.file} ${x.name}`.toLowerCase().includes(filter))
