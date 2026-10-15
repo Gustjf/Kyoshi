@@ -38,6 +38,7 @@ module.exports = [
       await p.click("#logBtn");
       s = await bm.screen(tab);
       eq([s.exercise, s.set, s.logged.length], ["Bench press", "Set 5", 4], "an extra set; the screen stays on the exercise");
+      eq(s.logged[3], "4 145 lb × 4 ✓", "a set equal to the best is no PR");
 
       // Log all sets: the rest of the plan at the values shown; the screen stays ("Set 4") until Next.
       await p.click("#nextBtn");
@@ -47,13 +48,17 @@ module.exports = [
       eq([s.exercise, s.set, s.logged.length], ["Overhead press", "Set 4", 3], "Log all sets logged 3 and stayed");
       has(s.list.join(" | "), "Overhead press 3/3 ✓", "the list ticks it off");
       await p.click("#backBtn");
-      eq((await bm.screen(tab)).set, "Set 5", "Back: Bench press, 4 logged");
+      s = await bm.screen(tab);
+      eq([s.set, s.weight, s.reps], ["Set 5", "145", "4"], "Back: Bench press, 4 logged; the steppers start from its latest set, not the routine's");
       // A jump from the list to the bodyweight exercise: reps first, added weight 0.
       await p.click('#exList .ex-chip:has-text("Push-up")');
       s = await bm.screen(tab);
       eq([s.exercise, s.weightLabel, s.weight, s.reps, s.next], ["Push-up", "Added weight (lb)", "0", "15", "Last exercise"], "the bodyweight exercise");
       await p.click("#logBtn");
       eq((await bm.screen(tab)).logged, ["1 15 reps ✓"], "a bodyweight set");
+      await p.click('[data-step="weight"][data-dir="1"]');
+      await p.click("#logBtn");
+      eq((await bm.screen(tab)).logged, ["1 15 reps ✓", "2 15 reps +5 lb ✓ PR"], "the same reps with weight added beat it: a PR");
 
       // A set tapped to change: held in the steppers; moving on puts it back as it was.
       await p.click('#exList .ex-chip:has-text("Bench press")');
@@ -75,8 +80,8 @@ module.exports = [
       await p.click("#finishBtn");
       await p.waitForSelector("#dayOverlay.open");
       has(await p.locator("#dayTitle").innerText(), "Wed, Sep 30", "Finish opens the day's pop-up");
-      has(await p.locator("#daySessions").innerText(), "40 min · 8 sets", "its length and sets");
-      ok(await p.locator("#daySessions .badge.pr").count() >= 1, "PR marks in the day pop-up");
+      has(await p.locator("#daySessions").innerText(), "40 min · 9 sets", "its length and sets");
+      eq(await p.locator("#daySessions .badge.pr").count(), 2, "PR marks in the day pop-up: Bench's 140 × 6 and the Push-up with weight added");
       await p.click("#dayCancelBtn");
       eq(await bm.stats(tab), { week: "1 of 3", streak: "No streak yet" }, "this week counts it");
       eq(Object.keys(await bm.filledDays(tab)), [TODAY], "the calendar fills today");

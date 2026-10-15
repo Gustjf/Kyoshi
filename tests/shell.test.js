@@ -79,10 +79,13 @@ module.exports = [
     async run(t) {
       const tab = await open(t), p = tab.page;
       await importBackup(tab, gen.history({ weeks: 5 }));
+      await switchTo(tab, "hawky");
+      await importBackup(tab, gen.hawkyItems(gen.ERRANDS.slice(0, 4).map(([text, minutes]) => ({ text, minutes }))));
       await p.click("#kDevBadge");
       const [download] = await Promise.all([p.waitForEvent("download"), p.click("#kDevExportAll")]);
       const all = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
       eq(all.apps.badgermole.sessions.filter(s => !s.deleted).length, 15, "Export all holds Badgermole's sessions");
+      eq(all.apps.hawky.items.filter(i => !i.deleted).length, 4, "and Hawky's errands");
       ok(Array.isArray(all.apps.badgermole.meetings) || typeof all.apps.badgermole.meetings === "object", "and its checkup");
       const fresh = await open(t);
       await fresh.page.click("#kDevBadge");
@@ -92,6 +95,7 @@ module.exports = [
       for (const end = Date.now() + 5000; fresh.dialogs.length < 1 && Date.now() < end;) await new Promise(r => setTimeout(r, 10));
       has(fresh.dialogs.map(d => d[1]).join(" | "), "Badgermole", "Import all names Badgermole");
       eq(await fresh.page.evaluate(() => Kyoshi.apps.badgermole.sessions().length), 15, "Import all brought the sessions in");
+      eq(await fresh.page.evaluate(() => Kyoshi.apps.hawky.S.items.filter(i => !i.deleted).length), 4, "and the other app's errands");
       // Badgermole's part of an Export all file also works in its own Import JSON.
       const third = await open(t);
       await importBackup(third, all);
@@ -108,7 +112,10 @@ module.exports = [
         const was = await devPanel(x, true), asked = x.dialogs.length;
         const [chooser] = await Promise.all([x.page.waitForEvent("filechooser"), x.page.click("#kDevImportAll")]);
         await chooser.setFiles({ name: "kyoshi-backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(all)) });
-        for (const end = Date.now() + 5000; x.dialogs.length === asked && Date.now() < end;) await new Promise(r => setTimeout(r, 10));
+        for (const end = Date.now() + 5000; x.dialogs.length === asked;) {
+          if (Date.now() > end) throw new Error("importAll: Import all didn't ask its question within 5 s");
+          await new Promise(r => setTimeout(r, 10));
+        }
         await devPanel(x, was);
       };
       eq(await theme(tab), ["light", "light"], "light by the hour (07:00)");
@@ -267,6 +274,14 @@ module.exports = [
       await p.click("#kBugCancel");
       eq([await text(tab, "#kBugSubmit"), await p.inputValue("#kBugText"), await p.locator(`${ROW}.editing`).count()], ["Submit", "", 0], "Cancel leaves edit mode, the box emptied");
       eq((await stored(p))[0].description, "Errands at the same place go together\nnot apart", "nothing changed");
+      // A different kind alone is a change too: Esc asks, No keeps editing, Cancel leaves it as it was.
+      await p.click(ROW);
+      await p.click('#kBugKind [data-kind="request"]');
+      tab.answers.push(false);
+      await p.keyboard.press("Escape");
+      has(lastDialog(tab), "Discard your changes to this report?", "a changed kind alone asks too");
+      await p.click("#kBugCancel");
+      eq((await stored(p))[0].kind, "bug", "and Cancel left its kind");
       // Unchanged, Esc closes without asking; open again: a new one.
       await p.click(ROW);
       await p.keyboard.press("Escape");

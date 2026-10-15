@@ -18,13 +18,14 @@ function expected(data) {
   for (let m = addDays(monday, -7); (weeks.get(m) || 0) >= target; m = addDays(m, -7)) streak++;
   const order = data.program.order, last = sessions[sessions.length - 1];
   const next = order[(order.indexOf(last.routineId) + 1) % order.length]; // the generator keeps strictly to the order
-  const best = {};
+  const best = {}, bodyweight = {};
   sessions.forEach(s => s.sets.forEach(x => {
-    if (x.bodyweight || x.reps < 1) return;
+    if (x.reps < 1) return;
+    if (x.bodyweight) { if (!bodyweight[x.exerciseId] || x.reps > bodyweight[x.exerciseId].set.reps) bodyweight[x.exerciseId] = { set: x, date: s.date }; return; }
     const kg = x.unit === "kg" ? x.weight : x.weight / gen.LB_PER_KG, score = kg * (1 + x.reps / 30);
     if (!best[x.exerciseId] || score > best[x.exerciseId].score + 1e-9) best[x.exerciseId] = { score, set: x, date: s.date };
   }));
-  return { sessions, thisWeek: weeks.get(monday) || 0, streak, next: data.routines.find(r => r.id === next).name, best };
+  return { sessions, thisWeek: weeks.get(monday) || 0, streak, next: data.routines.find(r => r.id === next).name, best, bodyweight };
 }
 const short = d => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.slice(0, 4) === TODAY.slice(0, 4) ? undefined : "numeric", timeZone: "UTC" });
 const lb = x => (x.unit === "lb" ? String(+x.weight.toFixed(2)) : String(+(x.weight * gen.LB_PER_KG).toFixed(1)));
@@ -45,6 +46,12 @@ module.exports = [
         const oneRM = Math.round(b.score * gen.LB_PER_KG);
         has(row, `best ${lb(b.set)} lb × ${b.set.reps} (est. 1RM ${oneRM}) · ${short(b.date)}`, `${name}'s best`);
       }
+      // A bodyweight exercise's best is its most reps. Every exercise of the generated history is checked (no empty loop).
+      eq([Object.keys(want.best).length, Object.keys(want.bodyweight).length], [6, 2], "the history holds sets of all eight exercises");
+      for (const [id, b] of Object.entries(want.bodyweight)) {
+        const name = gen.EXERCISES.find(e => e[0] === id)[1];
+        has(rows.find(r => r.startsWith(`${name} ·`)), `best ${b.set.reps} reps · ${short(b.date)}`, `${name}'s best`);
+      }
       // The calendar: this month's days, then the month before.
       for (const month of [TODAY.slice(0, 7), addDays(`${TODAY.slice(0, 7)}-01`, -1).slice(0, 7)]) {
         const days = [...new Set(want.sessions.filter(s => s.date.startsWith(month)).map(s => s.date))].sort();
@@ -52,6 +59,7 @@ module.exports = [
         await p.click("#calPrev");
       }
       ok(await p.locator("#calNext").isEnabled(), "› comes back toward this month");
+      eq(await p.locator("#calGrid .cal-wd").first().innerText(), "Mon", "weeks run Monday to Sunday");
       // Deleted markers never show; nothing reads "undefined" or "NaN".
       const page = await p.locator("#kMount").innerText();
       for (const bad of ["undefined", "NaN", "null"]) lacks(page, bad, "the page's text");
@@ -107,6 +115,7 @@ module.exports = [
       eq((await bm.filledDays(tab))[day], "29×2", "two sessions on a day");
       await p.click(`#calGrid [data-date="${day}"]`);
       eq(await p.locator("#daySessions .day-session").count(), 2, "both in the pop-up");
+      eq(await p.locator("#daySessions .badge.pr").count(), 0, "the first sets ever and sets equal to the best are no PR");
       const push = p.locator('#daySessions .day-session[data-id="s-push"]');
       // Esc with a change asks; saying no keeps it open.
       await push.locator(".day-w").first().fill("150");
@@ -162,6 +171,7 @@ module.exports = [
       }
       await importBackup(tab, { ...gen.history({ weeks: 1 }), schemaVersion: 9 });
       has(tab.dialogs.map(d => d[1]).join(" | "), "made by a newer version of Badgermole", "a newer backup is imported with a heads-up");
+      eq(await p.evaluate(() => Kyoshi.apps.badgermole.sessions().length), 3, "and it really is imported");
 
       const fresh = await open(t);
       await importBackup(fresh, gen.damaged());
