@@ -17,14 +17,8 @@
     $("addStatus").classList.toggle("bad", bad);
   }
 
-  // Pick a day's date field, with the browser's calendar open where it can be.
-  function openPicker() {
-    const el = $("addDate");
-    try {
-      if (typeof el.showPicker === "function") return el.showPicker();
-    } catch (err) { /* not allowed here: the field is still there to tap */ }
-    el.focus();
-  }
+  // Pick a day's date field, with Kyoshi's calendar open (core/datepick.js).
+  const openPicker = () => K.datePick.open($("addDate"));
 
   function pickDay(day) {
     S.add.day = day;
@@ -163,7 +157,7 @@
     const slipped = A.live().filter(i => i.postponed), warned = slipped.filter(i => i.postponed > A.POSTPONE_WARN).length;
     return [
       `- Errands: ${open.length} open (${groups.join(", ")}), ${A.doneItems().length} done, ${A.live().filter(i => i.note).length} with a note, ${slipped.length} postponed (${warned} past ${A.POSTPONE_WARN}×), ${A.live().filter(i => i.id.startsWith(A.LIST_ERRAND)).length} for lists; +${S.items.length - A.live().length} deleted`,
-      `- Lists: ${lists.length} (${states.join(", ")}), ${items.length} items (${items.filter(i => i.bought).length} bought, ${items.filter(i => i.note).length} with a note); +${S.lists.length - lists.length} deleted`,
+      `- Lists: ${lists.length} (${states.join(", ")}), ${items.length} items (${items.filter(i => i.bought).length} bought, ${items.filter(i => i.note).length} with a note, ${items.filter(i => i.qty > 1).length} more than 1); +${S.lists.length - lists.length} deleted`,
       `- Quick add: day ${S.add.day}, minutes ${S.add.minutes}, note ${S.add.note ? "shown" : "hidden"}`,
       `- View: ${S.view}; pop-up: ${popup}; done shown: ${S.doneShown} errands, ${S.listsDoneShown} lists`
     ];

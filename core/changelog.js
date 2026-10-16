@@ -5,6 +5,10 @@
 (function (K) {
   "use strict";
   K.CHANGELOG = [
+    { version: "5.481", date: "2026-10-16", changes: [
+      "The app switcher is now a row of buttons across the top, one per app (its icon and name; icons only on a phone), with Iroh at the right end.",
+      "Every date box in every app opens Kyoshi's own calendar, its weeks starting on Monday with Saturday and Sunday on the right (the browser's own followed its language and started on Sunday)."
+    ] },
     { version: "5.381", date: "2026-10-14", changes: [
       "Spread out due dates: the maths and the pop-up that even out your coming weeks, for the apps that keep schedules (Pabu, Appa): each week's time now and spread out, the dates that would move, and Apply."
     ] },

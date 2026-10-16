@@ -7,7 +7,7 @@
   const S = A.S;
   const { isObj, isNum, isPos, isDate, newId, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_TEXT, MAX_NOTE, MAX_VENDOR, MAX_TOPIC, MAX_ITEM, MAX_ITEM_NOTE, MAX_LOCK_DAYS,
-    cleanLine, cleanText, cleanMinutes } = A;
+    cleanLine, cleanText, cleanMinutes, cleanQty } = A;
 
   const MAX_MS = 8.64e15; // the last moment a date can hold
   function persist() {
@@ -53,6 +53,7 @@
         id: typeof i.id === "string" && i.id ? i.id.slice(0, 40) : newId(),
         text: gone ? "" : cleanLine(i.text, MAX_ITEM),
         note: gone ? "" : cleanText(i.note, MAX_ITEM_NOTE), // a note or a web link, "" for none
+        qty: gone ? 1 : cleanQty(i.qty),                     // how many: 1 in items from before quantities
         at: isPos(i.at) && i.at < MAX_MS ? i.at : 0,         // when it was added: its order, and how long it has waited
         bought: !gone && isDate(i.bought) ? i.bought : "",   // the day it was ticked as bought, "" while not
         deleted: gone

@@ -191,7 +191,7 @@
     const dates = axisDates(first, span);
     dates.forEach((d, i) => {
       const anchor = !span ? "middle" : i === 0 ? "start" : i === dates.length - 1 ? "end" : "middle";
-      parts.push(`<text x="${x(d)}" y="${H - 10}" text-anchor="${anchor}">${fmtDate(d)}</text>`);
+      parts.push(`<text x="${x(d)}" y="${H - 10}" text-anchor="${anchor}">${fmtDateBrief(d)}</text>`);
     });
     active.forEach(g => parts.push(`<line class="goal" x1="${padL}" y1="${y(g).toFixed(1)}" x2="${W - padR}" y2="${y(g).toFixed(1)}"/>`));
     const pts = w.map(e => [x(e.date).toFixed(1), y(e.weight).toFixed(1)]);

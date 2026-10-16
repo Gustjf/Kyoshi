@@ -1,7 +1,7 @@
 # Project Context: Kyoshi — a home for small vanilla HTML/JS apps (Bosco, Momo, Wan Shi Tong, Appa, Hawky, Iroh, Badgermole, Turtleduck, Pabu, …)
 Kyoshi holds the user's single-purpose apps and their shared "DNA" (look, storage, sync, backups,
 pop-ups, bug reports, developer mode, meetings). It stays out of sight: the user only sees the app on screen,
-switched from the icon button beside Theme. More apps will be added, each relying on the shared core.
+switched from the row of app buttons at the top. More apps will be added, each relying on the shared core.
 
 ## Tech Stack & Hosting (built to run 10+ years untouched)
 - **Pure HTML5, CSS3, Vanilla JS (ES2020+).** NO frameworks, NO build tools, **ABSOLUTELY NO CDN LINKS**.
@@ -48,6 +48,7 @@ core/                 the shared DNA — K = window.Kyoshi
   storage.js          K.storage: IndexedDB kept in memory, each app's A.store ("kyoshi.<id>.<key>"), K.store, other tabs, test mode
   files.js            K.files: photos & documents (IndexedDB "kyoshi-files"), each app's A.files, mirrored to the sync folder
   modal.js            K.modal: pop-ups — define/open/close, Esc, ×, backdrop, "discard changes?"
+  datepick.js         K.datePick: Kyoshi's own calendar for every date box (input type=date), Monday first; K.datePick.open(box)
   sync.js             K.sync: the sync engine (version counters, combining another device's save, saveOf, saved, relation) and its transports (K.sync.use). No UI.
   sync-folder.js      K.folder: folder autosave & sync, a transport of K.sync (one subfolder per app, apps' files; a save by a newer Kyoshi stops it until reloaded, as the cloud does). No UI.
   github.js           K.github: a small GitHub REST client (one repository, a token; list, read, write a file; blobs, trees, commits, the branch; no delete). No UI.
@@ -69,7 +70,7 @@ core/                 the shared DNA — K = window.Kyoshi
   inbox.js            K.inbox: what apps need done this week and next (each app's A.inbox, plus meetings): Momo's cards (one each, or filling blocks); K.inbox.open; K.inbox.unreadable
   wakelock.js         K.wakeLock: keeps the screen on while the app on screen's A.awake() says so (a timer, a workout)
   pdf-*.js            K.pdf, in load order: font (Helvetica, WinAnsi) · inflate · filters · parse · read (pages) · write (K.pdf.create) · import (other PDFs' pages)
-  shell.js            K.register, K.start (K.ready once every app has started), switcher menu, theme, keyboard, minute tick, other-tab reload
+  shell.js            K.register, K.start (K.ready once every app has started), switcher (a button per app, at the top), theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
 apps/<id>/            one folder per app — its CLAUDE.md has its file map and data model
   bosco/              weight tracker with projections & GLP-1 dosing, and retinoid build-up reminders

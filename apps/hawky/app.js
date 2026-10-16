@@ -38,6 +38,7 @@
     MAX_TOPIC: 40,
     MAX_ITEM: 100,
     MAX_ITEM_NOTE: 300,
+    MAX_QTY: 999,          // an item's quantity: a whole number from 1 (each item's to start with)
     LOCK_DAYS: [30, 7],    // the cooling-off locks a list can take, in days (its buttons, in this order)
     MAX_LOCK_DAYS: 365,    // the longest lock kept from a file (a newer version may offer other lengths)
     // Bought (lists.js buyNow) is kept as a lock this many days, unlocked early the day it was locked: no button offers
@@ -90,6 +91,8 @@
   const cleanMinutes = m => (isNum(m) ? Math.min(A.MAX_MINUTES, Math.max(A.MIN_MINUTES, Math.round(m))) : A.DEFAULT_MINUTES);
   // A minutes field's value, or 0 when it's empty or out of range.
   const readMinutes = el => { const v = readNumber(el); return isNum(v) && v >= A.MIN_MINUTES && v <= A.MAX_MINUTES ? Math.round(v) : 0; };
+  // A quantity as kept: a whole number from 1 to MAX_QTY (1 when it's no number: items from before quantities).
+  const cleanQty = q => (isNum(q) ? Math.min(A.MAX_QTY, Math.max(1, Math.round(q))) : 1);
   // "15m", "1h", "1h 30m" (as Appa writes them).
   function fmtMinutes(m) {
     const h = Math.floor(m / 60), r = m % 60;
@@ -136,7 +139,7 @@
   const doneItems = () => live().filter(i => i.done).sort((a, b) => b.done.localeCompare(a.done) || b.u - a.u || (a.id < b.id ? -1 : 1));
 
   Object.assign(A, {
-    cleanLine, cleanText, firstLine, cleanMinutes, readMinutes, fmtMinutes, sundayOf, fmtDay, dayWords, waited, GROUPS, groupOf,
+    cleanLine, cleanText, firstLine, cleanMinutes, cleanQty, readMinutes, fmtMinutes, sundayOf, fmtDay, dayWords, waited, GROUPS, groupOf,
     live, itemById, openItems, overdueItems, doneItems
   });
 })(Kyoshi);

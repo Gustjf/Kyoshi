@@ -5,6 +5,10 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.440", date: "2026-10-16", changes: [
+      "Shopping list items have a quantity: 1 to start, typed or changed with the arrows beside it, in the add row and an item's pop-up; past 1 it shows before the item (“3 × Hose clamp”).",
+      "A locked list stands out: tinted amber with faint stripes and a lock before its days left, its items still readable."
+    ] },
     { version: "2.340", date: "2026-10-09", changes: [
       "A shopping list not locked yet can be marked Bought, without the 30- or 7-day waiting period (a question first): every item bought today, the list into Done.",
       "When a list's waiting period is over, Hawky adds an errand for it (“Buy Running shoes at REI”, due this Sunday, 30 minutes), a card of its own in Momo like any errand: checking it off completes the list (✓ again undoes that), and completing the list checks it off; “Open in Hawky” shows the list. Deleting the list deletes its errand; deleting the errand leaves the list."

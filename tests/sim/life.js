@@ -227,8 +227,7 @@ class Life {
       const top = await this.page.evaluate(() => { const o = Kyoshi.modal.top(); return o ? o.id : ""; });
       if (top === "closeOutOverlay") await require("./plan").closeOut(this, "switch");
       else if (top) { await this.page.keyboard.press("Escape"); this.tap(1); }
-      await this.page.click("#kSwitchBtn");
-      await this.page.click(`#kSwitchMenu [data-app="${app}"]`);
+      await this.page.click(`#kSwitcher [data-app="${app}"]`);
       this.tap(2);
     }
     await this.page.waitForFunction(x => Kyoshi.active().id === x, app);

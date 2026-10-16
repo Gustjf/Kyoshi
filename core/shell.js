@@ -1,5 +1,6 @@
 /* Kyoshi · core/shell.js — the shell: app registry, header & switcher, theme, start-up.
  * K.register(meta) → A, an app's namespace (the app contract is in CLAUDE.md).
+ * The switcher: a button for each app, at the top.
  * K.start() (the last line of index.html) opens the store (core/storage.js), makes each app's
  * root from A.markup, loads and starts every app (and its meetings, core/meetings.js), then K.ready is
  * true (an app reading other apps waits for it: they start one at a time), shows one
@@ -15,7 +16,6 @@
   const $ = id => document.getElementById(id);
   const TICK_MS = 60000;
   let active = null;    // the app on screen
-  let menuOpen = false; // the switcher's list of apps
 
   // An app's id is its folder, storage prefix, sync subfolder, #id and CSS scope: lowercase letters and
   // digits from a letter, one app each ("storage" is taken: core keeps kyoshi.storage.moved; "kyoshi" is core's own
@@ -32,9 +32,10 @@
       isActive: () => active === A,
       // A listener on document/window that only fires while this app is on screen.
       listen: (target, type, fn, opts) => target.addEventListener(type, e => { if (active === A) fn(e); }, opts),
-      // A change can end what keeps the screen on, and start the app's meetings counting (its first goal, say). quiet: the
-      // app's own bookkeeping (Momo's asks), synced like any change but not when the data here last changed (core/sync.js).
-      changed: (unsaved = true, quiet = false) => { K.sync.changed(A, unsaved, quiet); K.meetings.settle(A); K.wakeLock.check(); },
+      // A change can end what keeps the screen on, start the app's meetings counting (its first goal, say) and change
+      // the switcher's dots. quiet: the app's own bookkeeping (Momo's asks), synced like any change but not when the data
+      // here last changed (core/sync.js).
+      changed: (unsaved = true, quiet = false) => { K.sync.changed(A, unsaved, quiet); K.meetings.settle(A); K.wakeLock.check(); renderSwitcher(); },
       setSubtitle: text => { A.subtitle = text; if (active === A) $("kAppSubtitle").textContent = text; },
       refreshDev: () => K.dev.refreshTools(A)
     };
@@ -55,6 +56,7 @@
     K.record.init(); // core's own record, the hidden Kyoshi app (core/record.js): registered now, so it starts last
     K.bugs.init();
     K.spread.init(); // the Spread out due dates pop-up (core/spread.js)
+    K.datePick.init(); // every date box's calendar, Monday first (core/datepick.js)
     K.meetings.init();
     K.order.forEach(id => startApp(K.apps[id]));
     K.ready = true; // every app has started (or failed to): what one reads from the others is all there now
@@ -110,7 +112,6 @@
   function show(A) {
     if (A && A.meta.hidden) A = first();
     if (!A || A === active) return;
-    closeMenu();
     if (active) {
       call(active, "onHide");
       active.root.remove();
@@ -138,68 +139,40 @@
     try { return A[hook](...args); } catch (err) { console.error(`${A.meta.name}'s ${hook} failed.`, err); return undefined; }
   }
 
-  // --- Switcher: one button (the app on screen's icon) opening a list of every app (but the hidden one) ---
-  // What an app says needs you ("" if nothing), else its overdue meeting: a dot on its icon, and on the button for others.
+  // --- Switcher: a button for each app (but the hidden one), in K.order, the one on screen marked ---
+  // What an app says needs you ("" if nothing), else its overdue meeting: a dot on its button.
   const attention = A => call(A, "attention") || (A.started ? K.meetings.attention(A) : "");
   const listed = () => K.order.map(id => K.apps[id]).filter(A => !A.meta.hidden);
 
+  let drawn = ""; // the switcher's HTML as last drawn: redrawn only when it changes
   function renderSwitcher() {
     if (!active) return;
-    const waiting = listed().filter(A => A !== active && attention(A));
-    $("kSwitchIcon").innerHTML = active.meta.icon;
-    $("kSwitchDot").hidden = !waiting.length;
-    $("kSwitchBtn").title = waiting.length ? `Switch app (${waiting.map(A => `${A.meta.name}: ${attention(A)}`).join("; ")})` : "Switch app";
-    $("kSwitchBtn").setAttribute("aria-label", `${active.meta.name}. Switch app${waiting.length ? `, ${waiting.length} waiting` : ""}`);
-    if (menuOpen) renderMenu();
+    const focused = document.activeElement && document.activeElement.dataset.app;
+    const html = listed().map(A => {
+      const why = attention(A), cur = A === active, tip = why ? `${A.meta.name}: ${why}` : A.meta.name;
+      return `<button type="button" class="app-tab${cur ? " current" : ""}" data-app="${A.id}" title="${esc(tip)}" aria-label="${esc(tip)}"${cur ? ' aria-current="page"' : ""}>` +
+        `<span class="app-icon">${A.meta.icon}</span><span class="switch-name">${esc(A.meta.name)}</span>` +
+        (why ? `<span class="attn-dot" role="img" aria-label="${esc(why)}"></span>` : "") + `</button>`;
+    }).join("");
+    if (html === drawn) return;
+    $("kSwitcher").innerHTML = drawn = html;
+    const again = focused && $("kSwitcher").querySelector(`[data-app="${focused}"]`);
+    if (again) again.focus();
   }
   K.refreshSwitcher = renderSwitcher;
 
-  function renderMenu() {
-    const focused = document.activeElement && document.activeElement.dataset.app;
-    $("kSwitchMenu").innerHTML = listed().map(A => {
-      const why = attention(A), cur = A === active;
-      return `<button type="button" class="switch-item${cur ? " current" : ""}" role="menuitem" data-app="${A.id}"${why ? ` title="${esc(why)}"` : ""}${cur ? ' aria-current="true"' : ""}>` +
-        `<span class="app-icon">${A.meta.icon}</span><span class="switch-name">${esc(A.meta.name)}</span>` +
-        (why ? `<span class="attn-dot" role="img" aria-label="${esc(why)}"></span>` : "") +
-        (cur ? `<span class="switch-check" aria-hidden="true">&#10003;</span>` : "") + `</button>`;
-    }).join("");
-    const again = focused && $("kSwitchMenu").querySelector(`[data-app="${focused}"]`);
-    if (again) again.focus();
-  }
-
-  function openMenu() {
-    menuOpen = true;
-    renderMenu();
-    $("kSwitchMenu").hidden = false;
-    $("kSwitchBtn").setAttribute("aria-expanded", "true");
-    const cur = $("kSwitchMenu").querySelector(".current") || $("kSwitchMenu").querySelector("button");
-    if (cur) cur.focus();
-  }
-
-  function closeMenu(refocus = false) {
-    if (!menuOpen) return;
-    menuOpen = false;
-    $("kSwitchMenu").hidden = true;
-    $("kSwitchBtn").setAttribute("aria-expanded", "false");
-    if (refocus) $("kSwitchBtn").focus();
-  }
-
   function wireSwitcher() {
-    $("kSwitchBtn").addEventListener("click", () => (menuOpen ? closeMenu() : openMenu()));
-    $("kSwitchMenu").addEventListener("click", e => {
+    $("kSwitcher").addEventListener("click", e => {
       const item = e.target.closest("[data-app]");
-      if (!item) return;
-      closeMenu();
-      show(K.apps[item.dataset.app]);
+      if (item) show(K.apps[item.dataset.app]);
     });
-    // Up and down arrows move through the list.
-    $("kSwitchMenu").addEventListener("keydown", e => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    // Left and right arrows move along the buttons.
+    $("kSwitcher").addEventListener("keydown", e => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
       e.preventDefault();
-      const items = [...$("kSwitchMenu").querySelectorAll("button")], i = items.indexOf(document.activeElement);
-      items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length].focus();
+      const items = [...$("kSwitcher").querySelectorAll("button")], i = items.indexOf(document.activeElement);
+      items[(i + (e.key === "ArrowRight" ? 1 : -1) + items.length) % items.length].focus();
     });
-    document.addEventListener("pointerdown", e => { if (menuOpen && !$("kSwitcher").contains(e.target)) closeMenu(); });
   }
 
   // --- Theme (one for every app, and the one picked on any device: core/record.js keeps the pick, prefs) ---
@@ -231,7 +204,6 @@
         K.dev.toggle();
         return;
       }
-      if (e.key === "Escape" && menuOpen) return closeMenu(true);
       if (active && call(active, "onKeydown", e)) return;
       if (e.key === "Escape") {
         const top = K.modal.top();

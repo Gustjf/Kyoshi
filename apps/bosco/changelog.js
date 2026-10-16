@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.825", date: "2026-10-16", changes: [
+      "The weight chart's dates read like History's: month and day (Oct 5, Oct 15), the year only for another year's."
+    ] },
     { version: "8.824", date: "2026-10-15", changes: [
       "History's dates stay on one line, two-digit days (Oct 15) like one-digit ones; only a date with its year may wrap before the year.",
     ] },

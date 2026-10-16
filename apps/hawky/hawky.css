@@ -64,7 +64,8 @@
 
 /* --- Shopping lists: a store's lists under its name, each a card: its head, its items (✓ as the errands', ✕), its
  * buttons; each store in its own colour (--store: a dot by its name, the left edge of its lists), ready ones edged
- * green on the other sides, locked ones' state amber, done ones quieter --- */
+ * green on the other sides, locked ones tinted and edged amber (their items still read, under faint stripes, and can
+ * still be taken off), done ones quieter --- */
 .app-hawky .vendor { margin-top: 14px; }
 .app-hawky .vendor:first-child { margin-top: 10px; }
 .app-hawky .vendor-name { margin: 0; font-size: 1em; overflow-wrap: anywhere; }
@@ -77,7 +78,11 @@
 .app-hawky .slist-vendor { font-weight: 400; color: var(--muted); }
 .app-hawky .slist-meta { flex: 1; font-size: .8em; color: var(--muted); white-space: nowrap; }
 .app-hawky .slist.ready .slist-state { color: var(--good); font-weight: 600; }
-.app-hawky .slist.locked .slist-state { color: var(--warn); }
+.app-hawky .slist.locked { position: relative; background: var(--unsaved-bg); border-color: var(--unsaved-border); border-left-color: var(--store, var(--warn)); }
+.app-hawky .slist.locked::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(245, 158, 11, .1) 0 10px, transparent 10px 20px); }
+.app-hawky .slist.locked .slist-state { color: var(--warn); font-weight: 600; }
+.app-hawky .lock-icon { width: 13px; height: 13px; margin-right: 4px; vertical-align: -2px; }
+.app-hawky .slist.locked .sitem { border-top-color: var(--unsaved-border); }
 .app-hawky .slist-head .small { align-self: center; }
 .app-hawky .sitems { list-style: none; margin: 4px 0 0; padding: 0; }
 .app-hawky .sitem { display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); }
@@ -98,11 +103,22 @@
 /* Unlock early: amber, the warning colour, outlined so it reads on light and dark. */
 .app-hawky .warn-btn { background: transparent; color: var(--warn); border: 1px solid var(--warn); font-weight: 600; }
 .app-hawky .warn-btn:hover { background: var(--unsaved-bg); }
+.app-hawky .sitem-qty { font-size: .95em; font-weight: 600; white-space: nowrap; }
+
+/* --- A quantity box (the add row's, the item pop-up's): ‹ the number › --- */
+.app-hawky .qty { display: inline-flex; flex: 0 0 auto; gap: 4px; }
+.app-hawky .qty input, .app-hawky .add-line .qty input { flex: 0 0 auto; width: 3.4em; padding: 0 4px; text-align: center; }
+.app-hawky .qty .qty-step, .app-hawky .add-line .qty .qty-step { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: auto; padding: 0; background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 400; }
+.app-hawky .qty .qty-step:hover { background: var(--border); color: var(--text); }
+.app-hawky .qty-step svg { width: 16px; height: 16px; }
+.app-hawky .add-line .qty input { height: 2.6em; font-size: 1em; }
 
 /* --- Phones: taller fields, Add, chips and buttons for a thumb; the days three to a line (Today, This week, Next
  * week), then two (Pick a day, No day) --- */
 @media (max-width: 640px) {
-  .app-hawky .add-line input, .app-hawky .add-line button, .app-hawky .add-pair input { height: 46px; }
+  .app-hawky .add-line input, .app-hawky .add-line button, .app-hawky .add-pair input, .app-hawky .add-line .qty input { height: 46px; }
+  .app-hawky .add-line .qty { gap: 2px; }
+  .app-hawky .add-line .qty input { width: 2.8em; }
   .app-hawky .chip { min-height: 42px; }
   .app-hawky .chips.days { grid-template-columns: repeat(6, 1fr); }
   .app-hawky .chips.days .chip { grid-column: span 2; }

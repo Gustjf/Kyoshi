@@ -41,9 +41,9 @@ module.exports = [
       eq(await p.evaluate(() => Kyoshi.active().id), order[0], "a new device opens on the first app");
       ok(order.includes("badgermole"), "Badgermole is one of them");
       eq(await p.evaluate(() => [Kyoshi.order.includes("kyoshi"), Kyoshi.apps.kyoshi.started, Kyoshi.apps.kyoshi.meta.hidden]), [true, true, true], "the hidden Kyoshi app started too");
-      await p.click("#kSwitchBtn");
-      eq(await p.$$eval("#kSwitchMenu [data-app]", els => els.map(e => e.dataset.app)), order, "the switcher's order, without it");
-      await p.click("#kSwitchBtn");
+      eq(await p.$$eval("#kSwitcher [data-app]", els => els.map(e => e.dataset.app)), order, "the switcher's order, without it");
+      eq(order[order.length - 1], "iroh", "Iroh on the right");
+      eq(await p.$$eval("#kSwitcher [aria-current]", els => els.map(e => e.dataset.app)), [order[0]], "the app on screen marked");
       // #kyoshi in the URL: the first app, whether the hash changes or the page opens with it (the last app was Hawky).
       const where = () => p.evaluate(() => [Kyoshi.active().id, location.hash]);
       await switchTo(tab, "hawky");
@@ -62,7 +62,7 @@ module.exports = [
     async run(t) {
       const tab = await open(t, { app: "momo", size: DESKTOP }), p = tab.page;
       // Where the app's name, the switcher and Theme start, in whole pixels.
-      const where = () => p.evaluate(() => ["kAppName", "kSwitchBtn", "kThemeToggle"].map(id => Math.round(document.getElementById(id).getBoundingClientRect().left)));
+      const where = () => p.evaluate(() => ["kAppName", "kSwitcher", "kThemeToggle"].map(id => Math.round(document.getElementById(id).getBoundingClientRect().left)));
       const momo = await where();
       for (const id of ["hawky", "badgermole", "turtleduck", "pabu"]) {
         await switchTo(tab, id);

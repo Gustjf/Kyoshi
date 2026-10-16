@@ -93,8 +93,7 @@ function lastDialog(tab) {
 
 // Switches app through the switcher, as the user does.
 async function switchTo(tab, id) {
-  await tab.page.click("#kSwitchBtn");
-  await tab.page.click(`#kSwitchMenu [data-app="${id}"]`);
+  await tab.page.click(`#kSwitcher [data-app="${id}"]`);
   await tab.page.waitForFunction(x => Kyoshi.active() === Kyoshi.apps[x], id);
 }
 

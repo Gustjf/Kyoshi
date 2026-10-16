@@ -1,6 +1,6 @@
 /* Hawky · markup.js — the page (A.markup): the nav (Errands | Shopping), then one view at a time. Errands: quick
  * add (the field and Add, then the day and estimate chips, each with the field its last chip asks for, and + Note),
- * the list (its groups filled in by render.js) and the Done fold. Shopping: the add row (store, topic, item, + Note or
+ * the list (its groups filled in by render.js) and the Done fold. Shopping: the add row (store, topic, item, its quantity, + Note or
  * link), the lists by store and the Done fold (filled in by lists-view.js). Then the pop-ups
  * (errand, list, item). The shell supplies the header, footer, Developer Mode and bug reports. Ids only need to be
  * unique within the app (look them up with A.$). */
@@ -64,6 +64,8 @@ Kyoshi.apps.hawky.markup = `
       </div>
       <div class="add-line">
         <input type="text" id="listItem" maxlength="100" placeholder="Item" aria-label="Item" enterkeyhint="enter">
+        <!-- How many: typed, or the arrows (Lucide's chevron-left and chevron-right); 1 again after each add. -->
+        <span class="qty"><button type="button" class="qty-step" data-step="-1" aria-label="One fewer" title="One fewer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><input type="number" id="listQty" min="1" max="999" step="1" value="1" inputmode="numeric" aria-label="Quantity" title="Quantity"><button type="button" class="qty-step" data-step="1" aria-label="One more" title="One more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></span>
         <button type="submit" id="listAddBtn">Add</button>
       </div>
       <button type="button" class="note-btn" id="listNoteBtn">+ Note or link</button>
@@ -160,6 +162,10 @@ Kyoshi.apps.hawky.markup = `
         <div class="field">
           <label for="itemText">What</label>
           <input type="text" id="itemText" maxlength="100">
+        </div>
+        <div class="field">
+          <label for="itemQty">Quantity</label>
+          <span class="qty"><button type="button" class="qty-step" data-step="-1" aria-label="One fewer" title="One fewer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><input type="number" id="itemQty" min="1" max="999" step="1" value="1" inputmode="numeric" aria-label="Quantity" title="Quantity"><button type="button" class="qty-step" data-step="1" aria-label="One more" title="One more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></span>
         </div>
         <div class="field">
           <label for="itemNote">Note or web link (optional)</label>

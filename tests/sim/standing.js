@@ -63,7 +63,7 @@ function standing(L, s) {
     }
     if (!dot && !momo) L.count(`inside:${app}`);
   });
-  // The dot as drawn (the switch button's tooltip, for the apps other than the one on screen) against each app's attention now.
+  // The dot as drawn (the dotted buttons' tooltips, for the apps other than the one on screen) against each app's attention now.
   Object.keys(s.signals).forEach(app => {
     if (app === s.active) return;
     const drawn = s.tooltip.includes(`${L.appName(app)}: `), now = !!s.signals[app];

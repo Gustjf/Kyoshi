@@ -257,7 +257,7 @@ module.exports = [
       const { fake, key } = await computerWithCloud(t);
       const phone = await phoneWith(t, fake, key), p = phone.page;
       // Where the switcher and Theme sit, in whole pixels: the glyph slots in before them, and they stay put.
-      const where = () => p.evaluate(() => ["kSwitchBtn", "kThemeToggle"].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; }));
+      const where = () => p.evaluate(() => ["kSwitcher", "kThemeToggle"].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; }));
       const before = await where();
       fake.mode = "offline";
       await p.reload();

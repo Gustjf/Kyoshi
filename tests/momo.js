@@ -450,16 +450,8 @@ async function openTodayCard(tab, id) {
 }
 const closeTodayCard = tab => tab.page.click(`${M} #detailCloseBtn`);
 
-// --- The switcher: each app's dot and why ({ id: reason }), read from its list (opened, then closed) ---
-async function dots(tab) {
-  const p = tab.page;
-  await p.click("#kSwitchBtn");
-  const out = await p.$$eval("#kSwitchMenu .switch-item", els => Object.fromEntries(els.map(b => [b.dataset.app, (b.querySelector(".attn-dot") || {}).getAttribute?.("aria-label") || ""]).filter(([, why]) => why)));
-  await p.click("#kSwitchBtn");
-  return out;
-}
-// The switch button's tooltip: "Switch app (Hawky: 2 errands overdue; …)".
-const switchTip = tab => tab.page.getAttribute("#kSwitchBtn", "title");
+// --- The switcher: each app's dot and why ({ id: reason }), read from its buttons ---
+const dots = tab => tab.page.$$eval("#kSwitcher .app-tab", els => Object.fromEntries(els.map(b => [b.dataset.app, (b.querySelector(".attn-dot") || {}).getAttribute?.("aria-label") || ""]).filter(([, why]) => why)));
 
 module.exports = {
   flat, hoursOf, isToday, showBoard, showToday, shown, view, tabs, bank, tasks, days, board, model, dragTask, placeTask,
@@ -467,5 +459,5 @@ module.exports = {
   fromList, closeCard, openInApp, loadBaseline, copyPrevious, fillGaps, saveAsBaseline, clearWeek, visible, sleepForm, sleepRoutine, removeSleep, closeSleep,
   weekends, openWeekend, weekendForm, stepOff, fillWeekend, saveWeekend, clearWeekend, cancelWeekend, offMarks, todayOff, ptoLine, timeOff, setTimeOff, clearTimeOff,
   openHolidays, holidaysForm, pasteHolidays, closeHolidays, openHoliday, keptHolidays,
-  banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots, switchTip
+  banner, review, closeOut, setDone, step, confirmCloseOut, later, closeOutNow, reopen, today, openTodayCard, closeTodayCard, dots
 };

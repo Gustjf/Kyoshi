@@ -11,7 +11,7 @@
  * a list whole, the later change winning (data.js). A list goes to Momo only through its errand, an errand like any other.
  * A list: { id, vendor ≤ 40, topic ≤ 40, items, lock: null | { at: "YYYY-MM-DD" (the day locked), days }, unlocked: "" or
  * the day unlocked early, done: "" or the day done, deleted, at, u }; an item: { id, text ≤ 100, note ≤ 300 (a note or
- * a web link), at (when added: its order and how long it has waited), bought: "" or the day, deleted }. Cleaning:
+ * a web link), qty (how many, 1–999), at (when added: its order and how long it has waited), bought: "" or the day, deleted }. Cleaning:
  * data.js. Each change returns false (changing nothing) when the list's state doesn't allow it. */
 (function (K, A) {
   "use strict";
@@ -72,7 +72,7 @@
 
   // Adds an item (words already cleaned: vendor, topic and text not empty) to its store and topic's list, or starts that
   // list: { list, item }; or { locked: list }, adding nothing, while that list cools off.
-  function addItem(vendor, topic, text, note) {
+  function addItem(vendor, topic, text, note, qty = 1) {
     const today = todayStr(), now = Date.now();
     let list = listFor(vendor, topic, today);
     if (list && stateOf(list, today) === "locked") return { locked: list };
@@ -82,24 +82,24 @@
       list = { id: newId(), vendor: store, topic, items: [], lock: null, unlocked: "", done: "", deleted: false, at: now, u: now };
       S.lists.push(list);
     }
-    const item = { id: newId(), text, note, at: now, bought: "", deleted: false };
+    const item = { id: newId(), text, note, qty, at: now, bought: "", deleted: false };
     list.items.push(item);
     touch(list);
     return { list, item };
   }
 
-  // Changes an item's words or note (open or ready lists).
-  function editItem(l, item, text, note) {
+  // Changes an item's words, note or quantity (open or ready lists).
+  function editItem(l, item, text, note, qty = item.qty) {
     if (!canEdit(l)) return false;
-    if (item.text === text && item.note === note) return true;
-    Object.assign(item, { text, note });
+    if (item.text === text && item.note === note && item.qty === qty) return true;
+    Object.assign(item, { text, note, qty });
     return touch(l);
   }
 
   // Takes an item off (open, locked or ready lists).
   function removeItem(l, item) {
     if (stateOf(l) === "done") return false;
-    Object.assign(item, { text: "", note: "", bought: "", deleted: true });
+    Object.assign(item, { text: "", note: "", qty: 1, bought: "", deleted: true });
     settle(l, todayStr());
     return touch(l);
   }

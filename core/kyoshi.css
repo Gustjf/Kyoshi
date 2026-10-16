@@ -1,7 +1,7 @@
 /* Kyoshi · core/kyoshi.css — the shared look: theme tokens and the components every app uses.
  * An app's own styles go in apps/<id>/<id>.css with every selector under .app-<id>, so apps never clash.
- * Sections: Tokens · Layout · Inputs · Buttons · Stats, tables & badges · Shell · Pop-ups · Bugs & requests · Cloud sync ·
- * Developer mode */
+ * Sections: Tokens · Layout · Inputs · Buttons · Stats, tables & badges · Shell · Pop-ups · Date picker · Bugs & requests ·
+ * Cloud sync · Developer mode */
 
 /* --- Tokens (light, then dark) --- */
 :root {
@@ -114,23 +114,20 @@ th { color: var(--muted); font-weight: 600; font-size: .85em; }
 .meetings.flash { animation: meeting-flash 1.8s ease-out; }
 @keyframes meeting-flash { 0%, 45% { background: var(--unsaved-bg); } 100% { background: transparent; } }
 .header-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.theme-toggle, .switch-btn { display: inline-flex; align-items: center; height: 28px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: .8em; }
-.theme-toggle { padding: 0 10px; }
-.theme-toggle:hover, .switch-btn:hover, .switch-btn[aria-expanded="true"] { background: var(--card-bg); }
-.switcher { position: relative; }
-.switch-btn { position: relative; gap: 2px; padding: 0 5px 0 7px; color: var(--muted); }
-.switch-btn .chevron { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: .8em; }
+.theme-toggle:hover { background: var(--card-bg); }
+/* The app switcher, above the header: a button for each app, sharing the row (icon over name; icons only on a phone). */
+.app-tabs { display: flex; gap: 6px; max-width: var(--header-width, 780px); margin: 0 auto 14px; }
+.app-tab { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 50px; padding: 4px 2px; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: .72em; }
+.app-tab:hover { background: var(--card-bg); color: var(--text); }
+[data-theme="dark"] .app-tab:hover { background: var(--border); }
+.app-tab.current { background: var(--ring); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.switch-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-icon { display: inline-flex; flex: 0 0 auto; }
 .app-icon svg { display: block; width: 18px; height: 18px; }
-.switch-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 9000; min-width: 170px; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
-.switch-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 6px; background: transparent; color: var(--text); text-align: left; }
-.switch-item:hover, .switch-item:focus { background: var(--card-bg); outline: none; }
-[data-theme="dark"] .switch-item:hover, [data-theme="dark"] .switch-item:focus { background: var(--border); }
-.switch-item.current { font-weight: 600; }
-.switch-name { flex: 1; }
-.switch-check { color: var(--accent); font-size: .9em; }
 .attn-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--attention); box-shadow: 0 0 0 2px var(--panel); }
-.switch-btn .attn-dot { position: absolute; top: -4px; right: -4px; }
+.app-tab .attn-dot { position: absolute; top: -4px; right: -4px; }
+@media (max-width: 700px) { .app-tabs { gap: 4px; } .app-tab { height: 38px; } .app-tab .switch-name { display: none; } }
 .banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--unsaved-bg); border-color: var(--unsaved-border); font-size: .9em; }
 .banner button { flex: 0 0 auto; }
 @media (max-width: 640px) { .cloud-banner { flex-wrap: wrap; } .cloud-banner > span { flex: 1 1 100%; } } /* a long line: its button under it */
@@ -160,6 +157,25 @@ footer a:hover { color: var(--text); text-decoration: underline; }
 .field-row { display: flex; gap: 10px; }
 .field-row > .field { flex: 1; }
 @media (max-width: 640px) { .field-row { flex-direction: column; gap: 0; } }
+
+/* --- Date picker (core/datepick.js): every date box's calendar, Monday first, the weekend on the right, over pop-ups --- */
+.datepick { position: fixed; z-index: 10001; width: 252px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); font-size: .9em; user-select: none; }
+.dp-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
+.dp-title { flex: 1; text-align: center; font-weight: 600; white-space: nowrap; }
+.datepick .dp-nav { width: 30px; height: 30px; padding: 0; background: transparent; color: var(--muted); font-size: 1.15em; line-height: 1; }
+.datepick .dp-nav:hover { background: var(--card-bg); color: var(--text); }
+[data-theme="dark"] .datepick .dp-nav:hover { background: var(--border); }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp-wd { padding: 2px 0 4px; text-align: center; font-size: .78em; font-weight: 600; color: var(--muted); }
+.datepick .dp-day { height: 32px; padding: 0; background: transparent; color: var(--text); border: 1px solid transparent; border-radius: 5px; font-size: .95em; }
+.datepick .dp-day.weekend { background: var(--card-bg); }
+[data-theme="dark"] .datepick .dp-day.weekend { background: rgba(148, 163, 184, .08); }
+.datepick .dp-day.out { color: var(--muted); opacity: .6; }
+.datepick .dp-day:hover:not(:disabled) { background: var(--ring); }
+.datepick .dp-day.today { border-color: var(--accent); font-weight: 700; }
+.datepick .dp-day.picked, .datepick .dp-day.picked:hover { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+.datepick .dp-day:disabled { opacity: .25; }
+.dp-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
 
 /* --- Bugs & requests (core/bugs.js): Bug or Feature request over the box, everything logged under it --- */
 .bug-kinds { margin-bottom: 10px; }

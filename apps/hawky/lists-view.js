@@ -1,20 +1,23 @@
 /* Hawky · lists-view.js — the Shopping view (lists.js has the model): the add row (store and topic, each suggesting
- * what's been used, the item, + Note or link; Add puts the item on that store and topic's list or starts one, and keeps
- * the store and topic for the next, until another store is typed, which clears that topic; a locked list's is refused),
- * then the lists by store (stores A to Z, topics A to Z; each store in its own colour, given by the order stores were
- * first used: a dot by its name, the left edge of its lists, done ones' too), each a card: its topic,
- * how many items and its state, Rename, its items (✓ once it's ready, ✕ to take one off, how long each has waited, its
- * note, a web link in it opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days / Bought, after a
- * question · Unlock early, in amber, after a warning · Tick all, and a line while its errand waits); then the Done fold,
- * newest first. The pop-ups: a list's (Rename: store and topic; Delete list) and an item's (its words and note, while
- * the list is open or ready; Remove). renderLists is called by renderAll (render.js); wireLists by A.init (events.js). */
+ * what's been used, the item, its quantity (1 to start: typed, or ‹ ›), + Note or link; Add puts the item on that store
+ * and topic's list or starts one, and keeps the store and topic for the next, until another store is typed, which clears
+ * that topic; a locked list's is refused), then the lists by store (stores A to Z, topics A to Z; each store in its own
+ * colour, given by the order stores were first used: a dot by its name, the left edge of its lists, done ones' too),
+ * each a card: its topic, how many items and its state (a locked one tinted amber, a lock before its days), Rename, its
+ * items (a quantity past 1, ✓ once it's ready, ✕ to take one off, how long each has waited, its note, a web link in it
+ * opening with a tap) and its state's buttons (Lock 30 days / Lock 7 days / Bought, after a question · Unlock early, in
+ * amber, after a warning · Tick all, and a line while its errand waits); then the Done fold, newest first. The pop-ups:
+ * a list's (Rename: store and topic; Delete list) and an item's (its words, quantity and note, while the list is open or
+ * ready; Remove). renderLists is called by renderAll (render.js); wireLists by A.init (events.js). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
   const { esc, todayStr } = K.util;
-  const { MAX_VENDOR, MAX_TOPIC, MAX_ITEM, MAX_ITEM_NOTE, LOCK_DAYS, DONE_PAGE, cleanLine, cleanText, fmtDay, dayWords, waited } = A;
+  const { MAX_VENDOR, MAX_TOPIC, MAX_ITEM, MAX_ITEM_NOTE, MAX_QTY, LOCK_DAYS, DONE_PAGE, cleanLine, cleanText, cleanQty, fmtDay, dayWords, waited } = A;
 
   // The "check" icon from Lucide (ISC license), in the ✓ button's circle (as render.js's).
+  // The "lock" icon from Lucide (ISC license), before a locked list's state.
+  const LOCK = '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -60,6 +63,7 @@
     return `<li class="sitem${i.bought ? " bought" : ""}">` +
       (state === "ready" || state === "done" ? `<button type="button" class="tick" data-act="item-tick" ${ids} title="${tick}" aria-label="${tick}: ${esc(i.text)}"><span class="box">${CHECK}</span></button>` : "") +
       `<div class="sitem-main">` +
+      (i.qty > 1 ? `<span class="sitem-qty">${i.qty} ×</span>` : "") +
       (state === "open" || state === "ready" ? `<button type="button" class="sitem-text" data-act="item-edit" ${ids}>${esc(i.text)}</button>` : `<span class="sitem-text">${esc(i.text)}</span>`) +
       (when ? `<span class="sitem-meta">${esc(when)}</span>` : "") +
       (i.note ? `<div class="sitem-note">${noteHTML(i.note)}</div>` : "") + `</div>` +
@@ -81,7 +85,7 @@
       (errand && !errand.done ? `<span class="slist-lock">Its errand waits in Errands and Momo.</span>` : "");
     return `<div class="slist ${state}" data-id="${esc(l.id)}" style="--store:${colors.get(l.vendor.toLowerCase())}">` +
       `<div class="slist-head"><span class="slist-topic">${esc(l.topic)}${state === "done" ? `<span class="slist-vendor"> · ${esc(l.vendor)}</span>` : ""}</span>` +
-      `<span class="slist-meta">${plural(items.length, "item")} · <span class="slist-state">${esc(stateWords(l, state, today))}</span></span>` +
+      `<span class="slist-meta">${plural(items.length, "item")} · <span class="slist-state">${state === "locked" ? LOCK : ""}${esc(stateWords(l, state, today))}</span></span>` +
       `<button type="button" class="secondary small" data-act="list-rename" ${id}>Rename</button></div>` +
       `<ul class="sitems">${items.map(i => itemHTML(l, i, state, today)).join("")}</ul>` +
       (actions ? `<div class="slist-actions">${actions}</div>` : "") + `</div>`;
@@ -117,6 +121,16 @@
     $("listsDoneMore").textContent = `Show ${Math.min(DONE_PAGE, done.length - shown.length)} more`;
   }
 
+  // --- A quantity box (the add row's, the item pop-up's): typed, or ‹ and › a step at a time, 1 to MAX_QTY ---
+  const readQty = el => cleanQty(parseInt(el.value, 10));
+  function wireQty(el) {
+    el.parentElement.addEventListener("click", e => {
+      const btn = e.target.closest("[data-step]");
+      if (btn) el.value = String(Math.min(MAX_QTY, Math.max(1, readQty(el) + +btn.dataset.step)));
+    });
+    el.addEventListener("change", () => { el.value = String(readQty(el)); });
+  }
+
   // --- The add row ---
   function setStatus(text, bad = false) {
     $("listStatus").textContent = text;
@@ -130,11 +144,12 @@
     const text = cleanLine($("listItem").value, MAX_ITEM), note = S.listNote ? cleanText($("listNote").value, MAX_ITEM_NOTE) : "";
     const empty = [["listVendor", vendor], ["listTopic", topic], ["listItem", text]].find(([, v]) => !v);
     if (empty) return $(empty[0]).focus();
-    const r = A.addItem(vendor, topic, text, note);
+    const r = A.addItem(vendor, topic, text, note, readQty($("listQty")));
     if (r.locked) return setStatus(`The ${r.locked.topic} list at ${r.locked.vendor} is locked until ${fmtDay(A.unlockDay(r.locked))}, so nothing was added.`, true);
     S.listLast = { vendor: r.list.vendor, topic: r.list.topic };
     S.listNote = false;
     ["listItem", "listNote"].forEach(id => { $(id).value = ""; });
+    $("listQty").value = "1";
     A.renderAll();
     setStatus(`Added “${text}” to ${r.list.topic} at ${r.list.vendor}.`);
     $("listItem").focus();
@@ -202,7 +217,7 @@
 
   // --- An item's pop-up ---
   const itemOverlay = () => $("itemOverlay");
-  const itemState = () => JSON.stringify(["itemText", "itemNote"].map(id => $(id).value));
+  const itemState = () => JSON.stringify(["itemText", "itemNote", "itemQty"].map(id => $(id).value));
   const closeItemEditor = () => K.modal.dismiss(itemOverlay());
 
   function openItemEditor(l, i) {
@@ -210,6 +225,7 @@
     S.itemEditing = { listId: l.id, id: i.id };
     $("itemText").value = i.text;
     $("itemNote").value = i.note;
+    $("itemQty").value = String(i.qty);
     S.itemEditing.snapshot = itemState();
     K.modal.open(itemOverlay());
   }
@@ -232,7 +248,7 @@
     if (!got) return;
     const text = cleanLine($("itemText").value, MAX_ITEM), note = cleanText($("itemNote").value, MAX_ITEM_NOTE);
     if (!text) { $("itemText").focus(); return alert("Say what the item is."); }
-    const ok = A.editItem(got.l, got.i, text, note);
+    const ok = A.editItem(got.l, got.i, text, note, readQty($("itemQty")));
     closeItemEditor();
     A.renderAll();
     if (!ok) alert("That list is locked now, so nothing was changed.");
@@ -288,6 +304,8 @@
     // Tapping + Note or link or Add doesn't take the focus, so the phone's keyboard stays up while typing.
     $("listForm").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
     $("listForm").addEventListener("input", e => { setStatus(""); if (e.target.id === "listVendor") { storeTyped(); renderTopics(); } });
+    wireQty($("listQty"));
+    wireQty($("itemQty"));
     $("listNoteBtn").addEventListener("click", () => { S.listNote = true; renderListAdd(); $("listNote").focus(); });
     $("listsView").addEventListener("click", onTap);
     $("listsDoneMore").addEventListener("click", () => { S.listsDoneShown += DONE_PAGE; A.renderAll(); });

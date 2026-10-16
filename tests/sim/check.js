@@ -43,7 +43,7 @@ function SNAP() {
   T("bosco", B => { const s = B.doseSchedule(); return { late: s.filter(d => d.due && d.date < today).map(d => d.date), due: s.filter(d => d.due).map(d => d.date), asking: !!B.S.doseAsking }; });
   T("wanshitong", W => ({ now: W.nowItems().length }));
   T("momo", () => ({ pending: M.reviewWeeks(), conflicts: M.conflicts().length }));
-  // The signals: each app's dot (the switcher's), its meetings (as bug reports word them), and the switch button's tooltip.
+  // The signals: each app's dot (the switcher's), its meetings (as bug reports word them), and the other apps' dotted buttons' tooltips.
   K.order.forEach(id => {
     const A = K.apps[id];
     if (!A.started || A.meta.hidden) return; // the hidden Kyoshi app (core's record) has no icon, no dot
@@ -52,8 +52,9 @@ function SNAP() {
     out.signals[id] = why;
     out.meetings[id] = K.meetings.bugLine(A);
   });
-  out.tooltip = document.getElementById("kSwitchBtn").title;
-  out.dot = !document.getElementById("kSwitchDot").hidden;
+  const dotted = [...document.querySelectorAll("#kSwitcher .app-tab:not(.current)")].filter(b => b.querySelector(".attn-dot"));
+  out.tooltip = dotted.map(b => b.title).join("; ");
+  out.dot = dotted.length > 0;
   return out;
 }
 
