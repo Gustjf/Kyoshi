@@ -1,4 +1,4 @@
-/* Badgermole · events.js — loads last: wires the page (A.init): the pop-ups (editors.js, day.js), the session's
+/* Badgermole · events.js — loads last: wires the page (A.init): the pop-ups (editors.js, day.js, plates.js), the session's
  * controls (session.js), the buttons drawn into the page (data-act), the calendar's ‹ ›, the setup folds (open on a
  * wide window, folded on a phone but for the one to do first), and the session's minutes; and the hooks Kyoshi calls:
  * onShow, awake (a session in progress keeps the screen on while Badgermole is on screen: core/wakelock.js), onTick
@@ -27,7 +27,8 @@
     "prog-down": el => A.moveInProgram(+el.dataset.i, 1),
     "prog-remove": el => A.removeFromProgram(+el.dataset.i),
     relog: el => A.relog(+el.dataset.i),
-    jump: el => A.jumpTo(+el.dataset.i)
+    jump: el => A.jumpTo(+el.dataset.i),
+    plates: el => A.openPlates(el.dataset.from === "weight") // the session's weight carries over; Home's starts at the bar
   };
 
   // The setup folds: open on a wide window; on a phone folded, so Next up and the calendar come first — but for the
@@ -42,6 +43,7 @@
     A.wireEditors();
     A.wireDay();
     A.wireSession();
+    A.wirePlates();
     A.root.addEventListener("click", e => {
       const el = e.target.closest("[data-act]");
       if (el && ACTS[el.dataset.act]) ACTS[el.dataset.act](el);

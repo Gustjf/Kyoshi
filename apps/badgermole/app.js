@@ -42,6 +42,9 @@
     STEPS: [2.5, 5, 7.5, 10], // an exercise's progression step, in lb (shown converted in kg)
     DEFAULT_STEP: 5,
     STEP: { lb: 5, kg: 2.5 }, // − / + on a weight whose exercise is gone (each exercise has its own step)
+    PLATES: { lb: [45, 35, 25, 10, 5, 2.5], kg: [25, 20, 15, 10, 5, 2.5, 1.25] }, // the common plates (the plate calculator's), heaviest first; all on until turned off
+    BARS: { lb: 45, kg: 20 }, // the bar's weight until it's typed, per unit
+    MAX_BAR: 100,
     MAX_PAIR: 9,              // supersets in a routine: each pair of lines shares a number
     LB_PER_KG: 2.2046226218,
     MIN_ROUTINE_MINUTES: 5,   // how long a routine takes, as typed in its pop-up (its cards in Momo are this long)
@@ -59,7 +62,7 @@
     // Saved and synced (CLAUDE.md has their shapes). Deleted items stay as markers so sync can't bring them back.
     exercises: [], routines: [], sessions: [], programs: [],
     program: { order: [], active: "", since: 0, u: 0 }, // the program followed since when, its rotation again in order
-    settings: { unit: "lb", weeklyTarget: 3, u: 0 },
+    settings: { unit: "lb", weeklyTarget: 3, bar: { lb: 45, kg: 20 }, plates: { lb: [45, 35, 25, 10, 5, 2.5], kg: [25, 20, 15, 10, 5, 2.5, 1.25] }, u: 0 },
     live: null,       // this device's session in progress (session.js) — never synced or backed up
     version: 0,       // counts every change to the stored data, so the worked-out stats are redone (stats.js)
     // On screen

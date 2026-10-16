@@ -8,7 +8,7 @@
   const { isObj, isNum, isPos, isDate, newId, newer, mergeById } = K.util;
   const { DATA_SCHEMA_VERSION, MAX_EXERCISE, MAX_ROUTINE, MAX_LINES, MAX_SETS, MAX_REPS, MAX_WEIGHT, MAX_TARGET,
     DEFAULT_TARGET, MAX_PROGRAM, MAX_PROGRAM_NAME, MAIN_PROGRAM, MAX_SESSION_SETS, STEPS, DEFAULT_STEP, MAX_PAIR,
-    MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, MAX_SESSION_MINUTES, cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
+    MIN_ROUTINE_MINUTES, DEFAULT_MINUTES, MAX_SESSION_MINUTES, PLATES, BARS, MAX_BAR, cleanLine, clampInt, plural, round2, numbered, fixPairs } = A;
   const LISTS = ["exercises", "routines", "sessions", "programs"];
   const MAX_MS = 8.64e15; // the last moment a date can hold
 
@@ -78,11 +78,19 @@
   const cleanProgram = p => (isObj(p) ? { order: orderOf(p.order), active: idOf(p.active), since: msOf(p.since), u: uOf(p) }
     : { order: [], active: "", since: 0, u: 0 });
 
+  // The plate calculator's preferences, per unit: the bar (0 to MAX_BAR; the default until it's usable) and the plates
+  // turned on (only the common ones, each once, heaviest first; a list that isn't one is all of them, an empty list is
+  // none).
+  const cleanBar = (b, u) => (isObj(b) && isNum(b[u]) && b[u] >= 0 && b[u] <= MAX_BAR ? round2(b[u]) : BARS[u]);
+  const cleanPlates = (p, u) => (isObj(p) && Array.isArray(p[u]) ? PLATES[u].filter(w => p[u].includes(w)) : PLATES[u].slice());
+
   const cleanSettings = s => (isObj(s) ? {
     unit: unitOf(s.unit),
     weeklyTarget: clampInt(s.weeklyTarget, 1, MAX_TARGET, DEFAULT_TARGET),
+    bar: { lb: cleanBar(s.bar, "lb"), kg: cleanBar(s.bar, "kg") },
+    plates: { lb: cleanPlates(s.plates, "lb"), kg: cleanPlates(s.plates, "kg") },
     u: uOf(s)
-  } : { unit: "lb", weeklyTarget: DEFAULT_TARGET, u: 0 });
+  } : { unit: "lb", weeklyTarget: DEFAULT_TARGET, bar: { ...BARS }, plates: { lb: PLATES.lb.slice(), kg: PLATES.kg.slice() }, u: 0 });
 
   // Logged sets, numbered within their exercise. A set keeps its exercise's name and kind as they were (bodyweight:
   // its weight is the added weight, for good); reps can be 0 only from editing a past session.

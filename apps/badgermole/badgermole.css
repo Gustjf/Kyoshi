@@ -1,6 +1,6 @@
 /* Badgermole · badgermole.css — the app's own styles, every selector under .app-badgermole.
  * Shared components (buttons, inputs, sections, stats, pop-ups…) are in core/kyoshi.css.
- * Sections: Home (Next up, the calendar, the setup folds) · The session · Pop-ups · Supersets · Phones */
+ * Sections: Home (Next up, the calendar, the setup folds) · The session · Pop-ups · Supersets · The plate calculator · Phones */
 
 /* --- Home: Next up --- */
 .app-badgermole .next-label { font-size: .75em; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
@@ -151,6 +151,28 @@
 .app-badgermole .ex-name.paired { padding-left: 10px; border-left: 6px solid var(--pair); }
 .app-badgermole .ex-pair::before { content: ""; flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--pair); }
 .app-badgermole .pair-dot { align-self: center; flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--pair); }
+
+/* --- The plate calculator: the button beside the weight and on Home, the pop-up (result, bar diagram, plate chips) --- */
+.app-badgermole .stepper-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; max-width: 420px; }
+.app-badgermole .plate-open { min-height: 32px; padding: 2px 4px; font-size: .85em; }
+.app-badgermole .bw .plate-open { display: none; }
+.app-badgermole .home-tools { margin: -6px 0 10px; }
+.app-badgermole .home-tools .link-btn { min-height: 36px; font-size: .88em; color: var(--muted); }
+.app-badgermole .home-tools .link-btn:hover { color: var(--accent); }
+.app-badgermole .pc-stepper { display: grid; grid-template-columns: 52px 1fr 52px; gap: 8px; max-width: 320px; }
+.app-badgermole .pc-step { height: 52px; padding: 0; border-radius: 10px; border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); font-size: 1.5em; font-weight: 600; line-height: 1; touch-action: manipulation; }
+.app-badgermole .pc-step:hover { background: var(--border); }
+.app-badgermole .pc-stepper input { height: 52px; font-size: 1.5em; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.app-badgermole .pc-result { margin: 4px 0 6px; }
+.app-badgermole .pc-sides { font-size: 1.3em; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.app-badgermole .pc-total { margin-top: 2px; font-size: .9em; color: var(--muted); }
+.app-badgermole .pc-svg { display: block; width: 100%; height: auto; margin: 6px 0 12px; padding: 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); }
+.app-badgermole .pc-bar { fill: var(--muted); }
+.app-badgermole .pc-collar { fill: var(--text); fill-opacity: .55; }
+.app-badgermole .pc-plate { fill: var(--accent); stroke: var(--card-bg); stroke-width: 1; }
+.app-badgermole .pc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.app-badgermole .pc-chip { min-width: 52px; min-height: 40px; padding: 6px 12px; border-radius: 20px; font-size: .95em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-badgermole .pc-bar-field input { max-width: 120px; }
 
 /* --- Phones: Next up and the bar for a thumb --- */
 @media (max-width: 640px) {

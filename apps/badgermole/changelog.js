@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "2.431", date: "2026-10-16", changes: [
+      "A plate calculator, from the “Plates” button beside the weight in a workout and from Home: the plates for each side of the bar (45 lb bar, 20 kg in kg), a diagram of the bar that follows the weight, and the common plates you can turn off if your gym lacks them."
+    ] },
     { version: "2.331", date: "2026-10-08", changes: [
       "Sync combines what two devices changed with one shared rule (the later change wins; a tie the same on every device), the same code in every app instead of a copy each. Nothing changes in what you see."
     ] },

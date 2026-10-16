@@ -1,14 +1,16 @@
 /* Badgermole · markup.js — the page (A.markup): two views, one on screen at a time (render.js) — Home (Next up, this
  * week and the streak, the calendar, the setup folds: Exercises, Routines, Program (the programs, then the rotation
  * followed), Settings) and the session (session.js: the exercise, its steppers, ✓, the exercise list
- * and the sticky Back · Next · Finish) — and the pop-ups: exercise, routine, program, day and Pick a routine. The shell
+ * and the sticky Back · Next · Finish) — and the pop-ups: exercise, routine, program, day, Pick a routine and the plate calculator. The shell
  * supplies the header, footer, Developer Mode and bug reports. Ids only
  * need to be unique within the app (A.$). */
 (function (A) {
   "use strict";
-  const { MAX_EXERCISE, MAX_ROUTINE, MAX_PROGRAM_NAME, MAX_REPS, MAX_WEIGHT, MAX_TARGET, MIN_ROUTINE_MINUTES, MAX_SESSION_MINUTES } = A;
+  const { MAX_EXERCISE, MAX_ROUTINE, MAX_PROGRAM_NAME, MAX_REPS, MAX_WEIGHT, MAX_TARGET, MIN_ROUTINE_MINUTES, MAX_SESSION_MINUTES, MAX_BAR } = A;
   // Icons from Lucide (ISC license): chevrons for the calendar's months.
   const icon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  // Lucide's calculator, for the plate calculator's button.
+  const calc = icon('<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>');
   const fold = (id, title, body) => `
     <section class="setup">
       <details id="${id}Box">
@@ -16,9 +18,10 @@
         <div class="fold-body">${body}</div>
       </details>
     </section>`;
-  const stepper = (field, label, mode, less, more) => `
+  // extra: a button beside the label (the weight's plate calculator).
+  const stepper = (field, label, mode, less, more, extra = "") => `
       <div class="stepper-row" id="${field}Row">
-        <label class="stepper-label" for="${field}Input" id="${field}Label">${label}</label>
+        <div class="stepper-head"><label class="stepper-label" for="${field}Input" id="${field}Label">${label}</label>${extra}</div>
         <div class="stepper">
           <button type="button" class="step" data-step="${field}" data-dir="-1" aria-label="${less}">&minus;</button>
           <input type="number" id="${field}Input" inputmode="${mode}" min="0" max="${field === "reps" ? MAX_REPS : MAX_WEIGHT}" step="any" enterkeyhint="done">
@@ -29,6 +32,7 @@
   A.markup = `
   <div id="homeView">
     <section class="next-up" id="nextUp"></section>
+    <div class="home-tools"><button type="button" class="link-btn" data-act="plates">${calc} Plate calculator</button></div>
 
     <section>
       <div class="stat-grid week-stats">
@@ -89,7 +93,7 @@
       <div class="ex-pair" id="exPair" hidden></div>
       <div class="set-no" id="setNo"></div>
       <div class="steppers">
-        ${stepper("weight", "Weight", "decimal", "Less weight", "More weight")}
+        ${stepper("weight", "Weight", "decimal", "Less weight", "More weight", `<button type="button" class="link-btn plate-open" data-act="plates" data-from="weight" aria-label="Plate calculator">${calc} Plates</button>`)}
         ${stepper("reps", "Reps", "numeric", "One rep less", "One rep more")}
       </div>
       <div class="up-note" id="upNote" hidden>&uarr; from last time</div>
@@ -204,6 +208,37 @@
       <button type="button" class="modal-close" aria-label="Close">&times;</button>
       <h3 id="pickTitle">Pick a routine</h3>
       <div class="pick-list" id="pickList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="plateOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="plateTitle">
+      <button type="button" class="modal-close" aria-label="Close">&times;</button>
+      <h3 id="plateTitle">Plate calculator</h3>
+      <div class="field">
+        <label for="plateTarget" id="plateTargetLabel">Weight to load</label>
+        <div class="pc-stepper">
+          <button type="button" class="pc-step" data-dir="-1" aria-label="Less weight">&minus;</button>
+          <input type="number" id="plateTarget" inputmode="decimal" min="0" max="${MAX_WEIGHT}" step="any" enterkeyhint="done">
+          <button type="button" class="pc-step" data-dir="1" aria-label="More weight">+</button>
+        </div>
+      </div>
+      <div class="pc-result" role="status" aria-live="polite">
+        <div class="pc-sides" id="plateSides"></div>
+        <div class="pc-total" id="plateTotal"></div>
+      </div>
+      <svg class="pc-svg" id="plateSvg" viewBox="0 0 320 130" role="img" aria-label="The bar"></svg>
+      <div class="field">
+        <label id="platesLabel">Plates you have</label>
+        <div class="pc-chips" id="plateChips" role="group" aria-labelledby="platesLabel"></div>
+      </div>
+      <div class="field pc-bar-field">
+        <label for="plateBar" id="plateBarLabel">Bar</label>
+        <input type="number" id="plateBar" inputmode="decimal" min="0" max="${MAX_BAR}" step="any" enterkeyhint="done">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="plateDoneBtn">Done</button>
+      </div>
     </div>
   </div>
 `;

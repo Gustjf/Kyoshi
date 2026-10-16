@@ -15,8 +15,8 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `MAX_PROGRAMS` 20, `MAIN_PROGRAM` "main", `STEPS` 2.5/5/7.5/10 lb, `DEFAULT_STEP` 5, `STEP` 5 lb / 2.5 kg (an exercise gone), `MAX_PAIR` 9, `LB_PER_KG`, `MIN_ROUTINE_MINUTES` 5, `DEFAULT_MINUTES` 60, `MAX_SESSION_MINUTES` 300 (a routine's minutes, and a session's at most), `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; `stepOf` (an exercise's step in the unit shown); supersets: `fixPairs`, `pairClass`; lookups: `liveExercises`, `liveRoutines`, `livePrograms`, `…ById`, `activeProgram`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
-| `markup.js` | the page: Home (Next up, stats and calendar, the setup folds), the session view, and the pop-ups (exercise, routine, program, day, Pick a routine) |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide, backup note, its checkup); constants (limits, `MAX_PROGRAMS` 20, `MAIN_PROGRAM` "main", `STEPS` 2.5/5/7.5/10 lb, `DEFAULT_STEP` 5, `STEP` 5 lb / 2.5 kg (an exercise gone), `PLATES` / `BARS` / `MAX_BAR` (the plate calculator's common plates, default bars 45 lb / 20 kg, bar at most 100), `MAX_PAIR` 9, `LB_PER_KG`, `MIN_ROUTINE_MINUTES` 5, `DEFAULT_MINUTES` 60, `MAX_SESSION_MINUTES` 300 (a routine's minutes, and a session's at most), `STALE_HOURS` 6, `STARTER`, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (text, minutes, `mondayOf`/`sundayOf`, `fmtDay`, units: `toKg`, `convert`, `inUnit`, `shownWeight`, `fmtWeight`, `fmtSet`; `stepOf` (an exercise's step in the unit shown); supersets: `fixPairs`, `pairClass`; lookups: `liveExercises`, `liveRoutines`, `livePrograms`, `…ById`, `activeProgram`, `liveOrder`, `routineItems`, `sortedSessions`, `numbered`) |
+| `markup.js` | the page: Home (Next up, stats and calendar, the setup folds), the session view, and the pop-ups (exercise, routine, program, day, Pick a routine, plate calculator) |
 | `changelog.js` | version history |
 | `data.js` | cleaning (every copy, new ones too; the rotation from before programs becomes one), `load`, `persist`/`save`, `storeLive`, backups and sync merge (`A.data`) |
 | `stats.js` | the maths, remembered until the data or the day changes: session minutes (a routine's are typed, never worked out), week counts and the streak, `nextIndex`/`upNext`, bests and PRs, `prefill`, `monthCells` |
@@ -24,6 +24,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `render.js` | `showView` (home or session), `renderAll`, Home (Next up, stats, calendar ‹ ›, Exercises with bests, Routines, Program: the programs and the rotation followed, Settings), `reveal` |
 | `session.js` | the session: start, steppers (− / + by the exercise's step), ✓ (on to a superset's partner) / Log all sets, a logged set tapped to change (held), jump, Back / Next, Finish, Cancel (starting and ending a session tell `K.wakeLock`); the elapsed minutes; Pick a routine |
 | `editors.js` | the exercise pop-up (its step), the routine pop-up (how long it takes, to failure, supersets), the starter exercises, the programs (follow one, `#programOverlay`: new, rename, delete) and edits of the rotation followed, settings |
+| `plates.js` | the plate calculator (`#plateOverlay`): `solvePlates` (fewest plates per side for the nearest weight not above the target, from the plates on), the bar diagram (SVG, `.pc-plate` per plate, drawn in theme colours), − / + by two of the smallest plate on, the plate chips and the bar's weight (kept in `settings`); opens from the session's weight (`data-act="plates" data-from="weight"`, hidden for a bodyweight exercise) and from Home (under Next up) |
 | `day.js` | the day pop-up: a day's sessions, their sets to fix, add or remove, Delete session |
 | `events.js` | `A.init` wiring and the hooks: `onShow`, `awake` (a session in progress keeps the screen on: core/wakelock.js), `onTick`, `onReload`, `attention` (a dot when today's workout is needed for the week's target), `bugState` |
 | `badgermole.css` | styles under `.app-badgermole` (the superset colours `.pair-1` to `.pair-5`) |
@@ -47,12 +48,14 @@ Saved and synced (each list item keeps `deleted`, `at` (a session: `started`) an
 - `sessions` [{ id, date (the day it started), routineId, name (the routine's, as it was), sets: [{ exerciseId, name, bodyweight,
   n, reps, weight, unit, at }] (≤ 200), started, finished, deleted, u }]: a set keeps its exercise's name and kind as they were;
   `n` is its number within its exercise; reps can be 0 only by editing a past session (such a set never counts for bests).
-- `settings` { unit: "lb" | "kg", weeklyTarget 1–14 (3), u }
+- `settings` { unit: "lb" | "kg", weeklyTarget 1–14 (3), bar { lb: 45, kg: 20 } (0–100 each), plates { lb: [45, 35, 25, 10, 5, 2.5], kg: [25, 20, 15, 10, 5, 2.5, 1.25] } (the plates turned on; only these values, heaviest first; missing: all on, `[]`: none), u }
 This device only: `live` (the session in progress: a copy of the routine's lines at start, the sets logged, `pos.item`, the
 steppers as left in `show`, and `held`: a logged set tapped to change, out of `sets` until it's logged again in its place, or
 put back as it was on moving on or Finish), `version` (counts every change to the stored data, for stats.js's memo; the session
 in progress isn't in it), `view` ("home" | "session": "← Home" leaves the session running, Home's Resume goes back), `month`,
 `editing`, `day`, `knownToday`.
+
+**Plate calculator:** the bar and the plates on are kept per unit (switching the unit shows the other's, nothing converted); the weight typed in the pop-up is not kept.
 
 **Units:** each set and routine line keeps the unit it was typed in; `settings.unit` picks the unit for new sets and for
 showing (others converted, 1 decimal). Nothing is ever converted in storage: an edited line or set left as it was keeps its own.
