@@ -6,11 +6,10 @@
  * the number typed through a change of units and back (8.812), as does a weigh-in (8.813), and History's last page keeps
  * seven rows. */
 "use strict";
-const { TODAY, DESKTOP, eq, has, open, importBackup, exportBackup, lastDialog, addDays } = require("./lib");
+const { TODAY, DESKTOP, eq, has, open, importBackup, exportBackup, lastDialog } = require("./lib");
+const { M, D, weights: history, weighIn: weigh, editStartup, reload, saved } = require("./bosco");
 const gen = require("./generate");
 
-const M = "#kMount";
-const D = n => addDays(TODAY, n);
 // The goals table's rows: [goal, status, ETA or date reached].
 const goals = tab => tab.page.$$eval(`${M} #goalsBody tr`, rows => rows.map(r => [...r.cells].slice(0, 3).map(c => c.textContent.trim())));
 // The chart: weigh-in dots and goal lines.
@@ -149,7 +148,7 @@ module.exports = [
 
       // 150 lb typed in lb, 68 kg typed in kg: each comes back as typed, the other unit converted.
       const units = async unit => {
-        await p.evaluate(() => Kyoshi.apps.bosco.renderOneTimeInfo(true));
+        await editStartup(tab);
         await p.click(`${M} #oneTimeInput_unit button[data-value="${unit}"]`);
         await p.click(`${M} #oneTimeInfoSaveBtn`);
       };
@@ -165,21 +164,18 @@ module.exports = [
       await units("kg");
       eq(await shown(), ["81.6 kg", "77.1 kg", "70.0 kg", "68.0 kg"], "and in kg again: 70 as typed");
       // Kept through a reload.
-      await p.reload();
-      await p.waitForFunction(() => Kyoshi.apps.bosco.started);
+      await reload(tab);
       await units("lb");
       eq(await shown(), ["180.0 lb", "170.0 lb", "154.3 lb", "150.0 lb"], "after a reload");
 
       // Weigh-ins: 184 lb (once back as 184.1) typed in lb today, and 84 kg typed in kg: each as typed after kg and lb and back.
-      const history = () => p.$$eval(`${M} #historyBody tr:not(.blank)`, rs => rs.map(r => r.cells[1].textContent.trim()));
-      const weigh = async (date, v) => { await p.fill(`${M} #dateInput`, date); await p.fill(`${M} #weightInput`, String(v)); await p.click(`${M} #addBtn`); };
-      await weigh(TODAY, 184); // in place of the backup's 185.5
-      eq((await history())[0], "184.0 lb", "184 lb today");
+      await weigh(tab, TODAY, 184); // in place of the backup's 185.5
+      eq((await history(tab))[0], "184.0 lb", "184 lb today");
       await units("kg");
-      eq((await history())[0], "83.5 kg", "in kg, converted");
-      await weigh(D(-12), 84);
+      eq((await history(tab))[0], "83.5 kg", "in kg, converted");
+      await weigh(tab, D(-12), 84);
       await units("lb");
-      eq((await history())[0], "184.0 lb", "back in lb: as typed (not 184.1)");
+      eq((await history(tab))[0], "184.0 lb", "back in lb: as typed (not 184.1)");
       const back = await exportBackup(tab), byDay = d => back.entries.find(e => e.date === d);
       eq([byDay(TODAY).weight, byDay(TODAY).typed], [184, undefined], "typed in this unit: nothing more kept");
       eq([byDay(D(-12)).weight, byDay(D(-12)).typed], [185.2, { weight: 84, unit: "kg" }], "the one typed in kg says so");
@@ -187,9 +183,9 @@ module.exports = [
       eq(back.entries.map(e => e.weight), [185.2].concat(weights.slice(0, -1).map(w => w.weight), 184), "every weigh-in as it was typed in lb");
       await units("kg");
       await units("lb");
-      eq((await exportBackup(tab)).entries.map(e => e.weight), back.entries.map(e => e.weight), "the same after kg and lb again");
+      eq((await saved(tab)).entries.map(e => e.weight), back.entries.map(e => e.weight), "the same after kg and lb again");
       await units("kg");
-      const kg = await exportBackup(tab);
+      const kg = await saved(tab);
       eq([kg.entries[0].weight, kg.entries[0].typed], [84, undefined], "in kg: 84 as typed");
       eq(kg.entries.filter(e => e.typed).length, kg.entries.length - 1, "the others typed in lb");
     }

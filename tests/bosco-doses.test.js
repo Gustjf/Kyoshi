@@ -15,11 +15,10 @@
  * back and forth over two answers; a later version's counts; a damaged one is cleaned, and a medication this version
  * doesn't know answers nothing (a dose may answer the medication, then the dosing questions are asked). */
 "use strict";
-const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, devPanel, importBackup, exportBackup, addDays } = require("./lib");
+const { DESKTOP, PHONE, TODAY, eq, has, lacks, open, devPanel, importBackup, exportBackup } = require("./lib");
+const { M, D, history, cardSites, dosePopup: popup, startupShown, saveStartup, bugLine, reload, saved, combine } = require("./bosco");
 const gen = require("./generate");
 
-const M = "#kMount";
-const D = n => addDays(TODAY, n);
 const ABD = ["Abdomen · left, upper", "Abdomen · right, lower", "Abdomen · left, lower", "Abdomen · right, upper"];
 const THIGH = ["Thigh · left front, upper", "Thigh · right outer, middle", "Thigh · left outer, lower", "Thigh · right front, upper",
   "Thigh · left front, middle", "Thigh · right outer, lower", "Thigh · left outer, upper", "Thigh · right front, middle",
@@ -32,19 +31,6 @@ const THIGH_IDS = ["thigh-l-front-upper", "thigh-r-side-middle", "thigh-l-side-l
 const PILLS = ["L upper", "R lower", "L lower", "R upper", "L front upper", "R outer middle", "L outer lower", "R front upper", "L front middle", "R outer lower",
   "L outer upper", "R front middle", "L front lower", "R outer upper", "L outer middle", "R front lower", "L upper", "R lower", "L lower", "R upper", "L", "R"];
 
-// The upcoming doses' sites, as their cards say them ("" for none).
-const cardSites = tab => tab.page.$$eval(`${M} #upcomingDosesGrid .stat`, cards => cards.map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent));
-// History's rows: [date, dose].
-const history = tab => tab.page.$$eval(`${M} #historyBody tr`, rows => rows.map(r => [r.cells[0].textContent.trim(), r.cells[3].innerText.trim()]));
-// The dose pop-up: open, its site shown, the site picked, and its menu's groups [label, [sites]] (the parts', then Other).
-const popup = tab => tab.page.evaluate(m => {
-  const o = document.querySelector(`${m} #doseOverlay`), sel = o.querySelector("#doseSiteSelect"), text = el => el.textContent;
-  return {
-    open: o.classList.contains("open"), shown: !o.querySelector("#doseSiteField").hidden,
-    picked: sel.selectedOptions[0] ? text(sel.selectedOptions[0]) : "",
-    groups: [...sel.children].map(g => [g.label, [...g.children].map(text)])
-  };
-}, M);
 // Start-up info's site buttons, [text, on]; the ids of those on; the parts' headings; and how they're laid out (rows × columns).
 const buttons = tab => tab.page.$$eval(`${M} #sitePills button`, bs => bs.map(b => [b.textContent, b.classList.contains("active") && b.getAttribute("aria-pressed") === "true"]));
 const sitesOn = tab => tab.page.$$eval(`${M} #sitePills button.active`, bs => bs.map(b => b.dataset.site));
@@ -54,31 +40,28 @@ const grid = tab => tab.page.$$eval(`${M} #sitePills button`, bs => {
   return [new Set(boxes.map(r => Math.round(r.top))).size, new Set(boxes.map(r => Math.round(r.left))).size];
 });
 const tapSite = (tab, id) => tab.page.click(`${M} #sitePills button[data-site="${id}"]`);
-// Saves start-up info, naming you first if it asks (a made-up name).
-async function saveStartup(tab) {
-  const name = tab.page.locator(`${M} #oneTimeInput_name`);
-  if (await name.count()) await name.fill("Sam");
-  await tab.page.click(`${M} #oneTimeInfoSaveBtn`);
-}
-const startupShown = tab => tab.page.evaluate(m => [!document.querySelector(`${m} #oneTimeInfoSection`).hidden, !document.querySelector(`${m} #dosingBox`).hidden], M);
-const bugLine = (tab, start = "- Injection sites") => tab.page.evaluate(s => Kyoshi.apps.bosco.bugState().find(l => l.startsWith(s)), start);
+const sitesLine = tab => bugLine(tab, "- Injection sites");
 const entrySite = (backup, date) => backup.entries.find(e => e.date === date).site;
 // Developer Mode's injection site tools (open): the next dose's line, the skipped line, and whether Skip is enabled and Undo shown.
 const devSites = tab => tab.page.evaluate(() => {
   const box = document.querySelector("#boscoSkipBtn").closest(".dev-block"), skipped = [...box.querySelectorAll(".dev-hint")].find(h => h.textContent.startsWith("Skipped"));
   return { next: box.querySelector(".dev-block-head").textContent, skipped: skipped ? skipped.textContent : "", skip: !document.querySelector("#boscoSkipBtn").disabled, undo: !!document.querySelector("#boscoUnskipBtn") };
 });
+// A save that answered the medication question with `medication` and the dosing questions' version `dosing` (for combine).
+const answered = (medication, dosing = 4) => raw => { raw.asked = { medication: true, dosing }; raw.medication = medication; };
+// Two devices at once (their own profiles), on Bosco.
+const two = (t, size = DESKTOP) => Promise.all([open(t, { app: "bosco", size }), open(t, { app: "bosco", size })]);
 
 module.exports = [
   {
     name: "bosco doses: each upcoming dose has the next site on; a site picked in the pop-up is logged, the rotation goes on from it; start-up info, export, import",
     async run(t) {
-      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      const [tab, other] = await two(t), p = tab.page;
       // Start-up info's 22 sites, a group per body part, four to a row, the abdomen and thighs on.
       eq(await headings(tab), ["Abdomen", "Thighs", "Buttocks", "Upper arms"], "the body parts");
       eq(await buttons(tab), PILLS.map((b, i) => [b, i < 16]), "the sites, the abdomen and thighs on");
       eq(await grid(tab), [6, 4], "four to a row: 1 + 3 + 1 + 1 rows");
-      eq(await bugLine(tab), "- Injection sites on: 16 (default)", "the bug report's count");
+      eq(await sitesLine(tab), "- Injection sites on: 16 (default)", "the bug report's count");
 
       // A dose due today; the doses before it from before injection sites, so the abdomen starts, at its first site.
       await importBackup(tab, gen.bosco({ lastDose: D(-7) }));
@@ -105,7 +88,7 @@ module.exports = [
       await saveStartup(tab);
       eq(await startupShown(tab), [false, false], "answered");
       eq(await cardSites(tab), THIGH.slice(0, 3), "the abdomen left out");
-      eq(await bugLine(tab), "- Injection sites on: 12", "12 on");
+      eq(await sitesLine(tab), "- Injection sites on: 12", "12 on");
 
       // Export keeps the sites on and where each dose went.
       const backup = await exportBackup(tab);
@@ -118,7 +101,6 @@ module.exports = [
       eq(notes, ["5 mg", "5 mg", "5 mg", "5 mg"], "Momo's notes");
 
       // Another device: the backup brings the sites and the doses' sites with it.
-      const other = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(other, backup);
       eq((await buttons(other)).map(b => b[1]), PILLS.map((b, i) => i >= 4 && i < 16), "its start-up info: the thighs on");
       eq(await cardSites(other), THIGH.slice(0, 3), "the same doses' sites");
@@ -156,7 +138,7 @@ module.exports = [
       for (const id of ["glute-l-upper", "glute-r-lower", "glute-l-lower", "glute-r-upper"]) await tapSite(tab, id);
       await saveStartup(tab);
       eq(await cardSites(tab), [GLUTE[0], ABD[1], THIGH[5]], "buttock, abdomen, thigh");
-      eq(await bugLine(tab), "- Injection sites on: 20", "20 on");
+      eq(await sitesLine(tab), "- Injection sites on: 20", "20 on");
     }
   },
   {
@@ -178,15 +160,14 @@ module.exports = [
 
       // Stored by an older version on this device: the right abdomen and the left buttock, read on the next start.
       await p.evaluate(() => { const A = Kyoshi.apps.bosco, pr = A.store.json("profile"); pr.sites = ["abd-r", "glute-l", "arm-r"]; A.store.set("profile", JSON.stringify(pr)); });
-      await p.reload();
-      await p.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started);
+      await reload(tab);
       eq(await sitesOn(tab), ["abd-r-lower", "abd-r-upper", "glute-l-upper", "glute-l-lower", "arm-r"], "both heights of each, the arm as it was");
     }
   },
   {
     name: "bosco doses: Developer Mode skips the next dose's site within its body part, again, and undoes it; a logged dose forgets the skips; a part all skipped gives its turn",
     async run(t) {
-      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      const [tab, other] = await two(t), p = tab.page;
       await importBackup(tab, gen.bosco({ lastDose: D(-7) }));
       await p.click(`${M} #doseSnoozeBtn`); // Not yet: the pop-up would cover Developer Mode's badge
       await devPanel(tab, true);
@@ -215,18 +196,17 @@ module.exports = [
       await p.click(`${M} #doseLogBtn`);
       eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R lower"], "logged there");
       eq(await cardSites(tab), [THIGH[0], ABD[2], THIGH[1]], "on from it");
-      eq([(await exportBackup(tab)).skipSites, await bugLine(tab, "- Sites skipped")], [null, "- Sites skipped: 0"], "forgotten");
+      eq([(await saved(tab)).skipSites, await bugLine(tab, "- Sites skipped")], [null, "- Sites skipped: 0"], "forgotten");
 
       // Only the abdomen's left upper and the left arm on, the last dose at the arm: the abdomen's turn. Skipping its one
       // site gives the turn to the arm; the arm's site is then the last one left, so it can't be skipped.
-      const two = await open(t, { app: "bosco", size: DESKTOP });
-      await importBackup(two, gen.bosco({ lastDose: D(-7), sites: ["abd-l-upper", "arm-l"], doseSites: ["arm-l"] }));
-      await two.page.click(`${M} #doseSnoozeBtn`);
-      eq(await cardSites(two), [ABD[0], ARM[0], ABD[0]], "the two parts take turns");
-      await devPanel(two, true);
-      await two.page.click("#boscoSkipBtn");
-      eq(await devSites(two), { next: `Next dose: ${ARM[0]}`, skipped: `Skipped: ${ABD[0]}.`, skip: false, undo: true }, "the arm's turn; no more skips");
-      eq(await cardSites(two), [ARM[0], ABD[0], ARM[0]], "the cards");
+      await importBackup(other, gen.bosco({ lastDose: D(-7), sites: ["abd-l-upper", "arm-l"], doseSites: ["arm-l"] }));
+      await other.page.click(`${M} #doseSnoozeBtn`);
+      eq(await cardSites(other), [ABD[0], ARM[0], ABD[0]], "the two parts take turns");
+      await devPanel(other, true);
+      await other.page.click("#boscoSkipBtn");
+      eq(await devSites(other), { next: `Next dose: ${ARM[0]}`, skipped: `Skipped: ${ABD[0]}.`, skip: false, undo: true }, "the arm's turn; no more skips");
+      eq(await cardSites(other), [ARM[0], ABD[0], ARM[0]], "the cards");
     }
   },
   {
@@ -257,78 +237,58 @@ module.exports = [
 
       // The older backup again: your sites stay.
       await importBackup(tab, gen.bosco({ lastDose: D(-7) }));
-      eq((await exportBackup(tab)).sites, ["abd-r-lower", "thigh-r-front-upper"], "kept");
+      eq((await saved(tab)).sites, ["abd-r-lower", "thigh-r-front-upper"], "kept");
 
       // Every site off: no site on the cards or in the pop-up, and a dose logged has none.
       await tapSite(tab, "abd-r-lower");
       await tapSite(tab, "thigh-r-front-upper");
       await saveStartup(tab);
       eq(await cardSites(tab), ["", "", ""], "no sites on the cards");
-      eq(await bugLine(tab), "- Injection sites on: 0", "none on");
+      eq(await sitesLine(tab), "- Injection sites on: 0", "none on");
       await p.click(`${M} #upcomingDosesGrid button[data-confirm-dose]`);
       eq([(await popup(tab)).open, (await popup(tab)).shown], [true, false], "the pop-up without a site");
       await p.click(`${M} #doseLogBtn`);
       eq((await history(tab))[0], ["Sep 30", "5 mg"], "logged without a site");
-      backup = await exportBackup(tab);
-      eq([backup.sites, entrySite(backup, TODAY)], [[], null], "exported: sites off");
+      backup = await saved(tab);
+      eq([backup.sites, entrySite(backup, TODAY)], [[], null], "kept: sites off");
 
       // A device updated from before the sites by body part asks once more; once saved, it doesn't.
       await p.evaluate(() => { const A = Kyoshi.apps.bosco, pr = A.store.json("profile"); pr.dosingAsked = 3; A.store.set("profile", JSON.stringify(pr)); });
-      const reload = async () => { await p.reload(); await p.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started); };
-      await reload();
+      await reload(tab);
       eq(await startupShown(tab), [true, true], "asked once more");
       eq(await sitesOn(tab), [], "with every site off, as saved");
       await saveStartup(tab);
       eq(await startupShown(tab), [false, false], "saved");
-      await reload();
+      await reload(tab);
       eq(await startupShown(tab), [false, false], "not asked again");
 
       // Folder sync: a newer save from another device brings its sites and a dose's site; then its skip; a copy older
       // than sites and skips (no sites, no dose sites, no skips) changes nothing; a newer save without skips (its dose
       // logged) forgets them.
-      const combine = (edit, newer = true) => p.evaluate(([how, mineFirst]) => {
-        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build()));
-        if (how === "arms") { raw.sites = ["arm-l", "arm-r"]; raw.entries[raw.entries.length - 1].site = "arm-l"; }
-        if (how === "skip") raw.skipSites = ["arm-r"];
-        if (how === "older") { delete raw.sites; delete raw.skipSites; delete raw.asked; raw.entries.forEach(e => delete e.site); }
-        if (how === "logged") raw.skipSites = null;
-        const c = A.data.combine(raw, { replace: false, plain: false, mine: { savedAt: mineFirst ? "1" : "3", device: "a" }, theirs: { savedAt: "2", device: "b" } });
-        const changed = c.apply();
-        if (changed) A.data.afterSync();
-        return changed;
-      }, [edit, newer]);
-      eq(await combine("arms"), true, "the newer save combined");
+      const last = raw => raw.entries[raw.entries.length - 1];
+      const arms = raw => { raw.sites = ["arm-l", "arm-r"]; last(raw).site = "arm-l"; };
+      const older = raw => { delete raw.sites; delete raw.skipSites; delete raw.asked; raw.entries.forEach(e => delete e.site); };
+      const changed = async (edit, opts) => (await combine(tab, edit, opts))[1];
+      eq(await changed(arms), true, "the newer save combined");
       eq(await cardSites(tab), [ARM[1], ARM[0], ARM[1]], "its sites, on from its dose's");
       eq((await history(tab))[0], ["Sep 30", "5 mg|Upper arm L"], "its dose's site");
-      eq(await combine("skip"), true, "a newer save's skip");
+      eq(await changed(raw => { raw.skipSites = ["arm-r"]; }), true, "a newer save's skip");
       eq(await cardSites(tab), [ARM[0], ARM[1], ARM[0]], "the next dose passes over the right arm");
-      eq(await combine("older"), false, "an older copy, even saved later, changes nothing");
-      eq(await combine("older", false), false, "nor saved earlier");
-      backup = await exportBackup(tab);
+      eq(await changed(older), false, "an older copy, even saved later, changes nothing");
+      eq(await changed(older, { mine: "3" }), false, "nor saved earlier");
+      backup = await saved(tab);
       eq([backup.sites, backup.skipSites, entrySite(backup, TODAY)], [["arm-l", "arm-r"], ["arm-r"], "arm-l"], "kept");
-      eq(await combine("logged"), true, "a newer save without skips");
+      eq(await changed(raw => { raw.skipSites = null; }), true, "a newer save without skips");
       eq(await cardSites(tab), [ARM[1], ARM[0], ARM[1]], "forgotten");
       has(await p.locator(`${M} #upcomingDosesSection`).innerText(), ARM[1], "shown on a phone");
       lacks(await p.locator(`${M} #upcomingDosesSection`).innerText(), "Abdomen", "nothing off");
     }
   },
   {
-    name: "bosco doses: start-up info answered on one device isn't asked on another (Export and Import, sync's combine); an older or unanswered save leaves the answers; a damaged one is cleaned",
+    name: "bosco doses: start-up info answered on one device isn't asked on another (Export and Import, sync's combine); an older or unanswered backup or save leaves the answers",
     async run(t) {
-      // Sync's combine of this device's own save with its answers set (null: none, a copy from before them) and, if given,
-      // another medication answered there; [same, changed].
-      const combine = (tab, asked, medication = null, replace = false) => tab.page.evaluate(([how, med, whole]) => {
-        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build()));
-        if (how) raw.asked = how; else delete raw.asked;
-        if (med) raw.medication = med;
-        const c = A.data.combine(raw, { replace: whole, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
-        const changed = c.apply();
-        if (changed) A.data.afterSync();
-        return [c.same, changed];
-      }, [asked, medication, replace]);
-
       // A computer with a weigh-in and no dose yet: start-up info asks it all. Answered: Semaglutide, the buttocks on too.
-      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      const [tab, phone] = await Promise.all([open(t, { app: "bosco", size: DESKTOP }), open(t, { app: "bosco", size: PHONE })]), p = tab.page;
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }));
       eq(await startupShown(tab), [true, true], "start-up info asks");
       eq(await bugLine(tab, "- Start-up asked"), "- Start-up asked: medication no, dosing v0", "nothing answered yet");
@@ -340,12 +300,11 @@ module.exports = [
       eq([backup.asked, backup.medication, backup.sites.length], [{ medication: true, dosing: 4 }, "semaglutide", 20], "Export carries the answers");
 
       // A phone importing it isn't asked: the answers came with the data, Semaglutide with them (no dose shows it yet).
-      const phone = await open(t, { app: "bosco", size: PHONE });
       eq(await startupShown(phone), [true, true], "a new phone asks");
       await importBackup(phone, backup);
       eq(await startupShown(phone), [false, false], "not after the import");
       eq([await bugLine(phone, "- GLP-1"), await bugLine(phone, "- Start-up asked")], ["- GLP-1 medication: semaglutide", "- Start-up asked: medication yes, dosing v4"], "its answers");
-      eq((await exportBackup(phone)).asked, { medication: true, dosing: 4 }, "its Export carries them");
+      eq((await saved(phone)).asked, { medication: true, dosing: 4 }, "kept with its data");
 
       // A backup from before the answers traveled, and one that answered nothing, leave them as they are.
       await importBackup(phone, gen.bosco());
@@ -355,37 +314,39 @@ module.exports = [
       eq(await bugLine(phone, "- GLP-1"), "- GLP-1 medication: semaglutide", "the answer kept over the backup's doses");
       // So does sync: a copy from before (nothing to save back for it), one taken whole that answered nothing (this device's
       // answers go back to it), and one that answered Tirzepatide (the same as here, so nothing goes back and forth).
-      eq(await combine(phone, null), [true, false], "a copy from before changes nothing");
-      eq(await combine(phone, { medication: false, dosing: 0 }, null, true), [false, false], "nor one taken whole that answered nothing");
-      eq(await combine(phone, { medication: true, dosing: 4 }, "tirzepatide"), [true, false], "nor one that answered another medication");
-      eq([(await exportBackup(phone)).asked, await bugLine(phone, "- GLP-1")], [{ medication: true, dosing: 4 }, "- GLP-1 medication: semaglutide"], "kept, Semaglutide too");
-
+      eq(await combine(phone, raw => { delete raw.asked; }), [true, false], "a copy from before changes nothing");
+      eq(await combine(phone, raw => { raw.asked = { medication: false, dosing: 0 }; }, { replace: true }), [false, false], "nor one taken whole that answered nothing");
+      eq(await combine(phone, answered("tirzepatide")), [true, false], "nor one that answered another medication");
+      eq([(await saved(phone)).asked, await bugLine(phone, "- GLP-1")], [{ medication: true, dosing: 4 }, "- GLP-1 medication: semaglutide"], "kept, Semaglutide too");
+    }
+  },
+  {
+    name: "bosco doses: a damaged file's answers are cleaned; a medication this version doesn't know answers nothing; a later version's counts; None travels",
+    async run(t) {
+      const [third, fourth, fifth, sixth] = await Promise.all([1, 2, 3, 4].map(() => open(t, { app: "bosco", size: DESKTOP })));
       // A damaged file's answers are cleaned: nothing counts as asked, and its medication isn't taken.
-      const third = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(third, { ...gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }), medication: "semaglutide", asked: { medication: "yes", dosing: 4.5 } });
       eq(await startupShown(third), [true, true], "still asked");
-      eq([(await exportBackup(third)).asked, await bugLine(third, "- GLP-1")], [{ medication: false, dosing: 0 }, "- GLP-1 medication: tirzepatide"], "cleaned");
+      eq([(await saved(third)).asked, await bugLine(third, "- GLP-1")], [{ medication: false, dosing: 0 }, "- GLP-1 medication: tirzepatide"], "cleaned");
       // Sync's combine: a save that answered a medication this version doesn't know takes nothing here (the dosing
       // questions still come with its question) and needs nothing back; one that answered Semaglutide answers both, with
       // Semaglutide; then a later version's dosing answer counts, whatever medication it came with.
-      eq((await combine(third, { medication: true, dosing: 4 }, "orforglipron"))[0], true, "an unknown medication: nothing to save back");
+      eq((await combine(third, answered("orforglipron")))[0], true, "an unknown medication: nothing to save back");
       eq([await startupShown(third), await bugLine(third, "- Start-up asked")], [[true, true], "- Start-up asked: medication no, dosing v0"], "still asked, the dosing questions with it");
-      eq(await combine(third, { medication: true, dosing: 4 }, "semaglutide"), [true, true], "combined");
+      eq(await combine(third, answered("semaglutide")), [true, true], "combined");
       eq(await startupShown(third), [true, false], "the dosing questions answered (your name still asked)");
       eq([await bugLine(third, "- GLP-1"), await bugLine(third, "- Start-up asked")], ["- GLP-1 medication: semaglutide", "- Start-up asked: medication yes, dosing v4"], "both answered");
-      eq(await combine(third, { medication: true, dosing: 5 }, "orforglipron"), [true, true], "a later version's, with a medication unknown here");
-      eq([await startupShown(third), (await exportBackup(third)).asked, await bugLine(third, "- GLP-1")], [[true, false], { medication: true, dosing: 5 }, "- GLP-1 medication: semaglutide"],
+      eq(await combine(third, answered("orforglipron", 5)), [true, true], "a later version's, with a medication unknown here");
+      eq([await startupShown(third), (await saved(third)).asked, await bugLine(third, "- GLP-1")], [[true, false], { medication: true, dosing: 5 }, "- GLP-1 medication: semaglutide"],
         "answered, the version kept, Semaglutide too");
 
       // A new device given a save whole that answered None takes None.
-      const fourth = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(fourth, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }));
-      eq(await combine(fourth, { medication: true, dosing: 4 }, "none", true), [true, true], "taken whole");
+      eq(await combine(fourth, answered("none"), { replace: true }), [true, true], "taken whole");
       eq([await startupShown(fourth), await bugLine(fourth, "- GLP-1")], [[true, false], "- GLP-1 medication: none"], "None taken, the dosing questions answered");
       // Imported on new devices: a backup that answered None, its doses from before, gives None (no dose's medication over
       // it); one that answered a medication this version doesn't know, with doses, has the last dose's medication answer
       // it here, and the dosing questions are asked (not this device's answer to stand on).
-      const fifth = await open(t, { app: "bosco", size: DESKTOP }), sixth = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(fifth, { ...gen.bosco(), medication: "none", asked: { medication: true, dosing: 4 } });
       eq([await startupShown(fifth), await bugLine(fifth, "- GLP-1")], [[true, false], "- GLP-1 medication: none"], "None, over the doses");
       await importBackup(sixth, { ...gen.bosco(), medication: "orforglipron", asked: { medication: true, dosing: 4 } });

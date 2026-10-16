@@ -9,11 +9,10 @@
  * changes nothing, a newer one's regimen comes in); on a phone. Phase 2: Hold this step a week, Undo, Developer Mode's
  * lines, and nothing in Momo's agenda. */
 "use strict";
-const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, lastDialog, importBackup, exportBackup, addDays, at } = require("./lib");
+const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, lastDialog, importBackup, exportBackup, at } = require("./lib");
+const { M, D, editStartup, bugLine, saved, combine } = require("./bosco");
 const gen = require("./generate");
 
-const M = "#kMount";
-const D = n => addDays(TODAY, n);
 const BUILD_UP = [{ every: 3, weeks: 2 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }];
 
 // The Upcoming section: its title, and each group's [head, progress, cards: [weekday, date line, step, due]] (the head's
@@ -50,12 +49,7 @@ const editor = tab => tab.page.evaluate(m => {
     }
   };
 }, M);
-async function saveStartup(tab) {
-  const name = tab.page.locator(`${M} #oneTimeInput_name`);
-  if (await name.count()) await name.fill("Sam");
-  await tab.page.click(`${M} #oneTimeInfoSaveBtn`);
-}
-const bugLine = tab => tab.page.evaluate(() => Kyoshi.apps.bosco.bugState().find(l => l.startsWith("- Retinoids")));
+const retinoidsLine = tab => bugLine(tab, "- Retinoids");
 const travel = (tab, days) => tab.page.evaluate(n => Kyoshi.dev.travel(n), days);
 const until = (tab, hm) => tab.ctx.clock.fastForward(at(TODAY, hm) - at(TODAY, "07:00")); // from 07:00 on any day
 // Tazarotene 0.1% on the face from start, the default build-up, applied on the days given (made-up data).
@@ -71,7 +65,7 @@ module.exports = [
       const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
       let ed = await editor(tab), s = await section(tab);
       eq([ed.shown, ed.list, ed.none, ed.editor, s.shown], [true, [], true, null, false], "start-up info's block, no retinoid yet, no section");
-      eq(await bugLine(tab), "- Retinoids: 0; applications logged: 0; due now: 0", "the bug line with none");
+      eq(await retinoidsLine(tab), "- Retinoids: 0; applications logged: 0; due now: 0", "the bug line with none");
 
       await p.click(`${M} #addRetinoidBtn`);
       eq(await p.evaluate(m => [...document.querySelectorAll(`${m} #retinoidKind button`)].map(b => b.textContent), M), ["Tretinoin", "Tazarotene", "Trifarotene"], "the retinoids to pick (no Adapalene)");
@@ -101,7 +95,7 @@ module.exports = [
       await p.click(`${M} #retinoidLogBtn`);
       s = await section(tab);
       eq([(await popup(tab)).open, s.groups[0][0], cards(s)], [false, "Tazarotene 0.1% · face · last applied Wednesday, Sep 30", ["Oct 3", "Oct 6", "Oct 9"]], "logged");
-      eq(await bugLine(tab), "- Retinoids: 1 (steps 3); applications logged: 1; due now: 0", "the bug line");
+      eq(await retinoidsLine(tab), "- Retinoids: 1 (steps 3); applications logged: 1; due now: 0", "the bug line");
       eq(await buttons(tab), [["Undo", "Hold this step a week"]], "Undo after today's, Hold during step 1");
 
       // A second (start-up info still open: the name isn't answered): Tretinoin 0.05% on the body, every other day.
@@ -177,7 +171,7 @@ module.exports = [
       await travel(tab, 10);
       s = await section(tab);
       eq(s.groups[0][2].map(c => [c[1].split(" · ")[0], c[3]]), [["Oct 24", true], ["Oct 25", true], ["Oct 26", false]], "missed ones dropped");
-      eq(await bugLine(tab), "- Retinoids: 1 (steps 3); applications logged: 12; due now: 2", "the bug line");
+      eq(await retinoidsLine(tab), "- Retinoids: 1 (steps 3); applications logged: 12; due now: 2", "the bug line");
       eq((await popup(tab)).buttons[0], "Applied it Saturday", "the earliest due one");
       await p.click(`${M} #retinoidTodayBtn`);
       eq(cards(await section(tab)), ["Oct 27", "Oct 28", "Oct 29"], "from tomorrow");
@@ -188,7 +182,7 @@ module.exports = [
       eq((await popup(tab)).open, true, "Oct 27's due");
       await p.click(`${M} #retinoidPostponeBtn`);
       eq([(await popup(tab)).open, cards(await section(tab))], [false, ["Oct 28", "Oct 29", "Oct 30"]], "moved a day");
-      eq((await exportBackup(tab)).retinoids.regimens[0].next, { after: "2026-10-26", date: "2026-10-28" }, "next in Export");
+      eq((await saved(tab)).retinoids.regimens[0].next, { after: "2026-10-26", date: "2026-10-28" }, "next kept");
     }
   },
   {
@@ -197,13 +191,13 @@ module.exports = [
       const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
       // Started Sep 18: step 1 (every 3 days) to Oct 1, then every other day; applied every 3 days since, today's due at 9 PM.
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }], retinoids: taz(D(-12), [D(-12), D(-9), D(-6), D(-3)]) }));
-      const log = async () => (await exportBackup(tab)).retinoids.log.length;
+      const log = async () => (await saved(tab)).retinoids.log.length;
       await until(tab, "21:01");
       eq((await popup(tab)).buttons, ["Applied", "Not yet", "Postpone to tomorrow", "Skip to Saturday"], "on time: Skip to its next one, 3 days on");
       await p.click(`${M} #retinoidSkipBtn`);
       let s = await section(tab);
       eq([(await popup(tab)).open, s.groups[0][0], cards(s)], [false, "Tazarotene 0.1% · face · last applied Sunday, Sep 27", ["Oct 3", "Oct 5", "Oct 7"]], "skipped: the schedule's days");
-      eq([(await exportBackup(tab)).retinoids.regimens[0].next, await log()], [{ after: D(-3), date: "2026-10-03" }, 4], "next in Export, nothing logged");
+      eq([(await saved(tab)).retinoids.regimens[0].next, await log()], [{ after: D(-3), date: "2026-10-03" }, 4], "next kept, nothing logged");
 
       // Monday Oct 5 at 9 PM, Saturday's not applied: skipping it goes to today's, which asks next.
       await travel(tab, 5);
@@ -237,7 +231,7 @@ module.exports = [
       eq(await p.evaluate(() => document.documentElement.scrollWidth <= 390), true, "the editor fits a phone");
       await p.click(`${M} #saveRetinoidBtn`);
       has(await p.locator(`${M} #upcomingRetinoidsSection`).innerText(), "Tazarotene 0.05%", "the section on a phone");
-      const mine = (await exportBackup(tab)).retinoids.regimens[0];
+      const mine = (await saved(tab)).retinoids.regimens[0];
 
       // An older backup (no retinoids): yours stay.
       await importBackup(tab, gen.bosco());
@@ -269,23 +263,18 @@ module.exports = [
       await until(tab, "21:01");
       eq((await popup(tab)).title, "Did you apply your Tazarotene?", "today's due");
       await p.click(`${M} #retinoidLogBtn`);
-      const combine = how => p.evaluate(h => {
-        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build())), taz = raw.retinoids.regimens.find(r => r.retinoid === "tazarotene");
-        if (h === "removed") { Object.assign(taz, { x: true, u: taz.u + 1 }); raw.retinoids.log = []; }
-        if (h === "older") delete raw.retinoids;
-        const add = (id, retinoid, pct, t) => ({ id, retinoid, pct, where: "", time: null, start: "2026-09-30", steps: [{ every: 1, weeks: null }], next: null, at: t, u: t });
-        if (h === "added") raw.retinoids.regimens.push(add("new1", "adapalene", 0.1, Date.now()), add("new2", "trifarotene", 0.005, Date.now() + 1));
-        const c = A.data.combine(raw, { replace: false, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
-        const changed = c.apply();
-        if (changed) A.data.afterSync();
-        return [c.same, changed];
-      }, how);
-      eq(await combine("removed"), [false, true], "removed there");
+      const removed = raw => {
+        const taz = raw.retinoids.regimens.find(r => r.retinoid === "tazarotene");
+        Object.assign(taz, { x: true, u: taz.u + 1 });
+        raw.retinoids.log = [];
+      };
+      const add = (id, retinoid, pct, t) => ({ id, retinoid, pct, where: "", time: null, start: TODAY, steps: [{ every: 1, weeks: null }], next: null, at: t, u: t });
+      const later = at(TODAY, "22:00"); // after every change made here
+      eq(await combine(tab, removed), [false, true], "removed there");
       eq((await section(tab)).groups.map(g => g[0].split(" · ")[0]), ["Newstuff 0.2%"], "gone here");
-      backup = await exportBackup(tab);
-      eq(backup.retinoids.log.map(l => l.date), [D(-1), TODAY], "its application kept");
-      eq(await combine("older"), [true, false], "an older copy's save changes nothing");
-      eq(await combine("added"), [true, true], "a newer save's two retinoids");
+      eq((await saved(tab)).retinoids.log.map(l => l.date), [D(-1), TODAY], "its application kept");
+      eq(await combine(tab, raw => { delete raw.retinoids; }), [true, false], "an older copy's save changes nothing");
+      eq(await combine(tab, raw => { raw.retinoids.regimens.push(add("new1", "adapalene", 0.1, later), add("new2", "trifarotene", 0.005, later + 1)); }), [true, true], "a newer save's two retinoids");
       eq((await section(tab)).groups.map(g => g[0]), ["Newstuff 0.2% · <b>back</b> · last applied Tuesday, Sep 29", "Adapalene 0.1%", "Trifarotene 0.005%"], "they show");
       // Both due (no usual time: from the start of the day): one pop-up at a time, the next once it closes.
       eq((await popup(tab)).title, "Did you apply your Adapalene?", "the first added first");
@@ -296,7 +285,7 @@ module.exports = [
 
       // Removing them all hides the section.
       tab.answers.push(true, true, true);
-      await p.evaluate(() => { const A = Kyoshi.apps.bosco; A.renderOneTimeInfo(true); });
+      await editStartup(tab);
       for (let i = 0; i < 3; i++) await p.click(`${M} #retinoidList button[data-remove-regimen]`);
       eq((await section(tab)).shown, false, "hidden");
       lacks(await p.locator(M).innerText(), "Upcoming Retinoid", "nowhere");
@@ -317,7 +306,7 @@ module.exports = [
       s = await section(tab);
       eq([s.groups[0][1], s.groups[0][2].map(c => [c[1].split(" · ")[0], c[2]])], ["Step 1 of 3 · every 3 days · week 2 of 3 · every other day from Friday, Oct 9",
         [["Sep 30", "Step 1 of 3 · every 3 days"], ["Oct 3", "Step 1 of 3 · every 3 days"], ["Oct 6", "Step 1 of 3 · every 3 days"]]], "held a week");
-      eq((await exportBackup(tab)).retinoids.regimens[0].steps, [{ every: 3, weeks: 3 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }], "weeks: 3 in Export");
+      eq((await saved(tab)).retinoids.regimens[0].steps, [{ every: 3, weeks: 3 }, { every: 2, weeks: 2 }, { every: 1, weeks: null }], "weeks: 3, kept");
       has((await editor(tab)).list[0], "every 3 days for 3 weeks", "start-up info's list");
       await p.click(`${M} button[data-hold]`);
       eq((await section(tab)).groups[0][1], "Step 1 of 3 · every 3 days · week 2 of 4 · every other day from Friday, Oct 16", "held again");
@@ -334,21 +323,17 @@ module.exports = [
       eq(await dev(), ["Next Tazarotene (face): Wednesday, Sep 30 · step 1 of 3 · every 3 days · due"], "Developer Mode: due");
       let rec = (await exportBackup(tab)).retinoids.log.find(l => l.date === TODAY);
       eq([rec.id, rec.x], [`taz1:${TODAY}`, true], "the marker in Export");
-      eq(await bugLine(tab), "- Retinoids: 1 (steps 3); applications logged: 4; due now: 1", "the bug line counts it out");
+      eq(await retinoidsLine(tab), "- Retinoids: 1 (steps 3); applications logged: 4; due now: 1", "the bug line counts it out");
 
       // Another device's copy of the record (an older change): the undo stays.
-      const changed = await p.evaluate(today => {
-        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build())), l = raw.retinoids.log.find(x => x.date === today);
+      const [, changed] = await combine(tab, raw => {
+        const l = raw.retinoids.log.find(x => x.date === TODAY);
         delete l.x;
         l.u = 1;
-        const c = A.data.combine(raw, { replace: false, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
-        const ch = c.apply();
-        if (ch) A.data.afterSync();
-        return ch;
-      }, TODAY);
+      });
       eq(changed, false, "nothing changes here");
       eq((await section(tab)).groups[0][0], "Tazarotene 0.1% · face · last applied Sunday, Sep 27", "still undone");
-      rec = (await exportBackup(tab)).retinoids.log.find(l => l.date === TODAY);
+      rec = (await saved(tab)).retinoids.log.find(l => l.date === TODAY);
       eq(rec.x, true, "still a marker");
 
       // Nothing in Momo's agenda (only doses, none here).

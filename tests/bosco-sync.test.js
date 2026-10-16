@@ -7,11 +7,10 @@
  * runs ahead; an older copy's save (no stamps, no markers) neither brings a deleted day back nor needs saving back for;
  * an older backup imports as it was. */
 "use strict";
-const { TODAY, DESKTOP, eq, ok, open, importBackup, exportBackup, addDays } = require("./lib");
+const { TODAY, DESKTOP, eq, ok, open, importBackup, exportBackup } = require("./lib");
+const { M, D, weighIn, remove, combine } = require("./bosco");
 const gen = require("./generate");
 
-const M = "#kMount";
-const D = n => addDays(TODAY, n);
 // Bosco's days as kept: [date, weight, dose].
 const days = tab => tab.page.evaluate(() => Kyoshi.apps.bosco.S.entries.map(e => [e.date, e.weight, e.doseMg]));
 // The deleted days' markers: [date, the parts they deleted].
@@ -26,15 +25,9 @@ async function send(from, to) {
     return r ? r.what : null;
   }, raw);
 }
-async function weighIn(tab, date, weight) {
-  await tab.page.fill(`${M} #dateInput`, date);
-  await tab.page.fill(`${M} #weightInput`, String(weight));
-  await tab.page.click(`${M} #addBtn`);
-}
-const remove = (tab, date) => tab.page.click(`${M} #historyBody button[data-date="${date}"]`);
 // Two devices with the same data: the first imports it, the second takes the first's save.
 async function pair(t, backup) {
-  const a = await open(t, { app: "bosco", size: DESKTOP }), b = await open(t, { app: "bosco", size: DESKTOP });
+  const [a, b] = await Promise.all([open(t, { app: "bosco", size: DESKTOP }), open(t, { app: "bosco", size: DESKTOP })]);
   await importBackup(a, backup);
   if (await a.page.locator(`${M} #doseOverlay.open`).count()) await a.page.keyboard.press("Escape"); // a dose due: Not yet, here
   eq(await send(a, b), "Loaded", "the second device takes the first's data");
@@ -71,16 +64,11 @@ module.exports = [
 
       // An older copy's save (no stamps, no markers): the same days need nothing saved back for it; one that still has a
       // deleted day doesn't bring it back here (and is told: not the same).
-      const older = extra => a.page.evaluate(([day]) => {
-        const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build()));
+      const older = day => combine(a, raw => {
         delete raw.gone;
         raw.entries.forEach(e => { delete e.wu; delete e.du; });
         if (day) raw.entries.push({ date: day, weight: 190, doseMg: null, medication: null });
-        const c = A.data.combine(raw, { replace: false, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
-        const changed = c.apply();
-        if (changed) A.data.afterSync();
-        return [c.same, changed];
-      }, [extra]);
+      });
       eq(await older(null), [true, false], "an older copy's save of the same days: nothing to save back, nothing changes");
       eq(await older(D(-3)), [false, false], "one that still has a deleted day: it stays deleted here");
       eq(await days(a), want, "unchanged");
