@@ -131,6 +131,12 @@
     $("statAvgLabel").textContent = `${S.avgWindow}-day rolling avg`;
   }
 
+  // An ETA's time to go: weeks up to a month, then months up to a year, then years.
+  function fmtSpan(weeks) {
+    const months = weeks * 7 / 30.4375;
+    return months > 12 ? `${(months / 12).toFixed(1)} yrs` : months > 1 ? `${months.toFixed(1)} mos` : `${weeks.toFixed(1)} wks`;
+  }
+
   // Goals go by the 7-day averages (wa): reached once the average passes one, and the ETAs and the
   // projections start from the latest average.
   function renderGoals({ w, wa, trend, rate, goals: sorted }) {
@@ -159,7 +165,7 @@
         const s = A.goalStatus(g, wa, rate);
         const [label, eta] =
           s.status === "reached" ? ["Reached", fmtDate(s.date)] :
-          s.status === "projected" ? ["In progress", `${s.weeks.toFixed(1)} wks (${fmtDate(s.date)})`] :
+          s.status === "projected" ? ["In progress", `${fmtSpan(s.weeks)} (${fmtDate(s.date)})`] :
           s.status === "flat" ? ["Flat rate", "Requires active rate"] :
           ["Wrong direction", "Moving away"];
         return `<tr>

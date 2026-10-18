@@ -65,7 +65,9 @@ module.exports = [
       const rate = await p.evaluate(() => Kyoshi.apps.bosco.model().rate), weeks = Math.log(180 / 183) / Math.log1p(-rate);
       const rows = await goals(tab);
       eq(rows.map(r => r.slice(0, 2)), [["180.0 lb", "In progress"], ["170.0 lb", "In progress"]], "neither reached");
-      has(rows[0][2], `${weeks.toFixed(1)} wks`, "180's ETA counted from the average");
+      const span = wk => { const mo = wk * 7 / 30.4375; return mo > 12 ? `${(mo / 12).toFixed(1)} yrs` : mo > 1 ? `${mo.toFixed(1)} mos` : `${wk.toFixed(1)} wks`; };
+      has(rows[0][2], span(weeks), "180's ETA counted from the average");
+      has(rows[1][2], span(Math.log(170 / 183) / Math.log1p(-rate)), "170's ETA too");
       eq(await text(tab, "#futureWeightGrid .stat .val"), `${(183 * Math.pow(1 - rate, 4)).toFixed(1)} lb`, "a month out, from the average");
       eq(await chart(tab), [15, 2], "every weigh-in's dot, both goals' lines");
       eq(await image(tab), { width: 1080, dots: [[5, 14], [3.5, 14], [7, 1]], curves: 0, joined: 14, blue: 14, ringed: 14 },

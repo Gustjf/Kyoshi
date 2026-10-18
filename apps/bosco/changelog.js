@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.835", date: "2026-10-18", changes: [
+      "Goal Weights' ETAs past a month read in months (3.3 mos), past a year in years (1.2 yrs)."
+    ] },
     { version: "8.825", date: "2026-10-16", changes: [
       "The weight chart's dates read like History's: month and day (Oct 5, Oct 15), the year only for another year's."
     ] },
