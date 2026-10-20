@@ -7,7 +7,7 @@
  * both lists merge record by record by the later change. An application comes due on its day at the usual time; the
  * interval after it is that of the step its day falls in. Like a dose, one is logged only once confirmed (on its day, or
  * today for a late one), "Not yet" asks again in an hour (this device), Postpone moves it to tomorrow, Skip passes it
- * over to the next one on the schedule (skin not up to it), and one not confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. On the section, one tap
+ * over to the next one on the schedule (skin not up to it; Developer Mode's Skip this application too), and one not confirmed within three intervals counts as missed. One pop-up at a time: a due dose's first. On the section, one tap
  * each: Hold this step a week (a week more on the build-up step you're on) and Undo (today's application taken back, a
  * marker). Never sent to Momo. */
 (function (K, A) {
@@ -190,11 +190,9 @@
   // Moves the application to tomorrow, and the ones after it along with it (how a night is skipped); nothing is logged.
   function postponeApplication() {
     if (!S.applyAsking || !stillAsked()) return;
-    const { r: { id }, after } = S.applyAsking, next = { after, date: addDays(todayStr(), 1) };
-    keepRetinoids({ ...S.retinoids, regimens: S.retinoids.regimens.map(r => (r.id === id ? { ...r, next, u: stampAbove(r) } : r)) });
+    const { r: { id }, after } = S.applyAsking;
     A.closeApplicationModal();
-    A.save();
-    A.renderAll();
+    setNext(id, { after, date: addDays(todayStr(), 1) });
   }
 
   // The day Skip goes to: the next one on the schedule after the application's (each its own day's step's interval on),
@@ -209,9 +207,13 @@
   // is logged.
   function skipApplication() {
     if (!S.applyAsking || !stillAsked()) return;
-    const { r: { id }, after } = S.applyAsking, next = { after, date: skipTo(S.applyAsking) };
-    keepRetinoids({ ...S.retinoids, regimens: S.retinoids.regimens.map(r => (r.id === id ? { ...r, next, u: stampAbove(r) } : r)) });
+    const a = S.applyAsking;
     A.closeApplicationModal();
+    setNext(a.r.id, { after: a.after, date: skipTo(a) });
+  }
+  // A regimen's `next` set (Postpone's or Skip's day; null: back on its schedule), kept and shown at once.
+  function setNext(id, next) {
+    keepRetinoids({ ...S.retinoids, regimens: S.retinoids.regimens.map(r => (r.id === id ? { ...r, next, u: stampAbove(r) } : r)) });
     A.save();
     A.renderAll();
   }
@@ -267,7 +269,7 @@
 
   Object.assign(A, {
     cleanRetinoids, mergeRetinoids, keepRetinoids, stampAbove, regimens, lastApplied, stepAt, walk, allUpcoming, stepWords, progressLine,
-    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, skipTo, skipApplication,
+    stepsNote, scheduleWords, sameApplication, promptDueApplication, confirmApplication, postponeApplication, skipTo, skipApplication, setNext,
     snoozeApplication, holdable, holdStep,
     undoable, undoApplication
   });

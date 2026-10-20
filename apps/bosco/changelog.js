@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.935", date: "2026-10-20", changes: [
+      "Developer Mode can skip each retinoid's next application, like the injection site's skip: Skip this application goes to the next one on the schedule (again for the one after), Undo skips puts it back."
+    ] },
     { version: "8.835", date: "2026-10-18", changes: [
       "Goal Weights' ETAs past a month read in months (3.3 mos), past a year in years (1.2 yrs)."
     ] },

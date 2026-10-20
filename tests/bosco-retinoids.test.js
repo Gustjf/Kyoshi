@@ -7,9 +7,9 @@
  * the last), missed ones dropped; the bug report's counts; Export, Import (an older backup keeps yours, a damaged one is
  * cleaned, the backup's records win where both have them) and sync's combine (a marker removes, an older copy's save
  * changes nothing, a newer one's regimen comes in); on a phone. Phase 2: Hold this step a week, Undo, Developer Mode's
- * lines, and nothing in Momo's agenda. */
+ * lines and its Skip this application, and nothing in Momo's agenda. */
 "use strict";
-const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, lastDialog, importBackup, exportBackup, addDays, at } = require("./lib");
+const { TODAY, DESKTOP, PHONE, eq, has, lacks, open, devPanel, lastDialog, importBackup, exportBackup, addDays, at } = require("./lib");
 const gen = require("./generate");
 
 const M = "#kMount";
@@ -227,6 +227,38 @@ module.exports = [
       await p.click(`${M} #retinoidLogBtn`);
       s = await section(tab);
       eq([s.groups[0][0], cards(s), await log()], ["Tazarotene 0.1% · face · last applied Friday, Oct 9", ["Oct 11", "Oct 13", "Oct 15"], 5], "applied");
+    }
+  },
+  {
+    name: "bosco retinoids: Developer Mode's Skip this application goes to the next one on the schedule, again, and undoes it; applied, the skips are behind it",
+    async run(t) {
+      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
+      await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }], retinoids: taz(D(-12), [D(-12), D(-9), D(-6), D(-3)]) }));
+      await devPanel(tab, true);
+      // The retinoid's block in Developer Mode: its line, the skipped line, Undo shown.
+      const dev = () => p.evaluate(() => {
+        const box = document.querySelector("[data-skip]").closest(".dev-block"), hint = box.querySelector(".dev-hint");
+        return [box.querySelector(".dev-block-head").textContent, hint ? hint.textContent : "", !!box.querySelector("[data-unskip]")];
+      });
+      const next = async () => (await exportBackup(tab)).retinoids.regimens[0].next;
+      eq(await dev(), ["Next Tazarotene (face): Wednesday, Sep 30 · step 1 of 3 · every 3 days", "", false], "the next application");
+
+      await p.click("[data-skip]");
+      eq([await dev(), cards(await section(tab))], [["Next Tazarotene (face): Saturday, Oct 3 · step 2 of 3 · every other day", "Skipped: 1 application.", true], ["Oct 3", "Oct 5", "Oct 7"]], "skipped");
+      await p.click("[data-skip]");
+      eq([(await dev()).slice(1), cards(await section(tab))], [["Skipped: 2 applications.", true], ["Oct 5", "Oct 7", "Oct 9"]], "again");
+      eq([await next(), (await exportBackup(tab)).retinoids.log.length], [{ after: D(-3), date: "2026-10-05" }, 4], "next in Export, nothing logged");
+      await p.click("[data-unskip]");
+      eq([await dev(), cards(await section(tab)), await next()], [["Next Tazarotene (face): Wednesday, Sep 30 · step 1 of 3 · every 3 days", "", false], ["Sep 30", "Oct 3", "Oct 5"], null], "undone");
+
+      // Skipped, then applied on its new day: the skips are behind it.
+      await p.click("[data-skip]");
+      await devPanel(tab, false);
+      await travel(tab, 3);
+      await until(tab, "21:01");
+      await p.click(`${M} #retinoidLogBtn`);
+      await devPanel(tab, true);
+      eq(await dev(), ["Next Tazarotene (face): Monday, Oct 5 · step 2 of 3 · every other day", "", false], "applied: no skips");
     }
   },
   {
