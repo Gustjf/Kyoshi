@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "8.936", date: "2026-10-20", changes: [
+      "Injection sites: a body part's doses now always switch sides (left, then right), even with a site turned off or skipped; the dose pop-up won't take a site on the same side as that part's last dose."
+    ] },
     { version: "8.935", date: "2026-10-20", changes: [
       "Developer Mode can skip each retinoid's next application, like the injection site's skip: Skip this application goes to the next one on the schedule (again for the one after), Undo skips puts it back."
     ] },
