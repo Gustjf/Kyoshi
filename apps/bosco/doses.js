@@ -8,7 +8,7 @@
  * schedule then counts on from today). A due dose waits to be confirmed until it's
  * three intervals old; after that it counts as missed. Each goes to an injection site (also worked
  * out from the log, never stored): the body parts with a site on take turns, and within a part the
- * doses go on through its sites in its own order (an X), always switching sides from that part's last dose; Developer Mode can skip the next dose's
+ * doses go on through its sites in its own order (an X); Developer Mode can skip the next dose's
  * site until a dose is logged, and the pop-up can log it at another. Momo's board shows the doses (agenda). */
 (function (K, A) {
   "use strict";
@@ -39,36 +39,20 @@
     });
     return last;
   }
-  // A site's side of the body, "l" or "r" (an old site's as the one it stands for; null for one from a newer version).
-  const sideOf = id => {
-    const m = /^[a-z]+-([lr])(-|$)/.exec(standsFor(id) || "");
-    return m ? m[1] : null;
-  };
-  // Whether a site would repeat the side of the last dose in its body part: the governing rule is that a body part's
-  // doses always switch sides, so this never happens in the rotation, and the pop-up won't offer it.
-  const sameSideAsLast = (last, id) => {
-    const part = partOf(id), before = part && last.in[part];
-    return !!before && sideOf(before) !== null && sideOf(before) === sideOf(id);
-  };
   // The next site on in a body part after `after`, in the part's order (starting over after its last;
-  // its first one on without `after`), passing over those in `skip` and, unless `anySide`, those on the
-  // same side as `after` (a part's doses switch sides every time); null while none is.
-  function nextSiteIn(part, after, skip = [], anySide = false) {
-    const ids = sitesIn(part), on = activeSites(), from = ids.indexOf(after) + 1, side = after ? sideOf(after) : null;
-    return ids.map((_, i) => ids[(from + i) % ids.length])
-      .find(id => on.includes(id) && !skip.includes(id) && (anySide || !side || sideOf(id) !== side)) || null;
+  // its first one on without `after`), passing over those in `skip`; null while none is.
+  function nextSiteIn(part, after, skip = []) {
+    const ids = sitesIn(part), on = activeSites(), from = ids.indexOf(after) + 1;
+    return ids.map((_, i) => ids[(from + i) % ids.length]).find(id => on.includes(id) && !skip.includes(id)) || null;
   }
   // Where the dose after `last` (as lastSites says) goes: the next body part with a site on after the
-  // last dose's part (PARTS' order, starting over), at that part's next site on the other side from its
-  // last dose; a part with no such site (all off, or in `skip`) gives its turn to the next. Only when no
-  // part has one (every site on is on one side) does a dose go to the same side again. null while every site is off.
+  // last dose's part (PARTS' order, starting over), at that part's next site; a part whose sites on are
+  // all in `skip` gives its turn to the next. null while every site is off.
   function nextSite(last, skip = []) {
     const parts = PARTS.map(p => p[0]), from = parts.indexOf(last.part) + 1;
-    for (const anySide of [false, true]) {
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[(from + i) % parts.length], site = nextSiteIn(part, last.in[part], skip, anySide);
-        if (site) return site;
-      }
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[(from + i) % parts.length], site = nextSiteIn(part, last.in[part], skip);
+      if (site) return site;
     }
     return null;
   }
@@ -160,20 +144,17 @@
   // all are off. The menu is only refilled when that changes, so the minute's update can't close it while open.
   let siteMenu = "";
   function renderDoseSite() {
-    const site = S.doseAsking.site, on = activeSites(), others = SITES.map(s => s[0]).filter(id => !on.includes(id)), last = lastSites();
-    // A site on the same side as its body part's last dose can't be picked (the planned site never is).
-    const option = id => (id !== site && sameSideAsLast(last, id) ? `<option value="${id}" disabled>${siteLabel(id)} (same side as last time)</option>` : `<option value="${id}">${siteLabel(id)}</option>`);
-    const group = (label, ids) => (ids.length ? `<optgroup label="${label}">${ids.map(option).join("")}</optgroup>` : "");
+    const site = S.doseAsking.site, on = activeSites(), others = SITES.map(s => s[0]).filter(id => !on.includes(id));
+    const group = (label, ids) => (ids.length ? `<optgroup label="${label}">${ids.map(id => `<option value="${id}">${siteLabel(id)}</option>`).join("")}</optgroup>` : "");
     const menu = PARTS.map(([part, heading]) => group(heading, sitesIn(part).filter(id => on.includes(id)))).join("") + group("Other", others);
     if (menu !== siteMenu) $("doseSiteSelect").innerHTML = siteMenu = menu;
     $("doseSiteSelect").value = site || "";
     $("doseSiteField").hidden = !site;
   }
 
-  // Another site picked in the pop-up: the dose is logged there, and the rotation goes on from it
-  // (never one on the same side as its body part's last dose).
+  // Another site picked in the pop-up: the dose is logged there, and the rotation goes on from it.
   function pickDoseSite(id) {
-    if (S.doseAsking && !(id !== S.doseAsking.site && sameSideAsLast(lastSites(), id))) Object.assign(S.doseAsking, { site: id, picked: true });
+    if (S.doseAsking) Object.assign(S.doseAsking, { site: id, picked: true });
   }
 
   function closeDoseModal() {

@@ -128,9 +128,7 @@ module.exports = [
       // site; logged, the next ones follow it.
       await other.page.evaluate(() => Kyoshi.dev.travel(7));
       pop = await popup(other);
-      // The abdomen's last dose was on its right side, so its right sites can't be picked.
-      const abdOther = ABD.map((s, i) => (i % 2 ? `${s} (same side as last time)` : s));
-      eq([pop.open, pop.picked, pop.groups], [true, THIGH[0], [["Thighs", THIGH], ["Other", abdOther.concat(GLUTE, ARM)]]], "the pop-up a week on");
+      eq([pop.open, pop.picked, pop.groups], [true, THIGH[0], [["Thighs", THIGH], ["Other", ABD.concat(GLUTE, ARM)]]], "the pop-up a week on");
       await other.page.click(`${M} #doseLogBtn`);
       eq((await history(other))[0], ["Oct 7", "5 mg|Thigh L front upper"], "logged at the planned site");
       eq(await cardSites(other), THIGH.slice(1, 4), "the next ones");
@@ -169,12 +167,10 @@ module.exports = [
       await importBackup(tab, gen.bosco({ lastDose: D(-7), sites: ["abd-l", "thigh-l-upper"], doseSites: ["abd-l", "thigh-r-middle"] }));
       eq(await sitesOn(tab), ["abd-l-upper", "abd-l-lower", "thigh-l-front-upper", "thigh-l-side-upper"], "both left abdomen heights, both left upper thigh faces");
       eq((await history(tab)).slice(0, 3).map(r => r[1]), ["5 mg|Thigh R middle", "5 mg|Abdomen L", "5 mg"], "History reads as it did");
-      // The abdomen's turn, but its last dose (abd-l: Abd L upper) was on the left and only its left sites are on, so it gives
-      // its turn to the thigh, on the left after its right middle (off now). With every site on the left, the next ones
-      // can't switch sides: they go on as the parts take turns.
+      // The abdomen's turn, on from Abd L upper (what abd-l stands for); the thigh on from its front middle (off now).
       const pop = await popup(tab);
-      eq([pop.open, pop.picked], [true, THIGH[0]], "the dose due: Thigh L front upper");
-      eq(await cardSites(tab), [THIGH[0], ABD[2], THIGH[6]], "the next ones");
+      eq([pop.open, pop.picked], [true, ABD[2]], "the dose due: Abd L lower");
+      eq(await cardSites(tab), [ABD[2], THIGH[0], ABD[0]], "the next ones");
       await p.click(`${M} #doseSnoozeBtn`); // Not yet: the pop-up would cover Developer Mode's badge
       const backup = await exportBackup(tab);
       eq([backup.sites, entrySite(backup, D(-14)), entrySite(backup, D(-7))], [["abd-l-upper", "abd-l-lower", "thigh-l-front-upper", "thigh-l-side-upper"], "abd-l", "thigh-r-middle"],
@@ -185,27 +181,6 @@ module.exports = [
       await p.reload();
       await p.waitForFunction(() => window.Kyoshi && Kyoshi.active() && Kyoshi.active().started);
       eq(await sitesOn(tab), ["abd-r-lower", "abd-r-upper", "glute-l-upper", "glute-l-lower", "arm-r"], "both heights of each, the arm as it was");
-    }
-  },
-  {
-    name: "bosco doses: a body part's doses always switch sides, over a site turned off; the pop-up won't take the same side as that part's last dose",
-    async run(t) {
-      const tab = await open(t, { app: "bosco", size: DESKTOP }), p = tab.page;
-      // Only the abdomen, its right lower off; the last dose at its left upper. Its X would go on to the left lower: it goes right instead.
-      await importBackup(tab, gen.bosco({ lastDose: D(-7), sites: ["abd-l-upper", "abd-l-lower", "abd-r-upper"], doseSites: ["abd-l-upper"] }));
-      eq(await cardSites(tab), [ABD[3], ABD[0], ABD[3]], "right, left, right");
-      let pop = await popup(tab);
-      eq([pop.open, pop.picked, pop.groups[0]], [true, ABD[3], ["Abdomen", [`${ABD[0]} (same side as last time)`, `${ABD[2]} (same side as last time)`, ABD[3]]]],
-        "the left sites can't be picked");
-      // A left site can't be picked even by hand (the change is turned down); a site of another part can.
-      await p.evaluate(() => Kyoshi.apps.bosco.pickDoseSite("abd-l-lower"));
-      await tab.ctx.clock.fastForward(61000);
-      eq((await popup(tab)).picked, ABD[3], "still the planned one");
-      await p.selectOption(`${M} #doseSiteSelect`, "glute-r-lower");
-      await p.click(`${M} #doseLogBtn`);
-      eq((await history(tab))[0], ["Sep 30", "5 mg|Buttock R lower"], "logged at the other part");
-      // The abdomen's next still switches from its own last dose (the left).
-      eq((await cardSites(tab))[0], ABD[3], "the abdomen's right");
     }
   },
   {

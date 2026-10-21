@@ -90,10 +90,6 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
   on after the last one logged there (`SITES`' order for that part: the abdomen's and buttocks' X left upper → right
   lower → left lower → right upper, the thighs' twelve alternating legs and heights and swapping faces on each leg), or
   its first one on. A site off is passed over (a part's place in the X is kept); a part with none on is left out.
-- The governing rule (the owner's, 2026-10-20): a body part's doses always switch sides from its last dose (`sideOf`,
-  `sameSideAsLast`): the X goes on to its next site on the other side, a part with none on the other side gives its turn
-  to the next, and the pop-up's menu disables (and `pickDoseSite` refuses) a site on the same side as its part's last
-  dose. Only when no part has a site on the other side (every site on is on one side) does a dose repeat a side.
 - An old site (`LEGACY_SITES`: `abd-l`, `thigh-l-upper`, …) stays as it is in the log and reads as it did; in the
   rotation it counts as the site it stands for (its side's upper, its height's front), and in `profile.sites` it turns on
   every site it was split into. `SITES` and `LEGACY_SITES` ids are stored: never change one.
