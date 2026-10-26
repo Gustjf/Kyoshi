@@ -1,11 +1,11 @@
 /* Bosco · events.js — loads last: wires Bosco's buttons and fields (A.init), and the hooks
- * Kyoshi calls: onTick (a new day, doses and retinoids coming due), onKeydown (Enter submits), onReload
- * (another tab saved), attention (a due dose or retinoid), renderDev (its Developer Mode tools: start-up
- * info, skipping the next dose's site, each retinoid's next application and its skip) and bugState (its lines in bug reports). */
+ * Kyoshi calls: onTick (a new day, doses coming due), onKeydown (Enter submits), onReload
+ * (another tab saved), attention (a due dose), renderDev (its Developer Mode tools: start-up
+ * info, skipping the next dose's site, the non-daily treatments' days between) and bugState (its lines in bug reports). */
 (function (K, A) {
   "use strict";
   const S = A.S, $ = A.$;
-  const { isDate, isPos, todayStr, fmtDate, fmtWeekday, esc } = K.util;
+  const { isDate, isPos, todayStr, fmtDate } = K.util;
   const { hasWeight, hasDose, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
 
   // Adds a weigh-in. Doses aren't added here: they're logged by confirming them.
@@ -140,7 +140,7 @@
 
     $("oneTimeInfoSaveBtn").addEventListener("click", A.saveOneTimeInfo);
     $("oneTimeInfoCancelBtn").addEventListener("click", () => A.renderOneTimeInfo());
-    A.initRetinoids(); // the retinoids' section, pop-up and start-up block
+    A.initTreatments(); // the non-daily treatments' section and start-up list
 
     $("customRate").value = "0"; // some browsers restore the last position on reload
     $("dateInput").value = S.entryDateDefault = todayStr();
@@ -152,7 +152,7 @@
   A.onTick = () => {
     rollOverToday();
     A.renderUpcomingDoses();
-    A.renderUpcomingRetinoids();
+    A.renderTreatments(); // a new day: "(yesterday)", "(2 days ago)"
   };
 
   // Enter in an input submits its form row.
@@ -171,7 +171,7 @@
     A.renderAll();
   };
 
-  A.attention = () => (S.doseAsking ? "a dose is waiting to be confirmed" : S.applyAsking ? "a retinoid is waiting to be confirmed" : "");
+  A.attention = () => (S.doseAsking ? "a dose is waiting to be confirmed" : "");
 
   // Sites the next dose passes over (null: none), kept and shown at once (Developer Mode too: renderAll).
   function setSkips(list) {
@@ -180,38 +180,10 @@
     A.renderAll();
   }
 
-  // Each retinoid's next application, for Developer Mode: "Next Tazarotene (face): Wednesday, Oct 14 · step 2 of 3 · …",
-  // with Skip this application (as the pop-up's Skip: the next one on the schedule; again skips that one too) and Undo
-  // skips (back to its day before them: `devSkips`, this session's, forgotten once one is applied).
-  const devSkips = {}; // regimen id → { after, next: its `next` before the first skip, n: how many }
-  const nextApplication = ({ r, list: [a] }) => {
-    const words = a && A.stepWords(r, a.step), skipped = devSkips[r.id] && devSkips[r.id].after === A.lastApplied(r) ? devSkips[r.id].n : 0;
-    return `<div class="dev-block"><div class="dev-block-head">Next ${esc(A.retinoidLabel(r.retinoid))}${r.where ? ` (${esc(r.where)})` : ""}: <strong>${!a ? "none scheduled"
-      : `${fmtWeekday(a.date)}, ${fmtDateBrief(a.date)} · ${words.charAt(0).toLowerCase()}${words.slice(1)}${a.due ? " · due" : ""}`}</strong></div>
-      ${skipped ? `<div class="dev-hint">Skipped: ${skipped === 1 ? "1 application" : `${skipped} applications`}.</div>` : ""}
-      <div class="dev-actions">
-        <button class="secondary small" data-skip="${esc(r.id)}"${a ? "" : " disabled"}>Skip this application</button>
-        ${skipped ? `<button class="secondary small" data-unskip="${esc(r.id)}">Undo skips</button>` : ""}
-      </div></div>`;
-  };
-  function skipRetinoid(id) {
-    const g = A.allUpcoming().find(x => x.r.id === id), a = g && g.list[0];
-    if (!a) return;
-    const was = devSkips[id] && devSkips[id].after === a.after ? devSkips[id] : { after: a.after, next: g.r.next, n: 0 };
-    devSkips[id] = { ...was, n: was.n + 1 };
-    if (S.applyAsking && A.sameApplication(S.applyAsking, a)) A.closeApplicationModal();
-    A.setNext(id, { after: a.after, date: A.skipTo(a) });
-  }
-  function unskipRetinoid(id) {
-    const was = devSkips[id];
-    delete devSkips[id];
-    if (was) A.setNext(id, was.next);
-  }
-
   // Developer Mode: start-up info; the next dose's injection site, with a skip for a week it isn't a good
-  // one (another press skips the new one too; never the last site left); each retinoid's next application, with its skip.
+  // one (another press skips the new one too; never the last site left); the non-daily treatments' days between.
   A.renderDev = box => {
-    const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [], retinoids = A.allUpcoming();
+    const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [];
     const canSkip = !!site && A.activeSites().some(id => id !== site && !skips.includes(id));
     box.innerHTML = `<div class="dev-block"><button class="secondary small" id="boscoStartupBtn">Edit start-up info</button></div>
       <div class="dev-block">
@@ -222,7 +194,7 @@
           ${skips.length ? `<button class="secondary small" id="boscoUnskipBtn">Undo skips</button>` : ""}
         </div>
         <div class="dev-hint">For when a site isn't a good candidate this week: the next dose goes to that body part's next site. Forgotten once a dose is logged.</div>
-      </div>${retinoids.map(nextApplication).join("")}${retinoids.length ? `<div class="dev-hint">Skip this application: for when your skin isn't up to it, as the pop-up's Skip.</div>` : ""}`;
+      </div>`;
     box.querySelector("#boscoStartupBtn").addEventListener("click", () => {
       K.dev.toggle();
       A.renderOneTimeInfo(true);
@@ -230,13 +202,12 @@
     });
     box.querySelector("#boscoSkipBtn").addEventListener("click", () => setSkips(skips.concat(site)));
     if (skips.length) box.querySelector("#boscoUnskipBtn").addEventListener("click", () => setSkips(null));
-    box.querySelectorAll("[data-skip]").forEach(b => b.addEventListener("click", () => skipRetinoid(b.dataset.skip)));
-    box.querySelectorAll("[data-unskip]").forEach(b => b.addEventListener("click", () => unskipRetinoid(b.dataset.unskip)));
+    A.renderDevTreatments(box);
   };
 
-  // Bug reports leave out every weight, dose, and date (the retinoids: counts only).
+  // Bug reports leave out every weight, dose, and date (the non-daily treatments: counts only).
   A.bugState = () => {
-    const med = A.currentMedication(), schedule = A.doseSchedule(), regimens = A.regimens();
+    const med = A.currentMedication(), schedule = A.doseSchedule();
     return [
       `- Unit: ${S.unit}`,
       `- GLP-1 medication: ${med}`,
@@ -245,7 +216,7 @@
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
       `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
       `- Sites skipped: ${(S.profile.skipSites || []).length}`,
-      `- Retinoids: ${regimens.length}${regimens.length ? ` (steps ${regimens.map(r => r.steps.length).join(", ")})` : ""}; applications logged: ${S.retinoids.log.filter(l => !l.x).length}; due now: ${A.allUpcoming().reduce((n, g) => n + g.list.filter(a => a.due).length, 0)}`,
+      `- Non-daily treatments: ${A.treatments().length}; days taken logged: ${S.retinoids.log.filter(l => !l.x).length}`,
       `- Entry count: ${S.entries.length}`,
       `- Goal count: ${S.goals.length}`,
       `- Rate mode: ${S.rateMode}`,

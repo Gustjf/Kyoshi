@@ -73,7 +73,7 @@ core/                 the shared DNA — K = window.Kyoshi
   shell.js            K.register, K.start (K.ready once every app has started), switcher (a button per app, at the top), theme, keyboard, minute tick, other-tab reload
   kyoshi.css          theme tokens + shared components (buttons, inputs, sections, stats, tables, pop-ups, dev panel)
 apps/<id>/            one folder per app — its CLAUDE.md has its file map and data model
-  bosco/              weight tracker with projections & GLP-1 dosing, and retinoid build-up reminders
+  bosco/              weight tracker with projections & GLP-1 dosing, and non-daily treatments (the day each was last taken)
   momo/               weekly time budget (YNAB for hours)
   wanshitong/         media tracker for recommendations (Active media, the backlog)
   appa/               preventive maintenance & records (each job a card of its own in Momo, PDF reports with proof, the upkeep a month in hours)

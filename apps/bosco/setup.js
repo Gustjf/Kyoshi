@@ -1,6 +1,6 @@
 /* Bosco · setup.js — the Get Started section (start-up info): the one-time questions,
  * the dosing plan with its anchor dose and injection sites, the active vial calculator and
- * the weekly pace goal (the retinoids' block below them: retinoids-ui.js); saveOneTimeInfo checks and keeps them. Developer Mode reopens it to
+ * the weekly pace goal (the non-daily treatments' list below them: treatments.js); saveOneTimeInfo checks and keeps them. Developer Mode reopens it to
  * edit everything. */
 (function (K, A) {
   "use strict";
@@ -37,10 +37,9 @@
     renderDosing();
     renderSites(); // not with the rest of the dosing: picking another medication keeps what's toggled here
     renderPaceGoal();
-    // The retinoids (retinoids-ui.js), shown whenever start-up info is; an open editor closes, as the vial's does.
-    S.retinoidEditing = null;
-    $("retinoidBox").hidden = $("oneTimeInfoSection").hidden;
-    A.renderRetinoidsSetup();
+    // The non-daily treatments (treatments.js), shown whenever start-up info is.
+    $("treatmentBox").hidden = $("oneTimeInfoSection").hidden;
+    A.renderTreatmentsSetup();
   }
 
   // The medication picked in start-up info, or the current one if it isn't being asked.
@@ -253,7 +252,7 @@
   // Save in start-up info. The dosing plan, an open vial calculator and the pace
   // goal are checked first, so a bad entry there changes nothing.
   function saveOneTimeInfo() {
-    if (S.retinoidEditing && !A.saveRegimen()) return; // an open retinoid editor is saved first
+    A.addTyped(); // a treatment typed in but not added yet goes in
     const med = formMedication(), dosing = S.dosingAsking && med !== "none";
     const plan = dosing ? enteredPlan() : null;
     if (plan === false) return;

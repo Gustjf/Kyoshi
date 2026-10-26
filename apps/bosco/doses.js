@@ -113,7 +113,7 @@
     if (asked) return openDoseModal(asked);
     if (S.doseAsking) closeDoseModal();
     const dose = due[0];
-    if (!dose || K.bugs.isOpen() || S.applyAsking) return; // one pop-up at a time: a retinoid's open stays first
+    if (!dose || K.bugs.isOpen()) return;
     const snooze = A.store.json("doseSnooze");
     if (snooze && snooze.date === dose.date && now() < snooze.until) return;
     openDoseModal(dose);
@@ -200,7 +200,6 @@
     if (!S.doseAsking) return;
     A.store.set("doseSnooze", JSON.stringify({ date: S.doseAsking.date, until: now() + DOSE_SNOOZE_MS }));
     closeDoseModal();
-    A.renderUpcomingRetinoids(); // a retinoid waiting comes next
   }
 
   Object.assign(A, {

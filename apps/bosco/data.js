@@ -1,8 +1,8 @@
 /* Bosco · data.js — Bosco's saved data: loading (and, on the first open, bringing in what the
  * standalone Bosco left in this browser), cleaning, saving, backups, and combining with other
  * devices' saves. A.data is the adapter core/backup.js (Export/Import JSON) and core/sync.js
- * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, retinoids (retinoids.js),
- * goalsAsEntered (each goal as typed, 8.812 on), doseSnooze, retinoidSnooze, sync and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
+ * (folder sync) use. Storage keys (A.store): entries, gone (deleted days' markers), goals, profile, retinoids (the non-daily treatments: treatments.js),
+ * goalsAsEntered (each goal as typed, 8.812 on), doseSnooze, sync and meetings (core's). A day's weigh-in or dose set here is stamped (setDay: wu, du), and a day deleted leaves a
  * marker of what it deleted (forget). */
 (function (K, A) {
   "use strict";
@@ -223,6 +223,7 @@
     S.goalsAsEntered = clean.goalsAsEntered; // (stored with the next change)
     S.gone = clean.gone;
     S.retinoids = A.cleanRetinoids(A.store.json("retinoids")) || { regimens: [], log: [] };
+    if (A.store.get("retinoidSnooze") !== null) A.store.remove("retinoidSnooze"); // the old retinoid pop-up's "Not yet"s (this device's), gone with it (9.037)
     if (storedEntries !== null && (storedEntries !== JSON.stringify(S.entries) || storedGoals !== JSON.stringify(S.goals))) {
       A.store.set("entries", JSON.stringify(S.entries));
       A.store.set("goals", JSON.stringify(S.goals));
@@ -257,7 +258,7 @@
       sites: S.profile.sites,
       skipSites: S.profile.skipSites,
       asked: { medication: !!S.profile.medicationAsked, dosing: askedVersion(S.profile.dosingAsked) }, // start-up info's answers
-      retinoids: S.retinoids, // the retinoids and their applications (retinoids.js)
+      retinoids: S.retinoids, // the non-daily treatments and the days taken (treatments.js)
       entries: S.entries,
       gone: S.gone, // deleted days' markers (7.601 on)
       goals: S.goals,

@@ -1,6 +1,6 @@
 /* Bosco · bosco.css — Bosco's own styles, every selector under .app-bosco.
  * Shared components (buttons, inputs, sections, stats, tables, pop-ups…) are in core/kyoshi.css.
- * Sections: Layout · Stats & badges · Goals & projection sliders · Start-up dosing, injection sites, vial, pace goal & retinoids · Chart */
+ * Sections: Layout · Stats & badges · Goals & projection sliders · Start-up dosing, injection sites, vial, pace goal & non-daily treatments · Chart */
 
 /* --- Layout --- */
 .app-bosco.no-med .med { display: none !important; } /* dose tracking off */
@@ -13,15 +13,11 @@
 .app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */
 .app-bosco #statsSection .stat { min-width: 230px; } /* room for a full row of window pills */
 /* Room for "Wednesday", or wider when that's what keeps a dose on one line (fewer to a row). */
-.app-bosco #upcomingDosesGrid .stat, .app-bosco #upcomingRetinoidsSection .stat { flex: 1 0 140px; min-width: auto; }
-.app-bosco #upcomingDosesGrid .lbl span, .app-bosco #upcomingDosesGrid .dose,
-.app-bosco #upcomingRetinoidsSection .lbl span, .app-bosco #upcomingRetinoidsSection .dose { white-space: nowrap; } /* a date or dose never splits across lines */
-.app-bosco #upcomingDosesGrid .stat.due, .app-bosco #upcomingRetinoidsSection .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
-.app-bosco #upcomingDosesGrid .stat.due button, .app-bosco #upcomingRetinoidsSection .stat.due button { margin-top: 8px; }
-/* Upcoming retinoid doses: a group per retinoid, under a line naming it and where it stands in its build-up. */
-.app-bosco .retinoid-group + .retinoid-group { margin-top: 14px; }
-.app-bosco .retinoid-head { font-size: .9em; }
-.app-bosco .retinoid-head button { margin-left: 8px; } /* Undo, Hold this step a week */
+/* The non-daily treatments' cards alike, amber once their days between have passed. */
+.app-bosco #upcomingDosesGrid .stat, .app-bosco #treatmentsGrid .stat { flex: 1 0 140px; min-width: auto; }
+.app-bosco #upcomingDosesGrid .lbl span, .app-bosco #upcomingDosesGrid .dose, .app-bosco #treatmentsGrid .lbl { white-space: nowrap; } /* a date or dose never splits across lines */
+.app-bosco #upcomingDosesGrid .stat.due, .app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
+.app-bosco #upcomingDosesGrid .stat.due button, .app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
 .app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
@@ -66,7 +62,7 @@
 .app-bosco .rate-labels .rl-mid { left: calc((100% - 1px) / 2); transform: translateX(-50%); }
 .app-bosco .rate-labels .rl-max { right: 0; }
 
-/* --- Start-up dosing plan, injection sites, active vial, pace goal & retinoids --- */
+/* --- Start-up dosing plan, injection sites, active vial, pace goal & non-daily treatments --- */
 .app-bosco .dosing, .app-bosco .pace-goal { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .app-bosco #oneTimeInfoFields:empty { display: none; }
 /* No questions above the dosing, or above the pace goal with no dosing either. */
@@ -89,16 +85,13 @@
 .app-bosco .anchor-line, .app-bosco #anchorEditor { margin-top: 10px; }
 .app-bosco .vial-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
 .app-bosco .bac-head { margin-top: 12px; }
-/* The retinoids in start-up info: the list, then the editor with its steps ("every [3] days for [2] weeks ✕"). */
-.app-bosco .retinoids { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
-.app-bosco .retinoid-item + .retinoid-item, .app-bosco #retinoidList:not(:empty) + #retinoidAddLine, .app-bosco #retinoidAddLine + #retinoidEditor,
-.app-bosco #retinoidList:not(:empty) + [hidden] + #retinoidEditor, .app-bosco .retinoid-start { margin-top: 8px; }
-.app-bosco .step-row { display: grid; grid-template-columns: auto 64px auto 64px auto 1fr; gap: 6px; align-items: center; margin-top: 6px; font-size: .9em; }
-.app-bosco .step-row span { white-space: nowrap; }
-@media (max-width: 600px) { .app-bosco .step-row { grid-template-columns: auto 44px auto 44px auto 1fr; gap: 5px; } }
-.app-bosco .step-row input { width: 100%; }
-.app-bosco .step-row button { justify-self: start; }
-.app-bosco .add-step { margin-top: 8px; }
+/* The non-daily treatments in start-up info: a name each (renamed in place) with Remove, then the add line. */
+.app-bosco .treatments { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.app-bosco .treatment-item { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.app-bosco .treatment-item input { flex: 1; min-width: 0; }
+/* Developer Mode's days between: the name, then its number. */
+.dev-panel .treatment-every { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
+.dev-panel .treatment-every input { width: 64px; }
 
 /* --- Chart --- */
 .app-bosco #chartSvg { display: block; width: 100%; height: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }

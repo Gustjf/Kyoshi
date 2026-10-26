@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "9.037", date: "2026-10-26", changes: [
+      "The retinoid build-ups are now simpler Non-daily treatments: name them in start-up info, set their days between in Developer Mode, and each card shows the day you last took it (\"10/25 - (yesterday)\") with Took it today; your retinoids and their days carry over."
+    ] },
     { version: "8.937", date: "2026-10-21", changes: [
       "Rolled back 8.936 (injections always switching sides): the rotation and the dose pop-up are as in 8.935."
     ] },

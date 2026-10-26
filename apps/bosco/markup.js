@@ -1,5 +1,5 @@
-/* Bosco · markup.js — Bosco's page (A.markup): its sections (start-up info with the retinoids' list and editor; Upcoming
- * Doses, then Upcoming Retinoid Doses) and its two pop-ups (a dose's, a retinoid's).
+/* Bosco · markup.js — Bosco's page (A.markup): its sections (start-up info with the non-daily treatments' list; Upcoming
+ * Doses, then Non-daily treatments) and the dose's pop-up.
  * The shell supplies the header, footer, Developer Mode and bug reports.
  * Ids only need to be unique within Bosco (look them up with A.$). */
 Kyoshi.apps.bosco.markup = `
@@ -102,46 +102,13 @@ Kyoshi.apps.bosco.markup = `
       </div>
       <div class="note" id="paceNote" hidden></div>
     </div>
-    <!-- The retinoids you use (each one, where it goes, its usual time and its build-up), saved one at a time. -->
-    <div class="retinoids" id="retinoidBox" hidden>
-      <div class="subhead">Retinoids</div>
-      <div id="retinoidList"></div>
-      <div class="summary-line" id="retinoidAddLine">
-        <span class="muted" id="retinoidNone">No retinoid yet.</span>
-        <button type="button" class="secondary small" id="addRetinoidBtn">Add retinoid</button>
-      </div>
-      <div class="vial-card" id="retinoidEditor" hidden>
-        <div class="mode-toggle many" id="retinoidKind" role="group" aria-label="Retinoid"></div>
-        <div class="dose-fields">
-          <div>
-            <label for="retinoidStrength">Strength</label>
-            <select id="retinoidStrength"></select>
-          </div>
-          <div>
-            <label for="retinoidWhere">Where</label>
-            <input type="text" id="retinoidWhere" maxlength="24" placeholder="e.g. face">
-          </div>
-          <div>
-            <label for="retinoidTime">Usual time</label>
-            <input type="time" id="retinoidTime">
-          </div>
-        </div>
-        <div class="dose-fields retinoid-start">
-          <div>
-            <label for="retinoidStart">Start date</label>
-            <input type="date" id="retinoidStart">
-          </div>
-        </div>
-        <div class="note">The first application is on this day; a past day is fine if you're already on it.</div>
-        <div class="subhead sites-head">Schedule</div>
-        <div id="retinoidSteps"></div>
-        <button type="button" class="secondary small add-step" id="addStepBtn">Add a step</button>
-        <div class="note" id="retinoidStepsNote"></div>
-        <div class="note">Step up only when your skin is fine: give a step more weeks, or take a step out for a steady schedule.</div>
-        <div class="actions">
-          <button type="button" id="saveRetinoidBtn">Save retinoid</button>
-          <button type="button" class="secondary" id="cancelRetinoidBtn">Cancel</button>
-        </div>
+    <!-- The non-daily treatments (treatments.js): a name each, renamed in place; their days between are in Developer Mode. -->
+    <div class="treatments" id="treatmentBox" hidden>
+      <div class="subhead">Non-daily treatments</div>
+      <div id="treatmentList"></div>
+      <div class="treatment-item" id="treatmentAddLine">
+        <input type="text" id="treatmentNew" maxlength="40" placeholder="e.g. Tretinoin" aria-label="New treatment">
+        <button type="button" class="secondary small" id="addTreatmentBtn">Add</button>
       </div>
     </div>
     <div class="actions">
@@ -173,10 +140,10 @@ Kyoshi.apps.bosco.markup = `
     <div class="stat-grid" id="upcomingDosesGrid"></div>
   </section>
 
-  <!-- Each retinoid's next applications (retinoids-ui.js); not part of the GLP-1 dosing, so not .med. -->
-  <section id="upcomingRetinoidsSection" hidden>
-    <h2 id="upcomingRetinoidsTitle"></h2>
-    <div id="upcomingRetinoidsBody"></div>
+  <!-- A card per non-daily treatment: the day last taken (treatments.js); not part of the GLP-1 dosing, so not .med. -->
+  <section id="treatmentsSection" hidden>
+    <h2>Non-daily treatments</h2>
+    <div class="stat-grid" id="treatmentsGrid"></div>
   </section>
 
   <section id="statsSection" hidden>
@@ -300,26 +267,6 @@ Kyoshi.apps.bosco.markup = `
         <button id="doseTodayBtn" hidden>Took it today</button>
         <button class="secondary" id="doseSnoozeBtn">Not yet</button>
         <button class="secondary" id="dosePostponeBtn">Postpone to tomorrow</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Asks about a retinoid's application once it's due; logged only once confirmed, on its day or (a late one) today.
-       Skip (the skin not up to it) goes to the next one on the schedule. -->
-  <div class="overlay" id="retinoidOverlay">
-    <div class="modal" role="dialog" aria-labelledby="retinoidModalTitle">
-      <h3 id="retinoidModalTitle">Did you apply your retinoid?</h3>
-      <p class="modal-hint" id="retinoidModalText"></p>
-      <div class="stat">
-        <div class="val" id="retinoidModalWhat"></div>
-        <div class="lbl" id="retinoidModalStep"></div>
-      </div>
-      <div class="modal-actions">
-        <button id="retinoidLogBtn">Applied</button>
-        <button id="retinoidTodayBtn" hidden>Applied it today</button>
-        <button class="secondary" id="retinoidSnoozeBtn">Not yet</button>
-        <button class="secondary" id="retinoidPostponeBtn">Postpone to tomorrow</button>
-        <button class="secondary" id="retinoidSkipBtn">Skip</button>
       </div>
     </div>
   </div>

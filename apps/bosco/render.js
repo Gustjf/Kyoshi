@@ -1,5 +1,5 @@
-/* Bosco · render.js — draws the page from A.S: renderAll, then History, Upcoming Doses (the retinoids' section:
- * retinoids-ui.js), Current Trend, Goal Weights (with season projections) and the Chart. The start-up
+/* Bosco · render.js — draws the page from A.S: renderAll, then History, Upcoming Doses (then Non-daily treatments:
+ * treatments.js), Current Trend, Goal Weights (with season projections) and the Chart. The start-up
  * section is setup.js; the dose pop-up is doses.js. */
 (function (K, A) {
   "use strict";
@@ -23,7 +23,7 @@
     $("customRateValue").textContent = `${custom > 0 ? "+" : ""}${custom}%`;
     renderHistory(m);
     renderUpcomingDoses();
-    A.renderUpcomingRetinoids(); // retinoids-ui.js
+    A.renderTreatments(); // treatments.js
     renderStats(m);
     renderGoals(m);
     renderChart(m);

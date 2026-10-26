@@ -3,24 +3,23 @@ The app is called **Bosco** (its standalone original lives in the GitHub repo na
 Weigh-ins, a weekly pace goal, goal weights with ETAs and season projections, a chart, a shareable progress image,
 and GLP-1 dosing (Tirzepatide, Semaglutide, Retatrutide): a dosing plan, one active vial, doses logged only once confirmed,
 each at the next injection site in rotation (the body parts take turns, each going through its own sites in an X);
-and retinoid build-up reminders (tazarotene, tretinoin, …: up to 4, each on its own ladder of steps, logged once confirmed).
+and non-daily treatments (creams like tretinoin, tazarotene, glycopyrrolate: up to 8, a card each saying the day it was last taken; no schedule).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js` (continues the standalone's).
 
 ## Files (load order)
 | File | What's in it |
 |---|---|
-| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide); constants (`MEDICATIONS`, `RETINOIDS` (generic names, each cream's strengths), the retinoids' limits and `DEFAULT_STEPS`, `SITES` (22, part by part, each part's in its X), `PARTS` (the order they take turns), `LEGACY_SITES` (the old ids), `DEFAULT_SITES`, `GOAL_AVG_DAYS`, `ONE_TIME_FIELDS`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (weights & units, medication/plan/vial lookups, dose math, `activeSites`, `siteLabel`/`siteShort`, `standsFor`, `partOf`, `sitesIn`, `fmtUnits`, `readNumber`; a retinoid's words: `retinoidLabel`, `strengthLabel`, `regimenName`, `regimenTitle`, `fmtEvery`, `retinoidsTitle`) |
-| `markup.js` | the page: Get Started (with the Retinoids block and its editor), Add Entry, Upcoming Doses, Upcoming Retinoid Doses, Current Trend, History, Goal Weights, Chart, and the dose and retinoid pop-ups |
+| `app.js` | `Kyoshi.register` (name, title, icon, 780px wide); constants (`MEDICATIONS`, `RETINOIDS` (the old build-ups' retinoid names, for carry-over), the treatments' limits (`MAX_TREATMENTS`, `MAX_EVERY`, `DEFAULT_EVERY`), `SITES` (22, part by part, each part's in its X), `PARTS` (the order they take turns), `LEGACY_SITES` (the old ids), `DEFAULT_SITES`, `GOAL_AVG_DAYS`, `ONE_TIME_FIELDS`, limits, `DATA_SCHEMA_VERSION`); state `A.S`; helpers (weights & units, medication/plan/vial lookups, dose math, `activeSites`, `siteLabel`/`siteShort`, `standsFor`, `partOf`, `sitesIn`, `fmtUnits`, `readNumber`, `retinoidLabel`) |
+| `markup.js` | the page: Get Started (with the Non-daily treatments list), Add Entry, Upcoming Doses, Non-daily treatments, Current Trend, History, Goal Weights, Chart, and the dose pop-up |
 | `changelog.js` | version history |
-| `data.js` | storage (`load` incl. first-run carry-over from the standalone, `persist`, `save`; a weigh-in or dose set: `setDay`, its stamp; a day deleted: `forget`, its marker), cleaning (`normalizeBackup`, `joinGone`/`cleanGone`, `cleanSites` (an old site turns on every site it's split into), `cleanSkips`, `cleanAsked` / `joinAsked` / `askedVersion` (start-up info's answers), `cleanDosePlan`, `cleanVial`, `cleanPaceGoal`; the retinoids': retinoids.js), backups (`A.data`: build/import, the retinoids' key with them) and sync merge (`combine`, `mergeVersions`) |
+| `data.js` | storage (`load` incl. first-run carry-over from the standalone, `persist`, `save`; a weigh-in or dose set: `setDay`, its stamp; a day deleted: `forget`, its marker), cleaning (`normalizeBackup`, `joinGone`/`cleanGone`, `cleanSites` (an old site turns on every site it's split into), `cleanSkips`, `cleanAsked` / `joinAsked` / `askedVersion` (start-up info's answers), `cleanDosePlan`, `cleanVial`, `cleanPaceGoal`; the treatments': treatments.js), backups (`A.data`: build/import, the `retinoids` key with them) and sync merge (`combine`, `mergeVersions`) |
 | `trend.js` | math: weekly trend, pace goal & status, `averaged` (the 7-day averages goals go by), `model()` (`w`, `wa`), goal status/ETA, dose totals |
-| `render.js` | `renderAll` and each section: history, upcoming doses (then the retinoids': retinoids-ui.js), stats, goals & season projections, SVG chart |
-| `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, the Retinoids block shown with them (retinoids-ui.js), `saveOneTimeInfo` (an open retinoid editor saved first) |
+| `render.js` | `renderAll` and each section: history, upcoming doses (then the treatments': treatments.js), stats, goals & season projections, SVG chart |
+| `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, the Non-daily treatments list shown with them (treatments.js), `saveOneTimeInfo` (a treatment typed in added first) |
 | `doses.js` | dose schedule and its sites (worked out, never stored: `lastSites`, `nextSiteIn`, `nextSite`), `dueAt`, the confirm / Not yet / postpone pop-up with its site menu (by body part), and `agenda` (the doses, for Momo's board) |
-| `retinoids.js` | the retinoids' data (`cleanRetinoids`, `mergeRetinoids`, `keepRetinoids`, `stampAbove`), their schedule (worked out, never stored: `regimens`, `lastApplied`, `stepAt`, `walk`, `allUpcoming`), their words (`stepWords`, `progressLine`, `stepsNote`, `scheduleWords`), the pop-up's rules (`promptDueApplication`, `confirmApplication`, `postponeApplication`, `skipTo` / `skipApplication`, `setNext`, `snoozeApplication`) and the section's one-tap ones (`holdable` / `holdStep`, `undoable` / `undoApplication`); no drawing |
-| `retinoids-ui.js` | the Upcoming Retinoid Doses section (with Undo and Hold this step a week), the retinoid pop-up's words and buttons, start-up info's Retinoids block (list, Add / Edit / Remove, the editor with its steps and live note); `initRetinoids` (from `A.init`) |
+| `treatments.js` | the non-daily treatments: their data (`cleanRetinoids` (an old retinoid regimen read as a treatment), `mergeRetinoids`, `stampAbove`), `treatments`, `lastTaken`, `lastWords` ("10/25 - (yesterday)"), the section (`renderTreatments`: a card each, Took it today / Undo), start-up info's list (`renderTreatmentsSetup`, `addTyped`: add, rename in place, Remove), Developer Mode's days between (`renderDevTreatments`); `initTreatments` (from `A.init`) |
 | `image.js` | the progress image (PNG): the weigh-ins (a dot each, joined by straight lines) and the goal table |
-| `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose or retinoid), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips; each retinoid's next application, Skip this application / Undo skips (this session's)), `bugState` |
+| `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips; the treatments' days between), `bugState` |
 | `bosco.css` | styles under `.app-bosco` |
 
 ## State (`A.S`)
@@ -30,16 +29,14 @@ question answered, here or on another device; `dosingAsked`: the version of the 
 answered, and it never goes down); `sites`: the injection sites on, in `SITES` order;
 null until changed in start-up info = `DEFAULT_SITES` (the abdomen's 4 and the thighs' 12); [] = sites off; `skipSites`: the sites the next dose passes over, set in
 Developer Mode, null once a dose is logged) · `unit` "lb"|"kg" ·
-`retinoids` { regimens, log } (`retinoids.js`): a regimen { id, retinoid: a `RETINOIDS` id (one from a newer version, or taken off the list (adapalene), kept as it is), pct (the cream's
-strength, a number), where (≤ 24 characters, may be ""), time "HH:MM"|null, start, steps: 1–6 of { every: 1–14 days, weeks: 1–52 }, the last's weeks
-null, next: { after, date }|null (Postpone's or Skip's day, until one is applied after `after`), at (when added: the order), u, x? (removed) }; a log record
-`{ id: "<regimen id>:<date>", r, date, u, x? (undone) }`, one per retinoid per day ·
-UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `dosingAsking`, `paceAsking`, `vialEditing`, `anchorEditing`, `vialMode`, `doseAsking` (+ `site`, `picked`: the pop-up's site),
-`retinoidEditing` (null, or `{ id: "" for a new one, steps: the rows as edited }`), `applyAsking` (the application the retinoid pop-up is open for).
+`retinoids` { regimens, log } (`treatments.js`; the key keeps the name of the retinoid build-ups it held 8.601–8.937): a treatment { id, name (≤ 40
+characters), every: days between (1–90, a new one's 3; only lights its card), at (when added: the order), u, x? (removed) }; a log record
+`{ id: "<treatment id>:<date>", r, date, u, x? (undone) }`, one per treatment per day. An old regimen { retinoid, pct, where, time, start, steps, next, … }
+reads as a treatment named after its retinoid (`retinoidLabel`), every its last step's days; its log is the same ·
+UI: `rateMode`, `trendWindow`, `avgWindow`, `currentPage`, `entryDateDefault`, `dosingAsking`, `paceAsking`, `vialEditing`, `anchorEditing`, `vialMode`, `doseAsking` (+ `site`, `picked`: the pop-up's site).
 
 ## Storage (`A.store`) and backups
-Keys: `entries`, `gone`, `goals`, `goalsAsEntered`, `profile`, `retinoids`, `doseSnooze` and `retinoidSnooze` (this device's "Not yet"s; the retinoids' a list
-`[{ id: "<regimen>:<date>", until }]`), `sync` and `meetings` (core's). First open reads the standalone's
+Keys: `entries`, `gone`, `goals`, `goalsAsEntered`, `profile`, `retinoids` (the non-daily treatments), `doseSnooze` (this device's "Not yet"; the old `retinoidSnooze` is removed on load), `sync` and `meetings` (core's). First open reads the standalone's
 `weightTrackerEntries_v1` / `weightTrackerGoals_v1` / `weightTrackerProfile_v1` (never changes them).
 Backup JSON (Export, autosave files) = the standalone's format, so old backups import as-is: `{ schemaVersion: 4, appVersion, unit, name, medication, dosePlan, vial, paceGoal, sites, skipSites, asked, retinoids, entries, gone, goals, goalsAsEntered, cumulativeDoseMgByMedication }`
 (`goals` stay numbers in the file's unit, so older copies read them; `goalsAsEntered`, when there, says how each was typed, and every goal from either save keeps its own)
@@ -69,16 +66,16 @@ the answers.
 `retinoids` (8.601 on): the same object as the store key. Both lists merge record by record by the later change (`u`; `K.util.mergeById`), in
 Import, a save taken whole and a combine alike; a file or save without the key (an older copy) leaves ours, and isn't set apart nor saved back for
 by it alone (`same`, as for `asked`). Import counts as a change made here now: the backup's records are stamped above ours, so the backup wins where
-both have a record, and keeps what it doesn't have. Nothing is deleted: a removed retinoid and an undone application are markers (`x`, a later
-`u`). `hasData` counts a retinoid (a marker too). An older copy of Bosco drops the key when it saves: reload Bosco on every device after updating.
+both have a record, and keeps what it doesn't have. Nothing is deleted: a removed treatment and an undone day are markers (`x`, a later
+`u`). `hasData` counts a treatment (a marker too). An older copy of Bosco drops the key when it saves: reload Bosco on every device after updating.
 Bump `DATA_SCHEMA_VERSION` only when import has to migrate data (see its comment in `app.js`).
 
 ## Shared with other apps
 `A.agenda(from, to)` (read-only, through `K.agenda` — see `core/agenda.js`): the doses on those days, logged ones (`done`) and
 the schedule's, each `{ id: "dose:<date>", title: "<Medication> dose", date, time: the usual dose time or null, minutes: 15, note: "<mg> mg" }`
 (no injection site: the owner keeps it to Bosco). Momo's board shows them and remembers moves by `id`, so keep ids as they are.
-The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the board, no need in the inbox; their reminder is Bosco's own
-(the amber card, the pop-up, the switcher dot). Don't add them to `A.agenda` or an `A.inbox`.
+The non-daily treatments never go to Momo (the owner's choice, 2026-10-12, for the retinoids): no event on the board, no need in the inbox; their
+reminder is Bosco's own amber card. Don't add them to `A.agenda` or an `A.inbox`.
 
 ## Invariants
 - Dates are calendar-day strings; date math is UTC (`K.util`), and "today" is `K.util.todayStr()` (time-travel aware).
@@ -107,17 +104,8 @@ The retinoids never go to Momo (the owner's choice, 2026-10-12): no event on the
   fill: every ring before any dot; a ring over the line (setting its weigh-in apart), or under it for a weigh-in close to the one before or after
   (less than a ring's width along the dates, or a line under 20 px between), or the rings would whiten the line. The page's chart is its own
   (`render.js`).
-- Retinoids: the schedule is worked out, never stored (`walk`, a copy of `doseSchedule`): the first application on the start day (never before it:
-  a start moved later starts over), each next one the interval of the step the last one's day falls in (so a new step's first comes one old
-  interval after the old step's last), or Postpone's day; steps run by calendar weeks from the start, the last open-ended; at most three on or before
-  today (older ones count as missed), three in all. Applications are logged only by confirming one in the pop-up (its day, or today for a late one).
-- The pop-up's Postpone moves the application to tomorrow (the ones after follow from there); Skip (the skin not up to it) goes to the next one on
-  the schedule after it, never before today (`skipTo`), so the days stay as they were. Both set `next`; nothing is logged.
-- The retinoids' section is titled by the one retinoid in use ("Upcoming Tazarotene Doses"), or "Retinoid" for more than one; hidden with none,
-  and independent of the GLP-1 medication (not `.med`).
-- One pop-up at a time: a due dose's first, then one retinoid's (each retinoid's earliest due one; the next once it closes); never over another pop-up.
-- A removed retinoid and an undone application are markers (`x: true`, a later `u`), so they stay that way on every device.
-- Hold this step a week adds a week to the step today is in (`steps[i].weeks`, up to 52; the later steps start a week later): shown during a
-  timed step once started, never on the last (open-ended) one nor on a steady schedule. Undo takes back today's application only (shown while
-  the latest is today's): its record a marker, and the application due again put off an hour on this device (its card's Applied ✓ is there).
-- Bug reports never include weights, doses, dates or names (the retinoids: counts only).
+- Non-daily treatments (the owner's choice, 2026-10-26: flexibility over a schedule): no schedule, no pop-up, no switcher dot. A card each: the day
+  last taken, "M/D - (today|yesterday|n days ago)" (the year too when it isn't this one), or "Not taken yet"; amber once `every` days have passed
+  (never while today's is logged). Took it today logs today; Undo (while today's is the last) makes its record a marker. Names are set in start-up
+  info (renamed in place, saved at once), the days between in Developer Mode. A removed treatment and an undone day are markers (`x: true`, a later `u`).
+- Bug reports never include weights, doses, dates or names (the treatments: counts only).
