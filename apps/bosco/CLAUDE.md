@@ -2,7 +2,7 @@
 The app is called **Bosco** (its standalone original lives in the GitHub repo named Project-Wan-Shi-Tong, read-only).
 Weigh-ins, a weekly pace goal, goal weights with ETAs and season projections, a chart, a shareable progress image,
 and GLP-1 dosing (Tirzepatide, Semaglutide, Retatrutide): a dosing plan, one active vial, doses logged only once confirmed,
-each at the next injection site in rotation (the body parts take turns, each going through its own sites in an X);
+each at the next injection site in rotation (every dose on the other side of the body; the body parts take turns, each going through its own sites in an X);
 and non-daily treatments (creams like tretinoin, tazarotene, glycopyrrolate: up to 8, a card each saying the day it was last taken; no schedule).
 Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelog: `changelog.js` (continues the standalone's).
 
@@ -16,7 +16,7 @@ Rules, versioning and the app contract: the root `CLAUDE.md`. Version & changelo
 | `trend.js` | math: weekly trend, pace goal & status, `averaged` (the 7-day averages goals go by), `model()` (`w`, `wa`), goal status/ETA, dose totals |
 | `render.js` | `renderAll` and each section: history, upcoming doses (then the treatments': treatments.js), stats, goals & season projections, SVG chart |
 | `setup.js` | Get Started: one-time questions, dosing plan, anchor dose, injection sites (a group per body part), vial calculator, pace goal, the Non-daily treatments list shown with them (treatments.js), `saveOneTimeInfo` (a treatment typed in added first) |
-| `doses.js` | dose schedule and its sites (worked out, never stored: `lastSites`, `nextSiteIn`, `nextSite`), `dueAt`, the confirm / Not yet / postpone pop-up with its site menu (by body part), and `agenda` (the doses, for Momo's board) |
+| `doses.js` | dose schedule and its sites (worked out, never stored: `sideOf`, `lastSites`, `keeps` (the sides rule), `nextSiteIn`, `nextSite`), `dueAt`, the confirm / Not yet / postpone pop-up with its site menu (by body part), and `agenda` (the doses, for Momo's board) |
 | `treatments.js` | the non-daily treatments: their data (`cleanRetinoids` (an old retinoid regimen read as a treatment), `mergeRetinoids`, `stampAbove`), `treatments`, `lastTaken`, `lastWords` ("10/25 - (yesterday)"), the section (`renderTreatments`: a card each, Took it today / Undo), start-up info's list (`renderTreatmentsSetup`, `addTyped`: add, rename in place, Remove), Developer Mode's days between (`renderDevTreatments`); `initTreatments` (from `A.init`) |
 | `image.js` | the progress image (PNG): the weigh-ins (a dot each, joined by straight lines) and the goal table |
 | `events.js` | `A.init` wiring, add entry/goal, deletes (they ask), and the hooks: `onTick`, `onKeydown`, `onReload`, `attention` (a due dose), `renderDev` ("Edit start-up info"; the next dose's site, Skip this site / Undo skips; the treatments' days between), `bugState` |
@@ -87,12 +87,18 @@ reminder is Bosco's own amber card. Don't add them to `A.agenda` or an `A.inbox`
   on after the last one logged there (`SITES`' order for that part: the abdomen's and buttocks' X left upper → right
   lower → left lower → right upper, the thighs' twelve alternating legs and heights and swapping faces on each leg), or
   its first one on. A site off is passed over (a part's place in the X is kept); a part with none on is left out.
+- The governing rule (the owner's, 2026-10-26; an earlier try, 8.936, was rolled back): every dose goes on the other side
+  of the body (`sideOf`: left or right) from the last dose, and from its body part's last dose (`keeps`: 2 both, 1 the
+  part's only, 0 neither). The next site is the next part's (from the last dose's) next site in its X that keeps the rule
+  best: a part with no such site gives its turn, so with two parts on each takes two doses in a row (a side each), with
+  three they take turns one at a time. Only with every site on one side does a side repeat (the part's first, then any).
+  The pop-up greys out (and `pickDoseSite` refuses) a site keeping it less well than the planned one.
 - An old site (`LEGACY_SITES`: `abd-l`, `thigh-l-upper`, …) stays as it is in the log and reads as it did; in the
   rotation it counts as the site it stands for (its side's upper, its height's front), and in `profile.sites` it turns on
   every site it was split into. `SITES` and `LEGACY_SITES` ids are stored: never change one.
 - A skip (`profile.skipSites`, Developer Mode) is for the next dose only: it passes over those sites to its part's next
-  one (the part keeps its turn; a part with all its sites on skipped gives its turn to the next), never leaving no site;
-  confirming a dose sets it back to null.
+  one keeping the rule (the part keeps its turn; a part with none left gives its turn to the next), never breaking the
+  rule more nor leaving no site (then it's ignored, and Skip is disabled); confirming a dose sets it back to null.
 - A goal is reached by the 7-day average (`GOAL_AVG_DAYS`, fixed, whatever the Average window shows): Reached once the
   latest average has passed it, dated the first day the average got there; ETAs, the season projections and the chart's
   goal tags go from the latest average, the chart's dots and line stay the weigh-ins. The progress image agrees.

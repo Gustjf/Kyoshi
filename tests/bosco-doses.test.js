@@ -1,8 +1,11 @@
 /* Kyoshi · tests/bosco-doses.test.js — Bosco's injection sites (Phase 8 of plan_2026-10-05; by body part in Phase 3 of
  * 2026-10-06_feedback_batch_plan.md): the body parts with a site on take turns (abdomen, thighs, buttocks, upper arms),
  * and within each the doses go on through its sites in its own order (an X: the abdomen's and buttocks' four, the
- * thighs' twelve, the arms' two), each part from the last site logged in it; the dose pop-up offers the sites that are
- * on by body part (the planned one picked) and the others under Other, keeps a site picked there while it's kept up to
+ * thighs' twelve, the arms' two), each part from the last site logged in it; the governing rule (the owner's,
+ * 2026-10-26): every dose on the other side of the body from the last one and from its part's last one, a part giving
+ * its turn when it has no such site (with only every site on one side does a side repeat, never in a part while another
+ * site keeps it); the dose pop-up offers the sites that are on by body part (the planned one picked; those the rule
+ * turns down greyed out and refused) and the others under Other, keeps a site picked there while it's kept up to
  * date, and logs it, History saying where it went and the rotation going on from there; start-up info turns sites on
  * and off (a group per part, four to a row, two on a phone) and asks once more on each device; an older version's site
  * turns on every site it's split into, reads as it did and counts as the one it stands for; Developer Mode skips the
@@ -42,7 +45,8 @@ const popup = tab => tab.page.evaluate(m => {
   return {
     open: o.classList.contains("open"), shown: !o.querySelector("#doseSiteField").hidden,
     picked: sel.selectedOptions[0] ? text(sel.selectedOptions[0]) : "",
-    groups: [...sel.children].map(g => [g.label, [...g.children].map(text)])
+    groups: [...sel.children].map(g => [g.label, [...g.children].map(text)]),
+    disabled: [...sel.querySelectorAll("option:disabled")].map(text)
   };
 }, M);
 // Start-up info's site buttons, [text, on]; the ids of those on; the parts' headings; and how they're laid out (rows × columns).
@@ -81,11 +85,12 @@ module.exports = [
       eq(await bugLine(tab), "- Injection sites on: 16 (default)", "the bug report's count");
 
       // A dose due today; the doses before it from before injection sites, so the abdomen starts, at its first site.
+      // Every dose then switches sides, and so does each part's: with two parts, each takes two in a row (a leg each).
       await importBackup(tab, gen.bosco({ lastDose: D(-7) }));
-      eq(await cardSites(tab), [ABD[0], THIGH[0], ABD[1]], "the upcoming doses' sites: the parts take turns");
+      eq(await cardSites(tab), [ABD[0], THIGH[1], THIGH[2]], "the upcoming doses' sites: left, right, left");
       let pop = await popup(tab);
-      eq([pop.open, pop.shown, pop.picked, pop.groups], [true, true, ABD[0], [["Abdomen", ABD], ["Thighs", THIGH], ["Other", GLUTE.concat(ARM)]]],
-        "the pop-up: the planned site picked, the sites on by body part, the others under Other");
+      eq([pop.open, pop.shown, pop.picked, pop.groups, pop.disabled], [true, true, ABD[0], [["Abdomen", ABD], ["Thighs", THIGH], ["Other", GLUTE.concat(ARM)]], []],
+        "the pop-up: the planned site picked, the sites on by body part, the others under Other (no side to switch from yet)");
 
       // Another site picked stays picked as the pop-up is kept up to date (every minute); Log dose logs it there.
       await p.selectOption(`${M} #doseSiteSelect`, "abd-r-upper");
@@ -95,8 +100,9 @@ module.exports = [
       await p.click(`${M} #doseLogBtn`);
       eq((await popup(tab)).open, false, "logged");
       eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R upper"], "History says where it went");
-      // The thighs' turn; the abdomen then goes on from the site used, starting over after its last (not from the planned one).
-      eq(await cardSites(tab), [THIGH[0], ABD[0], THIGH[1]], "on from Abd R upper");
+      // The thighs' turn, on the left; then the right thigh (the abdomen's last was on the right); then the abdomen
+      // on from the site used, starting over after its last (not from the planned one).
+      eq(await cardSites(tab), [THIGH[0], THIGH[1], ABD[0]], "on from Abd R upper");
 
       // Start-up info (it asks about the sites): the abdomen off. Only the thighs take turns.
       eq(await startupShown(tab), [true, true], "start-up info asks");
@@ -129,6 +135,14 @@ module.exports = [
       await other.page.evaluate(() => Kyoshi.dev.travel(7));
       pop = await popup(other);
       eq([pop.open, pop.picked, pop.groups], [true, THIGH[0], [["Thighs", THIGH], ["Other", ABD.concat(GLUTE, ARM)]]], "the pop-up a week on");
+      eq(pop.disabled, THIGH.concat(ABD, GLUTE, ARM).filter(s => / · right/.test(s)), "the last dose was on the right: every right side greyed out");
+      // A right side can't be picked (as if the menu let it): the planned site stays; a left one can.
+      await other.page.evaluate(() => Kyoshi.apps.bosco.pickDoseSite("thigh-r-side-middle"));
+      await other.ctx.clock.fastForward(61000); // the minute's update shows what's picked
+      eq((await popup(other)).picked, THIGH[0], "refused");
+      await other.page.selectOption(`${M} #doseSiteSelect`, "glute-l-upper");
+      eq((await popup(other)).picked, GLUTE[0], "a left side, even one off, can");
+      await other.page.selectOption(`${M} #doseSiteSelect`, "thigh-l-front-upper");
       await other.page.click(`${M} #doseLogBtn`);
       eq((await history(other))[0], ["Oct 7", "5 mg|Thigh L front upper"], "logged at the planned site");
       eq(await cardSites(other), THIGH.slice(1, 4), "the next ones");
@@ -147,15 +161,16 @@ module.exports = [
         await p.click(`${M} #doseLogBtn`);
         logged.push((await history(tab))[0][1].replace("5 mg|", ""));
       }
-      eq(logged, ["Abd L upper", "Thigh L front upper", "Abd R lower", "Thigh R outer middle", "Abd L lower", "Thigh L outer lower", "Abd R upper",
-        "Thigh R front upper", "Abd L upper", "Thigh L front middle"], "the abdomen starting over every fourth of its turns, the thighs going on");
-      eq(await cardSites(tab), [ABD[1], THIGH[5], ABD[2]], "the next ones");
+      eq(logged, ["Abd L upper", "Thigh R outer middle", "Thigh L outer lower", "Abd R lower", "Abd L lower", "Thigh R front upper", "Thigh L front middle",
+        "Abd R upper", "Abd L upper", "Thigh R outer lower"], "left and right in turn, each part too, each going on through its X");
+      eq(await cardSites(tab), [THIGH[6], ABD[1], ABD[2]], "the next ones");
 
-      // Start-up info: the buttocks on. Their turn comes after the thigh's, starting at their first site.
+      // Start-up info: the buttocks on. Their turn comes after the thigh's, starting at their first site (on the left);
+      // with three parts, they take turns one at a time.
       eq(await startupShown(tab), [true, true], "start-up info asks");
       for (const id of ["glute-l-upper", "glute-r-lower", "glute-l-lower", "glute-r-upper"]) await tapSite(tab, id);
       await saveStartup(tab);
-      eq(await cardSites(tab), [GLUTE[0], ABD[1], THIGH[5]], "buttock, abdomen, thigh");
+      eq(await cardSites(tab), [GLUTE[0], ABD[1], THIGH[6]], "buttock, abdomen, thigh");
       eq(await bugLine(tab), "- Injection sites on: 20", "20 on");
     }
   },
@@ -167,10 +182,11 @@ module.exports = [
       await importBackup(tab, gen.bosco({ lastDose: D(-7), sites: ["abd-l", "thigh-l-upper"], doseSites: ["abd-l", "thigh-r-middle"] }));
       eq(await sitesOn(tab), ["abd-l-upper", "abd-l-lower", "thigh-l-front-upper", "thigh-l-side-upper"], "both left abdomen heights, both left upper thigh faces");
       eq((await history(tab)).slice(0, 3).map(r => r[1]), ["5 mg|Thigh R middle", "5 mg|Abdomen L", "5 mg"], "History reads as it did");
-      // The abdomen's turn, on from Abd L upper (what abd-l stands for); the thigh on from its front middle (off now).
+      // The last dose on the right thigh (front middle, what thigh-r-middle stands for): the thigh's left, on from it.
+      // Then only left sites are on: a side repeats, the parts taking turns (the abdomen on from Abd L upper, what abd-l stands for).
       const pop = await popup(tab);
-      eq([pop.open, pop.picked], [true, ABD[2]], "the dose due: Abd L lower");
-      eq(await cardSites(tab), [ABD[2], THIGH[0], ABD[0]], "the next ones");
+      eq([pop.open, pop.picked], [true, THIGH[0]], "the dose due: Thigh L front upper");
+      eq(await cardSites(tab), [THIGH[0], ABD[2], THIGH[6]], "the next ones");
       await p.click(`${M} #doseSnoozeBtn`); // Not yet: the pop-up would cover Developer Mode's badge
       const backup = await exportBackup(tab);
       eq([backup.sites, entrySite(backup, D(-14)), entrySite(backup, D(-7))], [["abd-l-upper", "abd-l-lower", "thigh-l-front-upper", "thigh-l-side-upper"], "abd-l", "thigh-r-middle"],
@@ -192,20 +208,20 @@ module.exports = [
       await devPanel(tab, true);
       eq(await devSites(tab), { next: `Next dose: ${ABD[0]}`, skipped: "", skip: true, undo: false }, "the next dose's site");
 
-      // Skip: the abdomen's next site; again: the one after. The thigh's turn and the dose after stay as they were.
+      // Skip: the abdomen's next site; again: the one after. The thighs' turn follows, on the other side each time.
       await p.click("#boscoSkipBtn");
       eq(await devSites(tab), { next: `Next dose: ${ABD[1]}`, skipped: `Skipped: ${ABD[0]}.`, skip: true, undo: true }, "skipped once");
-      eq(await cardSites(tab), [ABD[1], THIGH[0], ABD[2]], "the cards");
+      eq(await cardSites(tab), [ABD[1], THIGH[0], THIGH[1]], "the cards");
       await p.click("#boscoSkipBtn");
       eq((await devSites(tab)).next, `Next dose: ${ABD[2]}`, "skipped twice");
-      eq(await cardSites(tab), [ABD[2], THIGH[0], ABD[3]], "the cards again");
+      eq(await cardSites(tab), [ABD[2], THIGH[1], THIGH[2]], "the cards again");
       eq(await bugLine(tab, "- Sites skipped"), "- Sites skipped: 2", "the bug report's count");
       eq((await exportBackup(tab)).skipSites, ["abd-l-upper", "abd-r-lower"], "Export carries them");
 
       // Undo skips: back as planned.
       await p.click("#boscoUnskipBtn");
       eq(await devSites(tab), { next: `Next dose: ${ABD[0]}`, skipped: "", skip: true, undo: false }, "undone");
-      eq(await cardSites(tab), [ABD[0], THIGH[0], ABD[1]], "the cards as planned");
+      eq(await cardSites(tab), [ABD[0], THIGH[1], THIGH[2]], "the cards as planned");
 
       // Skipped once more, then the dose logged (at the site it went to): the skip is forgotten, the abdomen goes on from there.
       await p.click("#boscoSkipBtn");
@@ -214,19 +230,27 @@ module.exports = [
       eq((await popup(tab)).picked, ABD[1], "the pop-up plans the next site");
       await p.click(`${M} #doseLogBtn`);
       eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R lower"], "logged there");
-      eq(await cardSites(tab), [THIGH[0], ABD[2], THIGH[1]], "on from it");
+      eq(await cardSites(tab), [THIGH[0], THIGH[1], ABD[2]], "on from it");
       eq([(await exportBackup(tab)).skipSites, await bugLine(tab, "- Sites skipped")], [null, "- Sites skipped: 0"], "forgotten");
 
-      // Only the abdomen's left upper and the left arm on, the last dose at the arm: the abdomen's turn. Skipping its one
-      // site gives the turn to the arm; the arm's site is then the last one left, so it can't be skipped.
+      // Only the abdomen's right lower and both arms on, the last dose at the left arm: the abdomen's turn, on the right.
+      // Skipping its one site gives the turn to the right arm; nothing else on the right is left, so it can't be skipped.
       const two = await open(t, { app: "bosco", size: DESKTOP });
-      await importBackup(two, gen.bosco({ lastDose: D(-7), sites: ["abd-l-upper", "arm-l"], doseSites: ["arm-l"] }));
+      await importBackup(two, gen.bosco({ lastDose: D(-7), sites: ["abd-r-lower", "arm-l", "arm-r"], doseSites: ["arm-l"] }));
       await two.page.click(`${M} #doseSnoozeBtn`);
-      eq(await cardSites(two), [ABD[0], ARM[0], ABD[0]], "the two parts take turns");
+      eq(await cardSites(two), [ABD[1], ARM[1], ARM[0]], "right, right arm (the abdomen has no left on), left");
       await devPanel(two, true);
       await two.page.click("#boscoSkipBtn");
-      eq(await devSites(two), { next: `Next dose: ${ARM[0]}`, skipped: `Skipped: ${ABD[0]}.`, skip: false, undo: true }, "the arm's turn; no more skips");
-      eq(await cardSites(two), [ARM[0], ABD[0], ARM[0]], "the cards");
+      eq(await devSites(two), { next: `Next dose: ${ARM[1]}`, skipped: `Skipped: ${ABD[1]}.`, skip: false, undo: true }, "the right arm's turn; no more skips");
+      eq(await cardSites(two), [ARM[1], ARM[0], ABD[1]], "the cards");
+
+      // Only left sites on, the last dose at the left arm: the abdomen's left upper, the one site off the arm's side. A skip
+      // would put the arm on its own side again, so there's none.
+      const three = await open(t, { app: "bosco", size: DESKTOP });
+      await importBackup(three, gen.bosco({ lastDose: D(-7), sites: ["abd-l-upper", "arm-l"], doseSites: ["arm-l"] }));
+      await three.page.click(`${M} #doseSnoozeBtn`);
+      await devPanel(three, true);
+      eq(await devSites(three), { next: `Next dose: ${ABD[0]}`, skipped: "", skip: false, undo: false }, "can't be skipped");
     }
   },
   {
@@ -237,7 +261,7 @@ module.exports = [
 
       // An older backup (no sites): the default rotation. Not yet for now.
       await importBackup(tab, gen.bosco({ lastDose: D(-7) }));
-      eq(await cardSites(tab), [ABD[0], THIGH[0], ABD[1]], "the default rotation");
+      eq(await cardSites(tab), [ABD[0], THIGH[1], THIGH[2]], "the default rotation");
       await p.click(`${M} #doseSnoozeBtn`);
 
       // A damaged one: unknown and repeated sites dropped (the rest in SITES' order), a site from a newer version kept as
@@ -301,7 +325,7 @@ module.exports = [
       eq(await cardSites(tab), [ARM[1], ARM[0], ARM[1]], "its sites, on from its dose's");
       eq((await history(tab))[0], ["Sep 30", "5 mg|Upper arm L"], "its dose's site");
       eq(await combine("skip"), true, "a newer save's skip");
-      eq(await cardSites(tab), [ARM[0], ARM[1], ARM[0]], "the next dose passes over the right arm");
+      eq(await cardSites(tab), [ARM[1], ARM[0], ARM[1]], "the right arm all the same: the left would repeat the arm's side");
       eq(await combine("older"), false, "an older copy, even saved later, changes nothing");
       eq(await combine("older", false), false, "nor saved earlier");
       backup = await exportBackup(tab);

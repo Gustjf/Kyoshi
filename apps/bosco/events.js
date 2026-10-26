@@ -181,10 +181,11 @@
   }
 
   // Developer Mode: start-up info; the next dose's injection site, with a skip for a week it isn't a good
-  // one (another press skips the new one too; never the last site left); the non-daily treatments' days between.
+  // one (another press skips the new one too; never the last site left that keeps sides switching); the non-daily
+  // treatments' days between.
   A.renderDev = box => {
     const next = A.doseSchedule()[0], site = next && next.site, skips = S.profile.skipSites || [];
-    const canSkip = !!site && A.activeSites().some(id => id !== site && !skips.includes(id));
+    const canSkip = !!site && !skips.concat(site).includes(A.nextSite(A.lastSites(), skips.concat(site))); // another site keeping the rule as well
     box.innerHTML = `<div class="dev-block"><button class="secondary small" id="boscoStartupBtn">Edit start-up info</button></div>
       <div class="dev-block">
         <div class="dev-block-head">Next dose: <strong>${!next ? "no dose scheduled" : site ? siteLabel(site) : "no site (every site is off)"}</strong></div>
@@ -193,7 +194,7 @@
           <button class="secondary small" id="boscoSkipBtn"${canSkip ? "" : " disabled"}>Skip this site</button>
           ${skips.length ? `<button class="secondary small" id="boscoUnskipBtn">Undo skips</button>` : ""}
         </div>
-        <div class="dev-hint">For when a site isn't a good candidate this week: the next dose goes to that body part's next site. Forgotten once a dose is logged.</div>
+        <div class="dev-hint">For when a site isn't a good candidate this week: the next dose goes to the next site that keeps sides switching. Forgotten once a dose is logged.</div>
       </div>`;
     box.querySelector("#boscoStartupBtn").addEventListener("click", () => {
       K.dev.toggle();

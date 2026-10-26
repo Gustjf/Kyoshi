@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "9.137", date: "2026-10-26", changes: [
+      "Injection sites: every dose now goes on the other side of the body from the last one, and never on the same side as that body part's last dose; the dose pop-up greys out the sites that would break this, and Developer Mode's Skip never does."
+    ] },
     { version: "9.037", date: "2026-10-26", changes: [
       "The retinoid build-ups are now simpler Non-daily treatments: name them in start-up info, set their days between in Developer Mode, and each card shows the day you last took it (\"10/25 - (yesterday)\") with Took it today; your retinoids and their days carry over."
     ] },
