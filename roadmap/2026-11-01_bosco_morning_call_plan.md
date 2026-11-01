@@ -122,13 +122,14 @@ acts on noise. Both are fixable without any new setting.
 ## Decisions (the architect's, 2026-11-01; the executing model adds its own small ones under Status)
 - **D1 — Where it lives: one new section, "This morning", right under Add Entry** (before Upcoming Doses), hidden
   until there's a weigh-in. It's the first thing seen after typing the weigh-in. One card: the call in large type, a
-  one-line reason, a small line with the trend and this morning's scale, and, when a change is pending, what it's
+  one-line reason, a small line with this morning's scale (the owner's choice, 2026-11-01: the smoothed trend's value
+  stays off the card, it's Phase 2's chart line and Developer Mode's table), and, when a change is pending, what it's
   leaning to. Nothing else on the page changes in Phase 1 (Current Trend's weekly rate and rolling average stay: the
   owner knows them). Not inside `.med`: it works with no GLP-1 medication.
 - **D2 — The trend is Holt's double exponential smoothing over calendar days**, α = 0.2, β = 0.1, level seeded at the
   first weigh-in, slope at the pace goal's rate (a loss of t% a week of that weight, per day; the sign flipped for a
   gain goal) (*The math*). So a change of the pace goal re-seeds the trend's first weeks only (the seed is forgotten by
-  the fourth week); the card's small line says "smoothed" so the owner knows it isn't the scale. It's a second derived
+  the fourth week); the trend's value isn't shown on the card (D1), so nothing on the page reads differently. It's a second derived
   series beside `averaged` (the 7-day averages), kept apart: **goals, ETAs, projections, the chart's goal tags and the
   progress image keep going by the 7-day average** (the invariant stands; changing what "reached" means is a separate
   decision the owner hasn't asked for).
@@ -233,11 +234,11 @@ from `K.util` and the constants from `A`.
   than refiltering).
 - `renderCall({ w, call })`: `$("callSection").hidden = !w.length`. Three states of the card:
   - **waiting** (no pace yet): the big line reads "First call after 14 days of weigh-ins" (or "… after 10 weigh-ins",
-    whichever is missing), the reason line what the trend is so far ("Trend 184.6 lb (smoothed) · this morning 183.9 lb").
+    whichever is missing), the small line this morning's scale ("This morning 183.9 lb").
   - **a call**: the big line "Eat fully" / "Eat normally" / "Eat a bit lighter" (class `call-fully` / `call-normal` /
     `call-lighter`); the reason line: "Your trend is losing 1.52% a week over the last two weeks — faster than your 1%
     goal." (or "on your 1% goal", "slower than your 1% goal"; "gaining" for a gain goal; the goal from
-    `fmtPacePct(g.weeklyPct)`); the small line "Trend 184.6 lb (smoothed) · this morning 183.9 lb" (`SEP` between), and when
+    `fmtPacePct(g.weeklyPct)`); the small line "This morning 183.9 lb" (the scale, never the trend's value), and when
     `pending`: "Leaning to Eat normally — one more morning like this and it changes." The label above the big line:
     "Today's call", or when the latest weigh-in isn't today (D7) "Thursday's call" (`fmtWeekday`) with "Weigh in for
     today's" after the small line.
