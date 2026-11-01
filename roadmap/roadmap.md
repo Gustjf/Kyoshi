@@ -4,7 +4,11 @@
 the plan you're running (its top sections and your phase).
 
 ## In progress
-Nothing right now.
+- `2026-11-01_bosco_morning_call_plan.md` — Bosco's morning call (eat fully / normally / a bit lighter) from a
+  smoothed trend (Holt, level + slope) and its two-week pace against the pace goal, with hysteresis and a two-morning
+  confirmation; nothing stored. Two phases for Opus at medium effort (the card; the chart's trend line and Developer
+  Mode's read-outs), and a third (the pace goal stepping down at goals) that waits for the owner's yes. Its top sections
+  hold the critique of the owner's EMA approach and the measured flip rates.
 
 ## How a plan is run
 1. A new session; the strongest model the budget allows for anything that touches stored data or sync. Say "Execute
