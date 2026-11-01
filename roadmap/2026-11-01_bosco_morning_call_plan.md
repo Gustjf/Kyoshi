@@ -79,6 +79,13 @@ acts on noise. Both are fixable without any new setting.
   slower one converges on its true pace within two weeks of its first call. The seed is forgotten by the fourth week.)
   With these settings on the owner's series: one-day forecast error 0.95 lb; the call changed once in 53 days (the
   first "Eat fully", which was true: the pace never dropped under 1.4% a week over any two weeks).
+- **Bosco's own Current Trend is right on average and jumpy day to day.** On the owner's last week the 7-day
+  weekly rate's status read Too fast, On pace, On pace, Slightly slow, Too slow, Slightly slow on six consecutive
+  mornings, while the 14-day pill read Too fast on the same mornings the 7-day one read Too slow: nothing about eating
+  changed, the scale wobbled and the colors followed. That's the gap the card fills: the same pace idea, steadied. In
+  the same noise study as below, a call built straight on the existing 14-day rate with the plan's hysteresis would
+  still change about 5 times in 8 weeks on an on-pace series, against 1.3 on the smoothed level: the smoothing earns
+  its place.
 - **The daily rule must not be the one-day gap.** The owner's rule (gap below −2.5 lb → fully, above −0.5 → lighter)
   flipped **23 times in 52 days**: it reads water. The pace of the smoothed level over 14 days, with the hysteresis
   below, flipped **0 times**; over 7 days, 3 times (two of them around a dose-day bump). The pace is read from the
