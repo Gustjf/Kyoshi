@@ -351,9 +351,11 @@ width scrolls sideways rather than breaking the panel; a backup with no doses sh
 **Maintenance mode (the owner's ask, 2026-11-01: a stable weight is the biggest goal; this part is settled, only its
 words aren't):** a pace goal of **0%** is allowed, with a range above 0 (`cleanPaceGoal`: `weeklyPct >= 0`, and
 `rangePct > 0` when it's 0, since every line would otherwise coincide). What follows from it, each a small change:
-start-up info's direction toggle gains "Hold weight" (stored as `dir: "hold"`, additive; an older copy of Bosco reads
-an unknown `dir` as… check `cleanPaceGoal`, which must keep accepting "lose" and "gain" and treat "hold" as `weeklyPct`
-0); its note reads "Green: holding within ±0.25% a week"; `paceStatus` treats a 0 target symmetrically (today a loss
+start-up info's direction toggle gains "Hold weight" (stored as `dir: "hold"` with `weeklyPct: 0`, additive; the
+cleaner keeps accepting "lose" and "gain" as they are. An older copy of Bosco rejects a hold goal (`cleanPaceGoal`
+takes only "lose"/"gain" and a target above 0) and falls back to the default 1% goal until it's updated, which is
+harmless: the goal is a preference carried with the data, nothing is lost, and the changelog says to reload every
+device); its note reads "Green: holding within ±0.25% a week"; `paceStatus` treats a 0 target symmetrically (today a loss
 beyond the band reads "fast"/"tooFast" but any gain beyond it jumps to "wrong": with t = 0 the gain side gets its yellow
 too, "Slightly up" / "Too far up", and "Wrong direction" is retired for a hold goal); `fmtPaceBand` says "±0.25%"
 instead of "0–0.25%"; the morning call's four lines fall out of D5 with t = 0 ("Eat fully" when losing more than r a
