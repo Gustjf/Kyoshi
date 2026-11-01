@@ -15,14 +15,17 @@ as weight drops. The owner's 53 days of weigh-ins were used to decide all of thi
 repo is public): the numbers below are errors, counts and rates, never a weight.
 
 **The owner runs a phase by saying:** `Execute phase N of roadmap/2026-11-01_bosco_morning_call_plan.md`. The
-decisions are made (D1–D11 below, the architect's; each has one line to change if wrong) and the math is written out in
-full, so nothing is left to derive before a phase runs.
+decisions are made (D1–D12 below, the architect's; each has one line to change if wrong) and the math is written out in
+full, so nothing is left to derive before a phase runs. The owner's additions of 2026-11-01, after the mock-up: a fourth
+call, red "Cut back", for when the trend has turned (D5, D10, D12: their biggest goal is a stable weight and healthy
+eating habits learned along the way, so a real climb needs a plain word); the card shows the scale only; and Phase 3
+must allow a 0% pace goal, maintenance mode, where the same four calls hold a weight.
 
 ## How to use this file (you, the executing model — Claude Opus, medium reasoning effort)
 1. Read the root `CLAUDE.md` (automatic), then **only** this file's top sections (down to the first phase) and **your
    phase**; skip the other phases. Then the phase's **Read first** list, and nothing else up front: every file's header
    says what it holds, and `apps/bosco/CLAUDE.md` has Bosco's map and data model. Don't scan the workspace.
-2. **Decisions:** D1–D11 are settled; the phases follow them. *The math* section is the specification: implement it as
+2. **Decisions:** D1–D12 are settled; the phases follow them. *The math* section is the specification: implement it as
    written (the constants, the order of the updates, the hysteresis, the two-morning confirmation); don't re-tune it.
    Everything else is settled in the phase text or is yours to judge (small UI details, exact wording in the owner's
    plain voice). A choice that would change how data is kept, or what the owner sees in a way this plan doesn't settle
@@ -54,7 +57,8 @@ full, so nothing is left to derive before a phase runs.
 - [ ] Phase 1 — the morning call: the smoothed trend, the two-week pace, the call with hysteresis, its card (Bosco
   +0.100 → 9.237).
 - [ ] Phase 2 — the trend on the chart; Developer Mode's walk and dose-cycle table (Bosco +0.100 → 9.337).
-- [ ] Phase 3 — (needs the owner's say first) the pace goal stepping down at goals.
+- [ ] Phase 3 — (needs the owner's answers first) maintenance mode (a 0% pace goal) and the pace goal stepping down at
+  goals.
 
 ## What the numbers say (the critique, on the owner's 53 days; the architect, 2026-11-01)
 The owner's EMA approach is sound in spirit and wrong in two places that matter: the smoothing lags, and the daily rule
@@ -143,8 +147,12 @@ acts on noise. Both are fixable without any new setting.
 - **D5 — The zones, from the pace goal already set (target t, range r, as `paceStatus` reads them):** the call toward
   eating *more* ("Eat fully": the pace is faster than a lose goal, slower than a gain goal) **enters** once the pace is
   more than `t + r` off in that direction and **leaves** once it's back to `t`; the call toward eating *less* ("Eat a
-  bit lighter") **enters** past `t ± 2r` and **leaves** once back within `t ± r`. With r = 0 both lines coincide at t
-  (the owner's choice to set r = 0; the default r is 0.25). Direction follows `paceGoal().dir` so a gain goal reads
+  bit lighter") **enters** past `t ± 2r` and **leaves** once back within `t ± r`; the fourth call, **"Cut back"** (the
+  owner's, 2026-11-01: for when they've really let themselves go), is one more step down the same ladder: it **enters**
+  past `t ± 3r` and **leaves** once back within `t ± 2r`. With t = 1 and r = 0.25: "lighter" below 0.5% a week, "Cut
+  back" below 0.25% a week, which is flat or gaining for two weeks; it never fires on a weekend or a dose-day bump
+  (the two-week pace and D6 see to that), and on the owner's 53 days it would never have fired. With r = 0 every line
+  coincides at t (the owner's choice to set r = 0; the default r is 0.25). Direction follows `paceGoal().dir` so a gain goal reads
   right. The architect's reasons: the cheap mistake comes in at the green edge, the costly one at the yellow edge; the
   measured flip rates are under *What the numbers say*, and the owner is advised to set r = 0.25. *To make it symmetric
   instead: enter both at `t ± 2r`, leave both at `t ± r`.*
@@ -157,13 +165,19 @@ acts on noise. Both are fixable without any new setting.
   scale's average departure from the trend by day since the last dose, with the count of cycles) so the owner can see
   whether one is ever warranted. The line to revisit this: a consistent swing of 0.5 lb or more on 12+ cycles.
 - **D9 — No calories anywhere.** The card speaks in pounds (or kg) and % a week only.
-- **D10 — Wording, the owner's three calls, verbatim:** "Eat fully", "Eat normally", "Eat a bit lighter". Colors from
-  the theme tokens: fully in the accent blue, normally in `--good`, lighter in `--warn`; never `--bad` (nothing is
-  wrong when you're behind pace). A gain goal uses the same three words.
+- **D10 — Wording, the owner's four calls, verbatim:** "Eat fully", "Eat normally", "Eat a bit lighter", "Cut back".
+  Colors from the theme tokens: fully in the accent blue (the owner's choice: it reads as "ahead", not as the target
+  state), normally in `--good`, lighter in `--warn`, cut back in `--bad` (as Bosco's "Wrong direction"). The reason
+  line under "Cut back" states the fact and nothing more ("Gaining 0.4% a week over the last two weeks — your goal is
+  losing 1%"), never a verdict: the risk of a red zone is a restrict-then-rebound cycle, and a plain fact plus the
+  hysteresis is the guard. A gain goal uses the same four words.
 - **D11 — The pace goal stays one number in this plan.** The owner lowers it by hand in start-up info at goals (the
   architect's suggestion, for the owner to take or leave: 1% to 170, 0.75% to 155, 0.5% to 145). Phase 3, a pace per
   goal that steps down on its own, touches stored data (`goals` / `goalsAsEntered` would gain a pace each) and sync, so
   it's only sketched here and waits for the owner's yes.
+- **D12 — Maintenance mode is Phase 3's, not Phase 1's.** Today `cleanPaceGoal` refuses a 0% target (`isPos(weeklyPct)`,
+  `rangePct < weeklyPct`), so holding a weight can't be set. Phase 1's walk is written so that t = 0 simply works once
+  it's allowed (every line is `t ± k·r`; the seed is 0); Phase 3 relaxes the cleaner and the words around it (below).
 
 ## The math (the specification for Phase 1; `apps/bosco/call.js`)
 All of it runs over `w`, the weigh-ins sorted by date (`weightEntries()`), in `S.unit`; nothing here rounds until it's
@@ -192,6 +206,8 @@ and `pending` (null to start). The zone the morning asks for, `wanted`:
 - from any state: `pct > t + r` → "fully" wanted … *but* if `state` is already "fully" it stays wanted while `pct > t`;
 - from any state: `pct < t − 2r` → "lighter" wanted … *but* if `state` is already "lighter" it stays wanted while
   `pct < t − r`;
+- from any state: `pct < t − 3r` → "cutback" wanted … *but* if `state` is already "cutback" it stays wanted while
+  `pct < t − 2r` (checked last, so it wins over "lighter" where both hold);
 - otherwise "normal" wanted.
 Then: `wanted === state` → `pending = null`; else `wanted === pending` → `state = wanted, pending = null`; else
 `pending = wanted`. A weigh-in without a pace leaves state and pending as they were. The function returns the list of
@@ -207,7 +223,11 @@ Worked checks (made-up, verified by the architect, for the tests; goal 1% ± 0.2
   morning (the pace then settles at 1.58% and 0.43%: the seed's memory, gone by the fourth week).
 - The on-pace line, then the scale 4 lb up and staying up: the first such morning reads 0.79% → still "Eat normally",
   nothing leaning; the second 0.59% (leaning, with r = 0.125; nothing yet with 0.25); with r = 0.25 the third morning
-  reads 0.43% and leans to "Eat a bit lighter", the fourth (0.28%) makes it the call.
+  reads 0.43% and leans to "Eat a bit lighter", the fourth (0.28%) makes it the call; held a fifth morning (0.16%) it
+  leans to "Cut back", the sixth (0.06%) makes it the call: a 4 lb rise that stays six days is no longer water.
+- The on-pace line, then the scale flat (the same weight every morning): "Eat a bit lighter" on the 11th flat morning,
+  "Cut back" on the 15th. The on-pace line, then gaining 0.5% a week: "Eat a bit lighter" on the 9th morning of the
+  climb, "Cut back" on the 11th.
 
 ## Phase 1 — the morning call: the smoothed trend, the two-week pace, the call, its card (Bosco +0.100 → 9.237)
 **Goal:** after a weigh-in, one line says what to do today, and it changes rarely and for a reason the card states.
@@ -235,9 +255,11 @@ from `K.util` and the constants from `A`.
 - `renderCall({ w, call })`: `$("callSection").hidden = !w.length`. Three states of the card:
   - **waiting** (no pace yet): the big line reads "First call after 14 days of weigh-ins" (or "… after 10 weigh-ins",
     whichever is missing), the small line this morning's scale ("This morning 183.9 lb").
-  - **a call**: the big line "Eat fully" / "Eat normally" / "Eat a bit lighter" (class `call-fully` / `call-normal` /
-    `call-lighter`); the reason line: "Your trend is losing 1.52% a week over the last two weeks — faster than your 1%
-    goal." (or "on your 1% goal", "slower than your 1% goal"; "gaining" for a gain goal; the goal from
+  - **a call**: the big line "Eat fully" / "Eat normally" / "Eat a bit lighter" / "Cut back" (class `call-fully` /
+    `call-normal` / `call-lighter` / `call-cutback`); the reason line: "Losing 1.52% a week over the last two weeks —
+    faster than your 1% goal." (or "on your 1% goal", "slower than your 1% goal"; a pace going the wrong way reads
+    "Gaining 0.4% a week over the last two weeks — your goal is losing 1%", and "Holding steady" when it rounds to
+    0.0%; "gaining"/"losing" swap for a gain goal; the goal from
     `fmtPacePct(g.weeklyPct)`); the small line "This morning 183.9 lb" (the scale, never the trend's value), and when
     `pending`: "Leaning to Eat normally — one more morning like this and it changes." The label above the big line:
     "Today's call", or when the latest weigh-in isn't today (D7) "Thursday's call" (`fmtWeekday`) with "Weigh in for
@@ -248,7 +270,7 @@ from `K.util` and the constants from `A`.
 ### 1.3 The section (`markup.js`, ~10 lines; `bosco.css`, ~8 lines)
 After Add Entry's `</section>`: `<section id="callSection" hidden><h2>This morning</h2><div class="stat call"> … </div>
 </section>` with ids `callLabel`, `callText` (the big line, class `val`), `callWhy`, `callNote`, `callLean`. CSS under
-`.app-bosco`: `.call .val` larger (about 1.5em) and the three colors (D10: `--accent`, `--good`, `--warn`); the card
+`.app-bosco`: `.call .val` larger (about 1.5em) and the four colors (D10: `--accent`, `--good`, `--warn`, `--bad`); the card
 full width (`.call { min-width: 100%; }`); nothing that breaks at phone width.
 
 ### 1.4 Hooks (`events.js`, ~2 lines)
@@ -259,8 +281,8 @@ full width (`.call { min-width: 100%; }`); nothing that breaks at phone width.
 - `apps/bosco/CLAUDE.md`: the files table gains `call.js`; the description line at the top mentions the morning call;
   *Invariants* gains one: "The morning call is derived, never stored: Holt's smoothing (α 0.2, β 0.1) over calendar
   days, the level's pace over 14 days against the pace goal, 'Eat fully' in at the green edge and out at the target,
-  'Eat a bit lighter' in at the yellow edge and out at the green one, a change only on two mornings in a row; goals keep
-  going by the 7-day average." The root `CLAUDE.md`'s `bosco/` map line gains "a morning call (eat fully / normally /
+  'Eat a bit lighter' in at the yellow edge and out at the green one, 'Cut back' in one range past the yellow edge and
+  out at it, a change only on two mornings in a row; goals keep going by the 7-day average." The root `CLAUDE.md`'s `bosco/` map line gains "a morning call (eat fully / normally /
   a bit lighter) from a smoothed trend".
 - `tests/bosco-call.test.js` (new; made-up weigh-ins built in the test from a line, no noise, so every number below is
   exact; each test imports them with `importBackup(tab, gen.bosco({ doses: 0, weights }))` with the backup's `paceGoal`
@@ -274,8 +296,10 @@ full width (`.call { min-width: 100%; }`); nothing that breaks at phone width.
      level within 0.3 lb of the line, slope within 0.05 of −0.4 (the worked check above).
   4. **One wild morning doesn't flip it:** on the on-pace series, a morning 4 lb up → still "Eat normally", nothing
      leaning; the scale staying 4 lb up → the third such morning leans, the fourth makes it "Eat a bit lighter" (the
-     worked check). Then the first wild weigh-in corrected back (re-added in Add Entry, the confirm accepted) → the
-     card recomputes from the corrected series.
+     worked check); held two more mornings → "Cut back" in red, the reason line starting "Holding steady" or
+     "Gaining". Then the first wild weigh-in corrected back (re-added in Add Entry, the confirm accepted) → the card
+     recomputes from the corrected series. And the on-pace line followed by 21 flat mornings: "Eat a bit lighter" on
+     the 11th, "Cut back" on the 15th (the worked check).
   5. **Yesterday's call:** no weigh-in today → the label names the weekday and the card asks to weigh in; `travel(tab,
      1)` → the same, a day later.
   6. **A missed week:** a 7-day hole in the series → no console error, the pace uses the days actually apart (check
@@ -323,16 +347,32 @@ lines between weigh-ins).
 **Checks (by hand):** the dashed line sits through the dots (not above them, as an EMA would); the dev table at phone
 width scrolls sideways rather than breaking the panel; a backup with no doses shows the cycle block's "Not enough".
 
-## Phase 3 — the pace goal stepping down at goals (sketch; needs the owner's yes, then a phase written in full)
-**What it would be:** each goal weight carries the pace to use *until it's reached* (default: the one pace goal, so
-nothing changes for anyone who doesn't set them); `paceGoal()` returns the pace of the nearest goal not yet reached;
-the morning call, Current Trend's colors and start-up info's note follow it. The owner's ladder, if they want the
-architect's suggestion: 1% to 170, 0.75% to 155, 0.5% to 145 (lb).
+## Phase 3 — maintenance mode, and the pace goal stepping down at goals (sketch; needs the owner's answers, then a phase written in full)
+**Maintenance mode (the owner's ask, 2026-11-01: a stable weight is the biggest goal; this part is settled, only its
+words aren't):** a pace goal of **0%** is allowed, with a range above 0 (`cleanPaceGoal`: `weeklyPct >= 0`, and
+`rangePct > 0` when it's 0, since every line would otherwise coincide). What follows from it, each a small change:
+start-up info's direction toggle gains "Hold weight" (stored as `dir: "hold"`, additive; an older copy of Bosco reads
+an unknown `dir` as… check `cleanPaceGoal`, which must keep accepting "lose" and "gain" and treat "hold" as `weeklyPct`
+0); its note reads "Green: holding within ±0.25% a week"; `paceStatus` treats a 0 target symmetrically (today a loss
+beyond the band reads "fast"/"tooFast" but any gain beyond it jumps to "wrong": with t = 0 the gain side gets its yellow
+too, "Slightly up" / "Too far up", and "Wrong direction" is retired for a hold goal); `fmtPaceBand` says "±0.25%"
+instead of "0–0.25%"; the morning call's four lines fall out of D5 with t = 0 ("Eat fully" when losing more than r a
+week, "lighter" when gaining more than 2r, "Cut back" past 3r: with r = 0.25 that's gaining ¾% a week, about 1.3 lb,
+for two weeks), the seed is 0, and the reason line reads "Losing 0.4% a week over the last two weeks — more than your
+hold" / "Holding steady" / "Gaining 0.6% a week — more than your hold". The weekly rate's projections with a 0 rate
+already read "Flat rate". Tests: a hold goal set in start-up info, the four calls on made-up flat, drifting-down and
+climbing series, an old backup with "lose" unchanged.
+**The pace stepping down (open):** each goal weight carries the pace to use *until it's reached* (default: the one pace
+goal, so nothing changes for anyone who doesn't set them); `paceGoal()` returns the pace of the nearest goal not yet
+reached, and the last goal's "until reached" pace is followed by the hold (0%) once it's reached, so the ladder ends in
+maintenance by itself; the morning call, Current Trend's colors and start-up info's note follow it. The owner's ladder,
+if they want the architect's suggestion: 1% to 170, 0.75% to 155, 0.5% to 145 (lb), then hold.
 **What it touches:** stored data — a pace on each goal (`goals` are bare numbers; `goalsAsEntered` is the parallel
 list that could carry `{ weight, unit, pacePct, rangePct }` additively), so `normalizeBackup`, `combine` (goals are
 joined from both saves; a pace on the same goal from two devices needs a rule: the later `savedAt`'s, as the dosing
 plan does), `importBackup`, the goals table (a pace column or a note per row) and older copies of Bosco dropping the
 field when they save (the changelog's "Reload Bosco on every device"). Bosco +1.
-**Questions for the owner before planning it:** (a) do you want it at all, or will you lower the one pace goal by hand
-at each goal? (b) a pace per goal, or a single rule ("drop by 0.25% at each goal from 170 down")? (c) should the
-morning call's band widen as the pace drops (0.5% ± 0.125% is a tight band)?
+**Questions for the owner before planning it:** (a) the stepping down: do you want it at all, or will you lower the
+one pace goal by hand at each goal and switch to Hold at the last? (b) a pace per goal, or a single rule ("drop by
+0.25% at each goal from 170 down")? (c) should the morning call's band widen as the pace drops (0.5% ± 0.125% is a
+tight band; in maintenance the architect suggests 0% ± 0.25%)?
