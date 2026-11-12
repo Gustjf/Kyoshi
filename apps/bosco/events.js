@@ -6,7 +6,7 @@
   "use strict";
   const S = A.S, $ = A.$;
   const { isDate, isPos, todayStr, fmtDate } = K.util;
-  const { hasWeight, hasDose, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
+  const { hasWeight, hasDose, dosesOf, medLabel, fmtDateBrief, siteLabel, readNumber } = A;
 
   // Adds a weigh-in. Doses aren't added here: they're logged by confirming them.
   function addEntry() {
@@ -83,10 +83,23 @@
       $("customRateWrap").hidden = value !== "custom";
       A.renderAll();
     });
-    onToggle($("oneTimeInfoFields"), "data-value", (value, btn) => {
-      btn.parentElement.dataset.value = value;
-      if (btn.parentElement.id === "oneTimeInput_medication") A.renderDosing(); // dosing is per medication
+    onToggle($("oneTimeInfoFields"), "data-value", (value, btn) => { btn.parentElement.dataset.value = value; });
+    // The medications: as many as you take, or None (the buttons lit as picked, the pick kept in data-value: "a,b" or
+    // "none"); the dosing then shows each one picked.
+    onButton($("oneTimeInfoFields"), ".multi button[data-pick]", btn => {
+      const box = btn.parentElement, none = btn.dataset.pick === "none";
+      box.querySelectorAll("button").forEach(b => {
+        if (none || b === btn) b.classList.toggle("active", none ? b === btn : !b.classList.contains("active"));
+        else if (b.dataset.pick === "none") b.classList.remove("active");
+      });
+      const picked = [...box.querySelectorAll("button.active")].map(b => b.dataset.pick).filter(v => v !== "none");
+      if (!picked.length) box.querySelector('button[data-pick="none"]').classList.add("active");
+      box.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.classList.contains("active")));
+      box.dataset.value = picked.join(",") || "none";
+      A.renderDosing();
     });
+    // The dosing shows one medication at a time: a button each.
+    onButton($("dosingMedToggle"), "button[data-dosing-med]", btn => A.showDosingFor(btn.dataset.dosingMed));
     $("dosingBox").addEventListener("input", A.updateDosingNotes);
     onToggle($("paceDirToggle"), "data-pace-dir", A.updatePaceNote);
     $("paceBox").addEventListener("input", A.updatePaceNote);
@@ -106,20 +119,22 @@
       // Deleting always asks: a dose (only ever logged by confirming it) with that day's weigh-in, or the weigh-in.
       const day = S.entries.find(e => e.date === btn.dataset.date);
       if (!day) return;
-      const what = hasDose(day) ? `the ${day.doseMg} mg ${medLabel(day.medication)} dose logged ${fmtDate(day.date)}${hasWeight(day) ? ", and that day's weigh-in" : ""}`
+      const doses = dosesOf(day).map(d => `${d.doseMg} mg ${medLabel(d.medication)}`), both = doses.length > 1;
+      const what = hasDose(day) ? `the ${both ? `${doses.slice(0, -1).join(", ")} and ${doses[doses.length - 1]} doses` : `${doses[0]} dose`} logged ${fmtDate(day.date)}${hasWeight(day) ? ", and that day's weigh-in" : ""}`
         : `the weigh-in of ${day.weight.toFixed(1)} ${S.unit} on ${fmtDateBrief(day.date)}`;
       if (!confirm(`Delete ${what}? This can't be undone.`)) return;
       A.forget(day.date); // kept as a marker, so sync doesn't bring it back
       A.save();
       A.renderAll();
     });
-    onButton($("upcomingDosesGrid"), "button[data-set-anchor]", () => {
+    onButton($("upcomingDosesSection"), "button[data-set-anchor]", btn => {
       A.renderOneTimeInfo(true);
+      A.showDosingFor(btn.dataset.med);
       A.openAnchorEditor();
       $("dosingBox").scrollIntoView({ behavior: "smooth", block: "center" });
     });
-    onButton($("upcomingDosesGrid"), "button[data-confirm-dose]", btn => {
-      const dose = A.doseSchedule().find(d => d.date === btn.dataset.confirmDose);
+    onButton($("upcomingDosesSection"), "button[data-confirm-dose]", btn => {
+      const dose = A.doseSchedule(btn.dataset.med).find(d => d.date === btn.dataset.confirmDose);
       if (dose) A.openDoseModal(dose);
     });
     // Esc and a click beside the dose pop-up count as "Not yet".
@@ -188,7 +203,7 @@
     const canSkip = !!site && !skips.concat(site).includes(A.nextSite(A.lastSites(), skips.concat(site))); // another site keeping the rule as well
     box.innerHTML = `<div class="dev-block"><button class="secondary small" id="boscoStartupBtn">Edit start-up info</button></div>
       <div class="dev-block">
-        <div class="dev-block-head">Next dose: <strong>${!next ? "no dose scheduled" : site ? siteLabel(site) : "no site (every site is off)"}</strong></div>
+        <div class="dev-block-head">Next dose${next && A.medications().length > 1 ? ` (${medLabel(next.medication)})` : ""}: <strong>${!next ? "no dose scheduled" : site ? siteLabel(site) : "no site (every site is off)"}</strong></div>
         ${skips.length ? `<div class="dev-hint">Skipped: ${skips.map(siteLabel).join("; ")}.</div>` : ""}
         <div class="dev-actions">
           <button class="secondary small" id="boscoSkipBtn"${canSkip ? "" : " disabled"}>Skip this site</button>
@@ -208,12 +223,12 @@
 
   // Bug reports leave out every weight, dose, and date (the non-daily treatments: counts only).
   A.bugState = () => {
-    const med = A.currentMedication(), schedule = A.doseSchedule();
+    const meds = A.medications(), schedule = A.doseSchedule(), each = has => (meds.length ? meds.map(m => (has(m) ? "yes" : "no")).join(", ") : "no");
     return [
       `- Unit: ${S.unit}`,
-      `- GLP-1 medication: ${med}`,
+      `- GLP-1 medication: ${meds.join(", ") || "none"}`,
       `- Start-up asked: medication ${S.profile.medicationAsked ? "yes" : "no"}, dosing v${A.askedVersion(S.profile.dosingAsked)}`,
-      `- Dosing plan / active vial saved: ${A.planFor(med) ? "yes" : "no"} / ${A.activeVial() ? "yes" : "no"}`,
+      `- Dosing plan / active vial saved: ${each(A.planFor)} / ${each(A.vialFor)}`,
       `- Scheduled doses / due: ${schedule.length} / ${schedule.filter(d => d.due).length}`,
       `- Injection sites on: ${A.activeSites().length}${S.profile.sites ? "" : " (default)"}`,
       `- Sites skipped: ${(S.profile.skipSites || []).length}`,

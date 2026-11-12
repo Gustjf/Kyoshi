@@ -1,5 +1,6 @@
-/* Bosco · setup.js — the Get Started section (start-up info): the one-time questions,
- * the dosing plan with its anchor dose and injection sites, the active vial calculator and
+/* Bosco · setup.js — the Get Started section (start-up info): the one-time questions (the medications: as many as
+ * you take), each medication's dosing plan with its anchor dose and its active vial calculator (one medication showing
+ * at a time, a button each, what's typed kept while another shows), the injection sites (one rotation for all) and
  * the weekly pace goal (the non-daily treatments' list below them: treatments.js); saveOneTimeInfo checks and keeps them. Developer Mode reopens it to
  * edit everything. */
 (function (K, A) {
@@ -25,6 +26,13 @@
     $("oneTimeInfoFields").innerHTML = fields.map(f => {
       const id = "oneTimeInput_" + f.key;
       if (f.type === "text") return `<div><label for="${id}">${f.label}</label><input type="text" id="${id}" placeholder="${f.placeholder}"></div>`;
+      // The medications: a button each, lit for each taken (None lit for none); the pick kept in data-value ("a,b", "none").
+      if (f.type === "multi") {
+        const on = A.medications(), lit = v => (v === "none" ? !on.length : on.includes(v));
+        return `<div class="full-row"><label>${f.label}</label><div class="mode-toggle many multi" role="group" id="${id}" data-value="${on.join(",") || "none"}">${
+          f.options.map(([v, text]) => `<button type="button" class="mode-btn${lit(v) ? " active" : ""}" data-pick="${v}" aria-pressed="${lit(v)}">${text}</button>`).join("")
+        }</div></div>`;
+      }
       // Choices render as a button toggle; the pick is kept in data-value.
       const options = f.type === "boolean" ? [[true, "Yes"], [false, "No"]] : f.options.map(o => (Array.isArray(o) ? o : [o, o]));
       const current = options.some(([v]) => v === profile[f.key]) ? profile[f.key] : f.default;
@@ -34,6 +42,8 @@
       }</div></div>`;
     }).join("");
     fields.filter(f => f.type === "text").forEach(f => { $("oneTimeInput_" + f.key).value = profile[f.key] || ""; });
+    S.dosingDrafts = {};
+    S.dosingMed = null;
     renderDosing();
     renderSites(); // not with the rest of the dosing: picking another medication keeps what's toggled here
     renderPaceGoal();
@@ -42,24 +52,54 @@
     A.renderTreatmentsSetup();
   }
 
-  // The medication picked in start-up info, or the current one if it isn't being asked.
-  function formMedication() {
+  // The medications picked in start-up info, or those taken if it isn't asking; the first taken stays first (older
+  // copies and Momo's ids go by it), the others in MEDICATIONS' order.
+  function formMedications() {
     const el = $("oneTimeInput_medication");
-    return el ? el.dataset.value : A.currentMedication();
+    if (!el) return A.medications();
+    const picked = el.dataset.value === "none" ? [] : el.dataset.value.split(","), first = A.medications()[0];
+    return picked.includes(first) ? [first, ...picked.filter(m => m !== first)] : picked;
+  }
+  // The medication whose dosing shows.
+  const formMedication = () => S.dosingMed;
+
+  // The dosing plans and vials in start-up info, for the medications picked there: one showing at a time, a button
+  // each (with two or more), the one showing kept while it's still picked.
+  function renderDosing() {
+    const meds = formMedications();
+    $("dosingBox").hidden = !S.dosingAsking || !meds.length;
+    $("sitesShared").hidden = meds.length < 2;
+    if (!meds.length) return;
+    $("dosingMedToggle").hidden = meds.length < 2;
+    $("dosingMedToggle").innerHTML = meds.map(m => `<button type="button" class="pill" data-dosing-med="${m}">${medLabel(m)}</button>`).join("");
+    showDosingFor(meds.includes(S.dosingMed) ? S.dosingMed : meds[0]);
   }
 
-  // The dosing plan and vial in start-up info, for the medication picked there.
-  function renderDosing() {
-    const med = formMedication(), plan = planFor(med);
-    $("dosingBox").hidden = !S.dosingAsking || med === "none";
-    S.vialEditing = false;
-    if (med === "none") return;
+  // What's typed in the dosing showing, kept while another medication's shows.
+  const typedDosing = () => ({ interval: $("doseIntervalInput").value, weekly: $("weeklyDoseInput").value, time: $("doseTimeInput").value,
+    anchorEditing: S.anchorEditing, anchorDate: $("anchorDateInput").value,
+    vialEditing: S.vialEditing, vialMode: S.vialMode, vialMg: $("vialMgInput").value, bacMl: $("bacMlInput").value, conc: $("vialConcInput").value });
+
+  // Shows a medication's dosing: as typed, if it was, else its saved plan and vial.
+  function showDosingFor(med) {
+    if (S.dosingMed) S.dosingDrafts[S.dosingMed] = typedDosing();
+    S.dosingMed = med;
+    const d = S.dosingDrafts[med], plan = planFor(med);
+    $("dosingMedToggle").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.dosingMed === med));
     $("dosingTitle").textContent = `${medLabel(med)} dosing`;
     $("weeklyDoseInput").placeholder = `e.g. ${MEDICATIONS[med].example}`;
-    $("doseIntervalInput").value = (plan && plan.intervalDays) || "";
-    $("weeklyDoseInput").value = (plan && plan.weeklyMg) || "";
-    $("doseTimeInput").value = (plan && plan.doseTime) || "";
-    S.anchorEditing = false;
+    $("doseIntervalInput").value = d ? d.interval : (plan && plan.intervalDays) || "";
+    $("weeklyDoseInput").value = d ? d.weekly : (plan && plan.weeklyMg) || "";
+    $("doseTimeInput").value = d ? d.time : (plan && plan.doseTime) || "";
+    S.anchorEditing = !!(d && d.anchorEditing);
+    $("anchorDateInput").value = d ? d.anchorDate : "";
+    S.vialEditing = !!(d && d.vialEditing);
+    if (S.vialEditing) {
+      $("vialMgInput").value = d.vialMg;
+      $("bacMlInput").value = d.bacMl;
+      $("vialConcInput").value = d.conc;
+      setVialMode(d.vialMode);
+    }
     renderAnchor();
     renderVial();
   }
@@ -78,7 +118,7 @@
   // What the schedule counts from, with a button that shows the anchor dose date
   // (for starting or restarting doses; left blank, it changes nothing).
   function renderAnchor() {
-    const last = A.lastDoseDate(), set = A.setNextDose(planFor(formMedication()), last);
+    const last = A.lastDoseDate(formMedication(), formMedications()), set = A.setNextDose(planFor(formMedication()), last);
     const day = d => `${fmtWeekday(d)}, ${fmtDateBrief(d)}`;
     $("anchorSummary").textContent = set ? `Next dose set for ${day(set)}.` : last ? `Counting from your last dose, ${day(last)}.` : "No dose to count from yet.";
     $("setAnchorBtn").hidden = S.anchorEditing;
@@ -100,7 +140,7 @@
       alert("Please finish entering the anchor dose date, or leave it blank.");
       return false;
     }
-    const date = $("anchorDateInput").value, last = A.lastDoseDate();
+    const date = $("anchorDateInput").value, last = A.lastDoseDate(formMedication(), formMedications());
     if (!date) return null;
     if (date <= last) {
       alert(`An anchor dose has to come after your last dose (${fmtDate(last)}).`);
@@ -112,15 +152,15 @@
     return { after: last, date };
   }
 
-  // The active vial (or none) with a button to change it, or the calculator for a new one.
+  // The medication's active vial (or none) with a button to change it, or the calculator for a new one.
   function renderVial() {
-    const med = formMedication(), vial = vialFor(med), other = vial ? null : S.profile.vial;
+    const vial = vialFor(formMedication());
     const saved = vial && new Date(vial.savedAt);
     $("vialSummary").hidden = S.vialEditing;
     $("vialEditor").hidden = !S.vialEditing;
     $("vialSummaryText").innerHTML = vial
       ? `<strong>${fmtConc(vial.mgPerMl)}</strong><span class="muted">${vial.vialMg ? `${SEP}${fmtNum(vial.vialMg, 2)} mg + ${fmtNum(vial.bacMl, 2)} mL BAC water` : ""}${isNaN(saved) ? "" : `${SEP}saved ${fmtDateBrief(localDate(saved))}`}</span>`
-      : other ? `Your active vial is for ${medLabel(other.medication)}.` : "No active vial yet.";
+      : "No active vial yet.";
     $("changeVialBtn").textContent = vial ? "Change vial" : "Add vial";
     updateDosingNotes();
   }
@@ -186,13 +226,11 @@
     return isPos(vialMg) ? { mgPerMl: vialMg / bacMl, vialMg, bacMl } : invalid("Please enter the vial's total mg as a positive number.");
   }
 
-  // Only one vial is active, and upcoming doses' syringe units come from it, so
+  // A medication has one active vial, and its upcoming doses' syringe units come from it, so
   // opening the calculator over a saved vial warns first.
   function openVialEditor() {
-    const med = formMedication(), old = S.profile.vial, same = !!vialFor(med);
-    if (old && !confirm(same
-      ? `Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Upcoming doses work out their syringe units from it, so only change it when you start a new vial.`
-      : `Only one vial can be active. Saving a ${medLabel(med)} vial will replace your ${medLabel(old.medication)} vial (${fmtConc(old.mgPerMl)}). Continue?`)) return;
+    const med = formMedication(), old = vialFor(med), same = !!old;
+    if (old && !confirm(`Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Its upcoming doses work out their syringe units from it, so only change it when you start a new vial.`)) return;
     S.vialEditing = true;
     $("vialMgInput").value = same && old.vialMg ? old.vialMg : "";
     $("bacMlInput").value = same && old.bacMl ? old.bacMl : $("bacMlInput").defaultValue;
@@ -202,7 +240,7 @@
   }
 
   function storeVial(vial, med) {
-    S.profile.vial = { medication: med, ...vial, savedAt: new Date().toISOString() };
+    A.setVial({ medication: med, ...vial, savedAt: new Date().toISOString() });
     S.vialEditing = false;
   }
 
@@ -249,17 +287,25 @@
     $("paceNote").hidden = !g;
   }
 
-  // Save in start-up info. The dosing plan, an open vial calculator and the pace
-  // goal are checked first, so a bad entry there changes nothing.
+  // Save in start-up info. Each medication's dosing plan and open vial calculator, and the pace goal, are checked
+  // first, so a bad entry there changes nothing (and a medication's shows, to fix).
   function saveOneTimeInfo() {
     A.addTyped(); // a treatment typed in but not added yet goes in
-    const med = formMedication(), dosing = S.dosingAsking && med !== "none";
-    const plan = dosing ? enteredPlan() : null;
-    if (plan === false) return;
-    const vial = dosing && S.vialEditing ? enteredVial() : null;
-    if (vial === false) return;
-    const anchor = dosing ? enteredAnchor(plan.intervalDays) : null;
-    if (anchor === false) return;
+    const meds = formMedications(), dosing = S.dosingAsking && meds.length > 0, entered = [];
+    if (dosing) {
+      const showing = S.dosingMed;
+      for (const med of meds) {
+        showDosingFor(med);
+        const plan = enteredPlan();
+        if (plan === false) return;
+        const vial = S.vialEditing ? enteredVial() : null;
+        if (vial === false) return;
+        const anchor = enteredAnchor(plan.intervalDays);
+        if (anchor === false) return;
+        entered.push({ med, plan, vial, anchor });
+      }
+      showDosingFor(showing);
+    }
     const pace = S.paceAsking ? enteredPaceGoal() : null;
     if (pace === false) return;
     const sites = dosing ? [...$("sitePills").querySelectorAll("button.active")].map(b => b.dataset.site) : null;
@@ -267,7 +313,8 @@
     ONE_TIME_FIELDS.forEach(f => {
       const el = $("oneTimeInput_" + f.key);
       if (!el) return;
-      profile[f.key] = f.type === "text" ? el.value.trim() : f.type === "boolean" ? el.dataset.value === "true" : el.dataset.value;
+      if (f.type === "multi") A.setMedications(meds);
+      else profile[f.key] = f.type === "text" ? el.value.trim() : f.type === "boolean" ? el.dataset.value === "true" : el.dataset.value;
       if (f.optional) profile[f.key + "Asked"] = true;
     });
     if (S.dosingAsking && !(profile.dosingAsked >= DOSING_QUESTIONS_VERSION)) profile.dosingAsked = DOSING_QUESTIONS_VERSION; // never down
@@ -275,11 +322,13 @@
     // touched can't undo (through sync) a change made on another.
     if (sites && sites.join() !== A.activeSites().join()) profile.sites = sites;
     if (pace) profile.paceGoal = pace;
-    const oldPlan = planFor(med) || {};
-    if (plan && (anchor || Object.keys(plan).some(k => plan[k] !== (oldPlan[k] ?? null)))) {
-      profile.dosePlan = { medication: med, ...plan, nextDose: anchor || oldPlan.nextDose || null, savedAt: new Date().toISOString() };
-    }
-    if (vial) storeVial(vial, med); // its warning came when the calculator was opened
+    entered.forEach(({ med, plan, vial, anchor }) => {
+      const oldPlan = planFor(med) || {};
+      if (anchor || Object.keys(plan).some(k => plan[k] !== (oldPlan[k] ?? null))) {
+        A.setPlan({ medication: med, ...plan, nextDose: anchor || oldPlan.nextDose || null, savedAt: new Date().toISOString() });
+      }
+      if (vial) storeVial(vial, med); // its warning came when the calculator was opened
+    });
     S.unit = profile.unit || "lb";
     if (S.unit !== prevUnit) {
       // Changing units converts every stored weight, so nothing is ever mixed; goals from how each was typed.
@@ -295,7 +344,7 @@
   }
 
   Object.assign(A, {
-    renderOneTimeInfo, formMedication, renderDosing, renderSites, renderAnchor, openAnchorEditor, renderVial, setVialMode,
+    renderOneTimeInfo, formMedications, formMedication, renderDosing, showDosingFor, renderSites, renderAnchor, openAnchorEditor, renderVial, setVialMode,
     updateDosingNotes, openVialEditor, saveVial, renderPaceGoal, updatePaceNote, saveOneTimeInfo
   });
 })(Kyoshi, Kyoshi.apps.bosco);

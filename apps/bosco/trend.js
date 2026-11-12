@@ -112,7 +112,7 @@
   // Doses taken so far, totalled per medication: { medicationId: mg }.
   function cumulativeDoseMg() {
     const today = todayStr(), totals = {};
-    S.entries.filter(e => hasDose(e) && e.date <= today).forEach(e => { totals[e.medication] = (totals[e.medication] || 0) + e.doseMg; });
+    S.entries.filter(e => e.date <= today).flatMap(A.dosesOf).forEach(d => { totals[d.medication] = (totals[d.medication] || 0) + d.doseMg; });
     Object.keys(totals).forEach(k => { totals[k] = Math.round(totals[k] * 100) / 100; });
     return totals;
   }

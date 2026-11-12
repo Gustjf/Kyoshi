@@ -6,8 +6,10 @@ Kyoshi.apps.bosco.markup = `
   <section id="oneTimeInfoSection" hidden>
     <h2>Get Started</h2>
     <div class="row" id="oneTimeInfoFields"></div>
-    <!-- Dosing plan and the one active vial, for the medication picked above (or already chosen). -->
+    <!-- Each medication's dosing plan and active vial, for those picked above (or already chosen): one showing at a
+         time, a button each (setup.js); then the injection sites, one rotation for them all. -->
     <div class="dosing" id="dosingBox" hidden>
+      <div class="window-pills dosing-meds" id="dosingMedToggle" role="group" aria-label="Medication" hidden></div>
       <div class="subhead" id="dosingTitle">Dosing</div>
       <div class="dose-fields">
         <div>
@@ -38,10 +40,6 @@ Kyoshi.apps.bosco.markup = `
         </div>
         <div class="note">Only for starting or restarting doses: your schedule starts over with a dose on this day.</div>
       </div>
-      <!-- Where doses go: a button per injection site (as many on as you like), grouped by body part, in the order doses take them. -->
-      <div class="subhead sites-head" id="sitesLabel">Injection sites</div>
-      <div class="site-parts" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
-      <div class="note">Body parts with a site on take turns, top to bottom; within each, doses go through its sites that are on, in this order. A thigh's front faces the ceiling when you sit; its outer face is between buttock and thigh.</div>
       <div class="subhead vial-head">Active vial</div>
       <div id="vialSummary">
         <div class="summary-line">
@@ -82,6 +80,10 @@ Kyoshi.apps.bosco.markup = `
           <button type="button" class="secondary" id="cancelVialBtn">Cancel</button>
         </div>
       </div>
+      <!-- Where doses go: a button per injection site (as many on as you like), grouped by body part, in the order doses take them. -->
+      <div class="subhead sites-head" id="sitesLabel">Injection sites</div>
+      <div class="site-parts" id="sitePills" role="group" aria-labelledby="sitesLabel"></div>
+      <div class="note">Body parts with a site on take turns, top to bottom; within each, doses go through its sites that are on, in this order.<span id="sitesShared" hidden> Every medication's doses go through them together, in the order they fall.</span> A thigh's front faces the ceiling when you sit; its outer face is between buttock and thigh.</div>
     </div>
     <!-- The weekly pace Current Trend's weekly rate is colored against. -->
     <div class="pace-goal" id="paceBox" hidden>
@@ -132,13 +134,8 @@ Kyoshi.apps.bosco.markup = `
     </div>
   </section>
 
-  <section id="upcomingDosesSection" class="med" hidden>
-    <div class="vial-row">
-      <h2 id="upcomingDosesTitle">Upcoming Tirzepatide Doses</h2>
-      <span class="badge vial" id="upcomingVialBadge" hidden></span>
-    </div>
-    <div class="stat-grid" id="upcomingDosesGrid"></div>
-  </section>
+  <!-- A section per medication taken (render.js): "Upcoming Tirzepatide Doses", its vial's badge, its doses. -->
+  <div id="upcomingDosesSection" class="med" hidden></div>
 
   <!-- A card per non-daily treatment: the day last taken (treatments.js); not part of the GLP-1 dosing, so not .med. -->
   <section id="treatmentsSection" hidden>

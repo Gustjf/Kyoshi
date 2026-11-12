@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.137", date: "2026-11-12", changes: [
+      "Several GLP-1 medications at once (say Tirzepatide and Retatrutide): pick each one you take in start-up info, and each gets its own dosing plan, schedule, anchor dose and active vial, and its own Upcoming section; every dose still goes through one injection site rotation, the pop-up asks about one due dose at a time, and History lists a day's doses together. Reload Bosco on every device after updating."
+    ] },
     { version: "9.137", date: "2026-10-26", changes: [
       "Injection sites: every dose now goes on the other side of the body from the last one, and never on the same side as that body part's last dose; the dose pop-up greys out the sites that would break this, and Developer Mode's Skip never does."
     ] },

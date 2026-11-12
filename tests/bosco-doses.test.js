@@ -36,7 +36,7 @@ const PILLS = ["L upper", "R lower", "L lower", "R upper", "L front upper", "R o
   "L outer upper", "R front middle", "L front lower", "R outer upper", "L outer middle", "R front lower", "L upper", "R lower", "L lower", "R upper", "L", "R"];
 
 // The upcoming doses' sites, as their cards say them ("" for none).
-const cardSites = tab => tab.page.$$eval(`${M} #upcomingDosesGrid .stat`, cards => cards.map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent));
+const cardSites = tab => tab.page.$$eval(`${M} #upcomingDosesSection .stat`, cards => cards.map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent));
 // History's rows: [date, dose].
 const history = tab => tab.page.$$eval(`${M} #historyBody tr`, rows => rows.map(r => [r.cells[0].textContent.trim(), r.cells[3].innerText.trim()]));
 // The dose pop-up: open, its site shown, the site picked, and its menu's groups [label, [sites]] (the parts', then Other).
@@ -226,7 +226,7 @@ module.exports = [
       // Skipped once more, then the dose logged (at the site it went to): the skip is forgotten, the abdomen goes on from there.
       await p.click("#boscoSkipBtn");
       await devPanel(tab, false);
-      await p.click(`${M} #upcomingDosesGrid button[data-confirm-dose]`);
+      await p.click(`${M} #upcomingDosesSection button[data-confirm-dose]`);
       eq((await popup(tab)).picked, ABD[1], "the pop-up plans the next site");
       await p.click(`${M} #doseLogBtn`);
       eq((await history(tab))[0], ["Sep 30", "5 mg|Abd R lower"], "logged there");
@@ -289,7 +289,7 @@ module.exports = [
       await saveStartup(tab);
       eq(await cardSites(tab), ["", "", ""], "no sites on the cards");
       eq(await bugLine(tab), "- Injection sites on: 0", "none on");
-      await p.click(`${M} #upcomingDosesGrid button[data-confirm-dose]`);
+      await p.click(`${M} #upcomingDosesSection button[data-confirm-dose]`);
       eq([(await popup(tab)).open, (await popup(tab)).shown], [true, false], "the pop-up without a site");
       await p.click(`${M} #doseLogBtn`);
       eq((await history(tab))[0], ["Sep 30", "5 mg"], "logged without a site");
@@ -344,7 +344,7 @@ module.exports = [
       const combine = (tab, asked, medication = null, replace = false) => tab.page.evaluate(([how, med, whole]) => {
         const A = Kyoshi.apps.bosco, raw = JSON.parse(JSON.stringify(A.data.build()));
         if (how) raw.asked = how; else delete raw.asked;
-        if (med) raw.medication = med;
+        if (med) Object.assign(raw, { medication: med, medications: med === "none" ? [] : [med] }); // as saved there (10.137 on: the list too)
         const c = A.data.combine(raw, { replace: whole, plain: false, mine: { savedAt: "1", device: "a" }, theirs: { savedAt: "2", device: "b" } });
         const changed = c.apply();
         if (changed) A.data.afterSync();
@@ -356,7 +356,8 @@ module.exports = [
       await importBackup(tab, gen.bosco({ doses: 0, weights: [{ date: D(-1), weight: 190 }] }));
       eq(await startupShown(tab), [true, true], "start-up info asks");
       eq(await bugLine(tab, "- Start-up asked"), "- Start-up asked: medication no, dosing v0", "nothing answered yet");
-      await p.click(`${M} #oneTimeInput_medication button[data-value="semaglutide"]`);
+      await p.click(`${M} #oneTimeInput_medication button[data-pick="semaglutide"]`);
+      await p.click(`${M} #oneTimeInput_medication button[data-pick="tirzepatide"]`); // as many as you take: Tirzepatide (lit until answered) off
       for (const id of ["glute-l-upper", "glute-r-lower", "glute-l-lower", "glute-r-upper"]) await tapSite(tab, id);
       await saveStartup(tab);
       eq(await startupShown(tab), [false, false], "answered");

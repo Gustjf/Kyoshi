@@ -99,7 +99,8 @@
     ONE_TIME_FIELDS: [
       { key: "name", label: "Your name", type: "text", placeholder: "e.g. Jordan" },
       { key: "unit", label: "Units", type: "select", options: ["lb", "kg"], default: "lb" },
-      { key: "medication", label: "Which GLP-1 medication do you take?", type: "select", optional: true, default: "tirzepatide",
+      // As many medications as you take, or None (type "multi": its answer is the list, setMedications).
+      { key: "medication", label: "Which GLP-1 medications do you take?", type: "multi", optional: true,
         options: [...Object.entries(MEDICATIONS).map(([id, m]) => [id, m.label]), ["none", "None"]] }
     ]
   });
@@ -108,7 +109,7 @@
   // STATE
   // ==========================================================================
   const S = Object.assign(A.S, {
-    entries: [],          // { date: "YYYY-MM-DD", weight: number|null, doseMg: number|null, medication: id|null, site, wu, du (when its weigh-in, its dose last changed: once they have, 7.601 on) }, one per date, sorted
+    entries: [],          // { date: "YYYY-MM-DD", weight: number|null, doseMg: number|null, medication: id|null, site, wu, du (when its weigh-in, its dose last changed: once they have, 7.601 on), more: [{ doseMg, medication, site, du }] (that day's other medications' doses, 10.137 on) }, one per date, sorted
     gone: [],             // deleted days' markers { date, wu, du } (what was deleted, by its stamps): apart from the entries, so nothing else sees them
     goals: [],            // goal weights, sorted high to low
     goalsAsEntered: [],   // each goal as typed { weight, unit }, in goals' order: what it's shown from in either unit
@@ -120,11 +121,13 @@
     currentPage: 1,
     entryDateDefault: "", // the "today" the Date field was last set to
     dosingAsking: false,  // start-up info is showing the dosing plan & vial
+    dosingMed: null,      // the medication start-up info's dosing shows (one at a time, with a button each)
+    dosingDrafts: {},     // what's typed in each medication's dosing while another shows (setup.js)
     paceAsking: false,    // start-up info is showing the weekly pace goal
     vialEditing: false,   // the vial calculator is open
     anchorEditing: false, // the anchor dose date is showing in start-up info
     vialMode: "mix",      // "mix" (vial mg + BAC water) | "known" (mg/mL)
-    doseAsking: null,     // the scheduled dose the confirmation pop-up is open for
+    doseAsking: null,     // the scheduled dose the confirmation pop-up is open for (one at a time, whichever medication)
     retinoids: { regimens: [], log: [] } // the non-daily treatments and the days taken (treatments.js; the key's old name)
   });
 
@@ -159,17 +162,24 @@
   // as it is now: a goal is always shown from what was typed, so 150 lb stays 150 lb after kg and back (never 149.9).
   const goalsAsEntered = (goals, unit, entered) => goals.map(g => entered.find(o => convertWeight(o.weight, o.unit, unit) === g) || { weight: g, unit });
 
-  // The medication new doses are for: the start-up answer, Tirzepatide until answered.
-  const currentMedication = () => (S.profile.medication === "none" || Object.hasOwn(MEDICATIONS, S.profile.medication) ? S.profile.medication : A.LEGACY_MEDICATION);
-  const medicationEnabled = () => currentMedication() !== "none";
+  // The medications taken (profile.medications, cleaned on load: data.js), the first being the one older copies and
+  // Momo's "dose:<date>" ids go by; [] for none. setMedications keeps profile.medication (what older copies read) with it.
+  const medications = () => S.profile.medications || [A.LEGACY_MEDICATION];
+  const setMedications = list => Object.assign(S.profile, { medications: list, medication: list[0] || "none" });
+  const medicationEnabled = () => medications().length > 0;
   const medLabel = id => (Object.hasOwn(MEDICATIONS, id) ? MEDICATIONS[id].label : id);
-  // Names a dose's medication only when it isn't the current one.
-  const otherMedNote = e => (e.medication !== currentMedication() ? ` (${medLabel(e.medication)})` : "");
+  // Names a dose's medication, unless it's the only one taken.
+  const medNote = d => (medications().length === 1 && d.medication === medications()[0] ? "" : ` (${medLabel(d.medication)})`);
+  // A day's doses [{ doseMg, medication, site, du }], in the order logged: its first dose's fields, then the others'
+  // that day (more: one per medication).
+  const dosesOf = e => (isNum(e.doseMg) ? [{ doseMg: e.doseMg, medication: e.medication, site: e.site, du: e.du }, ...(e.more || [])] : []);
 
-  // The dosing plan and vial are each kept for one medication at a time.
-  const planFor = med => (S.profile.dosePlan && S.profile.dosePlan.medication === med ? S.profile.dosePlan : null);
-  const vialFor = med => (S.profile.vial && S.profile.vial.medication === med ? S.profile.vial : null);
-  const activeVial = () => vialFor(currentMedication());
+  // Each medication has its own dosing plan and active vial (profile.dosePlans, profile.vials: one per medication).
+  const planFor = med => (S.profile.dosePlans || []).find(p => p.medication === med) || null;
+  const vialFor = med => (S.profile.vials || []).find(v => v.medication === med) || null;
+  const keepOne = (list, x) => (list || []).filter(o => o.medication !== x.medication).concat(x);
+  const setPlan = plan => { S.profile.dosePlans = keepOne(S.profile.dosePlans, plan); };
+  const setVial = vial => { S.profile.vials = keepOne(S.profile.vials, vial); };
   const isDoseInterval = d => Number.isInteger(d) && d >= 1 && d <= A.MAX_DOSE_INTERVAL_DAYS;
   // Each dose: a weekly dose spread over the days between doses, to 3 decimal
   // places (small daily doses need them), so any two plans compare by the week.
@@ -211,7 +221,7 @@
 
   Object.assign(A, {
     hasWeight, hasDose, byDate, fmtDateBrief, axisDates, weightRange, convertWeight, typedAs, goalsAsEntered,
-    currentMedication, medicationEnabled, medLabel, otherMedNote, planFor, vialFor, activeVial,
+    medications, setMedications, medicationEnabled, medLabel, medNote, dosesOf, planFor, vialFor, setPlan, setVial,
     isDoseInterval, eachDoseMg, weeklyFor, activeSites, siteLabel, siteShort, standsFor, partOf, sitesIn, fmtConc, fmtUnits, readNumber,
     retinoidLabel
   });

@@ -14,10 +14,10 @@
 .app-bosco #statsSection .stat { min-width: 230px; } /* room for a full row of window pills */
 /* Room for "Wednesday", or wider when that's what keeps a dose on one line (fewer to a row). */
 /* The non-daily treatments' cards alike, amber once their days between have passed. */
-.app-bosco #upcomingDosesGrid .stat, .app-bosco #treatmentsGrid .stat { flex: 1 0 140px; min-width: auto; }
-.app-bosco #upcomingDosesGrid .lbl span, .app-bosco #upcomingDosesGrid .dose, .app-bosco #treatmentsGrid .lbl { white-space: nowrap; } /* a date or dose never splits across lines */
-.app-bosco #upcomingDosesGrid .stat.due, .app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
-.app-bosco #upcomingDosesGrid .stat.due button, .app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
+.app-bosco .upcoming-grid .stat, .app-bosco #treatmentsGrid .stat { flex: 1 0 140px; min-width: auto; }
+.app-bosco .upcoming-grid .lbl span, .app-bosco .upcoming-grid .dose, .app-bosco #treatmentsGrid .lbl { white-space: nowrap; } /* a date or dose never splits across lines */
+.app-bosco .upcoming-grid .stat.due, .app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
+.app-bosco .upcoming-grid .stat.due button, .app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
 .app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
@@ -68,6 +68,7 @@
 /* No questions above the dosing, or above the pace goal with no dosing either. */
 .app-bosco #oneTimeInfoFields:empty + .dosing, .app-bosco #oneTimeInfoFields:empty + [hidden] + .pace-goal { margin-top: 8px; padding-top: 0; border-top: none; }
 .app-bosco .dosing .window-pills { margin-top: 0; }
+.app-bosco .dosing-meds { margin-bottom: 10px; } /* a button per medication taken, over the dosing showing */
 /* The plan's (and pace goal's) fields: three across, or two per row on phones
    (the dose time on a row of its own), boxes lined up even when a label wraps. */
 .app-bosco .dose-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; }
