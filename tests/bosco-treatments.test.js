@@ -76,7 +76,9 @@ module.exports = [
       eq((await section(tab)).cards[1], ["Tazarotene", "Not taken yet", true, "Took it today"], "undone");
       let backup = await exportBackup(tab);
       eq(backup.retinoids.regimens.map(r => [r.name, r.every]), [["Tretinoin", 3], ["Tazarotene", 3], ["Glycopyrrolate 2%", 3]], "in Export, 3 days between");
-      eq(backup.retinoids.log.map(l => !!l.x), [false, true], "the undo a marker");
+      // The log is in date order, then by treatment id (random), so it's read by name here.
+      const named = id => backup.retinoids.regimens.find(r => r.id === id).name;
+      eq(backup.retinoids.log.map(l => [named(l.r), !!l.x]).sort(), [["Tazarotene", true], ["Tretinoin", false]], "the undo a marker");
       eq(await bugLine(tab), "- Non-daily treatments: 3; days taken logged: 1", "the bug line");
 
       // Days going by: yesterday, then 3 days ago (amber at 3 days between).

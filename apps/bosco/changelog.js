@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.250", date: "2026-11-25", changes: [
+      "Behind the scenes: a check of the non-daily treatments no longer fails at random (nothing in the app changed)."
+    ] },
     { version: "10.249", date: "2026-11-25", changes: [
       "Change vial on the vial card asks first: Cancel now leaves the page as it was instead of opening start-up info."
     ] },
