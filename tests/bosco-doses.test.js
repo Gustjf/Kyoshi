@@ -35,8 +35,15 @@ const THIGH_IDS = ["thigh-l-front-upper", "thigh-r-side-middle", "thigh-l-side-l
 const PILLS = ["L upper", "R lower", "L lower", "R upper", "L front upper", "R outer middle", "L outer lower", "R front upper", "L front middle", "R outer lower",
   "L outer upper", "R front middle", "L front lower", "R outer upper", "L outer middle", "R front lower", "L upper", "R lower", "L lower", "R upper", "L", "R"];
 
-// The upcoming doses' sites, as their cards say them ("" for none).
-const cardSites = tab => tab.page.$$eval(`${M} #upcomingDosesSection .stat`, cards => cards.map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent));
+// The upcoming doses' sites ("" for none): the schedule's next three (the page shows only the next dose, 10.237 on),
+// checked against the next dose's card.
+async function cardSites(tab) {
+  const [card, ahead] = await tab.page.evaluate(m => [
+    [...document.querySelectorAll(`${m} #upcomingDosesSection .next-dose`)].map(c => (c.querySelector(".lbl.site") || { textContent: "" }).textContent),
+    Kyoshi.apps.bosco.doseSchedule().map(d => (d.site ? Kyoshi.apps.bosco.siteLabel(d.site) : ""))], M);
+  eq(card, ahead.slice(0, 1), "the next dose's card shows its site");
+  return ahead;
+}
 // History's rows: [date, dose].
 const history = tab => tab.page.$$eval(`${M} #historyBody tr`, rows => rows.map(r => [r.cells[0].textContent.trim(), r.cells[3].innerText.trim()]));
 // The dose pop-up: open, its site shown, the site picked, and its menu's groups [label, [sites]] (the parts', then Other).

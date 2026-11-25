@@ -21,11 +21,12 @@
   // ==========================================================================
   // CONSTANTS
   // ==========================================================================
-  // GLP-1 medications a dose can be for. Add more here; ids are what backups store.
+  // GLP-1 medications a dose can be for. Add more here; ids are what backups store. vialDays: how long a mixed vial
+  // keeps, from mixing to its last dose (the owner's limits, 2026-11-25; vial.js).
   const MEDICATIONS = {
-    tirzepatide: { label: "Tirzepatide", example: "5" },
-    semaglutide: { label: "Semaglutide", example: "0.5" },
-    retatrutide: { label: "Retatrutide", example: "4" }
+    tirzepatide: { label: "Tirzepatide", example: "5", vialDays: 84 },
+    semaglutide: { label: "Semaglutide", example: "0.5", vialDays: 56 },
+    retatrutide: { label: "Retatrutide", example: "4", vialDays: 42 }
   };
   // The retinoids of the old build-ups (8.601–8.937) by id, so one kept in data reads as a non-daily treatment by its
   // name (treatments.js); one not listed by its id ("Adapalene").
@@ -65,7 +66,7 @@
     DEFAULT_GOALS: [200, 175, 160, 150], // lb
     LB_PER_KG: 2.20462,
     PAGE_SIZE: 7,
-    MAX_UPCOMING_DOSES: 3,
+    MAX_UPCOMING_DOSES: 3,      // each medication's doses worked out ahead (the sites go on through them); the page shows the next one
     MAX_DOSE_INTERVAL_DAYS: 14, // days between doses: a whole number from 1
     DOSE_SNOOZE_MS: 3600000,    // "Not yet" asks about a due dose again an hour later
     // Bumped when a dosing question is added, so start-up info asks once more. 2: usual dose time. 3: injection sites.

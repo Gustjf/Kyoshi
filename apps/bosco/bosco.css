@@ -19,6 +19,12 @@
 .app-bosco .upcoming-grid .stat.due, .app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
 .app-bosco .upcoming-grid .stat.due button, .app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
+/* The vial's card beside the next dose (vial.js): its dates, a red line once it would outlast its expiry, its buttons. */
+.app-bosco .upcoming-grid .vial-stat { flex-basis: 200px; }
+.app-bosco .vial-stat .dose + .lbl { margin-top: 4px; }
+.app-bosco .vial-warn { margin-top: 6px; color: var(--bad); font-size: .85em; }
+.app-bosco .vial-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.app-bosco .upcoming-grid .vial-stat .vial-actions button { margin-top: 0; }
 .app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
 .app-bosco .badge.reached { background: #dcfce7; color: #16a34a; }

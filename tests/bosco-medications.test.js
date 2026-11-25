@@ -1,7 +1,7 @@
 /* Kyoshi · tests/bosco-medications.test.js — Bosco's GLP-1 medications taken side by side (10.137, the owner's request:
  * Tirzepatide and Retatrutide at once): start-up info picks as many as you take, and shows each one's dosing (its plan,
  * anchor dose and active vial) a button each, what's typed kept while another shows; each has its own schedule (days
- * between, weekly dose) and its own Upcoming section with its vial's units; every medication's doses go through the
+ * between, weekly dose) and its own Upcoming section (its next dose, 10.237 on) with its vial's units; every medication's doses go through the
  * injection sites in one rotation, in the order they fall (two the same day on opposite sides); the pop-up asks about
  * one due dose at a time (Not yet on one, the other asks); History lists a day's doses in one row, and deleting it names
  * them; Export carries each medication's plan and vial and a day's other doses (`more`), the first medication's as
@@ -15,12 +15,14 @@ const gen = require("./generate");
 const M = "#kMount";
 const D = n => addDays(TODAY, n);
 
-// The Upcoming sections: [heading, vial badge, [[weekday date, dose, site]]] each.
+// The Upcoming sections: [heading, its vial card's strength, [[date, dose, site]] of its next dose] each.
 const sections = tab => tab.page.$$eval(`${M} #upcomingDosesSection section`, ss => ss.map(s => [
-  s.querySelector("h2").textContent, (s.querySelector(".badge.vial") || { textContent: "" }).textContent,
-  [...s.querySelectorAll(".stat")].map(c => [c.querySelector(".lbl span").textContent, (c.querySelector(".dose") || { textContent: "" }).textContent,
+  s.querySelector("h2").textContent, (s.querySelector(".vial-stat .val") || { textContent: "" }).textContent,
+  [...s.querySelectorAll(".next-dose")].map(c => [c.querySelector(".lbl span").textContent, (c.querySelector(".dose") || { textContent: "" }).textContent,
     (c.querySelector(".lbl.site") || { textContent: "" }).textContent])
 ]));
+// A medication's doses worked out ahead (the schedule's three): [date, site].
+const ahead = (tab, med) => tab.page.evaluate(m => Kyoshi.apps.bosco.doseSchedule(m).map(d => [d.date, Kyoshi.apps.bosco.siteLabel(d.site)]), med);
 // The dose pop-up: open, its text, its dose and units, its site picked.
 const popup = tab => tab.page.evaluate(m => {
   const o = document.querySelector(`${m} #doseOverlay`), sel = o.querySelector("#doseSiteSelect");
@@ -98,11 +100,12 @@ module.exports = [
       // rotation, so on opposite sides (Tirzepatide's first, the order the medications are listed in).
       const ABD0 = "Abdomen · left, upper", TH1 = "Thigh · right outer, middle", TH2 = "Thigh · left outer, lower";
       let s = await sections(tab);
-      eq(s.map(x => [x[0], x[1]]), [["Upcoming Tirzepatide Doses", ""], ["Upcoming Retatrutide Doses", "Vial 10 mg/mL"]], "a section each, its vial");
-      eq(s[0][2].map(c => c[0]), ["Sep 30", "Oct 7", "Oct 14"], "Tirzepatide weekly");
-      eq(s[1][2].map(c => c[0]), ["Sep 30", "Oct 5", "Oct 10"], "Retatrutide every 5 days");
+      eq(s.map(x => [x[0], x[1]]), [["Next Tirzepatide Dose", ""], ["Next Retatrutide Dose", "10 mg/mL"]], "a section each, its vial");
+      eq(s.map(x => x[2].map(c => c[0])), [["Sep 30"], ["Sep 30"]], "the next dose only");
+      eq((await ahead(tab, "tirzepatide")).map(d => d[0]), [TODAY, D(7), D(14)], "Tirzepatide weekly");
+      eq((await ahead(tab, "retatrutide")).map(d => d[0]), [TODAY, D(5), D(10)], "Retatrutide every 5 days");
       eq(s[1][2][0][1], "2 mg|20 units", "its units");
-      eq([s[0][2][0][2], s[1][2][0][2], s[1][2][1][2]], [ABD0, TH1, TH2], "one rotation: today's on opposite sides, then on");
+      eq([s[0][2][0][2], s[1][2][0][2], (await ahead(tab, "retatrutide"))[1][1]], [ABD0, TH1, TH2], "one rotation: today's on opposite sides, then on");
       eq(await bugLine(tab, "- GLP-1"), "- GLP-1 medication: tirzepatide, retatrutide", "the bug report's medications");
       eq(await bugLine(tab, "- Dosing plan"), "- Dosing plan / active vial saved: yes, yes / no, yes", "and their plans and vials");
 
@@ -144,7 +147,7 @@ module.exports = [
       const phone = await open(t, { app: "bosco", size: PHONE });
       await importBackup(phone, backup);
       eq([(await history(phone))[0], await phone.page.locator(`${M} #oneTimeInfoSection`).isHidden()], [(await history(tab))[0], true], "the same day, start-up info answered");
-      eq((await sections(phone)).map(x => x[0]), ["Upcoming Tirzepatide Doses", "Upcoming Retatrutide Doses"], "both sections");
+      eq((await sections(phone)).map(x => x[0]), ["Next Tirzepatide Dose", "Next Retatrutide Dose"], "both sections");
     }
   },
   {
@@ -190,7 +193,7 @@ module.exports = [
       await p.click(`${M} #oneTimeInput_medication button[data-pick="retatrutide"]`);
       eq(await p.$$eval(`${M} #oneTimeInput_medication button.active`, bs => bs.map(b => b.textContent)), ["Retatrutide"], "None off");
       await p.click(`${M} #oneTimeInfoSaveBtn`);
-      eq((await sections(one)).map(x => x[0]), ["Upcoming Retatrutide Doses"], "its section only");
+      eq((await sections(one)).map(x => x[0]), ["Next Retatrutide Dose"], "its section only");
       eq([await p.locator(`${M} #doseColumnHead`).textContent(), (await history(one))[0][1]], ["Retatrutide Dose", "5 mg (Tirzepatide)|Abd L upper"], "the other's named");
       eq((await exportBackup(one)).medication, "retatrutide", "the first medication now");
     }

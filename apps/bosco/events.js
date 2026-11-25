@@ -133,6 +133,8 @@
       A.openAnchorEditor();
       $("dosingBox").scrollIntoView({ behavior: "smooth", block: "center" });
     });
+    onButton($("upcomingDosesSection"), "button[data-vial-again]", btn => A.mixAgain(btn.dataset.med));
+    onButton($("upcomingDosesSection"), "button[data-change-vial]", btn => A.changeVial(btn.dataset.med));
     onButton($("upcomingDosesSection"), "button[data-confirm-dose]", btn => {
       const dose = A.doseSchedule(btn.dataset.med).find(d => d.date === btn.dataset.confirmDose);
       if (dose) A.openDoseModal(dose);

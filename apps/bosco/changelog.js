@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.237", date: "2026-11-25", changes: [
+      "Each medication shows only its next dose, beside a vial card: its strength, mg and BAC water, the day it was mixed, the doses left (and the mg over), the last dose it covers and the dose a new vial is needed by, and when it expires (Tirzepatide 12 weeks, Semaglutide 8, Retatrutide 6, from mixing: past that the dates stop there and a red line says what goes unused); amber with one dose or none left; Mixed a new one saves the same recipe again today."
+    ] },
     { version: "10.137", date: "2026-11-12", changes: [
       "Several GLP-1 medications at once (say Tirzepatide and Retatrutide): pick each one you take in start-up info, and each gets its own dosing plan, schedule, anchor dose and active vial, and its own Upcoming section; every dose still goes through one injection site rotation, the pop-up asks about one due dose at a time, and History lists a day's doses together. Reload Bosco on every device after updating."
     ] },

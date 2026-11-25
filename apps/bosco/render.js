@@ -1,4 +1,4 @@
-/* Bosco · render.js — draws the page from A.S: renderAll, then History, Upcoming Doses (a section per medication; then Non-daily treatments:
+/* Bosco · render.js — draws the page from A.S: renderAll, then History, Upcoming Doses (a section per medication: its next dose and its vial's card, vial.js; then Non-daily treatments:
  * treatments.js), Current Trend, Goal Weights (with season projections) and the Chart. The start-up
  * section is setup.js; the dose pop-up is doses.js. */
 (function (K, A) {
@@ -77,7 +77,7 @@
   }
 
   // A section per medication taken: its last dose taken (when History's first page doesn't show one), then its next
-  // doses, their syringe units from its active vial (its badge beside the heading); a plan with nothing to count from
+  // dose, its syringe units from its active vial, and the vial's card (vial.js); a plan with nothing to count from
   // offers its anchor dose. Then the pop-up for the first due dose, whichever medication's.
   function renderUpcomingDoses() {
     const today = todayStr(), meds = A.medications(), schedule = A.doseSchedule();
@@ -86,27 +86,27 @@
     const sections = meds.map(med => {
       // (one never logged, the only one taken, goes on from any dose, as its schedule does: lastDoseDate)
       const never = meds.length < 2 && !S.entries.some(e => dosesOf(e).some(d => d.medication === med));
-      const own = d => never || d.medication === med, mine = schedule.filter(d => d.medication === med);
+      const own = d => never || d.medication === med, next = schedule.find(d => d.medication === med);
       // History's first page only shows the latest entries; if none of those has one of its doses, show the last one
       // taken so it's never out of sight.
       const last = lastShown.some(e => dosesOf(e).some(own)) ? null : past.flatMap(e => dosesOf(e).filter(own).map(d => ({ ...d, date: e.date }))).pop();
       const vial = A.vialFor(med), units = mg => (vial ? `${SEP}<strong>${fmtUnits(mg, vial.mgPerMl)}</strong>` : "");
       // A plan with no dose taken or set has nothing to count from.
-      const plan = A.planFor(med), waiting = !!(plan && plan.intervalDays && plan.weeklyMg) && !mine.length;
-      if (!mine.length && !last && !waiting) return "";
-      const badge = mine.length && vial ? `<span class="badge vial"><span>Vial</span> ${fmtConc(vial.mgPerMl)}</span>` : "";
+      const plan = A.planFor(med), waiting = !!(plan && plan.intervalDays && plan.weeklyMg) && !next;
+      if (!next && !last && !waiting && !vial) return "";
       return `<section class="med" data-med="${med}">
-        <div class="vial-row"><h2>Upcoming ${medLabel(med)} Doses</h2>${badge}</div>
+        <h2>Next ${medLabel(med)} Dose</h2>
         <div class="stat-grid upcoming-grid">${
         (last ? `<div class="stat"><div class="val">${last.doseMg} mg</div><div class="lbl">Last dose taken${medNote(last)}${SEP}<span>${fmtDateBrief(last.date)}</span></div>${site(last.site)}</div>` : "") +
-        // Upcoming doses lead with the weekday, the day you dose on, then the date,
-        // the dose itself and its weekly equivalent, then where it goes. Due ones wait to be confirmed.
-        mine.map(d => `<div class="stat${d.due ? " due" : ""}">
-          <div class="val">${fmtWeekday(d.date)}</div><div class="lbl"><span>${fmtDateBrief(d.date)}</span></div>
-          <div class="dose">${d.doseMg} mg${units(d.doseMg)}</div><div class="lbl"><span>${d.weeklyMg} mg a week</span></div>${site(d.site)}
-          ${d.due ? `<button class="small" data-confirm-dose="${d.date}" data-med="${med}">Confirm dose</button>` : ""}
-        </div>`).join("") +
-        (waiting ? `<div class="empty-msg">No dose to count from yet. <button class="secondary small" data-set-anchor data-med="${med}">Set anchor dose</button></div>` : "")
+        // The next dose leads with the weekday, the day you dose on, then the date,
+        // the dose itself and its weekly equivalent, then where it goes. A due one waits to be confirmed.
+        (next ? `<div class="stat next-dose${next.due ? " due" : ""}">
+          <div class="val">${fmtWeekday(next.date)}</div><div class="lbl"><span>${fmtDateBrief(next.date)}</span></div>
+          <div class="dose">${next.doseMg} mg${units(next.doseMg)}</div><div class="lbl"><span>${next.weeklyMg} mg a week</span></div>${site(next.site)}
+          ${next.due ? `<button class="small" data-confirm-dose="${next.date}" data-med="${med}">Confirm dose</button>` : ""}
+        </div>` : "") +
+        (waiting ? `<div class="empty-msg">No dose to count from yet. <button class="secondary small" data-set-anchor data-med="${med}">Set anchor dose</button></div>` : "") +
+        A.vialCard(med)
       }</div>
       </section>`;
     }).join("");

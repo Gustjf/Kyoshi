@@ -134,7 +134,7 @@ Kyoshi.apps.bosco.markup = `
     </div>
   </section>
 
-  <!-- A section per medication taken (render.js): "Upcoming Tirzepatide Doses", its vial's badge, its doses. -->
+  <!-- A section per medication taken (render.js): "Next Tirzepatide Dose", its next dose and its vial's card (vial.js). -->
   <div id="upcomingDosesSection" class="med" hidden></div>
 
   <!-- A card per non-daily treatment: the day last taken (treatments.js); not part of the GLP-1 dosing, so not .med. -->

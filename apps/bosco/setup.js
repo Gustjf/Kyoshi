@@ -226,11 +226,11 @@
     return isPos(vialMg) ? { mgPerMl: vialMg / bacMl, vialMg, bacMl } : invalid("Please enter the vial's total mg as a positive number.");
   }
 
-  // A medication has one active vial, and its upcoming doses' syringe units come from it, so
-  // opening the calculator over a saved vial warns first.
+  // A medication has one active vial, mixed the day it's saved (vial.js counts its doses left from then), and its
+  // doses' syringe units come from it, so opening the calculator over a saved vial warns first.
   function openVialEditor() {
     const med = formMedication(), old = vialFor(med), same = !!old;
-    if (old && !confirm(`Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Its upcoming doses work out their syringe units from it, so only change it when you start a new vial.`)) return;
+    if (old && !confirm(`Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Saving starts a new vial mixed today: its doses left count again from today, and the doses' syringe units come from it.`)) return;
     S.vialEditing = true;
     $("vialMgInput").value = same && old.vialMg ? old.vialMg : "";
     $("bacMlInput").value = same && old.bacMl ? old.bacMl : $("bacMlInput").defaultValue;
