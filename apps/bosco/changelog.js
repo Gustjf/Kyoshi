@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.249", date: "2026-11-25", changes: [
+      "Change vial on the vial card asks first: Cancel now leaves the page as it was instead of opening start-up info."
+    ] },
     { version: "10.248", date: "2026-11-25", changes: [
       "History fits a phone: each row's doses go on a line of their own under its date, weight and change, so weights stay on one line and Delete no longer runs off the edge."
     ] },

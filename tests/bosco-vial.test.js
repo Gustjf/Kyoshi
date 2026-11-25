@@ -3,7 +3,7 @@
  * (and the mg over) counting every dose of its medication from the day mixed, the last dose it covers and the dose a new
  * vial is needed by; past its expiry (Tirzepatide 12 weeks, Retatrutide 6, Semaglutide 8, from mixing) the dates stop
  * there and a red line says how much goes unused; amber with a dose or none left, or expired; a Known mg/mL vial has no
- * count; Mixed a new one saves the same recipe today (asking first), Change vial opens start-up info's calculator. */
+ * count; Mixed a new one saves the same recipe today (asking first), Change vial asks first, then opens start-up info's calculator (Cancel: nothing opens). */
 "use strict";
 const { TODAY, DESKTOP, PHONE, DAY_MS, eq, has, lacks, open, importBackup, exportBackup, addDays, lastDialog } = require("./lib");
 const gen = require("./generate");
@@ -92,9 +92,15 @@ module.exports = [
       await importBackup(tab4, world({ weeklyMg: 7.5, lastDose: D(-6), doses: 3 }, { mgPerMl: 10, vialMg: 22.5, bacMl: 2.25, savedAt: noon(-13) }));
       eq([(await card(tab4, "tirzepatide")).head, (await card(tab4, "tirzepatide")).amber], ["1 dose left", true], "one left");
 
-      // Change vial: start-up info's calculator, asked first, its warning saying a new vial starts today.
+      // Change vial: asked first, before anything opens; Cancel leaves the page as it was.
+      tab4.answers.push(false);
       await p4.click(`${M} [data-change-vial][data-med="tirzepatide"]`);
       has(lastDialog(tab4), "Saving starts a new vial mixed today", "asked first");
+      eq([await p4.locator(`${M} #oneTimeInfoSection`).isHidden(), await p4.locator(`${M} #vialEditor`).isHidden()], [true, true], "Cancel: start-up info stays closed");
+      // OK: start-up info's calculator, its recipe filled in, without asking again.
+      await p4.click(`${M} [data-change-vial][data-med="tirzepatide"]`);
+      eq(tab4.dialogs.length, 1, "asked once");
+      has(lastDialog(tab4), "Saving starts a new vial mixed today", "the same question");
       eq([await p4.locator(`${M} #vialEditor`).isVisible(), await p4.locator(`${M} #vialMgInput`).inputValue()], [true, "22.5"], "the calculator, its recipe");
 
       // Known mg/mL: no total, so no count and no dates but its expiry.

@@ -227,10 +227,12 @@
   }
 
   // A medication has one active vial, mixed the day it's saved (vial.js counts its doses left from then), and its
-  // doses' syringe units come from it, so opening the calculator over a saved vial warns first.
-  function openVialEditor() {
+  // doses' syringe units come from it, so opening the calculator over a saved vial warns first (asked: true when the
+  // vial card's Change vial already asked, before opening start-up info).
+  const changeVialQuestion = (med, old) => `Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Saving starts a new vial mixed today: its doses left count again from today, and the doses' syringe units come from it.`;
+  function openVialEditor(asked) {
     const med = formMedication(), old = vialFor(med), same = !!old;
-    if (old && !confirm(`Change your active ${medLabel(med)} vial (${fmtConc(old.mgPerMl)})? Saving starts a new vial mixed today: its doses left count again from today, and the doses' syringe units come from it.`)) return;
+    if (old && asked !== true && !confirm(changeVialQuestion(med, old))) return;
     S.vialEditing = true;
     $("vialMgInput").value = same && old.vialMg ? old.vialMg : "";
     $("bacMlInput").value = same && old.bacMl ? old.bacMl : $("bacMlInput").defaultValue;
@@ -345,6 +347,6 @@
 
   Object.assign(A, {
     renderOneTimeInfo, formMedications, formMedication, renderDosing, showDosingFor, renderSites, renderAnchor, openAnchorEditor, renderVial, setVialMode,
-    updateDosingNotes, openVialEditor, saveVial, renderPaceGoal, updatePaceNote, saveOneTimeInfo
+    updateDosingNotes, changeVialQuestion, openVialEditor, saveVial, renderPaceGoal, updatePaceNote, saveOneTimeInfo
   });
 })(Kyoshi, Kyoshi.apps.bosco);

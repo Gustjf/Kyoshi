@@ -87,11 +87,14 @@
     A.renderAll();
   }
 
-  // Change vial: start-up info's calculator for this medication (it asks first, over a saved vial).
+  // Change vial: asks first; then start-up info's calculator for this medication, its recipe filled in. Cancel leaves
+  // the page as it was.
   function changeVial(med) {
+    const old = vialFor(med);
+    if (old && !confirm(A.changeVialQuestion(med, old))) return;
     A.renderOneTimeInfo(true);
     A.showDosingFor(med);
-    A.openVialEditor();
+    A.openVialEditor(true);
     $("dosingBox").scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
