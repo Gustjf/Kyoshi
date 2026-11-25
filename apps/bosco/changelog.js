@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.247", date: "2026-11-25", changes: [
+      "The next doses take less room: each medication is one panel, side by side on a computer (a lone one puts its vial beside the dose), stacked on a phone; the vial leads with the doses left, its dates in a grid, and its buttons line up; the next dose says Today or Tomorrow instead of the weekday."
+    ] },
     { version: "10.237", date: "2026-11-25", changes: [
       "Each medication shows only its next dose, beside a vial card: its strength, mg and BAC water, the day it was mixed, the doses left (and the mg over), the last dose it covers and the dose a new vial is needed by, and when it expires (Tirzepatide 12 weeks, Semaglutide 8, Retatrutide 6, from mixing: past that the dates stop there and a red line says what goes unused); amber with one dose or none left; Mixed a new one saves the same recipe again today."
     ] },

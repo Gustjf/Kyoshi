@@ -1,5 +1,5 @@
 /* Kyoshi · tests/bosco-vial.test.js — Bosco's vial card (the owner's request, 2026-11-25): beside each medication's next
- * dose (the only one shown), its active vial's strength, mg and BAC water, the day mixed (the day saved), the doses left
+ * dose (the only one shown: Today, Tomorrow or its weekday; the medications' panels side by side), its active vial's strength, mg and BAC water, the day mixed (the day saved), the doses left
  * (and the mg over) counting every dose of its medication from the day mixed, the last dose it covers and the dose a new
  * vial is needed by; past its expiry (Tirzepatide 12 weeks, Retatrutide 6, Semaglutide 8, from mixing) the dates stop
  * there and a red line says how much goes unused; amber with a dose or none left, or expired; a Known mg/mL vial has no
@@ -18,12 +18,16 @@ function world(opts, vial) {
   return { ...base, name: "Sam", paceGoal: { dir: "lose", weeklyPct: 1, rangePct: 0.25 }, asked: { medication: true, dosing: 4 },
     medications: [medication], dosePlans: [base.dosePlan], vials: [{ medication, ...vial }] };
 }
-// A medication's vial card: its lines, amber or not, its warning ("" for none).
+// A medication's vial (the lower part of its panel): its headline, the strength and recipe under it, its dates [label, day]
+// (those in red marked "!"), its warning ("" for none), amber or not.
 const card = (tab, med) => tab.page.evaluate(([m, med]) => {
   const c = document.querySelector(`${m} #upcomingDosesSection section[data-med="${med}"] .vial-stat`);
-  return c && { lines: c.innerText.split("\n").map(l => l.trim()).filter(l => l && !/^(Mixed a new one|Change vial)$/.test(l)),
-    amber: c.classList.contains("due"), warn: (c.querySelector(".vial-warn") || { textContent: "" }).textContent };
+  return c && { head: c.querySelector(".val").textContent, sub: c.querySelector(".lbl").textContent,
+    dates: [...c.querySelectorAll(".vial-dates > div")].map(d => [d.querySelector("dt").textContent + (d.classList.contains("bad") ? "!" : ""), d.querySelector("dd").textContent]),
+    warn: (c.querySelector(".vial-warn") || { textContent: "" }).textContent, amber: c.classList.contains("due") };
 }, [M, med]);
+// The next dose's day as its panel says it ("Today, Sep 30").
+const nextDay = (tab, med) => tab.page.textContent(`${M} #upcomingDosesSection section[data-med="${med}"] .next-dose .val`);
 const nextCards = tab => tab.page.$$eval(`${M} #upcomingDosesSection .next-dose`, cs => cs.length);
 
 module.exports = [
@@ -35,14 +39,16 @@ module.exports = [
       await importBackup(tab, world({ weeklyMg: 7.5, lastDose: D(-6), doses: 4 }, { mgPerMl: 20, vialMg: 40, bacMl: 2, savedAt: noon(-20) }));
       eq(await nextCards(tab), 1, "the next dose only");
       eq(await p.locator(`${M} #upcomingDosesSection h2`).textContent(), "Next Tirzepatide Dose", "its heading");
-      eq(await card(tab, "tirzepatide"), { lines: ["20 mg/mL", "40 mg + 2 mL", "Mixed Thu, Sep 10", "2 doses left + 2.5 mg",
-        "Last dose Thu, Oct 8", "New vial by Thu, Oct 15", "Expires Thu, Dec 3"], amber: false, warn: "" }, "the card");
+      eq(await card(tab, "tirzepatide"), { head: "2 doses left + 2.5 mg", sub: "20 mg/mL|40 mg + 2 mL",
+        dates: [["Mixed", "Thu, Sep 10"], ["Last dose", "Thu, Oct 8"], ["New vial by", "Thu, Oct 15"], ["Expires", "Thu, Dec 3"]], warn: "", amber: false }, "the card");
+      eq(await nextDay(tab, "tirzepatide"), "Tomorrow, Oct 1", "the next dose tomorrow");
 
       // Mixed a new one: asked first, then the same recipe today, its doses left counted from today.
       await p.click(`${M} [data-vial-again][data-med="tirzepatide"]`);
       has(lastDialog(tab), "Mixed a new 40 mg + 2 mL Tirzepatide vial today?", "asked first");
-      eq((await card(tab, "tirzepatide")).lines, ["20 mg/mL", "40 mg + 2 mL", "Mixed Wed, Sep 30", "5 doses left + 2.5 mg",
-        "Last dose Thu, Oct 29", "New vial by Thu, Nov 5", "Expires Wed, Dec 23"], "a new vial today");
+      const fresh = await card(tab, "tirzepatide");
+      eq([fresh.head, fresh.dates], ["5 doses left + 2.5 mg", [["Mixed", "Wed, Sep 30"],
+        ["Last dose", "Thu, Oct 29"], ["New vial by", "Thu, Nov 5"], ["Expires", "Wed, Dec 23"]]], "a new vial today");
       eq((await exportBackup(tab)).vials.map(v => [v.vialMg, v.bacMl, v.savedAt.slice(0, 10)]), [[40, 2, TODAY]], "saved today");
       tab.answers.push(false);
       await p.click(`${M} [data-vial-again][data-med="tirzepatide"]`);
@@ -52,7 +58,9 @@ module.exports = [
       await tab.ctx.clock.fastForward(DAY_MS);
       await p.waitForSelector(`${M} #doseOverlay.open`);
       await p.click(`${M} #doseLogBtn`);
-      eq((await card(tab, "tirzepatide")).lines.slice(3, 6), ["4 doses left + 2.5 mg", "Last dose Thu, Oct 29", "New vial by Thu, Nov 5"], "one dose fewer, the same dates");
+      const after = await card(tab, "tirzepatide");
+      eq([after.head, after.dates.slice(1, 3)], ["4 doses left + 2.5 mg", [["Last dose", "Thu, Oct 29"], ["New vial by", "Thu, Nov 5"]]], "one dose fewer, the same dates");
+      eq(await nextDay(tab, "tirzepatide"), "Thursday, Oct 8", "the next dose a week on: its weekday");
     }
   },
   {
@@ -62,25 +70,27 @@ module.exports = [
       // Retatrutide 2 mg a week, doses Sep 16 and 23, one due today; a 20 mg vial mixed Sep 16: 16 mg left, 8 doses, but it
       // expires 6 weeks after mixing (Oct 28): 5 doses (today to Oct 28), 6 mg unused.
       await importBackup(tab, world({ medication: "retatrutide", weeklyMg: 2, lastDose: D(-7), doses: 2 }, { mgPerMl: 10, vialMg: 20, bacMl: 2, savedAt: noon(-14) }));
-      eq(await card(tab, "retatrutide"), { lines: ["10 mg/mL", "20 mg + 2 mL", "Mixed Wed, Sep 16", "8 doses left", "Last dose Wed, Oct 28", "New vial by Wed, Nov 4",
-        "Expires Wed, Oct 28, 6 weeks after mixing: 6 mg will go unused."], amber: false, warn: "Expires Wed, Oct 28, 6 weeks after mixing: 6 mg will go unused." }, "stops at its expiry");
+      eq(await card(tab, "retatrutide"), { head: "8 doses left", sub: "10 mg/mL|20 mg + 2 mL",
+        dates: [["Mixed", "Wed, Sep 16"], ["Last dose", "Wed, Oct 28"], ["New vial by", "Wed, Nov 4"], ["Expires!", "Wed, Oct 28"]],
+        warn: "Expires 6 weeks after mixing, before it's used up: 6 mg will go unused.", amber: false }, "stops at its expiry");
+      eq(await nextDay(tab, "retatrutide"), "Today, Sep 30", "the next dose today");
 
       // Mixed 7 weeks ago: expired, amber, a new one needed by today's dose.
       const tab3 = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(tab3, world({ medication: "retatrutide", weeklyMg: 2, lastDose: D(-7), doses: 2 }, { mgPerMl: 10, vialMg: 20, bacMl: 2, savedAt: noon(-49) }));
-      eq(await card(tab3, "retatrutide"), { lines: ["10 mg/mL", "20 mg + 2 mL", "Mixed Wed, Aug 12", "8 doses left", "New vial by Wed, Sep 30",
-        "Expired Wed, Sep 23, 6 weeks after mixing."], amber: true, warn: "Expired Wed, Sep 23, 6 weeks after mixing." }, "expired");
+      eq(await card(tab3, "retatrutide"), { head: "Vial expired 8 doses unused", sub: "10 mg/mL|20 mg + 2 mL",
+        dates: [["Mixed", "Wed, Aug 12"], ["New vial by", "Wed, Sep 30"], ["Expired!", "Wed, Sep 23"]], warn: "Past its 6 weeks: mix a new one.", amber: true }, "expired");
 
       // A 15 mg Tirzepatide vial, two 7.5 mg doses since it was mixed: used up, amber.
       const tab2 = await open(t, { app: "bosco", size: PHONE }), p2 = tab2.page;
       await importBackup(tab2, world({ weeklyMg: 7.5, lastDose: D(-6), doses: 3 }, { mgPerMl: 10, vialMg: 15, bacMl: 1.5, savedAt: noon(-13) }));
-      eq(await card(tab2, "tirzepatide"), { lines: ["10 mg/mL", "15 mg + 1.5 mL", "Mixed Thu, Sep 17", "Vial used up", "New vial by Thu, Oct 1", "Expires Thu, Dec 10"],
-        amber: true, warn: "" }, "used up");
+      eq(await card(tab2, "tirzepatide"), { head: "Vial used up", sub: "10 mg/mL|15 mg + 1.5 mL",
+        dates: [["Mixed", "Thu, Sep 17"], ["New vial by", "Thu, Oct 1"], ["Expires", "Thu, Dec 10"]], warn: "", amber: true }, "used up");
       eq(await p2.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "fits a phone");
       // One dose left: amber too.
       const tab4 = await open(t, { app: "bosco", size: PHONE }), p4 = tab4.page;
       await importBackup(tab4, world({ weeklyMg: 7.5, lastDose: D(-6), doses: 3 }, { mgPerMl: 10, vialMg: 22.5, bacMl: 2.25, savedAt: noon(-13) }));
-      eq([(await card(tab4, "tirzepatide")).lines[3], (await card(tab4, "tirzepatide")).amber], ["1 dose left", true], "one left");
+      eq([(await card(tab4, "tirzepatide")).head, (await card(tab4, "tirzepatide")).amber], ["1 dose left", true], "one left");
 
       // Change vial: start-up info's calculator, asked first, its warning saying a new vial starts today.
       await p4.click(`${M} [data-change-vial][data-med="tirzepatide"]`);
@@ -91,8 +101,16 @@ module.exports = [
       const tab5 = await open(t, { app: "bosco", size: DESKTOP });
       await importBackup(tab5, world({ lastDose: D(-5) }, { mgPerMl: 10, vialMg: null, bacMl: null, savedAt: noon(-3) }));
       const known = await card(tab5, "tirzepatide");
-      eq(known, { lines: ["10 mg/mL", "Active vial", "Mixed Sun, Sep 27", "Expires Sun, Dec 20"], amber: false, warn: "" }, "Known mg/mL");
-      lacks(known.lines.join(" "), "left", "no count");
+      eq(known, { head: "10 mg/mL", sub: "Known strength", dates: [["Mixed", "Sun, Sep 27"], ["Expires", "Sun, Dec 20"]], warn: "", amber: false }, "Known mg/mL");
+      lacks(known.head, "left", "no count");
+
+      // A last dose History's first page no longer shows: a line atop its panel; its next dose late, by its weekday.
+      const tab6 = await open(t, { app: "bosco", size: PHONE });
+      const weights = Array.from({ length: 8 }, (_, i) => ({ date: D(i - 7), weight: 200 - i / 10 }));
+      await importBackup(tab6, world({ lastDose: D(-8), doses: 2, weights }, { mgPerMl: 10, vialMg: 20, bacMl: 2, savedAt: noon(-8) }));
+      eq(await tab6.page.textContent(`${M} #upcomingDosesSection .last-taken`), "Last dose taken: 5 mg|Sep 22", "the last dose taken");
+      eq(await nextDay(tab6, "tirzepatide"), "Tuesday, Sep 29", "a late dose: its weekday");
+      eq((await card(tab6, "tirzepatide")).head, "3 doses left", "its vial");
     }
   }
 ];

@@ -12,19 +12,12 @@
 /* --- Stats & badges --- */
 .app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */
 .app-bosco #statsSection .stat { min-width: 230px; } /* room for a full row of window pills */
-/* Room for "Wednesday", or wider when that's what keeps a dose on one line (fewer to a row). */
-/* The non-daily treatments' cards alike, amber once their days between have passed. */
-.app-bosco .upcoming-grid .stat, .app-bosco #treatmentsGrid .stat { flex: 1 0 140px; min-width: auto; }
-.app-bosco .upcoming-grid .lbl span, .app-bosco .upcoming-grid .dose, .app-bosco #treatmentsGrid .lbl { white-space: nowrap; } /* a date or dose never splits across lines */
-.app-bosco .upcoming-grid .stat.due, .app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); } /* waiting to be confirmed */
-.app-bosco .upcoming-grid .stat.due button, .app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
+/* The non-daily treatments' cards: room for "Wednesday", amber once their days between have passed. */
+.app-bosco #treatmentsGrid .stat { flex: 1 0 140px; min-width: auto; }
+.app-bosco #treatmentsGrid .lbl { white-space: nowrap; } /* a date never splits across lines */
+.app-bosco #treatmentsGrid .stat.due { background: var(--unsaved-bg); border-color: var(--unsaved-border); }
+.app-bosco #treatmentsGrid .stat button { margin-top: 8px; }
 .app-bosco .stat .dose { margin-top: 4px; font-size: .9em; } /* a dose's mg and syringe units, easy to read */
-/* The vial's card beside the next dose (vial.js): its dates, a red line once it would outlast its expiry, its buttons. */
-.app-bosco .upcoming-grid .vial-stat { flex-basis: 200px; }
-.app-bosco .vial-stat .dose + .lbl { margin-top: 4px; }
-.app-bosco .vial-warn { margin-top: 6px; color: var(--bad); font-size: .85em; }
-.app-bosco .vial-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.app-bosco .upcoming-grid .vial-stat .vial-actions button { margin-top: 0; }
 .app-bosco .dose-site { margin: 12px 0 0; } /* the dose pop-up's injection site, under the dose */
 /* Pills on a fixed light background keep their dark text in both themes (as in the exported image). */
 .app-bosco .badge.reached { background: #dcfce7; color: #16a34a; }
@@ -36,6 +29,45 @@
 .app-bosco .vial-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
 .app-bosco .badge.vial { border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .app-bosco .badge.vial span { color: var(--muted); font-weight: 400; }
+
+/* --- Next doses: a panel per medication (render.js, vial.js), side by side: two to a row on a computer (the odd one out
+   across both), one under another on a phone. Under its heading, the next dose, then its vial, each edge to edge (no
+   frame inside the frame); a panel as wide as the page puts the vial beside the dose. A part waiting on you (a due
+   dose, a vial with one dose or none left, or expired) is amber. Side by side, the shorter panel's vial fills it out,
+   its buttons at the bottom, level with the other's. --- */
+.app-bosco #upcomingDosesSection { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.app-bosco #upcomingDosesSection > section { margin: 0; display: flex; flex-direction: column; overflow: hidden; container-type: inline-size; }
+.app-bosco #upcomingDosesSection > section:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.app-bosco .med-card { flex: 1; display: flex; flex-direction: column; margin: 10px -16px -14px; border-top: 1px solid var(--border); }
+.app-bosco .med-card > :last-child { flex: 1; }
+.app-bosco .med-card .part { padding: 10px 16px 12px; }
+.app-bosco .med-card .part + .part { border-top: 1px solid var(--border); }
+.app-bosco .med-card .part.due { background: var(--unsaved-bg); }
+.app-bosco .med-card .val { font-size: 1.15em; font-weight: 700; }
+.app-bosco .med-card .lbl { font-size: .75em; color: var(--muted); margin-top: 2px; }
+.app-bosco .med-card .nowrap { white-space: nowrap; }
+.app-bosco .med-card .empty-msg { padding: 10px 16px; }
+.app-bosco .last-taken { padding: 7px 16px; font-size: .8em; color: var(--muted); border-bottom: 1px solid var(--border); }
+.app-bosco .last-taken strong { color: var(--text); }
+.app-bosco .part-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; }
+.app-bosco .dose-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 10px; margin-top: 4px; }
+.app-bosco .dose-line .dose { font-size: .95em; white-space: nowrap; } /* a dose's mg and syringe units, easy to read */
+.app-bosco .dose-line .lbl { margin-top: 0; }
+.app-bosco .next-dose .site { margin-top: 4px; font-size: .8em; color: var(--text); }
+.app-bosco .vial-stat { display: flex; flex-direction: column; }
+.app-bosco .vial-stat .over { font-size: .8em; font-weight: 400; color: var(--muted); }
+.app-bosco .vial-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 8px 0 0; }
+.app-bosco .vial-dates dt { font-size: .68em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.app-bosco .vial-dates dd { margin: 1px 0 0; font-size: .85em; white-space: nowrap; }
+.app-bosco .vial-dates .bad dt, .app-bosco .vial-dates .bad dd { color: var(--bad); }
+.app-bosco .vial-warn { margin-top: 6px; color: var(--bad); font-size: .8em; }
+.app-bosco .vial-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 10px; }
+@container (min-width: 600px) {
+  .app-bosco .med-card { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+  .app-bosco .med-card .last-taken { grid-column: 1 / -1; }
+  .app-bosco .med-card .part + .part { border-top: 0; border-left: 1px solid var(--border); }
+  .app-bosco .vial-dates { grid-template-columns: repeat(4, max-content); gap: 6px 22px; }
+}
 
 /* --- Goals & projection sliders --- */
 .app-bosco .proj-box { border-top: 1px dashed var(--border); margin-top: 12px; padding-top: 10px; }

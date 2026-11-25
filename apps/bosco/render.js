@@ -76,13 +76,17 @@
     $(id).hidden = !vial;
   }
 
-  // A section per medication taken: its last dose taken (when History's first page doesn't show one), then its next
-  // dose, its syringe units from its active vial, and the vial's card (vial.js); a plan with nothing to count from
-  // offers its anchor dose. Then the pop-up for the first due dose, whichever medication's.
+  // A section per medication taken, side by side (two to a row on a computer, the odd one out across both; one under
+  // another on a phone), each one card: its last dose taken (a line, when History's first page doesn't show one), its
+  // next dose with its syringe units from its active vial, then its vial (vial.js); a plan with nothing to count from
+  // offers its anchor dose. A card as wide as the page puts the vial beside the dose (bosco.css). Then the pop-up for
+  // the first due dose, whichever medication's.
   function renderUpcomingDoses() {
     const today = todayStr(), meds = A.medications(), schedule = A.doseSchedule();
     const past = S.entries.filter(e => e.date <= today), lastShown = past.slice(-PAGE_SIZE);
-    const site = s => (s ? `<div class="lbl site"><span>${siteLabel(s)}</span></div>` : ""); // where it goes, or went
+    const site = s => (s ? `<div class="lbl site"><span>${siteLabel(s)}</span></div>` : ""); // where it goes
+    // The next dose's day: Today, Tomorrow, or its weekday (a late one's too), then its date.
+    const when = d => `${d === today ? "Today" : d === addDays(today, 1) ? "Tomorrow" : fmtWeekday(d)}, <span class="nowrap">${fmtDateBrief(d)}</span>`;
     const sections = meds.map(med => {
       // (one never logged, the only one taken, goes on from any dose, as its schedule does: lastDoseDate)
       const never = meds.length < 2 && !S.entries.some(e => dosesOf(e).some(d => d.medication === med));
@@ -96,16 +100,16 @@
       if (!next && !last && !waiting && !vial) return "";
       return `<section class="med" data-med="${med}">
         <h2>Next ${medLabel(med)} Dose</h2>
-        <div class="stat-grid upcoming-grid">${
-        (last ? `<div class="stat"><div class="val">${last.doseMg} mg</div><div class="lbl">Last dose taken${medNote(last)}${SEP}<span>${fmtDateBrief(last.date)}</span></div>${site(last.site)}</div>` : "") +
-        // The next dose leads with the weekday, the day you dose on, then the date,
-        // the dose itself and its weekly equivalent, then where it goes. A due one waits to be confirmed.
-        (next ? `<div class="stat next-dose${next.due ? " due" : ""}">
-          <div class="val">${fmtWeekday(next.date)}</div><div class="lbl"><span>${fmtDateBrief(next.date)}</span></div>
-          <div class="dose">${next.doseMg} mg${units(next.doseMg)}</div><div class="lbl"><span>${next.weeklyMg} mg a week</span></div>${site(next.site)}
-          ${next.due ? `<button class="small" data-confirm-dose="${next.date}" data-med="${med}">Confirm dose</button>` : ""}
+        <div class="med-card">${
+        (last ? `<div class="last-taken">Last dose taken${medNote(last)}: <strong>${last.doseMg} mg</strong>${SEP}<span class="nowrap">${fmtDateBrief(last.date)}</span>${last.site ? `${SEP}${siteLabel(last.site)}` : ""}</div>` : "") +
+        // The next dose: its day, the dose and its syringe units (its weekly equivalent beside them), then where it goes.
+        // A due one waits to be confirmed.
+        (next ? `<div class="part next-dose${next.due ? " due" : ""}">
+          <div class="part-head"><div class="val">${when(next.date)}</div>${next.due ? `<button class="small" data-confirm-dose="${next.date}" data-med="${med}">Confirm dose</button>` : ""}</div>
+          <div class="dose-line"><span class="dose">${next.doseMg} mg${units(next.doseMg)}</span><span class="lbl">${next.weeklyMg} mg a week</span></div>
+          ${site(next.site)}
         </div>` : "") +
-        (waiting ? `<div class="empty-msg">No dose to count from yet. <button class="secondary small" data-set-anchor data-med="${med}">Set anchor dose</button></div>` : "") +
+        (waiting ? `<div class="part empty-msg">No dose to count from yet. <button class="secondary small" data-set-anchor data-med="${med}">Set anchor dose</button></div>` : "") +
         A.vialCard(med)
       }</div>
       </section>`;

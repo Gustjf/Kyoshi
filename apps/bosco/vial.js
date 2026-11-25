@@ -4,7 +4,7 @@
  * vial is needed by, and when it expires (MEDICATIONS' vialDays from mixing; a dose on that day still counts). Every dose
  * of its medication dated on or after the day mixed comes out of it. Past its expiry, the dates stop there and a warning
  * says how much goes unused. Amber with a dose or none left. A vial saved as "Known mg/mL" has no total: no count, no
- * dates but its expiry. Mixed a new one saves the same recipe again, dated today; Change vial opens start-up info's
+ * dates but its expiry. It's the lower (or right) part of its medication's card, render.js. Mixed a new one saves the same recipe again, dated today; Change vial opens start-up info's
  * calculator. Nothing here is stored or synced on its own. */
 (function (K, A) {
   "use strict";
@@ -44,25 +44,30 @@
     return out;
   }
 
-  // The card, beside the next dose: amber with one dose or none left (or past its expiry).
+  // The vial's part of its medication's card, under (or beside) the next dose: what's left in large type, the strength
+  // and recipe, its dates in a grid (two to a row, four in a wide card), a red line when it expires before it's used up
+  // (or has), and its buttons. Amber with one dose or none left (or past its expiry).
   function vialCard(med) {
     const v = vialStatus(med);
     if (!v) return "";
-    const { vial } = v, line = (label, d) => (d ? `<div class="lbl">${label} <span>${day(d)}</span></div>` : "");
-    const expired = !!v.expires && v.expires < todayStr();
+    const { vial } = v, expired = !!v.expires && v.expires < todayStr();
     const low = expired || (v.doses !== undefined && (v.usable ?? v.doses) <= 1);
-    const left = v.doses === undefined ? (v.leftMg !== undefined ? `<strong>${fmtNum(v.leftMg, 2)} mg left</strong>` : "")
-      : v.doses ? `<strong>${v.doses} dose${v.doses === 1 ? "" : "s"} left</strong>${v.overMg ? ` + ${fmtNum(v.overMg, 2)} mg` : ""}`
-      : `<strong>Vial used up</strong>${v.leftMg ? `${SEP}${fmtNum(v.leftMg, 2)} mg left` : ""}`;
+    const recipe = vial.vialMg ? `${fmtNum(vial.vialMg, 2)} mg + ${fmtNum(vial.bacMl, 2)} mL` : "";
+    // What's left: whole doses and the mg over; the mg without a plan; the strength for a vial with no total.
+    const head = expired ? `Vial expired${v.doses ? ` <span class="over">${v.doses} dose${v.doses === 1 ? "" : "s"} unused</span>` : ""}`
+      : v.doses === undefined ? (v.leftMg !== undefined ? `${fmtNum(v.leftMg, 2)} mg left` : fmtConc(vial.mgPerMl))
+      : v.doses ? `${v.doses} dose${v.doses === 1 ? "" : "s"} left${v.overMg ? ` <span class="over">+ ${fmtNum(v.overMg, 2)} mg</span>` : ""}`
+      : `Vial used up${v.leftMg ? ` <span class="over">${fmtNum(v.leftMg, 2)} mg left</span>` : ""}`;
+    const sub = v.leftMg === undefined ? (recipe ? `${fmtConc(vial.mgPerMl)}${SEP}${recipe}` : "Known strength") : `${fmtConc(vial.mgPerMl)}${recipe ? `${SEP}${recipe}` : ""}`;
+    const dates = [["Mixed", v.mixed], ["Last dose", v.last], ["New vial by", v.newBy], [expired ? "Expired" : "Expires", v.expires, expired || !!v.wasted]]
+      .filter(([, d]) => d).map(([label, d, bad]) => `<div${bad ? ' class="bad"' : ""}><dt>${label}</dt><dd>${day(d)}</dd></div>`).join("");
     const weeks = MEDICATIONS[med].vialDays / 7;
-    const warn = expired ? `Expired ${day(v.expires)}, ${weeks} weeks after mixing.`
-      : v.wasted ? `Expires ${day(v.expires)}, ${weeks} weeks after mixing: ${fmtNum(v.wasted, 2)} mg will go unused.` : "";
-    return `<div class="stat vial-stat${low ? " due" : ""}">
-      <div class="val">${fmtConc(vial.mgPerMl)}</div>
-      <div class="lbl"><span>${vial.vialMg ? `${fmtNum(vial.vialMg, 2)} mg + ${fmtNum(vial.bacMl, 2)} mL` : "Active vial"}</span></div>
-      ${line("Mixed", v.mixed)}
-      ${left ? `<div class="dose">${left}</div>` : ""}
-      ${line("Last dose", v.last)}${line("New vial by", v.newBy)}${warn ? "" : line("Expires", v.expires)}
+    const warn = expired ? `Past its ${weeks} weeks: mix a new one.`
+      : v.wasted ? `Expires ${weeks} weeks after mixing, before it's used up: ${fmtNum(v.wasted, 2)} mg will go unused.` : "";
+    return `<div class="part vial-stat${low ? " due" : ""}">
+      <div class="val">${head}</div>
+      <div class="lbl">${sub}</div>
+      ${dates ? `<dl class="vial-dates">${dates}</dl>` : ""}
       ${warn ? `<div class="vial-warn">${warn}</div>` : ""}
       <div class="vial-actions">
         <button class="secondary small" data-vial-again data-med="${med}">Mixed a new one</button>

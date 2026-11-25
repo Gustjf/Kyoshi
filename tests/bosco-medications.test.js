@@ -17,8 +17,8 @@ const D = n => addDays(TODAY, n);
 
 // The Upcoming sections: [heading, its vial card's strength, [[date, dose, site]] of its next dose] each.
 const sections = tab => tab.page.$$eval(`${M} #upcomingDosesSection section`, ss => ss.map(s => [
-  s.querySelector("h2").textContent, (s.querySelector(".vial-stat .val") || { textContent: "" }).textContent,
-  [...s.querySelectorAll(".next-dose")].map(c => [c.querySelector(".lbl span").textContent, (c.querySelector(".dose") || { textContent: "" }).textContent,
+  s.querySelector("h2").textContent, (s.querySelector(".vial-stat .lbl") || { textContent: "" }).textContent.split("|")[0],
+  [...s.querySelectorAll(".next-dose")].map(c => [c.querySelector(".val .nowrap").textContent, (c.querySelector(".dose") || { textContent: "" }).textContent,
     (c.querySelector(".lbl.site") || { textContent: "" }).textContent])
 ]));
 // A medication's doses worked out ahead (the schedule's three): [date, site].
