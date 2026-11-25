@@ -148,6 +148,13 @@ module.exports = [
       await importBackup(phone, backup);
       eq([(await history(phone))[0], await phone.page.locator(`${M} #oneTimeInfoSection`).isHidden()], [(await history(tab))[0], true], "the same day, start-up info answered");
       eq((await sections(phone)).map(x => x[0]), ["Next Tirzepatide Dose", "Next Retatrutide Dose"], "both sections");
+      // History on a phone: two lines a row (a day's doses under its date, weight and change), nothing past the edge.
+      const row = await phone.page.evaluate(m => {
+        const tr = document.querySelector(`${m} #historyBody tr`), box = el => el.getBoundingClientRect();
+        return { fits: document.documentElement.scrollWidth <= innerWidth && box(tr.querySelector("button.danger")).right <= innerWidth,
+          under: box(tr.cells[3]).top >= box(tr.cells[0]).bottom - 1 };
+      }, M);
+      eq(row, { fits: true, under: true }, "History fits a phone, the doses on their own line");
     }
   },
   {

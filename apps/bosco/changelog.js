@@ -5,6 +5,9 @@
 (function (A) {
   "use strict";
   A.CHANGELOG = [
+    { version: "10.248", date: "2026-11-25", changes: [
+      "History fits a phone: each row's doses go on a line of their own under its date, weight and change, so weights stay on one line and Delete no longer runs off the edge."
+    ] },
     { version: "10.247", date: "2026-11-25", changes: [
       "The next doses take less room: each medication is one panel, side by side on a computer (a lone one puts its vial beside the dose), stacked on a phone; the vial leads with the doses left, its dates in a grid, and its buttons line up; the next dose says Today or Tomorrow instead of the weekday."
     ] },

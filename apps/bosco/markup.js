@@ -174,7 +174,8 @@ Kyoshi.apps.bosco.markup = `
     <h2>History</h2>
     <div id="historyEmpty" class="empty-msg">No entries yet. Add your first weigh-in above.</div>
     <div id="historyWrap" hidden>
-      <table>
+      <!-- On a phone, a row is two lines: date, weight, change and Delete, then that day's doses across (bosco.css). -->
+      <table class="history-table">
         <thead><tr><th>Date</th><th>Weight</th><th>Change</th><th class="med" id="doseColumnHead">Tirzepatide Dose</th><th></th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>

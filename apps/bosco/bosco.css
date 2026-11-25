@@ -8,6 +8,18 @@
 .app-bosco .mode-toggle { margin-bottom: 10px; }
 .app-bosco #historyBody tr.blank button { visibility: hidden; } /* a blank row on History's last page: as tall as a full one, nothing to tap */
 .app-bosco #historyBody .nowrap { white-space: nowrap; } /* a date's month and day on one line; one with its year may wrap before it */
+/* History on a phone: the doses' column would squeeze the others (a weight on two lines) and push Delete off the edge, so
+   each row is two lines: date, weight, change and Delete, then that day's doses across the whole width (none on a day
+   without; its heading left out). A blank row keeps its height. */
+@media (max-width: 600px) {
+  /* The same columns in every row (each row is its own grid), so they line up with the headings. */
+  .app-bosco .history-table tr { display: grid; grid-template-columns: 5.2em 1fr 1fr 64px; align-items: center; column-gap: 8px; border-bottom: 1px solid var(--border); }
+  .app-bosco .history-table th, .app-bosco .history-table td { border-bottom: 0; padding: 6px 0; white-space: nowrap; }
+  .app-bosco .history-table td:first-child { white-space: normal; } /* a date with its year wraps before the year */
+  .app-bosco .history-table td:last-child { justify-self: end; }
+  .app-bosco .history-table .med { grid-column: 1 / -1; grid-row: 2; padding-top: 0; white-space: normal; font-size: .9em; color: var(--muted); }
+  .app-bosco .history-table th.med, .app-bosco .history-table td.no-dose { display: none; }
+}
 
 /* --- Stats & badges --- */
 .app-bosco .stat .rate-lb { white-space: nowrap; } /* the weekly rate in lb or kg, beside its % */

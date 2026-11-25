@@ -53,7 +53,7 @@
         <td>${oneLine(fmtDateBrief(e.date))}</td>
         <td>${hasWeight(e) ? `${e.weight.toFixed(1)} ${unit}` : "&mdash;"}</td>
         <td class="${cls}">${change === null ? "&mdash;" : `${change > 0 ? "+" : ""}${change.toFixed(1)} ${unit}`}</td>
-        <td class="med">${hasDose(e) ? dosesOf(e).map(d => `${d.doseMg} mg${medNote(d)}${d.site ? `${SEP}${siteShort(d.site)}` : ""}`).join("<br>") : "&mdash;"}</td>
+        <td class="med${hasDose(e) ? "" : " no-dose"}">${hasDose(e) ? dosesOf(e).map(d => `${d.doseMg} mg${medNote(d)}${d.site ? `${SEP}${siteShort(d.site)}` : ""}`).join("<br>") : "&mdash;"}</td>
         <td><button class="danger" data-date="${e.date}">Delete</button></td>
       </tr>`;
     }).join("") + `<tr class="blank" aria-hidden="true"><td>&nbsp;</td><td></td><td></td><td class="med"></td><td><button class="danger" tabindex="-1">Delete</button></td></tr>`.repeat(blanks);

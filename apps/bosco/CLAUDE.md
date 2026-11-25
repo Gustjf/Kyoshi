@@ -89,6 +89,7 @@ reminder is Bosco's own amber card. Don't add them to `A.agenda` or an `A.inbox`
 - Dates are calendar-day strings; date math is UTC (`K.util`), and "today" is `K.util.todayStr()` (time-travel aware).
 - One unit at a time: weights are stored in `S.unit` at 1 decimal; changing units converts everything, from how each was typed (weigh-ins: `typed`; goals: `goalsAsEntered`), so nothing drifts going back and forth.
 - History's last page is filled out to 7 rows with blank ones (when there's more than one page), so the page buttons never move.
+- History on a phone (≤ 600px): each row two lines, a grid with the same columns in every row: date, weight, change and Delete, then the day's doses across (none without; their heading hidden), so nothing runs past the edge.
 - Doses are logged only by confirming a due dose; the schedule is derived from the plan, never stored. Several medications (the owner's request, 2026-11-12:
   Tirzepatide and Retatrutide at once): each its own plan, schedule (from its own last dose; one never logged, the only one taken, from any dose's, so a
   change of medication keeps the schedule) and vial; a day holds a dose per medication; the pop-up asks about one due dose at a time (by day, dose time,
